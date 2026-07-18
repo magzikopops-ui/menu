@@ -141,6 +141,15 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .pub-item.expanded .desc-expand{display:block;}
 .pub-empty{ text-align:center; color:var(--stone); padding:60px 20px; }
 .pub-footer{ text-align:center; color:var(--stone); font-size:11px; padding:20px; font-family:var(--mono); direction:ltr; letter-spacing:1px; }
+.pub-order-btn{ position:fixed; bottom:22px; inset-inline-end:22px; background:var(--ember); color:#fff; border:none; padding:13px 24px; border-radius:30px; font-family:var(--body); font-weight:800; font-size:14px; cursor:pointer; box-shadow:0 10px 24px rgba(0,0,0,.3); z-index:40; }
+.pub-order-btn:hover{background:var(--ember-dark);}
+
+.orders-list{ display:flex; flex-direction:column; gap:10px; max-height:60vh; overflow-y:auto; }
+.order-row{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+.order-row .o-name{font-weight:800; color:var(--ink); font-size:14px;}
+.order-row .o-phone{font-family:var(--mono); direction:ltr; color:var(--ember); font-size:13px; margin-top:2px; display:inline-block;}
+.order-row .o-time{color:var(--stone); font-size:11px; margin-top:4px;}
+.orders-empty{text-align:center; color:var(--stone); padding:30px;}
 
 .overlay{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px; }
 .modal{ background:#fff; width:min(420px,92vw); border-radius:14px; padding:22px; max-height:88vh; overflow-y:auto; }
@@ -208,6 +217,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
       <span class="switch-link" id="signOutLink">تسجيل الخروج</span>
     </div>
     <div class="topbar-actions">
+      <button class="link-btn" id="viewOrdersBtn">الطلبات</button>
       <button class="link-btn" id="restaurantSettingsBtn">الشعار والاسم الإنجليزي</button>
       <button class="link-btn" id="copyPublicLinkBtn">نسخ رابط المنيو العام</button>
     </div>
@@ -249,6 +259,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
   <div class="pub-tabs" id="pubTabs"></div>
   <div class="pub-body" id="pubBody"></div>
   <div class="pub-footer">POWERED BY منيو بيلدر</div>
+  <button class="pub-order-btn" id="pubOrderBtn">اطلب الآن</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -416,6 +427,37 @@ async function refreshData(){
   }
   renderDashboard();
 }
+
+document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>الطلبات الواردة</h3>
+      <div class="orders-list" id="ordersListWrap"><div class="orders-empty">جارِ التحميل...</div></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="ordersCloseBtn">إغلاق</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#ordersCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+
+  const { data: orders, error } = await sb.from('orders').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending:false });
+  const wrap = overlay.querySelector('#ordersListWrap');
+  if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل الطلبات</div>`; return; }
+  if(!orders || orders.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا توجد طلبات بعد</div>`; return; }
+  wrap.innerHTML = orders.map(o=>{
+    const d = new Date(o.created_at);
+    const time = d.toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' });
+    return `
+      <div class="order-row">
+        <div class="o-name">${escapeHtml(o.customer_name)}</div>
+        <span class="o-phone">${escapeHtml(o.customer_phone)}</span>
+        <div class="o-time">${time}</div>
+      </div>`;
+  }).join('');
+});
 
 document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
   let pendingLogo = restaurant.logo_url || null;
@@ -776,6 +818,7 @@ async function loadPublic(slug){
       ? `<img src="${rest.logo_url}" alt="${escapeHtml(restName)}">`
       : `<div class="name-fallback">${escapeHtml(restName)}</div>`;
     document.getElementById('pubSearchInput').placeholder = lang==='en' ? 'Search the menu...' : 'ابحث في القائمة...';
+    document.getElementById('pubOrderBtn').textContent = lang==='en' ? 'Order Now' : 'اطلب الآن';
   }
 
   function renderPublicBody(){
@@ -833,6 +876,48 @@ async function loadPublic(slug){
   document.getElementById('pubSearchInput').addEventListener('input', (e)=>{
     searchTerm = e.target.value.trim();
     renderPublicBody();
+  });
+
+  document.getElementById('pubOrderBtn').addEventListener('click', ()=>{
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <h3>${lang==='en' ? 'Order Now' : 'اطلب الآن'}</h3>
+        <div class="field">
+          <label>${lang==='en' ? 'Your name' : 'الاسم'}</label>
+          <input type="text" id="ordName" placeholder="${lang==='en' ? 'Full name' : 'مثال: أحمد محمد'}">
+        </div>
+        <div class="field">
+          <label>${lang==='en' ? 'Phone number' : 'رقم الهاتف'}</label>
+          <input type="text" id="ordPhone" placeholder="01xxxxxxxxx">
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" id="ordCancel">${lang==='en' ? 'Cancel' : 'إلغاء'}</button>
+          <button class="btn-confirm" id="ordConfirm">${lang==='en' ? 'Send' : 'إرسال'}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#ordCancel').addEventListener('click', ()=> overlay.remove());
+    overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+    overlay.querySelector('#ordConfirm').addEventListener('click', async ()=>{
+      const customer_name = overlay.querySelector('#ordName').value.trim();
+      const customer_phone = overlay.querySelector('#ordPhone').value.trim();
+      if(!customer_name || !customer_phone){
+        toast(lang==='en' ? 'Please fill in both fields' : 'من فضلك أدخل الاسم ورقم الهاتف');
+        return;
+      }
+      const btn = overlay.querySelector('#ordConfirm');
+      btn.disabled = true;
+      const { error } = await sb.from('orders').insert({ restaurant_id: rest.id, customer_name, customer_phone });
+      if(error){
+        toast(lang==='en' ? 'Something went wrong, try again' : 'حدث خطأ، حاول مرة أخرى');
+        btn.disabled = false;
+        return;
+      }
+      overlay.remove();
+      toast(lang==='en' ? 'Your order request was sent!' : 'تم إرسال طلبك بنجاح!');
+    });
   });
 
   renderPublicBody();
