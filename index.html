@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>بنّاء المنيو</title>
+<title>منيو m@g</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -173,7 +173,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 <div class="loading" id="loadingScreen">جارِ التحميل...</div>
 
 <div id="authScreen" class="hidden">
-  <div class="auth-brand"><span class="dot"></span> بنّاء المنيو</div>
+  <div class="auth-brand"><span class="dot"></span> منيو m@g</div>
   <div class="auth-box">
     <div class="auth-tabs">
       <div class="auth-tab active" id="tabLogin">تسجيل الدخول</div>
@@ -187,6 +187,11 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
       <label>كلمة المرور</label>
       <input type="password" id="authPassword" placeholder="6 أحرف على الأقل">
     </div>
+    <div class="field hidden" id="signupCodeField">
+      <label>رمز التسجيل الخاص</label>
+      <input type="password" id="signupCodeInput" placeholder="يمكنك الحصول عليه من فريقنا">
+      <small>ألا تملك رمزًا؟ <a href="https://wa.me/201154361888" target="_blank" rel="noopener" style="color:#8fd19e; font-weight:700;">تواصل معنا عبر واتساب</a></small>
+    </div>
     <button class="auth-btn" id="authSubmitBtn">دخول</button>
     <div class="auth-err" id="authErr"></div>
   </div>
@@ -195,15 +200,15 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 <div id="onboardScreen" class="hidden">
   <div class="onboard-box">
     <h3>أنشئ مطعمك</h3>
-    <p>هذا الحساب لسه مالوش مطعم مربوط بيه. اختر اسم المطعم والرابط العام اللي هيشوفه عملاؤك.</p>
+    <p>لم يُربط بهذا الحساب أي مطعم بعد. يرجى اختيار اسم المطعم والرابط العام الذي سيظهر لعملائك.</p>
     <div class="field">
       <label>اسم المطعم</label>
       <input type="text" id="obName" placeholder="مثال: مطعم الأصايل">
     </div>
     <div class="field">
-      <label>رابط المنيو (بالإنجليزي، بدون مسافات)</label>
+      <label>رابط القائمة (بالإنجليزية، بدون مسافات)</label>
       <input type="text" id="obSlug" placeholder="al-asayel">
-      <small>هيبقى رابطك بالشكل: ...html?r=al-asayel</small>
+      <small>سيكون رابطك على الشكل التالي: ...html?r=al-asayel</small>
     </div>
     <button class="auth-btn" id="obSubmitBtn">إنشاء المطعم</button>
     <div class="auth-err" id="obErr"></div>
@@ -219,7 +224,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
     <div class="topbar-actions">
       <button class="link-btn" id="viewOrdersBtn">الطلبات</button>
       <button class="link-btn" id="restaurantSettingsBtn">الشعار والاسم الإنجليزي</button>
-      <button class="link-btn" id="copyPublicLinkBtn">نسخ رابط المنيو العام</button>
+      <button class="link-btn" id="copyPublicLinkBtn">نسخ رابط القائمة العام</button>
     </div>
   </div>
   <div class="rail">
@@ -234,7 +239,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
     <div id="itemList"></div>
   </div>
   <div class="preview-col">
-    <div class="preview-label">معاينة المنيو للعميل</div>
+    <div class="preview-label">معاينة القائمة للعميل</div>
     <div class="ticket">
       <div class="ticket-head">
         <div class="shop" id="ticketShopName">اسم المطعم</div>
@@ -258,7 +263,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
   </div>
   <div class="pub-tabs" id="pubTabs"></div>
   <div class="pub-body" id="pubBody"></div>
-  <div class="pub-footer">POWERED BY منيو بيلدر</div>
+  <div class="pub-footer">POWERED BY منيو m@g</div>
   <button class="pub-order-btn" id="pubOrderBtn">اطلب الآن</button>
 </div>
 
@@ -317,24 +322,39 @@ document.getElementById('tabLogin').addEventListener('click', ()=>{
   document.getElementById('tabLogin').classList.add('active');
   document.getElementById('tabSignup').classList.remove('active');
   document.getElementById('authSubmitBtn').textContent = 'دخول';
+  document.getElementById('signupCodeField').classList.add('hidden');
 });
 document.getElementById('tabSignup').addEventListener('click', ()=>{
   authMode = 'signup';
   document.getElementById('tabSignup').classList.add('active');
   document.getElementById('tabLogin').classList.remove('active');
   document.getElementById('authSubmitBtn').textContent = 'إنشاء حساب';
+  document.getElementById('signupCodeField').classList.remove('hidden');
 });
 
 document.getElementById('authSubmitBtn').addEventListener('click', async ()=>{
   const email = document.getElementById('authEmail').value.trim();
   const password = document.getElementById('authPassword').value;
   const errEl = document.getElementById('authErr');
+  errEl.style.color = '#e08a78';
   errEl.textContent = '';
-  if(!email || !password){ errEl.textContent = 'من فضلك أدخل البريد وكلمة المرور'; return; }
+  if(!email || !password){ errEl.textContent = 'يرجى إدخال البريد الإلكتروني وكلمة المرور'; return; }
   const btn = document.getElementById('authSubmitBtn');
   btn.disabled = true;
   try{
     if(authMode === 'signup'){
+      const signupCode = document.getElementById('signupCodeInput').value.trim();
+      if(!signupCode){
+        errEl.textContent = 'يرجى إدخال رمز التسجيل الخاص';
+        btn.disabled = false;
+        return;
+      }
+      const { data: codeOk, error: codeErr } = await sb.rpc('verify_signup_code', { code: signupCode });
+      if(codeErr || !codeOk){
+        errEl.textContent = 'رمز التسجيل غير صحيح';
+        btn.disabled = false;
+        return;
+      }
       const { data, error } = await sb.auth.signUp({ email, password });
       if(error) throw error;
       if(data.session){
@@ -385,14 +405,14 @@ document.getElementById('obSubmitBtn').addEventListener('click', async ()=>{
   const errEl = document.getElementById('obErr');
   errEl.style.color = '#e08a78';
   errEl.textContent = '';
-  if(!name){ errEl.textContent = 'أدخل اسم المطعم'; return; }
-  if(!slug){ errEl.textContent = 'أدخل رابطًا صالحًا بالإنجليزي'; return; }
+  if(!name){ errEl.textContent = 'يرجى إدخال اسم المطعم'; return; }
+  if(!slug){ errEl.textContent = 'يرجى إدخال رابط صالح بالإنجليزية'; return; }
   const btn = document.getElementById('obSubmitBtn');
   btn.disabled = true;
   const { data, error } = await sb.from('restaurants').insert({ owner_id: currentUser.id, name, slug }).select().single();
   btn.disabled = false;
   if(error){
-    errEl.textContent = error.message.includes('duplicate') ? 'هذا الرابط مستخدم بالفعل، جرّب رابطًا آخر' : (error.message || 'حدث خطأ');
+    errEl.textContent = error.message.includes('duplicate') ? 'هذا الرابط مستخدم بالفعل، يرجى تجربة رابط آخر' : (error.message || 'حدث خطأ');
     return;
   }
   restaurant = data;
@@ -470,12 +490,12 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         <label>شعار المطعم (اختياري)</label>
         <div class="img-drop" id="logoDrop">
           ${pendingLogo ? `<img src="${pendingLogo}"><br>` : ''}
-          <span id="logoDropText">${pendingLogo ? 'اضغط لتغيير الشعار' : 'اضغط لرفع شعار'}</span>
+          <span id="logoDropText">${pendingLogo ? 'انقر لتغيير الشعار' : 'انقر لرفع الشعار'}</span>
         </div>
         <input type="file" id="logoInput" accept="image/*" style="display:none;">
       </div>
       <div class="field">
-        <label>اسم المطعم بالإنجليزي (اختياري)</label>
+        <label>اسم المطعم بالإنجليزية (اختياري)</label>
         <input type="text" id="restNameEnInput" value="${restaurant.name_en ? escapeHtml(restaurant.name_en) : ''}" placeholder="e.g. Al Asayel Restaurant">
       </div>
       <div class="modal-actions">
@@ -493,7 +513,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     logoDrop.querySelector('#logoDropText').textContent = 'جارِ المعالجة...';
     try{
       pendingLogo = await resizeImage(file, 320);
-      logoDrop.innerHTML = `<img src="${pendingLogo}"><br><span id="logoDropText">اضغط لتغيير الشعار</span>`;
+      logoDrop.innerHTML = `<img src="${pendingLogo}"><br><span id="logoDropText">انقر لتغيير الشعار</span>`;
     }catch(e){ toast('تعذر تحميل الشعار'); }
   });
   overlay.querySelector('#rsCancel').addEventListener('click', ()=> overlay.remove());
@@ -552,7 +572,7 @@ function renderCategories(){
 
 function renderItems(){
   const cat = categories.find(c=>c.id===selectedCategoryId);
-  document.getElementById('mainTitle').textContent = cat ? cat.name : 'أضف فئة أولاً';
+  document.getElementById('mainTitle').textContent = cat ? cat.name : 'يرجى إضافة فئة أولاً';
   const catItems = cat ? items.filter(i=>i.category_id===cat.id) : [];
   document.getElementById('mainSub').textContent = cat ? `${catItems.length} صنف في هذه الفئة` : 'ابدأ بإضافة فئة من القائمة على اليمين';
   document.getElementById('addItemBtn').style.display = cat ? 'block' : 'none';
@@ -561,7 +581,7 @@ function renderItems(){
   wrap.innerHTML = '';
   if(!cat) return;
   if(catItems.length === 0){
-    wrap.innerHTML = `<div class="empty"><span class="big">لا توجد أصناف بعد</span>أضف أول صنف في "${escapeHtml(cat.name)}"</div>`;
+    wrap.innerHTML = `<div class="empty"><span class="big">لا توجد أصناف بعد</span>يرجى إضافة أول صنف في "${escapeHtml(cat.name)}"</div>`;
     return;
   }
   catItems.forEach(item=>{
@@ -590,7 +610,7 @@ function renderTicket(){
   const tabsWrap = document.getElementById('ticketTabs');
   tabsWrap.innerHTML = '';
   if(categories.length === 0){
-    document.getElementById('ticketItems').innerHTML = `<div class="ticket-empty">لا توجد فئات في المنيو بعد</div>`;
+    document.getElementById('ticketItems').innerHTML = `<div class="ticket-empty">لا توجد فئات في القائمة بعد</div>`;
     return;
   }
   categories.forEach(cat=>{
@@ -631,11 +651,11 @@ function openCategoryModal(existing){
     <div class="modal">
       <h3>${existing ? 'تعديل اسم الفئة' : 'إضافة فئة جديدة'}</h3>
       <div class="field">
-        <label>اسم الفئة (عربي)</label>
+        <label>اسم الفئة (بالعربية)</label>
         <input type="text" id="catNameInput" value="${existing ? escapeHtml(existing.name) : ''}" placeholder="مثال: حلويات">
       </div>
       <div class="field">
-        <label>الاسم بالإنجليزي (اختياري)</label>
+        <label>الاسم بالإنجليزية (اختياري)</label>
         <input type="text" id="catNameEnInput" value="${existing && existing.name_en ? escapeHtml(existing.name_en) : ''}" placeholder="e.g. Desserts">
       </div>
       <div class="modal-actions">
@@ -702,7 +722,7 @@ async function deleteItem(id){
 }
 
 function openItemModal(existing){
-  if(!selectedCategoryId){ toast('أضف فئة أولاً'); return; }
+  if(!selectedCategoryId){ toast('يرجى إضافة فئة أولاً'); return; }
   pendingImage = existing ? existing.image_url : null;
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
@@ -713,16 +733,16 @@ function openItemModal(existing){
         <label>صورة الصنف (اختياري)</label>
         <div class="img-drop" id="imgDrop">
           ${pendingImage ? `<img src="${pendingImage}"><br>` : ''}
-          <span id="imgDropText">${pendingImage ? 'اضغط لتغيير الصورة' : 'اضغط لرفع صورة'}</span>
+          <span id="imgDropText">${pendingImage ? 'انقر لتغيير الصورة' : 'انقر لرفع صورة'}</span>
         </div>
         <input type="file" id="imgInput" accept="image/*" style="display:none;">
       </div>
       <div class="field">
-        <label>اسم الصنف (عربي)</label>
+        <label>اسم الصنف (بالعربية)</label>
         <input type="text" id="itemName" value="${existing ? escapeHtml(existing.name) : ''}" placeholder="مثال: بيتزا مارجريتا">
       </div>
       <div class="field">
-        <label>الاسم بالإنجليزي (اختياري)</label>
+        <label>الاسم بالإنجليزية (اختياري)</label>
         <input type="text" id="itemNameEn" value="${existing && existing.name_en ? escapeHtml(existing.name_en) : ''}" placeholder="e.g. Margherita Pizza">
       </div>
       <div class="field">
@@ -749,7 +769,7 @@ function openItemModal(existing){
     imgDrop.querySelector('#imgDropText').textContent = 'جارِ المعالجة...';
     try{
       pendingImage = await resizeImage(file, 240);
-      imgDrop.innerHTML = `<img src="${pendingImage}"><br><span id="imgDropText">اضغط لتغيير الصورة</span>`;
+      imgDrop.innerHTML = `<img src="${pendingImage}"><br><span id="imgDropText">انقر لتغيير الصورة</span>`;
     }catch(e){ toast('تعذر تحميل الصورة'); }
   });
 
@@ -826,7 +846,7 @@ async function loadPublic(slug){
     const tabsWrap = document.getElementById('pubTabs');
     tabsWrap.innerHTML = '';
     if(pubCats.length === 0){
-      document.getElementById('pubBody').innerHTML = `<div class="pub-empty">${lang==='en' ? 'No items yet.' : 'لا توجد أصناف في المنيو بعد.'}</div>`;
+      document.getElementById('pubBody').innerHTML = `<div class="pub-empty">${lang==='en' ? 'No items yet.' : 'لا توجد أصناف في القائمة بعد.'}</div>`;
       return;
     }
     pubCats.forEach(cat=>{
@@ -904,7 +924,7 @@ async function loadPublic(slug){
       const customer_name = overlay.querySelector('#ordName').value.trim();
       const customer_phone = overlay.querySelector('#ordPhone').value.trim();
       if(!customer_name || !customer_phone){
-        toast(lang==='en' ? 'Please fill in both fields' : 'من فضلك أدخل الاسم ورقم الهاتف');
+        toast(lang==='en' ? 'Please fill in both fields' : 'يرجى إدخال الاسم ورقم الهاتف');
         return;
       }
       const btn = overlay.querySelector('#ordConfirm');
