@@ -117,20 +117,28 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .ticket-empty{ text-align:center; color:var(--stone); font-size:13px; padding:30px 10px; }
 
 #publicScreen{ min-height:100vh; background:var(--paper); }
-.pub-hero{ background:var(--ink); padding:44px 20px 30px; text-align:center; }
-.pub-hero .name{ font-family:var(--display); color:var(--paper); font-size:36px; }
-.pub-hero .tag{ color:var(--stone); font-size:12px; font-family:var(--mono); direction:ltr; letter-spacing:2px; margin-top:4px; }
-.pub-tabs{ display:flex; gap:8px; overflow-x:auto; padding:16px 20px; background:var(--paper); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
-.pub-tab{ flex-shrink:0; font-weight:700; font-size:14px; padding:9px 18px; border-radius:22px; background:var(--paper-dim); color:var(--stone); cursor:pointer; white-space:nowrap; }
-.pub-tab.active{background:var(--ember); color:#fff;}
-.pub-body{ max-width:640px; margin:0 auto; padding:24px 20px 60px; }
-.pub-item{ display:flex; gap:16px; padding:18px 0; border-bottom:1px solid var(--line); }
-.pub-item:last-child{border-bottom:none;}
-.pub-item img{ width:88px; height:88px; border-radius:10px; object-fit:cover; background:var(--stone-light); flex-shrink:0; }
-.pub-item .no-img{ width:88px; height:88px; border-radius:10px; background:var(--stone-light); display:flex; align-items:center; justify-content:center; font-size:26px; color:var(--stone); flex-shrink:0; }
-.pub-item .name{ font-weight:800; font-size:17px; color:var(--ink); }
-.pub-item .desc{ color:var(--stone); font-size:13px; margin-top:4px; line-height:1.6; }
-.pub-item .price{ font-family:var(--mono); direction:ltr; font-weight:700; color:var(--ember); font-size:15px; margin-top:6px; }
+.pub-topbar{ display:flex; align-items:center; justify-content:space-between; padding:18px 20px 4px; max-width:640px; margin:0 auto; }
+.pub-lang-btn{ display:flex; align-items:center; gap:6px; background:var(--paper-dim); border:1px solid var(--line); border-radius:20px; padding:7px 14px; font-size:13px; font-weight:700; color:var(--ink); cursor:pointer; }
+.pub-lang-btn:hover{border-color:var(--stone);}
+.pub-logo-wrap{ text-align:center; padding:6px 20px 18px; }
+.pub-logo-wrap img{ max-height:64px; max-width:220px; object-fit:contain; }
+.pub-logo-wrap .name-fallback{ font-family:var(--display); font-size:30px; color:var(--ink); }
+.pub-search{ max-width:640px; margin:0 auto; padding:0 20px 14px; }
+.pub-search input{ width:100%; border:1.5px solid var(--line); border-radius:10px; padding:12px 16px; font-family:var(--body); font-size:14px; background:#fff; color:var(--ink); }
+.pub-tabs{ display:flex; gap:8px; overflow-x:auto; padding:2px 20px 16px; max-width:640px; margin:0 auto; }
+.pub-tab{ flex-shrink:0; font-weight:700; font-size:13px; padding:8px 16px; border-radius:20px; background:var(--paper-dim); color:var(--stone); cursor:pointer; white-space:nowrap; border:1px solid var(--line); }
+.pub-tab.active{background:var(--ember); color:#fff; border-color:var(--ember);}
+.pub-body{ max-width:640px; margin:0 auto; padding:4px 20px 60px; }
+.pub-item{ display:flex; align-items:center; gap:12px; padding:14px 12px; border:1px solid var(--line); border-radius:10px; margin-bottom:10px; background:#fff; }
+.pub-item .chevron{ color:var(--stone); font-size:13px; flex-shrink:0; cursor:pointer; user-select:none; }
+.pub-item .info{ flex:1; min-width:0; }
+.pub-item .name-primary{ font-weight:800; font-size:15px; color:var(--ink); }
+.pub-item .name-secondary{ font-size:12px; color:var(--stone); margin-top:1px; }
+.pub-item .price{ font-family:var(--mono); direction:ltr; font-weight:700; color:var(--ember); font-size:14px; margin-top:5px; display:inline-block; }
+.pub-item img{ width:64px; height:64px; border-radius:8px; object-fit:cover; background:var(--stone-light); flex-shrink:0; }
+.pub-item .no-img{ width:64px; height:64px; border-radius:8px; background:var(--stone-light); display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--stone); flex-shrink:0; }
+.pub-item .desc-expand{ font-size:12.5px; color:var(--stone); margin-top:6px; line-height:1.6; display:none; }
+.pub-item.expanded .desc-expand{display:block;}
 .pub-empty{ text-align:center; color:var(--stone); padding:60px 20px; }
 .pub-footer{ text-align:center; color:var(--stone); font-size:11px; padding:20px; font-family:var(--mono); direction:ltr; letter-spacing:1px; }
 
@@ -200,6 +208,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
       <span class="switch-link" id="signOutLink">تسجيل الخروج</span>
     </div>
     <div class="topbar-actions">
+      <button class="link-btn" id="restaurantSettingsBtn">الشعار والاسم الإنجليزي</button>
       <button class="link-btn" id="copyPublicLinkBtn">نسخ رابط المنيو العام</button>
     </div>
   </div>
@@ -229,7 +238,14 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 </div>
 
 <div id="publicScreen" class="hidden">
-  <div class="pub-hero"><div class="name" id="pubName">—</div><div class="tag">MENU</div></div>
+  <div class="pub-topbar">
+    <div class="pub-lang-btn" id="pubLangBtn">🌐 <span id="pubLangLabel">English</span></div>
+    <div></div>
+  </div>
+  <div class="pub-logo-wrap" id="pubLogoWrap"></div>
+  <div class="pub-search">
+    <input type="text" id="pubSearchInput" placeholder="ابحث في القائمة...">
+  </div>
   <div class="pub-tabs" id="pubTabs"></div>
   <div class="pub-body" id="pubBody"></div>
   <div class="pub-footer">POWERED BY منيو بيلدر</div>
@@ -401,6 +417,57 @@ async function refreshData(){
   renderDashboard();
 }
 
+document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
+  let pendingLogo = restaurant.logo_url || null;
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>الشعار والاسم الإنجليزي</h3>
+      <div class="field">
+        <label>شعار المطعم (اختياري)</label>
+        <div class="img-drop" id="logoDrop">
+          ${pendingLogo ? `<img src="${pendingLogo}"><br>` : ''}
+          <span id="logoDropText">${pendingLogo ? 'اضغط لتغيير الشعار' : 'اضغط لرفع شعار'}</span>
+        </div>
+        <input type="file" id="logoInput" accept="image/*" style="display:none;">
+      </div>
+      <div class="field">
+        <label>اسم المطعم بالإنجليزي (اختياري)</label>
+        <input type="text" id="restNameEnInput" value="${restaurant.name_en ? escapeHtml(restaurant.name_en) : ''}" placeholder="e.g. Al Asayel Restaurant">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="rsCancel">إلغاء</button>
+        <button class="btn-confirm" id="rsConfirm">حفظ</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const logoDrop = overlay.querySelector('#logoDrop');
+  const logoInput = overlay.querySelector('#logoInput');
+  logoDrop.addEventListener('click', ()=> logoInput.click());
+  logoInput.addEventListener('change', async ()=>{
+    const file = logoInput.files[0];
+    if(!file) return;
+    logoDrop.querySelector('#logoDropText').textContent = 'جارِ المعالجة...';
+    try{
+      pendingLogo = await resizeImage(file, 320);
+      logoDrop.innerHTML = `<img src="${pendingLogo}"><br><span id="logoDropText">اضغط لتغيير الشعار</span>`;
+    }catch(e){ toast('تعذر تحميل الشعار'); }
+  });
+  overlay.querySelector('#rsCancel').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#rsConfirm').addEventListener('click', async ()=>{
+    const name_en = overlay.querySelector('#restNameEnInput').value.trim() || null;
+    const btn = overlay.querySelector('#rsConfirm');
+    btn.disabled = true;
+    const { data, error } = await sb.from('restaurants').update({ logo_url: pendingLogo, name_en }).eq('id', restaurant.id).select().single();
+    if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
+    restaurant = data;
+    overlay.remove();
+    toast('تم الحفظ');
+  });
+});
+
 document.getElementById('copyPublicLinkBtn').addEventListener('click', ()=>{
   const link = `${location.origin}${location.pathname}?r=${restaurant.slug}`;
   if(navigator.clipboard && navigator.clipboard.writeText){
@@ -522,8 +589,12 @@ function openCategoryModal(existing){
     <div class="modal">
       <h3>${existing ? 'تعديل اسم الفئة' : 'إضافة فئة جديدة'}</h3>
       <div class="field">
-        <label>اسم الفئة</label>
+        <label>اسم الفئة (عربي)</label>
         <input type="text" id="catNameInput" value="${existing ? escapeHtml(existing.name) : ''}" placeholder="مثال: حلويات">
+      </div>
+      <div class="field">
+        <label>الاسم بالإنجليزي (اختياري)</label>
+        <input type="text" id="catNameEnInput" value="${existing && existing.name_en ? escapeHtml(existing.name_en) : ''}" placeholder="e.g. Desserts">
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" id="catCancel">إلغاء</button>
@@ -532,19 +603,21 @@ function openCategoryModal(existing){
     </div>`;
   document.body.appendChild(overlay);
   const input = overlay.querySelector('#catNameInput');
+  const inputEn = overlay.querySelector('#catNameEnInput');
   input.focus();
   overlay.querySelector('#catCancel').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#catConfirm').addEventListener('click', async ()=>{
     const name = input.value.trim();
+    const name_en = inputEn.value.trim() || null;
     if(!name){ input.focus(); return; }
     const btn = overlay.querySelector('#catConfirm');
     btn.disabled = true;
     if(existing){
-      const { error } = await sb.from('categories').update({ name }).eq('id', existing.id);
+      const { error } = await sb.from('categories').update({ name, name_en }).eq('id', existing.id);
       if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     } else {
-      const { data, error } = await sb.from('categories').insert({ restaurant_id: restaurant.id, name, position: categories.length }).select().single();
+      const { data, error } = await sb.from('categories').insert({ restaurant_id: restaurant.id, name, name_en, position: categories.length }).select().single();
       if(error){ toast('تعذر الإضافة'); btn.disabled=false; return; }
       selectedCategoryId = data.id;
     }
@@ -603,8 +676,12 @@ function openItemModal(existing){
         <input type="file" id="imgInput" accept="image/*" style="display:none;">
       </div>
       <div class="field">
-        <label>اسم الصنف</label>
+        <label>اسم الصنف (عربي)</label>
         <input type="text" id="itemName" value="${existing ? escapeHtml(existing.name) : ''}" placeholder="مثال: بيتزا مارجريتا">
+      </div>
+      <div class="field">
+        <label>الاسم بالإنجليزي (اختياري)</label>
+        <input type="text" id="itemNameEn" value="${existing && existing.name_en ? escapeHtml(existing.name_en) : ''}" placeholder="e.g. Margherita Pizza">
       </div>
       <div class="field">
         <label>السعر (EGP)</label>
@@ -638,6 +715,7 @@ function openItemModal(existing){
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#itemConfirm').addEventListener('click', async ()=>{
     const name = overlay.querySelector('#itemName').value.trim();
+    const name_en = overlay.querySelector('#itemNameEn').value.trim() || null;
     const price = parseFloat(overlay.querySelector('#itemPrice').value);
     const description = overlay.querySelector('#itemDesc').value.trim();
     if(!name){ overlay.querySelector('#itemName').focus(); return; }
@@ -645,10 +723,10 @@ function openItemModal(existing){
     const btn = overlay.querySelector('#itemConfirm');
     btn.disabled = true;
     if(existing){
-      const { error } = await sb.from('items').update({ name, price, description, image_url: pendingImage }).eq('id', existing.id);
+      const { error } = await sb.from('items').update({ name, name_en, price, description, image_url: pendingImage }).eq('id', existing.id);
       if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     } else {
-      const { error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, price, description, image_url: pendingImage });
+      const { error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, description, image_url: pendingImage });
       if(error){ toast('تعذر الإضافة'); btn.disabled=false; return; }
     }
     overlay.remove();
@@ -664,12 +742,11 @@ async function loadPublic(slug){
   const { data: rest, error: restErr } = await sb.from('restaurants').select('*').eq('slug', slug).maybeSingle();
   if(restErr || !rest){
     show('publicScreen');
-    document.getElementById('pubName').textContent = 'المطعم غير موجود';
+    document.getElementById('pubLogoWrap').innerHTML = `<div class="name-fallback">المطعم غير موجود</div>`;
     document.getElementById('pubTabs').innerHTML = '';
     document.getElementById('pubBody').innerHTML = `<div class="pub-empty">هذا الرابط غير صحيح أو تم حذف المطعم.</div>`;
     return;
   }
-  document.getElementById('pubName').textContent = rest.name;
   const { data: cats } = await sb.from('categories').select('*').eq('restaurant_id', rest.id).order('position');
   const pubCats = cats || [];
   let pubItems = [];
@@ -678,37 +755,86 @@ async function loadPublic(slug){
     pubItems = its || [];
   }
   let activeCat = pubCats[0] ? pubCats[0].id : null;
+  let lang = 'ar'; // 'ar' or 'en'
+  let searchTerm = '';
+
+  function tName(nameAr, nameEn){
+    if(lang==='en') return nameEn && nameEn.trim() ? nameEn : nameAr;
+    return nameAr;
+  }
+  function secondaryName(nameAr, nameEn){
+    const other = lang==='en' ? nameAr : (nameEn && nameEn.trim() ? nameEn : '');
+    const primary = tName(nameAr, nameEn);
+    return (other && other !== primary) ? other : '';
+  }
+
+  function renderHeader(){
+    document.documentElement.dir = lang==='en' ? 'ltr' : 'rtl';
+    document.getElementById('pubLangLabel').textContent = lang==='en' ? 'العربية' : 'English';
+    const restName = tName(rest.name, rest.name_en);
+    document.getElementById('pubLogoWrap').innerHTML = rest.logo_url
+      ? `<img src="${rest.logo_url}" alt="${escapeHtml(restName)}">`
+      : `<div class="name-fallback">${escapeHtml(restName)}</div>`;
+    document.getElementById('pubSearchInput').placeholder = lang==='en' ? 'Search the menu...' : 'ابحث في القائمة...';
+  }
 
   function renderPublicBody(){
+    renderHeader();
     const tabsWrap = document.getElementById('pubTabs');
     tabsWrap.innerHTML = '';
     if(pubCats.length === 0){
-      document.getElementById('pubBody').innerHTML = `<div class="pub-empty">لا توجد أصناف في المنيو بعد.</div>`;
+      document.getElementById('pubBody').innerHTML = `<div class="pub-empty">${lang==='en' ? 'No items yet.' : 'لا توجد أصناف في المنيو بعد.'}</div>`;
       return;
     }
     pubCats.forEach(cat=>{
       const t = document.createElement('div');
-      t.className = 'pub-tab' + (cat.id===activeCat ? ' active' : '');
-      t.textContent = cat.name;
-      t.addEventListener('click', ()=>{ activeCat = cat.id; renderPublicBody(); });
+      t.className = 'pub-tab' + (cat.id===activeCat && !searchTerm ? ' active' : '');
+      t.textContent = tName(cat.name, cat.name_en);
+      t.addEventListener('click', ()=>{ activeCat = cat.id; searchTerm=''; document.getElementById('pubSearchInput').value=''; renderPublicBody(); });
       tabsWrap.appendChild(t);
     });
-    const catItems = pubItems.filter(i=>i.category_id===activeCat);
     const body = document.getElementById('pubBody');
+    let catItems;
+    if(searchTerm){
+      const q = searchTerm.toLowerCase();
+      catItems = pubItems.filter(i=>
+        (i.name||'').toLowerCase().includes(q) || (i.name_en||'').toLowerCase().includes(q)
+      );
+    } else {
+      catItems = pubItems.filter(i=>i.category_id===activeCat);
+    }
     if(catItems.length === 0){
-      body.innerHTML = `<div class="pub-empty">لا توجد أصناف في هذه الفئة بعد.</div>`;
+      body.innerHTML = `<div class="pub-empty">${lang==='en' ? 'Nothing found.' : 'لا توجد أصناف هنا.'}</div>`;
       return;
     }
     body.innerHTML = catItems.map(i=>`
-      <div class="pub-item">
+      <div class="pub-item" data-id="${i.id}">
+        <span class="chevron" data-action="toggle">${i.description ? '▾' : ''}</span>
         ${i.image_url ? `<img src="${i.image_url}">` : `<div class="no-img">🍽</div>`}
-        <div>
-          <div class="name">${escapeHtml(i.name)}</div>
-          ${i.description ? `<div class="desc">${escapeHtml(i.description)}</div>` : ''}
-          <div class="price">${Number(i.price).toFixed(2)} EGP</div>
+        <div class="info">
+          <div class="name-primary">${escapeHtml(tName(i.name, i.name_en))}</div>
+          ${secondaryName(i.name, i.name_en) ? `<div class="name-secondary">${escapeHtml(secondaryName(i.name, i.name_en))}</div>` : ''}
+          <div class="price">EGP ${Number(i.price).toFixed(2)}</div>
+          ${i.description ? `<div class="desc-expand">${escapeHtml(i.description)}</div>` : ''}
         </div>
       </div>`).join('');
+    body.querySelectorAll('.pub-item').forEach(row=>{
+      const chevron = row.querySelector('[data-action="toggle"]');
+      if(chevron && chevron.textContent){
+        row.addEventListener('click', ()=> row.classList.toggle('expanded'));
+      }
+    });
   }
+
+  document.getElementById('pubLangBtn').addEventListener('click', ()=>{
+    lang = lang==='ar' ? 'en' : 'ar';
+    renderPublicBody();
+  });
+  document.getElementById('pubSearchInput').addEventListener('input', (e)=>{
+    searchTerm = e.target.value.trim();
+    renderPublicBody();
+  });
+
   renderPublicBody();
   show('publicScreen');
 }
