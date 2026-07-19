@@ -582,6 +582,7 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
         <div class="o-name">${escapeHtml(o.customer_name)} <span style="font-weight:400; color:var(--stone); font-size:12px;">(${typeLabel})</span></div>
         <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}
         <div class="o-time">${escapeHtml(o.city || '')}${o.area ? ' — ' + escapeHtml(o.area) : ''}${o.delivery_fee != null ? ` (رسوم التوصيل: ${Number(o.delivery_fee).toFixed(2)} EGP)` : ''}</div>
+        ${o.address ? `<div class="o-time">${escapeHtml(o.address)}</div>` : ''}
         ${linesHtml}
         ${totalsHtml}
         ${o.notes ? `<div class="o-time" style="margin-top:4px;">${escapeHtml(o.notes)}</div>` : ''}
@@ -1116,6 +1117,10 @@ async function loadPublic(slug){
             <input type="text" id="ordArea" placeholder="${lang==='en' ? 'e.g. Nasr City' : 'مثال: مدينة نصر'}">
           `}
         </div>
+        <div class="field" id="ordAddressField">
+          <label>${lang==='en' ? 'Detailed address' : 'العنوان بالتفصيل'} *</label>
+          <textarea id="ordAddress" placeholder="${lang==='en' ? 'Street, building, floor, landmark...' : 'الشارع، رقم المبنى، الدور، أقرب علامة مميزة...'}"></textarea>
+        </div>
         <div class="field">
           <label>${lang==='en' ? 'Notes (optional)' : 'ملاحظات (اختياري)'}</label>
           <textarea id="ordNotes" placeholder="${lang==='en' ? 'Any special requests' : 'أي طلبات خاصة'}"></textarea>
@@ -1156,11 +1161,13 @@ async function loadPublic(slug){
     const typeDeliveryBtn = overlay.querySelector('#ordTypeDelivery');
     const typePickupBtn = overlay.querySelector('#ordTypePickup');
     const areaField = overlay.querySelector('#ordAreaField');
+    const addressField = overlay.querySelector('#ordAddressField');
     typeDeliveryBtn.addEventListener('click', ()=>{
       orderType = 'delivery';
       typeDeliveryBtn.classList.add('active');
       typePickupBtn.classList.remove('active');
       areaField.classList.remove('hidden');
+      addressField.classList.remove('hidden');
       renderSummary();
     });
     typePickupBtn.addEventListener('click', ()=>{
@@ -1168,6 +1175,7 @@ async function loadPublic(slug){
       typePickupBtn.classList.add('active');
       typeDeliveryBtn.classList.remove('active');
       areaField.classList.add('hidden');
+      addressField.classList.add('hidden');
       renderSummary();
     });
     const zoneSelect = overlay.querySelector('#ordZoneSelect');
@@ -1180,6 +1188,7 @@ async function loadPublic(slug){
       const customer_phone = overlay.querySelector('#ordPhone').value.trim();
       const secondary_phone = overlay.querySelector('#ordPhone2').value.trim() || null;
       const city = overlay.querySelector('#ordCity').value.trim();
+      const address = orderType === 'delivery' ? overlay.querySelector('#ordAddress').value.trim() : null;
       const notes = overlay.querySelector('#ordNotes').value.trim() || null;
 
       let area = null, zone_id = null, delivery_fee = null;
@@ -1195,7 +1204,7 @@ async function loadPublic(slug){
         }
       }
 
-      if(!customer_name || !customer_phone || !city || (orderType==='delivery' && !area)){
+      if(!customer_name || !customer_phone || !city || (orderType==='delivery' && (!area || !address))){
         toast(lang==='en' ? 'Please fill in all required fields' : 'يرجى إدخال جميع الحقول المطلوبة');
         return;
       }
@@ -1205,7 +1214,7 @@ async function loadPublic(slug){
       btn.disabled = true;
       const { data: orderRow, error } = await sb.from('orders').insert({
         restaurant_id: rest.id, customer_name, customer_phone, secondary_phone,
-        order_type: orderType, city, area, notes, zone_id, delivery_fee,
+        order_type: orderType, city, area, address, notes, zone_id, delivery_fee,
         subtotal, total
       }).select().single();
       if(error){
