@@ -141,8 +141,24 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .pub-item.expanded .desc-expand{display:block;}
 .pub-empty{ text-align:center; color:var(--stone); padding:60px 20px; }
 .pub-footer{ text-align:center; color:var(--stone); font-size:11px; padding:20px; font-family:var(--mono); direction:ltr; letter-spacing:1px; }
-.pub-order-btn{ position:fixed; bottom:22px; inset-inline-end:22px; background:var(--ember); color:#fff; border:none; padding:13px 24px; border-radius:30px; font-family:var(--body); font-weight:800; font-size:14px; cursor:pointer; box-shadow:0 10px 24px rgba(0,0,0,.3); z-index:40; }
+.pub-order-btn{ position:fixed; bottom:22px; inset-inline-end:22px; background:var(--ember); color:#fff; border:none; padding:13px 24px; border-radius:30px; font-family:var(--body); font-weight:800; font-size:14px; cursor:pointer; box-shadow:0 10px 24px rgba(0,0,0,.3); z-index:40; display:flex; align-items:center; gap:8px; }
 .pub-order-btn:hover{background:var(--ember-dark);}
+.cart-badge{ background:#fff; color:var(--ember); border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; }
+
+.qty-stepper{ display:flex; align-items:center; gap:8px; margin-top:6px; }
+.qty-btn{ width:26px; height:26px; border-radius:6px; border:1px solid var(--line); background:var(--paper-dim); color:var(--ink); font-weight:800; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.qty-btn:hover{border-color:var(--ember); color:var(--ember);}
+.qty-val{font-family:var(--mono); font-weight:700; font-size:13px; min-width:18px; text-align:center;}
+.add-to-cart-btn{ margin-top:6px; background:var(--basil); color:#fff; border:none; padding:6px 14px; border-radius:16px; font-family:var(--body); font-weight:700; font-size:12px; cursor:pointer; }
+.add-to-cart-btn:hover{background:var(--basil-dark);}
+
+.cart-row{ display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line); padding:10px 0; }
+.cart-row:last-child{border-bottom:none;}
+.cart-row .cr-name{flex:1; font-weight:700; font-size:14px; color:var(--ink);}
+.cart-row .cr-line-total{font-family:var(--mono); direction:ltr; color:var(--ember); font-weight:700; font-size:13px;}
+.cart-summary-row{ display:flex; justify-content:space-between; padding:6px 0; font-size:13.5px; color:var(--stone); }
+.cart-summary-row.total{ font-weight:800; color:var(--ink); font-size:15px; border-top:1.5px dashed var(--stone-light); margin-top:6px; padding-top:10px; }
+.cart-empty-note{ text-align:center; color:var(--stone); padding:24px; font-size:13.5px; }
 
 .orders-list{ display:flex; flex-direction:column; gap:10px; max-height:60vh; overflow-y:auto; }
 .order-row{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
@@ -278,7 +294,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
   <div class="pub-tabs" id="pubTabs"></div>
   <div class="pub-body" id="pubBody"></div>
   <div class="pub-footer">POWERED BY منيو m@g</div>
-  <button class="pub-order-btn" id="pubOrderBtn">اطلب الآن</button>
+  <button class="pub-order-btn" id="pubOrderBtn"><span id="pubOrderBtnLabel">السلة</span><span class="cart-badge hidden" id="pubCartBadge">0</span></button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -543,15 +559,31 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
   const wrap = overlay.querySelector('#ordersListWrap');
   if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل الطلبات</div>`; return; }
   if(!orders || orders.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا توجد طلبات بعد</div>`; return; }
+
+  let itemsByOrder = {};
+  const orderIds = orders.map(o=>o.id);
+  if(orderIds.length){
+    const { data: allItems } = await sb.from('order_items').select('*').in('order_id', orderIds);
+    (allItems || []).forEach(oi=>{
+      if(!itemsByOrder[oi.order_id]) itemsByOrder[oi.order_id] = [];
+      itemsByOrder[oi.order_id].push(oi);
+    });
+  }
+
   wrap.innerHTML = orders.map(o=>{
     const d = new Date(o.created_at);
     const time = d.toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' });
     const typeLabel = o.order_type === 'pickup' ? 'استلام' : 'توصيل';
+    const lines = itemsByOrder[o.id] || [];
+    const linesHtml = lines.length ? `<div class="o-time" style="margin-top:6px;">${lines.map(l=>`${escapeHtml(l.item_name)} ×${l.quantity}`).join('، ')}</div>` : '';
+    const totalsHtml = o.total != null ? `<div class="o-time" style="margin-top:4px; font-weight:700; color:var(--ink);">الإجمالي: ${Number(o.total).toFixed(2)} EGP</div>` : '';
     return `
       <div class="order-row">
         <div class="o-name">${escapeHtml(o.customer_name)} <span style="font-weight:400; color:var(--stone); font-size:12px;">(${typeLabel})</span></div>
         <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}
         <div class="o-time">${escapeHtml(o.city || '')}${o.area ? ' — ' + escapeHtml(o.area) : ''}${o.delivery_fee != null ? ` (رسوم التوصيل: ${Number(o.delivery_fee).toFixed(2)} EGP)` : ''}</div>
+        ${linesHtml}
+        ${totalsHtml}
         ${o.notes ? `<div class="o-time" style="margin-top:4px;">${escapeHtml(o.notes)}</div>` : ''}
         <div class="o-time" style="margin-top:4px;">${time}</div>
       </div>`;
@@ -900,6 +932,24 @@ async function loadPublic(slug){
   let activeCat = pubCats[0] ? pubCats[0].id : null;
   let lang = 'ar'; // 'ar' or 'en'
   let searchTerm = '';
+  let cart = {}; // item_id -> { item, qty }
+
+  function cartCount(){
+    return Object.values(cart).reduce((sum,c)=> sum + c.qty, 0);
+  }
+  function cartSubtotal(){
+    return Object.values(cart).reduce((sum,c)=> sum + (c.qty * Number(c.item.price)), 0);
+  }
+  function updateCartButton(){
+    const badge = document.getElementById('pubCartBadge');
+    const count = cartCount();
+    if(count > 0){
+      badge.textContent = count;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
 
   function tName(nameAr, nameEn){
     if(lang==='en') return nameEn && nameEn.trim() ? nameEn : nameAr;
@@ -919,7 +969,8 @@ async function loadPublic(slug){
       ? `<img src="${rest.logo_url}" alt="${escapeHtml(restName)}">`
       : `<div class="name-fallback">${escapeHtml(restName)}</div>`;
     document.getElementById('pubSearchInput').placeholder = lang==='en' ? 'Search the menu...' : 'ابحث في القائمة...';
-    document.getElementById('pubOrderBtn').textContent = lang==='en' ? 'Order Now' : 'اطلب الآن';
+    document.getElementById('pubOrderBtnLabel').textContent = lang==='en' ? 'Cart' : 'السلة';
+    updateCartButton();
   }
 
   function renderPublicBody(){
@@ -951,7 +1002,9 @@ async function loadPublic(slug){
       body.innerHTML = `<div class="pub-empty">${lang==='en' ? 'Nothing found.' : 'لا توجد أصناف هنا.'}</div>`;
       return;
     }
-    body.innerHTML = catItems.map(i=>`
+    body.innerHTML = catItems.map(i=>{
+      const qty = cart[i.id] ? cart[i.id].qty : 0;
+      return `
       <div class="pub-item" data-id="${i.id}">
         <span class="chevron" data-action="toggle">${i.description ? '▾' : ''}</span>
         ${i.image_url ? `<img src="${i.image_url}">` : `<div class="no-img">🍽</div>`}
@@ -960,8 +1013,49 @@ async function loadPublic(slug){
           ${secondaryName(i.name, i.name_en) ? `<div class="name-secondary">${escapeHtml(secondaryName(i.name, i.name_en))}</div>` : ''}
           <div class="price">EGP ${Number(i.price).toFixed(2)}</div>
           ${i.description ? `<div class="desc-expand">${escapeHtml(i.description)}</div>` : ''}
+          <div class="cart-control" data-item-id="${i.id}">
+            ${qty > 0 ? `
+              <div class="qty-stepper">
+                <button class="qty-btn" data-action="dec">−</button>
+                <span class="qty-val">${qty}</span>
+                <button class="qty-btn" data-action="inc">+</button>
+              </div>
+            ` : `
+              <button class="add-to-cart-btn" data-action="add">${lang==='en' ? '+ Add' : '+ أضف'}</button>
+            `}
+          </div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
+    body.querySelectorAll('.cart-control').forEach(ctrl=>{
+      const itemId = ctrl.dataset.itemId;
+      const item = pubItems.find(x=>x.id===itemId);
+      const addBtn = ctrl.querySelector('[data-action="add"]');
+      const incBtn = ctrl.querySelector('[data-action="inc"]');
+      const decBtn = ctrl.querySelector('[data-action="dec"]');
+      if(addBtn){
+        addBtn.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          cart[itemId] = { item, qty: 1 };
+          renderPublicBody();
+        });
+      }
+      if(incBtn){
+        incBtn.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          cart[itemId].qty += 1;
+          renderPublicBody();
+        });
+      }
+      if(decBtn){
+        decBtn.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          cart[itemId].qty -= 1;
+          if(cart[itemId].qty <= 0) delete cart[itemId];
+          renderPublicBody();
+        });
+      }
+    });
     body.querySelectorAll('.pub-item').forEach(row=>{
       const chevron = row.querySelector('[data-action="toggle"]');
       if(chevron && chevron.textContent){
@@ -979,13 +1073,15 @@ async function loadPublic(slug){
     renderPublicBody();
   });
 
-  document.getElementById('pubOrderBtn').addEventListener('click', ()=>{
+  function openOrderDetailsModal(){
     let orderType = 'delivery';
+    const subtotal = cartSubtotal();
     const overlay = document.createElement('div');
     overlay.className = 'overlay';
     overlay.innerHTML = `
       <div class="modal">
-        <h3>${lang==='en' ? 'Order Now' : 'اطلب الآن'}</h3>
+        <h3>${lang==='en' ? 'Complete your order' : 'إتمام الطلب'}</h3>
+        <div id="ordSummaryWrap"></div>
         <div class="field">
           <label>${lang==='en' ? 'Order type' : 'نوع الطلب'} *</label>
           <div class="ord-type-toggle">
@@ -1026,10 +1122,36 @@ async function loadPublic(slug){
         </div>
         <div class="modal-actions">
           <button class="btn-cancel" id="ordCancel">${lang==='en' ? 'Cancel' : 'إلغاء'}</button>
-          <button class="btn-confirm" id="ordConfirm">${lang==='en' ? 'Send' : 'إرسال'}</button>
+          <button class="btn-confirm" id="ordConfirm">${lang==='en' ? 'Confirm order' : 'تأكيد الطلب'}</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
+
+    function currentDeliveryFee(){
+      if(orderType !== 'delivery') return 0;
+      if(pubZones.length > 0){
+        const sel = overlay.querySelector('#ordZoneSelect');
+        if(!sel || !sel.value) return 0;
+        const z = pubZones.find(zz=>zz.id===sel.value);
+        return z ? Number(z.fee) : 0;
+      }
+      return 0;
+    }
+    function renderSummary(){
+      const fee = currentDeliveryFee();
+      const total = subtotal + fee;
+      overlay.querySelector('#ordSummaryWrap').innerHTML = `
+        ${Object.values(cart).map(c=>`
+          <div class="cart-row">
+            <span class="cr-name">${escapeHtml(tName(c.item.name, c.item.name_en))} × ${c.qty}</span>
+            <span class="cr-line-total">${(c.qty * Number(c.item.price)).toFixed(2)} EGP</span>
+          </div>`).join('')}
+        <div class="cart-summary-row"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${subtotal.toFixed(2)} EGP</span></div>
+        <div class="cart-summary-row"><span>${lang==='en' ? 'Delivery fee' : 'رسوم التوصيل'}</span><span>${fee.toFixed(2)} EGP</span></div>
+        <div class="cart-summary-row total"><span>${lang==='en' ? 'Total' : 'الإجمالي'}</span><span>${total.toFixed(2)} EGP</span></div>
+      `;
+    }
+    renderSummary();
 
     const typeDeliveryBtn = overlay.querySelector('#ordTypeDelivery');
     const typePickupBtn = overlay.querySelector('#ordTypePickup');
@@ -1039,13 +1161,17 @@ async function loadPublic(slug){
       typeDeliveryBtn.classList.add('active');
       typePickupBtn.classList.remove('active');
       areaField.classList.remove('hidden');
+      renderSummary();
     });
     typePickupBtn.addEventListener('click', ()=>{
       orderType = 'pickup';
       typePickupBtn.classList.add('active');
       typeDeliveryBtn.classList.remove('active');
       areaField.classList.add('hidden');
+      renderSummary();
     });
+    const zoneSelect = overlay.querySelector('#ordZoneSelect');
+    if(zoneSelect) zoneSelect.addEventListener('change', renderSummary);
 
     overlay.querySelector('#ordCancel').addEventListener('click', ()=> overlay.remove());
     overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
@@ -1073,21 +1199,96 @@ async function loadPublic(slug){
         toast(lang==='en' ? 'Please fill in all required fields' : 'يرجى إدخال جميع الحقول المطلوبة');
         return;
       }
+      const fee = delivery_fee != null ? Number(delivery_fee) : 0;
+      const total = subtotal + fee;
       const btn = overlay.querySelector('#ordConfirm');
       btn.disabled = true;
-      const { error } = await sb.from('orders').insert({
+      const { data: orderRow, error } = await sb.from('orders').insert({
         restaurant_id: rest.id, customer_name, customer_phone, secondary_phone,
-        order_type: orderType, city, area, notes, zone_id, delivery_fee
-      });
+        order_type: orderType, city, area, notes, zone_id, delivery_fee,
+        subtotal, total
+      }).select().single();
       if(error){
         toast(lang==='en' ? 'Something went wrong, try again' : 'حدث خطأ، حاول مرة أخرى');
         btn.disabled = false;
         return;
       }
+      const cartLines = Object.values(cart).map(c=>({
+        order_id: orderRow.id, item_id: c.item.id, item_name: c.item.name, price: c.item.price, quantity: c.qty
+      }));
+      if(cartLines.length){
+        await sb.from('order_items').insert(cartLines);
+      }
+      cart = {};
+      renderPublicBody();
       overlay.remove();
       toast(lang==='en' ? 'Your order request was sent!' : 'تم إرسال طلبك بنجاح!');
     });
-  });
+  }
+
+  function openCartModal(){
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    const lines = Object.values(cart);
+    overlay.innerHTML = `
+      <div class="modal">
+        <h3>${lang==='en' ? 'Your cart' : 'سلة المشتريات'}</h3>
+        <div id="cartLinesWrap">
+          ${lines.length === 0 ? `<div class="cart-empty-note">${lang==='en' ? 'Your cart is empty' : 'السلة فارغة'}</div>` : ''}
+        </div>
+        ${lines.length > 0 ? `<div class="cart-summary-row total"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${cartSubtotal().toFixed(2)} EGP</span></div>` : ''}
+        <div class="modal-actions">
+          <button class="btn-cancel" id="cartCloseBtn">${lang==='en' ? 'Close' : 'إغلاق'}</button>
+          ${lines.length > 0 ? `<button class="btn-confirm" id="cartProceedBtn">${lang==='en' ? 'Proceed to order' : 'المتابعة للطلب'}</button>` : ''}
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    function renderLines(){
+      const wrap = overlay.querySelector('#cartLinesWrap');
+      const currentLines = Object.values(cart);
+      if(currentLines.length === 0){
+        overlay.remove();
+        renderPublicBody();
+        return;
+      }
+      wrap.innerHTML = currentLines.map(c=>`
+        <div class="cart-row" data-item-id="${c.item.id}">
+          <span class="cr-name">${escapeHtml(tName(c.item.name, c.item.name_en))}</span>
+          <div class="qty-stepper">
+            <button class="qty-btn" data-action="dec">−</button>
+            <span class="qty-val">${c.qty}</span>
+            <button class="qty-btn" data-action="inc">+</button>
+          </div>
+          <span class="cr-line-total">${(c.qty * Number(c.item.price)).toFixed(2)} EGP</span>
+        </div>`).join('');
+      wrap.querySelectorAll('.cart-row').forEach(row=>{
+        const itemId = row.dataset.itemId;
+        row.querySelector('[data-action="inc"]').addEventListener('click', ()=>{
+          cart[itemId].qty += 1;
+          renderLines();
+        });
+        row.querySelector('[data-action="dec"]').addEventListener('click', ()=>{
+          cart[itemId].qty -= 1;
+          if(cart[itemId].qty <= 0) delete cart[itemId];
+          renderLines();
+        });
+      });
+    }
+    renderLines();
+
+    overlay.querySelector('#cartCloseBtn').addEventListener('click', ()=>{ overlay.remove(); renderPublicBody(); });
+    overlay.addEventListener('click', (e)=>{ if(e.target===overlay){ overlay.remove(); renderPublicBody(); } });
+    const proceedBtn = overlay.querySelector('#cartProceedBtn');
+    if(proceedBtn){
+      proceedBtn.addEventListener('click', ()=>{
+        overlay.remove();
+        openOrderDetailsModal();
+      });
+    }
+  }
+
+  document.getElementById('pubOrderBtn').addEventListener('click', ()=> openCartModal());
 
   renderPublicBody();
   show('publicScreen');
