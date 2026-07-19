@@ -150,6 +150,19 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .order-row .o-phone{font-family:var(--mono); direction:ltr; color:var(--ember); font-size:13px; margin-top:2px; display:inline-block;}
 .order-row .o-time{color:var(--stone); font-size:11px; margin-top:4px;}
 .orders-empty{text-align:center; color:var(--stone); padding:30px;}
+.ord-type-toggle{ display:flex; gap:8px; }
+.ord-type-btn{ flex:1; text-align:center; padding:10px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper-dim); color:var(--ink); font-weight:700; font-size:13px; cursor:pointer; }
+.ord-type-btn.active{background:var(--basil); border-color:var(--basil); color:#fff;}
+
+.zone-row{ display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+.zone-row .zone-name{flex:1; font-weight:700; font-size:14px; color:var(--ink);}
+.zone-row .zone-fee{font-family:var(--mono); direction:ltr; color:var(--ember); font-weight:700; font-size:13px; white-space:nowrap;}
+.zone-row button{ background:none; border:1px solid var(--line); border-radius:6px; font-family:var(--body); font-size:12px; padding:5px 9px; cursor:pointer; color:var(--stone); }
+.zone-row button:hover{border-color:var(--danger); color:var(--danger);}
+.zone-add-row{ display:flex; gap:8px; margin-top:12px; }
+.zone-add-row input{ border:1.5px solid var(--line); border-radius:8px; padding:9px 10px; font-family:var(--body); font-size:13px; background:var(--paper); color:var(--ink); }
+.zone-add-row input#newZoneName{flex:1;}
+.zone-add-row input#newZoneFee{width:100px; direction:ltr; font-family:var(--mono);}
 
 .overlay{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px; }
 .modal{ background:#fff; width:min(420px,92vw); border-radius:14px; padding:22px; max-height:88vh; overflow-y:auto; }
@@ -223,6 +236,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
     </div>
     <div class="topbar-actions">
       <button class="link-btn" id="viewOrdersBtn">الطلبات</button>
+      <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
       <button class="link-btn" id="restaurantSettingsBtn">الشعار والاسم الإنجليزي</button>
       <button class="link-btn" id="copyPublicLinkBtn">نسخ رابط القائمة العام</button>
     </div>
@@ -448,6 +462,68 @@ async function refreshData(){
   renderDashboard();
 }
 
+document.getElementById('deliveryZonesBtn').addEventListener('click', async ()=>{
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>مناطق التوصيل ورسومها</h3>
+      <div id="zonesListWrap"><div class="orders-empty">جارِ التحميل...</div></div>
+      <div class="zone-add-row">
+        <input type="text" id="newZoneName" placeholder="اسم المنطقة (مثال: مدينة نصر)">
+        <input type="number" id="newZoneFee" placeholder="الرسوم" step="0.01">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="zonesCloseBtn">إغلاق</button>
+        <button class="btn-confirm" id="zoneAddBtn">إضافة منطقة</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#zonesCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+
+  async function renderZones(){
+    const wrap = overlay.querySelector('#zonesListWrap');
+    const { data: zones, error } = await sb.from('delivery_zones').select('*').eq('restaurant_id', restaurant.id).order('area_name');
+    if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل المناطق</div>`; return; }
+    if(!zones || zones.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا توجد مناطق مضافة بعد</div>`; return; }
+    wrap.innerHTML = zones.map(z=>`
+      <div class="zone-row" data-id="${z.id}">
+        <span class="zone-name">${escapeHtml(z.area_name)}</span>
+        <span class="zone-fee">${Number(z.fee).toFixed(2)} EGP</span>
+        <button data-action="delete">حذف</button>
+      </div>`).join('');
+    wrap.querySelectorAll('[data-action="delete"]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const row = btn.closest('.zone-row');
+        const zoneId = row.dataset.id;
+        if(!confirm('حذف هذه المنطقة؟')) return;
+        const { error: delErr } = await sb.from('delivery_zones').delete().eq('id', zoneId);
+        if(delErr){ toast('تعذر الحذف'); return; }
+        await renderZones();
+      });
+    });
+  }
+  await renderZones();
+
+  overlay.querySelector('#zoneAddBtn').addEventListener('click', async ()=>{
+    const nameInput = overlay.querySelector('#newZoneName');
+    const feeInput = overlay.querySelector('#newZoneFee');
+    const area_name = nameInput.value.trim();
+    const fee = parseFloat(feeInput.value);
+    if(!area_name){ nameInput.focus(); return; }
+    if(isNaN(fee) || fee < 0){ feeInput.focus(); return; }
+    const btn = overlay.querySelector('#zoneAddBtn');
+    btn.disabled = true;
+    const { error } = await sb.from('delivery_zones').insert({ restaurant_id: restaurant.id, area_name, fee });
+    btn.disabled = false;
+    if(error){ toast('تعذر إضافة المنطقة'); return; }
+    nameInput.value = '';
+    feeInput.value = '';
+    await renderZones();
+  });
+});
+
 document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
@@ -470,11 +546,14 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
   wrap.innerHTML = orders.map(o=>{
     const d = new Date(o.created_at);
     const time = d.toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' });
+    const typeLabel = o.order_type === 'pickup' ? 'استلام' : 'توصيل';
     return `
       <div class="order-row">
-        <div class="o-name">${escapeHtml(o.customer_name)}</div>
-        <span class="o-phone">${escapeHtml(o.customer_phone)}</span>
-        <div class="o-time">${time}</div>
+        <div class="o-name">${escapeHtml(o.customer_name)} <span style="font-weight:400; color:var(--stone); font-size:12px;">(${typeLabel})</span></div>
+        <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}
+        <div class="o-time">${escapeHtml(o.city || '')}${o.area ? ' — ' + escapeHtml(o.area) : ''}${o.delivery_fee != null ? ` (رسوم التوصيل: ${Number(o.delivery_fee).toFixed(2)} EGP)` : ''}</div>
+        ${o.notes ? `<div class="o-time" style="margin-top:4px;">${escapeHtml(o.notes)}</div>` : ''}
+        <div class="o-time" style="margin-top:4px;">${time}</div>
       </div>`;
   }).join('');
 });
@@ -816,6 +895,8 @@ async function loadPublic(slug){
     const { data: its } = await sb.from('items').select('*').in('category_id', pubCats.map(c=>c.id)).order('created_at');
     pubItems = its || [];
   }
+  const { data: zonesData } = await sb.from('delivery_zones').select('*').eq('restaurant_id', rest.id).order('area_name');
+  const pubZones = zonesData || [];
   let activeCat = pubCats[0] ? pubCats[0].id : null;
   let lang = 'ar'; // 'ar' or 'en'
   let searchTerm = '';
@@ -899,18 +980,49 @@ async function loadPublic(slug){
   });
 
   document.getElementById('pubOrderBtn').addEventListener('click', ()=>{
+    let orderType = 'delivery';
     const overlay = document.createElement('div');
     overlay.className = 'overlay';
     overlay.innerHTML = `
       <div class="modal">
         <h3>${lang==='en' ? 'Order Now' : 'اطلب الآن'}</h3>
         <div class="field">
-          <label>${lang==='en' ? 'Your name' : 'الاسم'}</label>
+          <label>${lang==='en' ? 'Order type' : 'نوع الطلب'} *</label>
+          <div class="ord-type-toggle">
+            <div class="ord-type-btn active" id="ordTypeDelivery">${lang==='en' ? 'Delivery' : 'توصيل'}</div>
+            <div class="ord-type-btn" id="ordTypePickup">${lang==='en' ? 'Pickup' : 'استلام'}</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>${lang==='en' ? 'Full name' : 'الاسم الكامل'} *</label>
           <input type="text" id="ordName" placeholder="${lang==='en' ? 'Full name' : 'مثال: أحمد محمد'}">
         </div>
         <div class="field">
-          <label>${lang==='en' ? 'Phone number' : 'رقم الهاتف'}</label>
+          <label>${lang==='en' ? 'Phone number' : 'رقم الهاتف'} *</label>
           <input type="text" id="ordPhone" placeholder="01xxxxxxxxx">
+        </div>
+        <div class="field">
+          <label>${lang==='en' ? 'Additional phone (optional)' : 'رقم هاتف إضافي (اختياري)'}</label>
+          <input type="text" id="ordPhone2" placeholder="01xxxxxxxxx">
+        </div>
+        <div class="field">
+          <label>${lang==='en' ? 'City' : 'المدينة'} *</label>
+          <input type="text" id="ordCity" placeholder="${lang==='en' ? 'e.g. Cairo' : 'مثال: القاهرة'}">
+        </div>
+        <div class="field" id="ordAreaField">
+          <label>${lang==='en' ? 'Area / district' : 'المنطقة'} *</label>
+          ${pubZones.length > 0 ? `
+            <select id="ordZoneSelect" style="width:100%; border:1.5px solid var(--line); border-radius:8px; padding:10px 12px; font-family:var(--body); font-size:14px; color:var(--ink); background:var(--paper);">
+              <option value="">${lang==='en' ? 'Select your area' : 'اختر منطقتك'}</option>
+              ${pubZones.map(z=>`<option value="${z.id}" data-fee="${z.fee}">${escapeHtml(z.area_name)} — ${Number(z.fee).toFixed(2)} EGP</option>`).join('')}
+            </select>
+          ` : `
+            <input type="text" id="ordArea" placeholder="${lang==='en' ? 'e.g. Nasr City' : 'مثال: مدينة نصر'}">
+          `}
+        </div>
+        <div class="field">
+          <label>${lang==='en' ? 'Notes (optional)' : 'ملاحظات (اختياري)'}</label>
+          <textarea id="ordNotes" placeholder="${lang==='en' ? 'Any special requests' : 'أي طلبات خاصة'}"></textarea>
         </div>
         <div class="modal-actions">
           <button class="btn-cancel" id="ordCancel">${lang==='en' ? 'Cancel' : 'إلغاء'}</button>
@@ -918,18 +1030,55 @@ async function loadPublic(slug){
         </div>
       </div>`;
     document.body.appendChild(overlay);
+
+    const typeDeliveryBtn = overlay.querySelector('#ordTypeDelivery');
+    const typePickupBtn = overlay.querySelector('#ordTypePickup');
+    const areaField = overlay.querySelector('#ordAreaField');
+    typeDeliveryBtn.addEventListener('click', ()=>{
+      orderType = 'delivery';
+      typeDeliveryBtn.classList.add('active');
+      typePickupBtn.classList.remove('active');
+      areaField.classList.remove('hidden');
+    });
+    typePickupBtn.addEventListener('click', ()=>{
+      orderType = 'pickup';
+      typePickupBtn.classList.add('active');
+      typeDeliveryBtn.classList.remove('active');
+      areaField.classList.add('hidden');
+    });
+
     overlay.querySelector('#ordCancel').addEventListener('click', ()=> overlay.remove());
     overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
     overlay.querySelector('#ordConfirm').addEventListener('click', async ()=>{
       const customer_name = overlay.querySelector('#ordName').value.trim();
       const customer_phone = overlay.querySelector('#ordPhone').value.trim();
-      if(!customer_name || !customer_phone){
-        toast(lang==='en' ? 'Please fill in both fields' : 'يرجى إدخال الاسم ورقم الهاتف');
+      const secondary_phone = overlay.querySelector('#ordPhone2').value.trim() || null;
+      const city = overlay.querySelector('#ordCity').value.trim();
+      const notes = overlay.querySelector('#ordNotes').value.trim() || null;
+
+      let area = null, zone_id = null, delivery_fee = null;
+      if(orderType === 'delivery'){
+        if(pubZones.length > 0){
+          const sel = overlay.querySelector('#ordZoneSelect');
+          zone_id = sel.value || null;
+          const matchedZone = zone_id ? pubZones.find(z=>z.id===zone_id) : null;
+          area = matchedZone ? matchedZone.area_name : null;
+          delivery_fee = matchedZone ? matchedZone.fee : null;
+        } else {
+          area = overlay.querySelector('#ordArea').value.trim();
+        }
+      }
+
+      if(!customer_name || !customer_phone || !city || (orderType==='delivery' && !area)){
+        toast(lang==='en' ? 'Please fill in all required fields' : 'يرجى إدخال جميع الحقول المطلوبة');
         return;
       }
       const btn = overlay.querySelector('#ordConfirm');
       btn.disabled = true;
-      const { error } = await sb.from('orders').insert({ restaurant_id: rest.id, customer_name, customer_phone });
+      const { error } = await sb.from('orders').insert({
+        restaurant_id: rest.id, customer_name, customer_phone, secondary_phone,
+        order_type: orderType, city, area, notes, zone_id, delivery_fee
+      });
       if(error){
         toast(lang==='en' ? 'Something went wrong, try again' : 'حدث خطأ، حاول مرة أخرى');
         btn.disabled = false;
