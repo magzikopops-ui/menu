@@ -370,6 +370,16 @@ let ordersChannel = null;
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
+
+const CUSTOMER_INFO_KEY = 'menuCustomerInfo';
+function loadSavedCustomerInfo(){
+  try{ return JSON.parse(localStorage.getItem(CUSTOMER_INFO_KEY)) || null; }
+  catch(e){ return null; }
+}
+function saveCustomerInfo(info){
+  try{ localStorage.setItem(CUSTOMER_INFO_KEY, JSON.stringify(info)); }
+  catch(e){}
+}
 function toast(msg){
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -2064,6 +2074,24 @@ async function loadPublic(slug){
     }
     renderSummary();
 
+    const saved = loadSavedCustomerInfo();
+    if(saved){
+      if(saved.name) overlay.querySelector('#ordName').value = saved.name;
+      if(saved.phone) overlay.querySelector('#ordPhone').value = saved.phone;
+      if(saved.phone2) overlay.querySelector('#ordPhone2').value = saved.phone2;
+      if(saved.city) overlay.querySelector('#ordCity').value = saved.city;
+      if(saved.address) overlay.querySelector('#ordAddress').value = saved.address;
+      const savedZoneSelect = overlay.querySelector('#ordZoneSelect');
+      if(savedZoneSelect && saved.zoneId){
+        const opt = Array.from(savedZoneSelect.options).find(o=>o.value===saved.zoneId);
+        if(opt) savedZoneSelect.value = saved.zoneId;
+      } else if(saved.area){
+        const areaInput = overlay.querySelector('#ordArea');
+        if(areaInput) areaInput.value = saved.area;
+      }
+      renderSummary();
+    }
+
     const typeDeliveryBtn = overlay.querySelector('#ordTypeDelivery');
     const typePickupBtn = overlay.querySelector('#ordTypePickup');
     const areaField = overlay.querySelector('#ordAreaField');
@@ -2167,6 +2195,15 @@ async function loadPublic(slug){
         btn.disabled = false;
         return;
       }
+      saveCustomerInfo({
+        name: customer_name,
+        phone: customer_phone,
+        phone2: secondary_phone || '',
+        city,
+        area: (pubZones.length === 0 ? (area || '') : ''),
+        zoneId: zone_id || '',
+        address: address || ''
+      });
       const cartLines = Object.values(cart).map(c=>({
         order_id: orderRow.id, item_id: c.item.id,
         item_name: c.variantLabel ? `${c.item.name} (${c.variantLabel})` : c.item.name,
