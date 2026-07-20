@@ -892,6 +892,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
           <span id="logoDropText">${pendingLogo ? 'انقر لتغيير الشعار' : 'انقر لرفع الشعار'}</span>
         </div>
         <input type="file" id="logoInput" accept="image/*" style="display:none;">
+        <button type="button" class="add-btn" id="removeLogoBtn" style="margin-top:8px; margin-bottom:0; ${pendingLogo ? '' : 'display:none;'}">حذف الشعار</button>
         <button type="button" class="add-btn" id="migrateImagesBtn" style="margin-top:8px; margin-bottom:0;">ترحيل الصور القديمة لتوفير المساحة</button>
       </div>
       <div class="field">
@@ -921,6 +922,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
   const logoDrop = overlay.querySelector('#logoDrop');
   const logoInput = overlay.querySelector('#logoInput');
   logoDrop.addEventListener('click', ()=> logoInput.click());
+  const removeLogoBtn = overlay.querySelector('#removeLogoBtn');
   logoInput.addEventListener('change', async ()=>{
     const file = logoInput.files[0];
     if(!file) return;
@@ -930,7 +932,19 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
       logoDrop.innerHTML = `<img src="${dataUrl}"><br><span id="logoDropText">جارِ الرفع...</span>`;
       pendingLogo = await uploadImageToStorage(dataUrl, `logos/${restaurant.id}`);
       logoDrop.querySelector('#logoDropText').textContent = 'انقر لتغيير الشعار';
+      removeLogoBtn.style.display = '';
     }catch(e){ toast('تعذر تحميل الشعار'); }
+  });
+  removeLogoBtn.addEventListener('click', async ()=>{
+    if(!confirm('هل تريد حذف شعار المطعم؟')) return;
+    const oldLogo = pendingLogo;
+    pendingLogo = null;
+    logoDrop.innerHTML = `<span id="logoDropText">انقر لرفع الشعار</span>`;
+    removeLogoBtn.style.display = 'none';
+    if(oldLogo && oldLogo.includes('/menu-images/')){
+      const path = oldLogo.split('/menu-images/')[1];
+      if(path){ try{ await sb.storage.from('menu-images').remove([path]); }catch(e){} }
+    }
   });
   overlay.querySelector('#migrateImagesBtn').addEventListener('click', async ()=>{
     const btn = overlay.querySelector('#migrateImagesBtn');
@@ -941,7 +955,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
       toast(count > 0 ? `تم ترحيل ${count} صورة بنجاح` : 'لا توجد صور قديمة تحتاج ترحيل');
       if(count > 0){
         pendingLogo = restaurant.logo_url;
-        if(pendingLogo){ logoDrop.innerHTML = `<img src="${pendingLogo}"><br><span id="logoDropText">انقر لتغيير الشعار</span>`; }
+        if(pendingLogo){ logoDrop.innerHTML = `<img src="${pendingLogo}"><br><span id="logoDropText">انقر لتغيير الشعار</span>`; removeLogoBtn.style.display = ''; }
         await refreshData();
       }
     }catch(e){ toast('حدث خطأ أثناء الترحيل'); }
