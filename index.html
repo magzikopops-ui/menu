@@ -284,6 +284,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
     </div>
     <div class="topbar-actions">
       <button class="link-btn" id="viewOrdersBtn">الطلبات</button>
+      <button class="link-btn" id="viewStatsBtn">الإحصائيات</button>
       <button class="link-btn" id="cleanupOrdersBtn">حذف الطلبات القديمة</button>
       <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
       <button class="link-btn" id="restaurantSettingsBtn">إعدادات المطعم</button>
@@ -695,6 +696,55 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
   });
 });
 
+document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>إحصائيات الطلبات</h3>
+      <div id="statsSummaryWrap"><div class="orders-empty">جارِ التحميل...</div></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="statsCloseBtn">إغلاق</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#statsCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+
+  const wrap = overlay.querySelector('#statsSummaryWrap');
+  const { data: rows, error } = await sb.from('order_stats_daily').select('*').eq('restaurant_id', restaurant.id).order('day', { ascending:false });
+  if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل الإحصائيات</div>`; return; }
+  if(!rows || rows.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا توجد إحصائيات بعد</div>`; return; }
+
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+  const sumSince = (daysAgo)=>{
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - daysAgo);
+    const cutoffStr = cutoff.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+    return rows.filter(r=> r.day >= cutoffStr).reduce((acc,r)=>({ count: acc.count + r.orders_count, total: acc.total + Number(r.orders_total) }), { count:0, total:0 });
+  };
+  const today = rows.find(r=> r.day === todayStr) || { orders_count:0, orders_total:0 };
+  const week = sumSince(7);
+  const month = sumSince(30);
+  const allTime = rows.reduce((acc,r)=>({ count: acc.count + r.orders_count, total: acc.total + Number(r.orders_total) }), { count:0, total:0 });
+
+  const card = (label, count, total)=> `
+    <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
+      <span class="o-name" style="font-weight:700;">${label}</span>
+      <span class="o-time" style="text-align:left; margin:0;">${count} طلب — ${total.toFixed(2)} EGP</span>
+    </div>`;
+
+  wrap.innerHTML = `
+    <div class="orders-list">
+      ${card('اليوم', today.orders_count, Number(today.orders_total))}
+      ${card('آخر 7 أيام', week.count, week.total)}
+      ${card('آخر 30 يوم', month.count, month.total)}
+      ${card('الإجمالي منذ البداية', allTime.count, allTime.total)}
+    </div>
+    <div class="orders-empty" style="text-align:right; padding:10px 0 0; font-size:12px;">
+      هذه الأرقام تشمل الطلبات المحذوفة أيضًا ولا تتأثر بحذف الطلبات القديمة.
+    </div>`;
+});
+
 document.getElementById('cleanupOrdersBtn').addEventListener('click', ()=>{
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
@@ -717,6 +767,14 @@ document.getElementById('cleanupOrdersBtn').addEventListener('click', ()=>{
       </div>
       <div class="orders-empty" style="text-align:right; padding:6px 0 0;">
         هيتم حذف الطلبات وتفاصيلها نهائيًا، لكن إحصائيات عدد الطلبات وقيمتها هتفضل محفوظة حتى بعد الحذف.
+      </div>
+      <div class="field" style="margin-top:14px;">
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="cleanupEmail" placeholder="بريدك الإلكتروني" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
+        <input type="password" id="cleanupPassword" placeholder="كلمة المرور" autocomplete="current-password">
       </div>
       <div class="auth-err" id="cleanupErr"></div>
       <div class="modal-actions">
@@ -742,10 +800,25 @@ document.getElementById('cleanupOrdersBtn').addEventListener('click', ()=>{
       ? parseInt(overlay.querySelector('#cleanupCustomDays').value, 10)
       : parseInt(periodSelect.value, 10);
     if(!days || days < 1){ errEl.textContent = 'من فضلك أدخل عدد أيام صحيح'; return; }
+
+    const email = overlay.querySelector('#cleanupEmail').value.trim();
+    const password = overlay.querySelector('#cleanupPassword').value;
+    if(!email || !password){ errEl.textContent = 'من فضلك أدخل البريد الإلكتروني وكلمة المرور للتأكيد'; return; }
+    if(email.toLowerCase() !== (currentUser.email || '').toLowerCase()){ errEl.textContent = 'البريد الإلكتروني لا يطابق حساب الدخول الحالي'; return; }
+
     if(!confirm(`هل أنت متأكد من حذف كل الطلبات الأقدم من ${days} يوم؟ هذا الإجراء لا يمكن التراجع عنه.`)) return;
 
     const btn = overlay.querySelector('#cleanupConfirmBtn');
     btn.disabled = true;
+    btn.textContent = 'جارِ التحقق...';
+
+    const { error: authErr } = await sb.auth.signInWithPassword({ email, password });
+    if(authErr){
+      btn.disabled = false; btn.textContent = 'حذف الآن';
+      errEl.textContent = 'كلمة المرور غير صحيحة';
+      return;
+    }
+
     btn.textContent = 'جارِ الحذف...';
     const { error } = await sb.rpc('delete_old_orders', { p_restaurant_id: restaurant.id, p_older_than_days: days });
     btn.disabled = false;
