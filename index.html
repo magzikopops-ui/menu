@@ -234,6 +234,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
     <div class="field">
       <label>كلمة المرور</label>
       <input type="password" id="authPassword" placeholder="6 أحرف على الأقل">
+      <small style="display:block; margin-top:8px; text-align:left;"><span class="switch-link" id="forgotPasswordLink">نسيت كلمة المرور؟</span></small>
     </div>
     <div class="field hidden" id="signupCodeField">
       <label>رمز التسجيل الخاص</label>
@@ -267,6 +268,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
   <div class="topbar">
     <div class="brand-group">
       <div class="brand"><span class="dot"></span> <span id="dashRestaurantName">—</span></div>
+      <span class="switch-link" id="changePasswordLink">تغيير كلمة المرور</span>
       <span class="switch-link" id="signOutLink">تسجيل الخروج</span>
     </div>
     <div class="topbar-actions">
@@ -383,6 +385,7 @@ document.getElementById('tabLogin').addEventListener('click', ()=>{
   document.getElementById('tabSignup').classList.remove('active');
   document.getElementById('authSubmitBtn').textContent = 'دخول';
   document.getElementById('signupCodeField').classList.add('hidden');
+  document.getElementById('forgotPasswordLink').classList.remove('hidden');
 });
 document.getElementById('tabSignup').addEventListener('click', ()=>{
   authMode = 'signup';
@@ -390,6 +393,7 @@ document.getElementById('tabSignup').addEventListener('click', ()=>{
   document.getElementById('tabLogin').classList.remove('active');
   document.getElementById('authSubmitBtn').textContent = 'إنشاء حساب';
   document.getElementById('signupCodeField').classList.remove('hidden');
+  document.getElementById('forgotPasswordLink').classList.add('hidden');
 });
 
 document.getElementById('authSubmitBtn').addEventListener('click', async ()=>{
@@ -435,6 +439,27 @@ document.getElementById('authSubmitBtn').addEventListener('click', async ()=>{
     errEl.textContent = e.message || 'حدث خطأ، حاول مرة أخرى';
   }
   btn.disabled = false;
+});
+
+document.getElementById('forgotPasswordLink').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('authErr');
+  const email = document.getElementById('authEmail').value.trim();
+  errEl.style.color = '#e08a78';
+  if(!email){
+    errEl.textContent = 'يرجى إدخال بريدك الإلكتروني أولًا في الحقل بالأعلى';
+    return;
+  }
+  const link = document.getElementById('forgotPasswordLink');
+  link.textContent = 'جارِ الإرسال...';
+  const redirectTo = location.origin + location.pathname;
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+  link.textContent = 'نسيت كلمة المرور؟';
+  if(error){
+    errEl.textContent = error.message || 'تعذر إرسال رابط إعادة التعيين';
+    return;
+  }
+  errEl.style.color = '#8fd19e';
+  errEl.textContent = 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني';
 });
 
 document.getElementById('signOutLink').addEventListener('click', async ()=>{
@@ -652,6 +677,55 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
       badge.textContent = STATUS_LABELS[newStatus] || newStatus;
       toast('تم تحديث حالة الطلب');
     });
+  });
+});
+
+document.getElementById('changePasswordLink').addEventListener('click', ()=>{
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>تغيير كلمة المرور</h3>
+      <div class="field">
+        <label>كلمة المرور الجديدة</label>
+        <input type="password" id="newPasswordInput" placeholder="6 أحرف على الأقل">
+      </div>
+      <div class="field">
+        <label>تأكيد كلمة المرور الجديدة</label>
+        <input type="password" id="confirmPasswordInput" placeholder="أعد كتابة كلمة المرور">
+      </div>
+      <div class="auth-err" id="cpErr"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cpCancel">إلغاء</button>
+        <button class="btn-confirm" id="cpConfirm">حفظ</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cpCancel').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#cpConfirm').addEventListener('click', async ()=>{
+    const newPassword = overlay.querySelector('#newPasswordInput').value;
+    const confirmPassword = overlay.querySelector('#confirmPasswordInput').value;
+    const errEl = overlay.querySelector('#cpErr');
+    errEl.style.color = '#e08a78';
+    if(!newPassword || newPassword.length < 6){
+      errEl.textContent = 'يجب أن تكون كلمة المرور 6 أحرف على الأقل';
+      return;
+    }
+    if(newPassword !== confirmPassword){
+      errEl.textContent = 'كلمتا المرور غير متطابقتين';
+      return;
+    }
+    const btn = overlay.querySelector('#cpConfirm');
+    btn.disabled = true;
+    const { error } = await sb.auth.updateUser({ password: newPassword });
+    btn.disabled = false;
+    if(error){
+      errEl.textContent = error.message || 'تعذر تغيير كلمة المرور';
+      return;
+    }
+    overlay.remove();
+    toast('تم تغيير كلمة المرور بنجاح');
   });
 });
 
