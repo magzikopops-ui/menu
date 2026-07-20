@@ -1224,25 +1224,37 @@ function renderItems(){
     const div = document.createElement('div');
     div.className = 'item-card';
     div.dataset.id = item.id;
+    const isAvailable = item.is_available !== false;
+    if(!isAvailable) div.style.opacity = '0.55';
     div.innerHTML = `
       <span class="drag-handle" title="اسحب لإعادة الترتيب">⋮⋮</span>
       ${item.image_url ? `<img src="${item.image_url}">` : `<div class="no-img">🍽</div>`}
       <div class="item-body">
         <div class="item-top">
-          <span class="item-name">${escapeHtml(item.name)}</span>
+          <span class="item-name">${escapeHtml(item.name)}${!isAvailable ? ' <span style="color:var(--danger); font-size:12px; font-weight:700;">(غير متوفر)</span>' : ''}</span>
           <span class="item-price">${formatItemPriceLabel(item)}</span>
         </div>
         ${item.description ? `<div class="item-desc">${escapeHtml(item.description)}</div>` : ''}
         <div class="item-tools">
           <button data-action="edit">تعديل</button>
+          <button data-action="toggleAvailability">${isAvailable ? 'إخفاء مؤقتًا (نفذت الكمية)' : 'إظهار مرة أخرى'}</button>
           <button data-action="delete" class="danger">حذف</button>
         </div>
       </div>`;
     div.querySelector('[data-action="edit"]').addEventListener('click', ()=> openItemModal(item));
     div.querySelector('[data-action="delete"]').addEventListener('click', ()=> deleteItem(item.id));
+    div.querySelector('[data-action="toggleAvailability"]').addEventListener('click', ()=> toggleItemAvailability(item, !isAvailable));
     wrap.appendChild(div);
   });
   initItemSortable();
+}
+
+async function toggleItemAvailability(item, makeAvailable){
+  const { error } = await sb.from('items').update({ is_available: makeAvailable }).eq('id', item.id);
+  if(error){ toast('تعذر تحديث حالة الصنف'); return; }
+  item.is_available = makeAvailable;
+  toast(makeAvailable ? 'الصنف ظاهر للعملاء الآن' : 'الصنف مخفي مؤقتًا عن العملاء');
+  renderItems();
 }
 
 let itemSortable = null;
@@ -1595,7 +1607,7 @@ async function loadPublic(slug){
   const pubCats = cats || [];
   let pubItems = [];
   if(pubCats.length){
-    const { data: its } = await sb.from('items').select('*').in('category_id', pubCats.map(c=>c.id)).order('position');
+    const { data: its } = await sb.from('items').select('*').in('category_id', pubCats.map(c=>c.id)).eq('is_available', true).order('position');
     pubItems = its || [];
   }
   let pubItemSizes = {};
