@@ -342,6 +342,9 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
   <div class="pub-search">
     <input type="text" id="pubSearchInput" placeholder="ابحث في القائمة...">
   </div>
+  <div style="max-width:640px; margin:0 auto; padding:0 20px 10px; text-align:center;">
+    <button type="button" id="pubRepeatOrderBtn" class="link-btn hidden">🔁 كرر آخر طلب</button>
+  </div>
   <div class="pub-tabs" id="pubTabs"></div>
   <div class="pub-body" id="pubBody"></div>
   <div class="pub-footer">POWERED BY منيو m@g</div>
@@ -825,7 +828,36 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
     </div>
     <div class="orders-empty" style="text-align:right; padding:10px 0 0; font-size:12px;">
       هذه الأرقام تشمل الطلبات المحذوفة أيضًا ولا تتأثر بحذف الطلبات القديمة.
-    </div>`;
+    </div>
+    <h3 style="margin-top:20px;">الأصناف الأكثر طلبًا</h3>
+    <div id="topItemsWrap"><div class="orders-empty">جارِ التحميل...</div></div>`;
+
+  const topItemsWrap = overlay.querySelector('#topItemsWrap');
+  const { data: currentOrders } = await sb.from('orders').select('id').eq('restaurant_id', restaurant.id);
+  const currentOrderIds = (currentOrders || []).map(o=>o.id);
+  if(currentOrderIds.length === 0){
+    topItemsWrap.innerHTML = `<div class="orders-empty">لا توجد بيانات كافية بعد</div>`;
+  } else {
+    const { data: allOrderItems, error: oiErr } = await sb.from('order_items').select('item_name,quantity').in('order_id', currentOrderIds);
+    if(oiErr || !allOrderItems || allOrderItems.length === 0){
+      topItemsWrap.innerHTML = `<div class="orders-empty">لا توجد بيانات كافية بعد</div>`;
+    } else {
+      const counts = {};
+      allOrderItems.forEach(oi=>{ counts[oi.item_name] = (counts[oi.item_name] || 0) + oi.quantity; });
+      const top = Object.entries(counts).sort((a,b)=> b[1] - a[1]).slice(0, 5);
+      topItemsWrap.innerHTML = `
+        <div class="orders-list">
+          ${top.map(([name, qty], i)=> `
+            <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
+              <span class="o-name" style="font-weight:700;">${i+1}. ${escapeHtml(name)}</span>
+              <span class="o-time" style="text-align:left; margin:0;">${qty} قطعة</span>
+            </div>`).join('')}
+        </div>
+        <div class="orders-empty" style="text-align:right; padding:6px 0 0; font-size:12px;">
+          هذه الإحصائية مبنية على الطلبات الحالية فقط، وتتأثر بحذف الطلبات القديمة (بعكس الأرقام أعلاه).
+        </div>`;
+    }
+  }
 });
 
 document.getElementById('cleanupOrdersBtn').addEventListener('click', ()=>{
@@ -1768,6 +1800,31 @@ async function loadPublic(slug){
     }
   }
 
+  const repeatOrderBtn = document.getElementById('pubRepeatOrderBtn');
+  let lastOrderItems = [];
+  try{ lastOrderItems = JSON.parse(localStorage.getItem(`menuLastOrder_${rest.id}`)) || []; }catch(e){ lastOrderItems = []; }
+  if(lastOrderItems.length > 0){ repeatOrderBtn.classList.remove('hidden'); } else { repeatOrderBtn.classList.add('hidden'); }
+  repeatOrderBtn.onclick = ()=>{
+    let restoredCount = 0, skippedCount = 0;
+    lastOrderItems.forEach(li=>{
+      const item = pubItems.find(i=>i.id===li.itemId);
+      if(!item){ skippedCount++; return; }
+      const key = `${li.itemId}-${li.variantLabel || 'base'}`;
+      if(cart[key]){ cart[key].qty += li.qty; }
+      else { cart[key] = { item, variantLabel: li.variantLabel || null, unitPrice: Number(li.unitPrice), qty: li.qty }; }
+      restoredCount++;
+    });
+    updateCartButton();
+    if(restoredCount === 0){
+      toast(lang==='en' ? 'These items are no longer available' : 'هذه الأصناف لم تعد متاحة');
+      return;
+    }
+    toast(skippedCount > 0
+      ? (lang==='en' ? 'Order restored (some items unavailable)' : 'تم استرجاع الطلب (بعض الأصناف لم تعد متاحة)')
+      : (lang==='en' ? 'Order restored!' : 'تم استرجاع الطلب!'));
+    openCartModal();
+  };
+
   function tName(nameAr, nameEn){
     if(lang==='en') return nameEn && nameEn.trim() ? nameEn : nameAr;
     return nameAr;
@@ -1787,6 +1844,7 @@ async function loadPublic(slug){
       : `<div class="name-fallback">${escapeHtml(restName)}</div>`;
     document.getElementById('pubSearchInput').placeholder = lang==='en' ? 'Search the menu...' : 'ابحث في القائمة...';
     document.getElementById('pubOrderBtnLabel').textContent = lang==='en' ? 'Cart' : 'السلة';
+    document.getElementById('pubRepeatOrderBtn').textContent = lang==='en' ? '🔁 Repeat last order' : '🔁 كرر آخر طلب';
     const callBtn = document.getElementById('pubCallBtn');
     if(rest.phone){
       callBtn.href = `tel:${rest.phone}`;
@@ -2204,6 +2262,12 @@ async function loadPublic(slug){
         zoneId: zone_id || '',
         address: address || ''
       });
+      try{
+        const lastOrderSnapshot = Object.values(cart).map(c=>({
+          itemId: c.item.id, variantLabel: c.variantLabel || null, unitPrice: c.unitPrice, qty: c.qty
+        }));
+        localStorage.setItem(`menuLastOrder_${rest.id}`, JSON.stringify(lastOrderSnapshot));
+      }catch(e){}
       const cartLines = Object.values(cart).map(c=>({
         order_id: orderRow.id, item_id: c.item.id,
         item_name: c.variantLabel ? `${c.item.name} (${c.variantLabel})` : c.item.name,
