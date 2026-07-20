@@ -261,7 +261,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
     <div class="topbar-actions">
       <button class="link-btn" id="viewOrdersBtn">الطلبات</button>
       <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
-      <button class="link-btn" id="restaurantSettingsBtn">الشعار والاسم الإنجليزي</button>
+      <button class="link-btn" id="restaurantSettingsBtn">إعدادات المطعم</button>
       <button class="link-btn" id="copyPublicLinkBtn">نسخ رابط القائمة العام</button>
     </div>
   </div>
@@ -647,7 +647,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
   overlay.className = 'overlay';
   overlay.innerHTML = `
     <div class="modal">
-      <h3>الشعار والاسم الإنجليزي</h3>
+      <h3>إعدادات المطعم</h3>
       <div class="field">
         <label>شعار المطعم (اختياري)</label>
         <div class="img-drop" id="logoDrop">
@@ -659,6 +659,12 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
       <div class="field">
         <label>اسم المطعم بالإنجليزية (اختياري)</label>
         <input type="text" id="restNameEnInput" value="${restaurant.name_en ? escapeHtml(restaurant.name_en) : ''}" placeholder="e.g. Al Asayel Restaurant">
+      </div>
+      <div class="field">
+        <label>إشعار واتساب بالطلبات الجديدة (اختياري)</label>
+        <small>لتفعيل الإشعار: احفظ رقم <span dir="ltr" style="font-family:var(--mono);">+34 684 74 26 79</span> في هاتفك، وابعتله على واتساب رسالة نصها بالإنجليزية بالظبط: <span dir="ltr" style="font-family:var(--mono);">I allow callmebot to send me messages</span>، وهيردلك برسالة فيها الرمز الخاص بيك (apikey). اكتب رقمك ورمزك تحت.</small>
+        <input type="text" id="notifPhoneInput" value="${restaurant.notification_phone ? escapeHtml(restaurant.notification_phone) : ''}" placeholder="رقم واتساب بصيغة دولية: 201154361888" style="margin-top:8px; direction:ltr;">
+        <input type="text" id="notifApikeyInput" value="${restaurant.notification_apikey ? escapeHtml(restaurant.notification_apikey) : ''}" placeholder="الرمز (apikey) اللي وصلك من البوت" style="margin-top:8px; direction:ltr;">
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" id="rsCancel">إلغاء</button>
@@ -682,9 +688,11 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#rsConfirm').addEventListener('click', async ()=>{
     const name_en = overlay.querySelector('#restNameEnInput').value.trim() || null;
+    const notification_phone = overlay.querySelector('#notifPhoneInput').value.trim() || null;
+    const notification_apikey = overlay.querySelector('#notifApikeyInput').value.trim() || null;
     const btn = overlay.querySelector('#rsConfirm');
     btn.disabled = true;
-    const { data, error } = await sb.from('restaurants').update({ logo_url: pendingLogo, name_en }).eq('id', restaurant.id).select().single();
+    const { data, error } = await sb.from('restaurants').update({ logo_url: pendingLogo, name_en, notification_phone, notification_apikey }).eq('id', restaurant.id).select().single();
     if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     restaurant = data;
     overlay.remove();
