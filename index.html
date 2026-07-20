@@ -18,6 +18,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
@@ -298,6 +299,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
       <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
       <button class="link-btn" id="restaurantSettingsBtn">إعدادات المطعم</button>
       <button class="link-btn" id="copyPublicLinkBtn">نسخ رابط القائمة العام</button>
+      <button class="link-btn" id="showQrBtn">QR Code</button>
       <button class="link-btn" id="importExcelBtn">استيراد من إكسيل</button>
       <button class="link-btn" id="exportExcelBtn">تصدير إلى إكسيل</button>
       <input type="file" id="importExcelInput" accept=".xlsx,.xls" style="display:none;">
@@ -1038,6 +1040,38 @@ document.getElementById('copyPublicLinkBtn').addEventListener('click', ()=>{
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(link).then(()=> toast('تم نسخ الرابط')).catch(()=> toast(link));
   } else { toast(link); }
+});
+
+document.getElementById('showQrBtn').addEventListener('click', async ()=>{
+  const link = `${location.origin}${location.pathname}?r=${restaurant.slug}`;
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="text-align:center;">
+      <h3>QR Code لقائمة ${escapeHtml(restaurant.name)}</h3>
+      <div id="qrCanvasWrap" style="display:flex; justify-content:center; padding:16px 0;"></div>
+      <div class="orders-empty" style="padding:0 0 10px; font-size:12px; word-break:break-all;">${escapeHtml(link)}</div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="qrCloseBtn">إغلاق</button>
+        <button class="btn-confirm" id="qrDownloadBtn">تحميل الصورة</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#qrCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+
+  const canvas = document.createElement('canvas');
+  overlay.querySelector('#qrCanvasWrap').appendChild(canvas);
+  try{
+    await QRCode.toCanvas(canvas, link, { width: 260, margin: 2, color: { dark: '#201F1D', light: '#F6F1E4' } });
+  }catch(e){ toast('تعذر إنشاء QR Code'); overlay.remove(); return; }
+
+  overlay.querySelector('#qrDownloadBtn').addEventListener('click', ()=>{
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `qr-${restaurant.slug}.png`;
+    a.click();
+  });
 });
 
 /* ================= Excel Import ================= */
