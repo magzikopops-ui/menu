@@ -1440,6 +1440,7 @@ function openItemModal(existing){
           <span id="imgDropText">${pendingImage ? 'انقر لتغيير الصورة' : 'انقر لرفع صورة'}</span>
         </div>
         <input type="file" id="imgInput" accept="image/*" style="display:none;">
+        <button type="button" class="add-btn" id="removeImgBtn" style="margin-top:8px; margin-bottom:0; ${pendingImage ? '' : 'display:none;'}">حذف الصورة</button>
       </div>
       <div class="field">
         <label>اسم الصنف (بالعربية)</label>
@@ -1518,6 +1519,7 @@ function openItemModal(existing){
 
   const imgDrop = overlay.querySelector('#imgDrop');
   const imgInput = overlay.querySelector('#imgInput');
+  const removeImgBtn = overlay.querySelector('#removeImgBtn');
   imgDrop.addEventListener('click', ()=> imgInput.click());
   imgInput.addEventListener('change', async ()=>{
     const file = imgInput.files[0];
@@ -1527,7 +1529,14 @@ function openItemModal(existing){
       const dataUrl = await resizeImage(file, 240);
       imgDrop.innerHTML = `<img src="${dataUrl}"><br><span id="imgDropText">انقر لتغيير الصورة</span>`;
       pendingImage = dataUrl;
+      removeImgBtn.style.display = '';
     }catch(e){ toast('تعذر تحميل الصورة'); }
+  });
+  removeImgBtn.addEventListener('click', ()=>{
+    if(!confirm('هل تريد حذف صورة الصنف؟')) return;
+    pendingImage = null;
+    imgDrop.innerHTML = `<span id="imgDropText">انقر لرفع صورة</span>`;
+    removeImgBtn.style.display = 'none';
   });
 
   overlay.querySelector('#itemCancel').addEventListener('click', ()=> overlay.remove());
