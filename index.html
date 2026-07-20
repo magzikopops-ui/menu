@@ -892,6 +892,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
           <span id="logoDropText">${pendingLogo ? 'انقر لتغيير الشعار' : 'انقر لرفع الشعار'}</span>
         </div>
         <input type="file" id="logoInput" accept="image/*" style="display:none;">
+        <button type="button" class="add-btn" id="migrateImagesBtn" style="margin-top:8px; margin-bottom:0;">ترحيل الصور القديمة لتوفير المساحة</button>
       </div>
       <div class="field">
         <label>اسم المطعم بالإنجليزية (اختياري)</label>
@@ -925,9 +926,27 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     if(!file) return;
     logoDrop.querySelector('#logoDropText').textContent = 'جارِ المعالجة...';
     try{
-      pendingLogo = await resizeImage(file, 320);
-      logoDrop.innerHTML = `<img src="${pendingLogo}"><br><span id="logoDropText">انقر لتغيير الشعار</span>`;
+      const dataUrl = await resizeImage(file, 320);
+      logoDrop.innerHTML = `<img src="${dataUrl}"><br><span id="logoDropText">جارِ الرفع...</span>`;
+      pendingLogo = await uploadImageToStorage(dataUrl, `logos/${restaurant.id}`);
+      logoDrop.querySelector('#logoDropText').textContent = 'انقر لتغيير الشعار';
     }catch(e){ toast('تعذر تحميل الشعار'); }
+  });
+  overlay.querySelector('#migrateImagesBtn').addEventListener('click', async ()=>{
+    const btn = overlay.querySelector('#migrateImagesBtn');
+    btn.disabled = true;
+    btn.textContent = 'جارِ الترحيل...';
+    try{
+      const count = await migrateLegacyImages();
+      toast(count > 0 ? `تم ترحيل ${count} صورة بنجاح` : 'لا توجد صور قديمة تحتاج ترحيل');
+      if(count > 0){
+        pendingLogo = restaurant.logo_url;
+        if(pendingLogo){ logoDrop.innerHTML = `<img src="${pendingLogo}"><br><span id="logoDropText">انقر لتغيير الشعار</span>`; }
+        await refreshData();
+      }
+    }catch(e){ toast('حدث خطأ أثناء الترحيل'); }
+    btn.disabled = false;
+    btn.textContent = 'ترحيل الصور القديمة لتوفير المساحة';
   });
   overlay.querySelector('#rsCancel').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
@@ -1357,6 +1376,37 @@ function resizeImage(file, maxW){
   });
 }
 
+async function uploadImageToStorage(dataUrl, folder){
+  const blob = await (await fetch(dataUrl)).blob();
+  const path = `${folder}/${crypto.randomUUID()}.jpg`;
+  const { error } = await sb.storage.from('menu-images').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+  if(error) throw error;
+  const { data } = sb.storage.from('menu-images').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function migrateLegacyImages(){
+  let migrated = 0;
+  if(restaurant.logo_url && restaurant.logo_url.startsWith('data:')){
+    const url = await uploadImageToStorage(restaurant.logo_url, `logos/${restaurant.id}`);
+    const { data, error } = await sb.from('restaurants').update({ logo_url: url }).eq('id', restaurant.id).select().single();
+    if(!error){ restaurant = data; migrated++; }
+  }
+  const { data: cats } = await sb.from('categories').select('id').eq('restaurant_id', restaurant.id);
+  const catIds = (cats || []).map(c=>c.id);
+  if(catIds.length){
+    const { data: its } = await sb.from('items').select('id,image_url').in('category_id', catIds);
+    for(const it of (its || [])){
+      if(it.image_url && it.image_url.startsWith('data:')){
+        const url = await uploadImageToStorage(it.image_url, `items/${restaurant.id}`);
+        const { error } = await sb.from('items').update({ image_url: url }).eq('id', it.id);
+        if(!error) migrated++;
+      }
+    }
+  }
+  return migrated;
+}
+
 async function deleteItem(id){
   if(!confirm('حذف هذا الصنف؟')) return;
   const { error } = await sb.from('items').delete().eq('id', id);
@@ -1466,8 +1516,10 @@ function openItemModal(existing){
     if(!file) return;
     imgDrop.querySelector('#imgDropText').textContent = 'جارِ المعالجة...';
     try{
-      pendingImage = await resizeImage(file, 240);
-      imgDrop.innerHTML = `<img src="${pendingImage}"><br><span id="imgDropText">انقر لتغيير الصورة</span>`;
+      const dataUrl = await resizeImage(file, 240);
+      imgDrop.innerHTML = `<img src="${dataUrl}"><br><span id="imgDropText">جارِ الرفع...</span>`;
+      pendingImage = await uploadImageToStorage(dataUrl, `items/${restaurant.id}`);
+      imgDrop.querySelector('#imgDropText').textContent = 'انقر لتغيير الصورة';
     }catch(e){ toast('تعذر تحميل الصورة'); }
   });
 
