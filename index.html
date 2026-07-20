@@ -1772,6 +1772,36 @@ async function loadPublic(slug){
     const zoneSelect = overlay.querySelector('#ordZoneSelect');
     if(zoneSelect) zoneSelect.addEventListener('change', renderSummary);
 
+    function buildWhatsAppMessage({customer_name, customer_phone, secondary_phone, orderType, city, area, address, notes, fee, total}){
+      const typeLabel = orderType==='delivery' ? (lang==='en' ? 'Delivery' : 'توصيل') : (lang==='en' ? 'Pickup' : 'استلام');
+      const lines = Object.values(cart).map(c=>{
+        const name = tName(c.item.name, c.item.name_en) + (c.variantLabel ? ` (${c.variantLabel})` : '');
+        const lineTotal = (c.qty * Number(c.unitPrice)).toFixed(2);
+        return lang==='en'
+          ? `- ${name} × ${c.qty} — ${lineTotal} EGP`
+          : `- ${name} × ${c.qty} — ${lineTotal} جنيه`;
+      }).join('\n');
+      const restName = tName(rest.name, rest.name_en);
+      if(lang==='en'){
+        let msg = `New order — ${restName}\n\n${lines}\n\nSubtotal: ${subtotal.toFixed(2)} EGP`;
+        if(orderType==='delivery') msg += `\nDelivery fee${area ? ' ('+area+')' : ''}: ${fee.toFixed(2)} EGP`;
+        msg += `\nTotal: ${total.toFixed(2)} EGP`;
+        msg += `\n\nOrder type: ${typeLabel}\nName: ${customer_name}\nPhone: ${customer_phone}`;
+        if(secondary_phone) msg += `\nAlt. phone: ${secondary_phone}`;
+        if(orderType==='delivery'){ msg += `\nCity: ${city}`; if(address) msg += `\nAddress: ${address}`; }
+        if(notes) msg += `\nNotes: ${notes}`;
+        return msg;
+      }
+      let msg = `طلب جديد — ${restName}\n\n${lines}\n\nالمجموع الفرعي: ${subtotal.toFixed(2)} جنيه`;
+      if(orderType==='delivery') msg += `\nرسوم التوصيل${area ? ' ('+area+')' : ''}: ${fee.toFixed(2)} جنيه`;
+      msg += `\nالإجمالي: ${total.toFixed(2)} جنيه`;
+      msg += `\n\nنوع الطلب: ${typeLabel}\nالاسم: ${customer_name}\nالتليفون: ${customer_phone}`;
+      if(secondary_phone) msg += `\nتليفون إضافي: ${secondary_phone}`;
+      if(orderType==='delivery'){ msg += `\nالمدينة: ${city}`; if(address) msg += `\nالعنوان: ${address}`; }
+      if(notes) msg += `\nملاحظات: ${notes}`;
+      return msg;
+    }
+
     overlay.querySelector('#ordCancel').addEventListener('click', ()=> overlay.remove());
     overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
     overlay.querySelector('#ordConfirm').addEventListener('click', async ()=>{
@@ -1801,6 +1831,15 @@ async function loadPublic(slug){
       }
       const fee = delivery_fee != null ? Number(delivery_fee) : 0;
       const total = subtotal + fee;
+
+      // نفتح واتساب فورًا (قبل أي انتظار) عشان المتصفح ما يمنعش النافذة
+      let waWindow = null;
+      if(rest.phone){
+        const digits = rest.phone.replace(/[^\d]/g,'');
+        const text = buildWhatsAppMessage({customer_name, customer_phone, secondary_phone, orderType, city, area, address, notes, fee, total});
+        waWindow = window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text)}`, '_blank');
+      }
+
       const btn = overlay.querySelector('#ordConfirm');
       btn.disabled = true;
       const { data: orderRow, error } = await sb.from('orders').insert({
@@ -1824,7 +1863,11 @@ async function loadPublic(slug){
       cart = {};
       renderPublicBody();
       overlay.remove();
-      toast(lang==='en' ? 'Your order request was sent!' : 'تم إرسال طلبك بنجاح!');
+      if(!rest.phone){
+        toast(lang==='en' ? 'Order sent! (restaurant has no WhatsApp number set)' : 'تم إرسال طلبك بنجاح! (لم يضف المطعم رقم واتساب)');
+      } else {
+        toast(lang==='en' ? 'Your order request was sent!' : 'تم إرسال طلبك بنجاح!');
+      }
     });
   }
 
