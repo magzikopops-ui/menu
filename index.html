@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>منيو m@g</title>
+<link rel="icon" id="faviconLink" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" id="appleTouchIconLink" href="favicon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -330,13 +332,20 @@ function show(id){
 }
 
 /* ================= boot / routing ================= */
+function setFavicon(href){
+  document.getElementById('faviconLink').setAttribute('href', href);
+  document.getElementById('appleTouchIconLink').setAttribute('href', href);
+}
+
 async function boot(){
   const params = new URLSearchParams(location.search);
   const publicSlug = params.get('r');
   if(publicSlug){
+    setFavicon('menu-favicon.png');
     await loadPublic(publicSlug);
     return;
   }
+  setFavicon('favicon.png');
   const { data: { session } } = await sb.auth.getSession();
   if(session && session.user){
     currentUser = session.user;
