@@ -7,6 +7,8 @@
 <link rel="icon" id="faviconLink" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" id="appleTouchIconLink" href="favicon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
@@ -78,6 +80,15 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .cat-item:hover .icon-btn{display:inline-block;}
 .icon-btn:hover{color:var(--paper);}
 .icon-btn.danger:hover{color:var(--danger);}
+
+.drag-handle{ cursor:grab; color:var(--stone); font-size:14px; line-height:1; padding:2px 4px; flex-shrink:0; touch-action:none; }
+.drag-handle:active{cursor:grabbing;}
+.cat-item .drag-handle{opacity:0; transition:opacity .15s;}
+.cat-item:hover .drag-handle{opacity:1;}
+.item-card .drag-handle{color:var(--stone); align-self:center;}
+.sortable-ghost{opacity:.4;}
+.sortable-drag{opacity:1 !important; box-shadow:0 10px 20px rgba(0,0,0,.25); background:#fff;}
+.cat-item.sortable-drag{background:#332F2A;}
 
 .main{ background:var(--paper); padding:24px 28px; overflow-y:auto; }
 .main h2{ font-family:var(--display); font-size:24px; margin:0 0 4px; color:var(--ink); }
@@ -263,6 +274,9 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
       <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
       <button class="link-btn" id="restaurantSettingsBtn">إعدادات المطعم</button>
       <button class="link-btn" id="copyPublicLinkBtn">نسخ رابط القائمة العام</button>
+      <button class="link-btn" id="importExcelBtn">استيراد من إكسيل</button>
+      <button class="link-btn" id="exportExcelBtn">تصدير إلى إكسيل</button>
+      <input type="file" id="importExcelInput" accept=".xlsx,.xls" style="display:none;">
     </div>
   </div>
   <div class="rail">
@@ -480,7 +494,7 @@ async function refreshData(){
   categories = cats || [];
   const catIds = categories.map(c=>c.id);
   if(catIds.length){
-    const { data: its, error: itErr } = await sb.from('items').select('*').in('category_id', catIds).order('created_at');
+    const { data: its, error: itErr } = await sb.from('items').select('*').in('category_id', catIds).order('position');
     items = itErr ? [] : (its || []);
   } else {
     items = [];
@@ -707,6 +721,167 @@ document.getElementById('copyPublicLinkBtn').addEventListener('click', ()=>{
   } else { toast(link); }
 });
 
+/* ================= Excel Import ================= */
+document.getElementById('importExcelBtn').addEventListener('click', ()=>{
+  document.getElementById('importExcelInput').click();
+});
+
+document.getElementById('importExcelInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+
+  let rows;
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+  }catch(err){
+    toast('تعذرت قراءة الملف، تأكد أنه ملف إكسيل صالح');
+    return;
+  }
+
+  // Detect and skip a header row if the 3rd column of the first row isn't a number
+  if(rows.length && isNaN(parseFloat(rows[0][2]))){
+    rows = rows.slice(1);
+  }
+
+  const parsed = [];
+  rows.forEach(r=>{
+    const catName = String(r[0] ?? '').trim();
+    const itemName = String(r[1] ?? '').trim();
+    const price = parseFloat(r[2]);
+    if(!catName || !itemName || isNaN(price) || price < 0) return;
+    parsed.push({ catName, itemName, price });
+  });
+
+  if(parsed.length === 0){
+    toast('لم يتم العثور على صفوف صالحة (فئة، صنف، سعر)');
+    return;
+  }
+
+  const uniqueCats = [...new Set(parsed.map(p=>p.catName))];
+  openImportPreviewModal(parsed, uniqueCats);
+});
+
+function openImportPreviewModal(parsed, uniqueCats){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  const previewRows = parsed.slice(0, 8).map(p=>`
+    <div class="zone-row">
+      <span class="zone-name">${escapeHtml(p.catName)} — ${escapeHtml(p.itemName)}</span>
+      <span class="zone-fee">${p.price.toFixed(2)} EGP</span>
+    </div>`).join('');
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>استيراد أصناف من إكسيل</h3>
+      <div class="orders-empty" style="text-align:right; padding:6px 0 14px;">
+        تم العثور على <b>${parsed.length}</b> صنف ضمن <b>${uniqueCats.length}</b> فئة.
+        سيتم إنشاء أي فئة غير موجودة تلقائيًا، وإضافة الأصناف كأسعار ثابتة.
+      </div>
+      <div id="importPreviewWrap">${previewRows}${parsed.length > 8 ? `<div class="orders-empty">و ${parsed.length - 8} صنف آخر...</div>` : ''}</div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="importCancelBtn">إلغاء</button>
+        <button class="btn-confirm" id="importConfirmBtn">استيراد الآن</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#importCancelBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+
+  overlay.querySelector('#importConfirmBtn').addEventListener('click', async ()=>{
+    const btn = overlay.querySelector('#importConfirmBtn');
+    btn.disabled = true;
+    btn.textContent = 'جارِ الاستيراد...';
+    try{
+      await runImport(parsed, uniqueCats);
+      overlay.remove();
+      await refreshData();
+      toast('تم استيراد الأصناف بنجاح');
+    }catch(err){
+      toast('حدث خطأ أثناء الاستيراد');
+      btn.disabled = false;
+      btn.textContent = 'استيراد الآن';
+    }
+  });
+}
+
+async function runImport(parsed, uniqueCats){
+  // Build a case-insensitive map of existing categories: name -> id
+  const catMap = {};
+  categories.forEach(c=> catMap[c.name.trim().toLowerCase()] = c.id);
+
+  const missingCats = uniqueCats.filter(name => !catMap[name.trim().toLowerCase()]);
+  if(missingCats.length){
+    const toInsert = missingCats.map((name, idx)=>({
+      restaurant_id: restaurant.id,
+      name,
+      position: categories.length + idx
+    }));
+    const { data: newCats, error } = await sb.from('categories').insert(toInsert).select();
+    if(error) throw error;
+    newCats.forEach(c=> catMap[c.name.trim().toLowerCase()] = c.id);
+  }
+
+  const catItemCounts = {};
+  categories.forEach(c=>{ catItemCounts[c.id] = items.filter(i=>i.category_id===c.id).length; });
+
+  const itemsToInsert = parsed.map(p=>{
+    const catId = catMap[p.catName.trim().toLowerCase()];
+    const pos = catItemCounts[catId] || 0;
+    catItemCounts[catId] = pos + 1;
+    return {
+      category_id: catId,
+      name: p.itemName,
+      price: p.price,
+      pricing_type: 'unit',
+      position: pos
+    };
+  });
+
+  // Insert in batches to avoid overly large single requests
+  const BATCH = 200;
+  for(let i=0; i<itemsToInsert.length; i+=BATCH){
+    const chunk = itemsToInsert.slice(i, i+BATCH);
+    const { error } = await sb.from('items').insert(chunk);
+    if(error) throw error;
+  }
+}
+
+/* ================= Excel Export ================= */
+document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
+  if(categories.length === 0){
+    toast('لا توجد فئات أو أصناف لتصديرها');
+    return;
+  }
+  const rows = [['الفئة', 'الصنف', 'السعر']];
+  categories.forEach(cat=>{
+    const catItems = items.filter(i=>i.category_id === cat.id);
+    catItems.forEach(item=>{
+      if(item.pricing_type === 'sizes'){
+        const sizes = itemSizes[item.id] || [];
+        if(sizes.length === 0){
+          rows.push([cat.name, item.name, '']);
+        } else {
+          sizes.forEach(s=>{
+            rows.push([cat.name, `${item.name} - ${s.size_name}`, s.price]);
+          });
+        }
+      } else {
+        rows.push([cat.name, item.name, item.price]);
+      }
+    });
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{ wch: 22 }, { wch: 30 }, { wch: 12 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'المنيو');
+  const filename = `${restaurant.slug || 'menu'}-اصناف.xlsx`;
+  XLSX.writeFile(wb, filename);
+  toast('تم تصدير الملف');
+});
+
 function renderDashboard(){
   renderCategories();
   renderItems();
@@ -720,8 +895,12 @@ function renderCategories(){
     const count = items.filter(i=>i.category_id===cat.id).length;
     const div = document.createElement('div');
     div.className = 'cat-item' + (cat.id===selectedCategoryId ? ' active' : '');
+    div.dataset.id = cat.id;
     div.innerHTML = `
-      <span class="name">${escapeHtml(cat.name)}</span>
+      <span style="display:flex;align-items:center;min-width:0;">
+        <span class="drag-handle" title="اسحب لإعادة الترتيب">⋮⋮</span>
+        <span class="name">${escapeHtml(cat.name)}</span>
+      </span>
       <span style="display:flex;align-items:center;">
         <span class="count">${count}</span>
         <span style="display:flex;">
@@ -730,13 +909,36 @@ function renderCategories(){
         </span>
       </span>`;
     div.addEventListener('click', (e)=>{
-      if(e.target.closest('[data-action]')) return;
+      if(e.target.closest('[data-action]') || e.target.closest('.drag-handle')) return;
       selectedCategoryId = cat.id;
       renderDashboard();
     });
     div.querySelector('[data-action="rename"]').addEventListener('click', (e)=>{ e.stopPropagation(); openCategoryModal(cat); });
     div.querySelector('[data-action="delete"]').addEventListener('click', (e)=>{ e.stopPropagation(); deleteCategory(cat.id); });
     wrap.appendChild(div);
+  });
+  initCategorySortable();
+}
+
+let categorySortable = null;
+function initCategorySortable(){
+  const wrap = document.getElementById('categoryList');
+  if(categorySortable) return;
+  categorySortable = Sortable.create(wrap, {
+    handle: '.drag-handle',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    dragClass: 'sortable-drag',
+    onEnd: async ()=>{
+      const newIds = Array.from(wrap.children).map(el=>el.dataset.id);
+      categories.sort((a,b)=> newIds.indexOf(a.id) - newIds.indexOf(b.id));
+      renderTicket();
+      try{
+        await Promise.all(categories.map((c, idx)=> sb.from('categories').update({ position: idx }).eq('id', c.id)));
+      }catch(err){
+        toast('تعذر حفظ الترتيب');
+      }
+    }
   });
 }
 
@@ -769,7 +971,9 @@ function renderItems(){
   catItems.forEach(item=>{
     const div = document.createElement('div');
     div.className = 'item-card';
+    div.dataset.id = item.id;
     div.innerHTML = `
+      <span class="drag-handle" title="اسحب لإعادة الترتيب">⋮⋮</span>
       ${item.image_url ? `<img src="${item.image_url}">` : `<div class="no-img">🍽</div>`}
       <div class="item-body">
         <div class="item-top">
@@ -785,6 +989,31 @@ function renderItems(){
     div.querySelector('[data-action="edit"]').addEventListener('click', ()=> openItemModal(item));
     div.querySelector('[data-action="delete"]').addEventListener('click', ()=> deleteItem(item.id));
     wrap.appendChild(div);
+  });
+  initItemSortable();
+}
+
+let itemSortable = null;
+function initItemSortable(){
+  const wrap = document.getElementById('itemList');
+  if(itemSortable) return;
+  itemSortable = Sortable.create(wrap, {
+    handle: '.drag-handle',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    dragClass: 'sortable-drag',
+    onEnd: async ()=>{
+      const newIds = Array.from(wrap.children).map(el=>el.dataset.id);
+      if(newIds.length === 0 || !newIds[0]) return;
+      const catId = selectedCategoryId;
+      const reordered = newIds.map(id=> items.find(i=>i.id===id)).filter(Boolean);
+      items = [...items.filter(i=>i.category_id!==catId), ...reordered];
+      try{
+        await Promise.all(reordered.map((it, idx)=> sb.from('items').update({ position: idx }).eq('id', it.id)));
+      }catch(err){
+        toast('تعذر حفظ ترتيب الأصناف');
+      }
+    }
   });
 }
 
@@ -1044,7 +1273,8 @@ function openItemModal(existing){
       const { error } = await sb.from('items').update({ name, name_en, price, description, image_url: pendingImage, pricing_type }).eq('id', existing.id);
       if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     } else {
-      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, description, image_url: pendingImage, pricing_type }).select().single();
+      const newPos = items.filter(i=>i.category_id===selectedCategoryId).length;
+      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, description, image_url: pendingImage, pricing_type, position: newPos }).select().single();
       if(error){ toast('تعذر الإضافة'); btn.disabled=false; return; }
       itemId = data.id;
     }
@@ -1080,7 +1310,7 @@ async function loadPublic(slug){
   const pubCats = cats || [];
   let pubItems = [];
   if(pubCats.length){
-    const { data: its } = await sb.from('items').select('*').in('category_id', pubCats.map(c=>c.id)).order('created_at');
+    const { data: its } = await sb.from('items').select('*').in('category_id', pubCats.map(c=>c.id)).order('position');
     pubItems = its || [];
   }
   let pubItemSizes = {};
