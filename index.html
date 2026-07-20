@@ -133,6 +133,16 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .pub-topbar{ display:flex; align-items:center; justify-content:space-between; padding:18px 20px 4px; max-width:640px; margin:0 auto; }
 .pub-lang-btn{ display:flex; align-items:center; gap:6px; background:var(--paper-dim); border:1px solid var(--line); border-radius:20px; padding:7px 14px; font-size:13px; font-weight:700; color:var(--ink); cursor:pointer; }
 .pub-lang-btn:hover{border-color:var(--stone);}
+.pub-actions{ display:flex; align-items:center; gap:8px; }
+.pub-icon-btn{ display:flex; align-items:center; justify-content:center; width:36px; height:36px; background:var(--paper-dim); border:1px solid var(--line); border-radius:50%; font-size:15px; color:var(--ink); cursor:pointer; text-decoration:none; }
+.pub-icon-btn:hover{border-color:var(--stone);}
+.pub-icon-btn.call-btn{ background:var(--basil); border-color:var(--basil); color:#fff; }
+.pub-icon-btn.call-btn:hover{ background:var(--basil-dark); }
+.info-modal .field-row{ display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-bottom:1px dotted var(--stone-light); }
+.info-modal .field-row:last-child{ border-bottom:none; }
+.info-modal .field-row .icon{ font-size:16px; flex-shrink:0; width:22px; text-align:center; }
+.info-modal .field-row .txt{ font-size:14px; color:var(--ink); line-height:1.5; }
+.info-modal .field-row a{ color:var(--basil-dark); text-decoration:none; font-weight:700; }
 .pub-logo-wrap{ text-align:center; padding:6px 20px 18px; }
 .pub-logo-wrap img{ max-height:64px; max-width:220px; object-fit:contain; }
 .pub-logo-wrap .name-fallback{ font-family:var(--display); font-size:30px; color:var(--ink); }
@@ -309,7 +319,10 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 <div id="publicScreen" class="hidden">
   <div class="pub-topbar">
     <div class="pub-lang-btn" id="pubLangBtn">🌐 <span id="pubLangLabel">English</span></div>
-    <div></div>
+    <div class="pub-actions" id="pubActionsWrap">
+      <a class="pub-icon-btn call-btn hidden" id="pubCallBtn" href="#" title="اتصال">📞</a>
+      <div class="pub-icon-btn hidden" id="pubInfoBtn" title="معلومات المطعم">ℹ️</div>
+    </div>
   </div>
   <div class="pub-logo-wrap" id="pubLogoWrap"></div>
   <div class="pub-search">
@@ -749,6 +762,14 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         <input type="text" id="restNameEnInput" value="${restaurant.name_en ? escapeHtml(restaurant.name_en) : ''}" placeholder="e.g. Al Asayel Restaurant">
       </div>
       <div class="field">
+        <label>رقم تليفون المطعم (يظهر للعميل - اتصال)</label>
+        <input type="text" id="restPhoneInput" value="${restaurant.phone ? escapeHtml(restaurant.phone) : ''}" placeholder="رقم بصيغة دولية: 201154361888" style="direction:ltr;">
+      </div>
+      <div class="field">
+        <label>عنوان المطعم (اختياري)</label>
+        <input type="text" id="restAddressInput" value="${restaurant.address ? escapeHtml(restaurant.address) : ''}" placeholder="مثال: شارع الجمهورية، أمام محطة المترو">
+      </div>
+      <div class="field">
         <label>إشعار واتساب بالطلبات الجديدة (اختياري)</label>
         <small>لتفعيل الإشعار: احفظ رقم <span dir="ltr" style="font-family:var(--mono);">+34 684 74 26 79</span> في هاتفك، وابعتله على واتساب رسالة نصها بالإنجليزية بالظبط: <span dir="ltr" style="font-family:var(--mono);">I allow callmebot to send me messages</span>، وهيردلك برسالة فيها الرمز الخاص بيك (apikey). اكتب رقمك ورمزك تحت.</small>
         <input type="text" id="notifPhoneInput" value="${restaurant.notification_phone ? escapeHtml(restaurant.notification_phone) : ''}" placeholder="رقم واتساب بصيغة دولية: 201154361888" style="margin-top:8px; direction:ltr;">
@@ -776,11 +797,13 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#rsConfirm').addEventListener('click', async ()=>{
     const name_en = overlay.querySelector('#restNameEnInput').value.trim() || null;
+    const phone = overlay.querySelector('#restPhoneInput').value.trim() || null;
+    const address = overlay.querySelector('#restAddressInput').value.trim() || null;
     const notification_phone = overlay.querySelector('#notifPhoneInput').value.trim() || null;
     const notification_apikey = overlay.querySelector('#notifApikeyInput').value.trim() || null;
     const btn = overlay.querySelector('#rsConfirm');
     btn.disabled = true;
-    const { data, error } = await sb.from('restaurants').update({ logo_url: pendingLogo, name_en, notification_phone, notification_apikey }).eq('id', restaurant.id).select().single();
+    const { data, error } = await sb.from('restaurants').update({ logo_url: pendingLogo, name_en, phone, address, notification_phone, notification_apikey }).eq('id', restaurant.id).select().single();
     if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     restaurant = data;
     overlay.remove();
@@ -1439,7 +1462,39 @@ async function loadPublic(slug){
       : `<div class="name-fallback">${escapeHtml(restName)}</div>`;
     document.getElementById('pubSearchInput').placeholder = lang==='en' ? 'Search the menu...' : 'ابحث في القائمة...';
     document.getElementById('pubOrderBtnLabel').textContent = lang==='en' ? 'Cart' : 'السلة';
+    const callBtn = document.getElementById('pubCallBtn');
+    if(rest.phone){
+      callBtn.href = `tel:${rest.phone}`;
+      callBtn.classList.remove('hidden');
+    } else {
+      callBtn.classList.add('hidden');
+    }
+    const infoBtn = document.getElementById('pubInfoBtn');
+    if(rest.phone || rest.address){
+      infoBtn.classList.remove('hidden');
+      infoBtn.onclick = ()=> showRestaurantInfoModal();
+    } else {
+      infoBtn.classList.add('hidden');
+    }
     updateCartButton();
+  }
+
+  function showRestaurantInfoModal(){
+    const restName = tName(rest.name, rest.name_en);
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = `
+      <div class="modal info-modal">
+        <h3>${escapeHtml(restName)}</h3>
+        ${rest.address ? `<div class="field-row"><span class="icon">📍</span><span class="txt">${escapeHtml(rest.address)}</span></div>` : ''}
+        ${rest.phone ? `<div class="field-row"><span class="icon">📞</span><span class="txt"><a href="tel:${rest.phone}" dir="ltr">${escapeHtml(rest.phone)}</a></span></div>` : ''}
+        <div class="modal-actions">
+          <button class="btn-confirm" id="infoCloseBtn">${lang==='en' ? 'Close' : 'إغلاق'}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#infoCloseBtn').addEventListener('click', ()=> overlay.remove());
+    overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   }
 
   function renderPublicBody(){
