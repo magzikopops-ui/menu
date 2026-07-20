@@ -893,7 +893,6 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         </div>
         <input type="file" id="logoInput" accept="image/*" style="display:none;">
         <button type="button" class="add-btn" id="removeLogoBtn" style="margin-top:8px; margin-bottom:0; ${pendingLogo ? '' : 'display:none;'}">حذف الشعار</button>
-        <button type="button" class="add-btn" id="migrateImagesBtn" style="margin-top:8px; margin-bottom:0;">ترحيل الصور القديمة لتوفير المساحة</button>
       </div>
       <div class="field">
         <label>اسم المطعم بالإنجليزية (اختياري)</label>
@@ -929,9 +928,8 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     logoDrop.querySelector('#logoDropText').textContent = 'جارِ المعالجة...';
     try{
       const dataUrl = await resizeImage(file, 320);
-      logoDrop.innerHTML = `<img src="${dataUrl}"><br><span id="logoDropText">جارِ الرفع...</span>`;
-      pendingLogo = await uploadImageToStorage(dataUrl, `logos/${restaurant.id}`);
-      logoDrop.querySelector('#logoDropText').textContent = 'انقر لتغيير الشعار';
+      logoDrop.innerHTML = `<img src="${dataUrl}"><br><span id="logoDropText">انقر لتغيير الشعار</span>`;
+      pendingLogo = dataUrl;
       removeLogoBtn.style.display = '';
     }catch(e){ toast('تعذر تحميل الشعار'); }
   });
@@ -945,22 +943,6 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
       const path = oldLogo.split('/menu-images/')[1];
       if(path){ try{ await sb.storage.from('menu-images').remove([path]); }catch(e){} }
     }
-  });
-  overlay.querySelector('#migrateImagesBtn').addEventListener('click', async ()=>{
-    const btn = overlay.querySelector('#migrateImagesBtn');
-    btn.disabled = true;
-    btn.textContent = 'جارِ الترحيل...';
-    try{
-      const count = await migrateLegacyImages();
-      toast(count > 0 ? `تم ترحيل ${count} صورة بنجاح` : 'لا توجد صور قديمة تحتاج ترحيل');
-      if(count > 0){
-        pendingLogo = restaurant.logo_url;
-        if(pendingLogo){ logoDrop.innerHTML = `<img src="${pendingLogo}"><br><span id="logoDropText">انقر لتغيير الشعار</span>`; removeLogoBtn.style.display = ''; }
-        await refreshData();
-      }
-    }catch(e){ toast('حدث خطأ أثناء الترحيل'); }
-    btn.disabled = false;
-    btn.textContent = 'ترحيل الصور القديمة لتوفير المساحة';
   });
   overlay.querySelector('#rsCancel').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
@@ -1543,9 +1525,8 @@ function openItemModal(existing){
     imgDrop.querySelector('#imgDropText').textContent = 'جارِ المعالجة...';
     try{
       const dataUrl = await resizeImage(file, 240);
-      imgDrop.innerHTML = `<img src="${dataUrl}"><br><span id="imgDropText">جارِ الرفع...</span>`;
-      pendingImage = await uploadImageToStorage(dataUrl, `items/${restaurant.id}`);
-      imgDrop.querySelector('#imgDropText').textContent = 'انقر لتغيير الصورة';
+      imgDrop.innerHTML = `<img src="${dataUrl}"><br><span id="imgDropText">انقر لتغيير الصورة</span>`;
+      pendingImage = dataUrl;
     }catch(e){ toast('تعذر تحميل الصورة'); }
   });
 
