@@ -217,6 +217,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .modal-actions{display:flex; gap:10px; margin-top:18px;}
 .modal-actions button{ flex:1; padding:11px; border-radius:8px; border:none; font-family:var(--body); font-weight:800; font-size:14px; cursor:pointer; }
 .btn-cancel{background:var(--paper-dim); color:var(--ink);}
+.btn-danger{background:var(--danger); color:#fff;}
 .btn-confirm{background:var(--basil); color:#fff;}
 .btn-confirm:hover{background:var(--basil-dark);}
 .btn-confirm:disabled{opacity:.6;cursor:default;}
@@ -283,6 +284,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
     </div>
     <div class="topbar-actions">
       <button class="link-btn" id="viewOrdersBtn">الطلبات</button>
+      <button class="link-btn" id="cleanupOrdersBtn">حذف الطلبات القديمة</button>
       <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
       <button class="link-btn" id="restaurantSettingsBtn">إعدادات المطعم</button>
       <button class="link-btn" id="copyPublicLinkBtn">نسخ رابط القائمة العام</button>
@@ -690,6 +692,67 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
       badge.textContent = STATUS_LABELS[newStatus] || newStatus;
       toast('تم تحديث حالة الطلب');
     });
+  });
+});
+
+document.getElementById('cleanupOrdersBtn').addEventListener('click', ()=>{
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>حذف الطلبات القديمة</h3>
+      <div class="field">
+        <label>احذف الطلبات الأقدم من:</label>
+        <select id="cleanupPeriodSelect">
+          <option value="1">يوم واحد</option>
+          <option value="7" selected>أسبوع</option>
+          <option value="30">شهر</option>
+          <option value="90">3 أشهر</option>
+          <option value="custom">فترة مخصصة (أيام)</option>
+        </select>
+      </div>
+      <div class="field hidden" id="cleanupCustomWrap">
+        <label>عدد الأيام</label>
+        <input type="number" id="cleanupCustomDays" min="1" placeholder="مثال: 45">
+      </div>
+      <div class="orders-empty" style="text-align:right; padding:6px 0 0;">
+        هيتم حذف الطلبات وتفاصيلها نهائيًا، لكن إحصائيات عدد الطلبات وقيمتها هتفضل محفوظة حتى بعد الحذف.
+      </div>
+      <div class="auth-err" id="cleanupErr"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cleanupCancelBtn">إلغاء</button>
+        <button class="btn-danger" id="cleanupConfirmBtn">حذف الآن</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = ()=> overlay.remove();
+  overlay.querySelector('#cleanupCancelBtn').addEventListener('click', close);
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
+
+  const periodSelect = overlay.querySelector('#cleanupPeriodSelect');
+  const customWrap = overlay.querySelector('#cleanupCustomWrap');
+  periodSelect.addEventListener('change', ()=>{
+    customWrap.classList.toggle('hidden', periodSelect.value !== 'custom');
+  });
+
+  overlay.querySelector('#cleanupConfirmBtn').addEventListener('click', async ()=>{
+    const errEl = overlay.querySelector('#cleanupErr');
+    errEl.textContent = '';
+    let days = periodSelect.value === 'custom'
+      ? parseInt(overlay.querySelector('#cleanupCustomDays').value, 10)
+      : parseInt(periodSelect.value, 10);
+    if(!days || days < 1){ errEl.textContent = 'من فضلك أدخل عدد أيام صحيح'; return; }
+    if(!confirm(`هل أنت متأكد من حذف كل الطلبات الأقدم من ${days} يوم؟ هذا الإجراء لا يمكن التراجع عنه.`)) return;
+
+    const btn = overlay.querySelector('#cleanupConfirmBtn');
+    btn.disabled = true;
+    btn.textContent = 'جارِ الحذف...';
+    const { error } = await sb.rpc('delete_old_orders', { p_restaurant_id: restaurant.id, p_older_than_days: days });
+    btn.disabled = false;
+    btn.textContent = 'حذف الآن';
+    if(error){ errEl.textContent = 'تعذر حذف الطلبات، حاول مرة أخرى'; return; }
+    toast('تم حذف الطلبات القديمة بنجاح');
+    close();
   });
 });
 
