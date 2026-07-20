@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>منيو m@g</title>
+<meta name="description" id="metaDescription" content="اطلب أونلاين بسهولة من قائمة المطعم">
+<meta property="og:type" content="website">
+<meta property="og:title" id="ogTitle" content="منيو m@g">
+<meta property="og:description" id="ogDescription" content="اطلب أونلاين بسهولة من قائمة المطعم">
+<meta property="og:image" id="ogImage" content="favicon.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" id="twTitle" content="منيو m@g">
+<meta name="twitter:description" id="twDescription" content="اطلب أونلاين بسهولة من قائمة المطعم">
+<meta name="twitter:image" id="twImage" content="favicon.png">
 <link rel="icon" id="faviconLink" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" id="appleTouchIconLink" href="favicon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -283,7 +292,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
       <span class="switch-link" id="signOutLink">تسجيل الخروج</span>
     </div>
     <div class="topbar-actions">
-      <button class="link-btn" id="viewOrdersBtn">الطلبات</button>
+      <button class="link-btn" id="viewOrdersBtn">الطلبات <span id="newOrdersBadge" class="status-badge pending hidden" style="margin-inline-start:4px;">0</span></button>
       <button class="link-btn" id="viewStatsBtn">الإحصائيات</button>
       <button class="link-btn" id="cleanupOrdersBtn">حذف الطلبات القديمة</button>
       <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
@@ -353,6 +362,8 @@ let itemSizes = {}; // item_id -> [ { id, size_name, size_name_en, price } ]
 let selectedCategoryId = null;
 let previewCategoryId = null;
 let pendingImage = null;
+let newOrdersCount = 0;
+let ordersChannel = null;
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -373,6 +384,19 @@ function show(id){
 function setFavicon(href){
   document.getElementById('faviconLink').setAttribute('href', href);
   document.getElementById('appleTouchIconLink').setAttribute('href', href);
+}
+
+function setPageMeta({ title, description, image }){
+  document.title = title;
+  document.getElementById('metaDescription').setAttribute('content', description);
+  document.getElementById('ogTitle').setAttribute('content', title);
+  document.getElementById('ogDescription').setAttribute('content', description);
+  document.getElementById('twTitle').setAttribute('content', title);
+  document.getElementById('twDescription').setAttribute('content', description);
+  if(image){
+    document.getElementById('ogImage').setAttribute('content', image);
+    document.getElementById('twImage').setAttribute('content', image);
+  }
 }
 
 async function boot(){
@@ -526,6 +550,7 @@ async function openDashboard(){
   document.getElementById('dashRestaurantName').textContent = restaurant.name;
   document.getElementById('ticketShopName').textContent = restaurant.name;
   await refreshData();
+  subscribeToNewOrders();
   show('dashboardScreen');
 }
 
@@ -556,6 +581,50 @@ async function refreshData(){
     previewCategoryId = selectedCategoryId;
   }
   renderDashboard();
+}
+
+function updateNewOrdersBadge(){
+  const badge = document.getElementById('newOrdersBadge');
+  if(newOrdersCount > 0){
+    badge.textContent = newOrdersCount;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+function playNewOrderSound(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.18].forEach(delay=>{
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 880;
+      g.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
+      g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + delay + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + 0.35);
+      o.start(ctx.currentTime + delay);
+      o.stop(ctx.currentTime + delay + 0.4);
+    });
+  }catch(e){}
+}
+
+function subscribeToNewOrders(){
+  if(ordersChannel) return;
+  ordersChannel = sb.channel(`orders-${restaurant.id}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'orders',
+      filter: `restaurant_id=eq.${restaurant.id}`
+    }, (payload)=>{
+      newOrdersCount++;
+      updateNewOrdersBadge();
+      playNewOrderSound();
+      toast(`طلب جديد من ${payload.new && payload.new.customer_name ? payload.new.customer_name : 'عميل'}! 🔔`);
+    })
+    .subscribe();
 }
 
 document.getElementById('deliveryZonesBtn').addEventListener('click', async ()=>{
@@ -621,6 +690,8 @@ document.getElementById('deliveryZonesBtn').addEventListener('click', async ()=>
 });
 
 document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
+  newOrdersCount = 0;
+  updateNewOrdersBadge();
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
@@ -1625,6 +1696,12 @@ async function loadPublic(slug){
   }
   const { data: zonesData } = await sb.from('delivery_zones').select('*').eq('restaurant_id', rest.id).order('area_name');
   const pubZones = zonesData || [];
+  setPageMeta({
+    title: rest.name,
+    description: `اطلب أونلاين من ${rest.name} بسهولة وسرعة`,
+    image: rest.logo_url || undefined
+  });
+  if(rest.logo_url) setFavicon(rest.logo_url);
   let activeCat = pubCats[0] ? pubCats[0].id : null;
   let lang = 'ar'; // 'ar' or 'en'
   let searchTerm = '';
