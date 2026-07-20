@@ -167,6 +167,12 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .order-row .o-name{font-weight:800; color:var(--ink); font-size:14px;}
 .order-row .o-phone{font-family:var(--mono); direction:ltr; color:var(--ember); font-size:13px; margin-top:2px; display:inline-block;}
 .order-row .o-time{color:var(--stone); font-size:11px; margin-top:4px;}
+.status-badge{ display:inline-block; font-size:11px; font-weight:800; padding:3px 10px; border-radius:12px; margin-inline-start:6px; }
+.status-badge.pending{background:#efe6d0; color:#8a6d1a;}
+.status-badge.preparing{background:rgba(184,57,14,.15); color:var(--ember);}
+.status-badge.delivered{background:rgba(63,98,71,.15); color:var(--basil);}
+.status-badge.cancelled{background:rgba(166,57,43,.15); color:var(--danger);}
+.status-select{ margin-top:8px; border:1.5px solid var(--line); border-radius:8px; padding:6px 10px; font-family:var(--body); font-size:12.5px; color:var(--ink); background:var(--paper); }
 .orders-empty{text-align:center; color:var(--stone); padding:30px;}
 .ord-type-toggle{ display:flex; gap:8px; }
 .ord-type-btn{ flex:1; text-align:center; padding:10px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper-dim); color:var(--ink); font-weight:700; font-size:13px; cursor:pointer; }
@@ -589,6 +595,8 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
     });
   }
 
+  const STATUS_LABELS = { pending:'قيد الانتظار', preparing:'قيد التجهيز', delivered:'تم التسليم', cancelled:'ملغي' };
+
   wrap.innerHTML = orders.map(o=>{
     const d = new Date(o.created_at);
     const time = d.toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' });
@@ -596,9 +604,10 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
     const lines = itemsByOrder[o.id] || [];
     const linesHtml = lines.length ? `<div class="o-time" style="margin-top:6px;">${lines.map(l=>`${escapeHtml(l.item_name)} ×${l.quantity}`).join('، ')}</div>` : '';
     const totalsHtml = o.total != null ? `<div class="o-time" style="margin-top:4px; font-weight:700; color:var(--ink);">الإجمالي: ${Number(o.total).toFixed(2)} EGP</div>` : '';
+    const status = o.status || 'pending';
     return `
-      <div class="order-row">
-        <div class="o-name">${escapeHtml(o.customer_name)} <span style="font-weight:400; color:var(--stone); font-size:12px;">(${typeLabel})</span></div>
+      <div class="order-row" data-order-id="${o.id}">
+        <div class="o-name">${escapeHtml(o.customer_name)} <span style="font-weight:400; color:var(--stone); font-size:12px;">(${typeLabel})</span><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span></div>
         <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}
         <div class="o-time">${escapeHtml(o.city || '')}${o.area ? ' — ' + escapeHtml(o.area) : ''}${o.delivery_fee != null ? ` (رسوم التوصيل: ${Number(o.delivery_fee).toFixed(2)} EGP)` : ''}</div>
         ${o.address ? `<div class="o-time">${escapeHtml(o.address)}</div>` : ''}
@@ -606,8 +615,30 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
         ${totalsHtml}
         ${o.notes ? `<div class="o-time" style="margin-top:4px;">${escapeHtml(o.notes)}</div>` : ''}
         <div class="o-time" style="margin-top:4px;">${time}</div>
+        <select class="status-select" data-action="statusSelect">
+          <option value="pending" ${status==='pending' ? 'selected' : ''}>قيد الانتظار</option>
+          <option value="preparing" ${status==='preparing' ? 'selected' : ''}>قيد التجهيز</option>
+          <option value="delivered" ${status==='delivered' ? 'selected' : ''}>تم التسليم</option>
+          <option value="cancelled" ${status==='cancelled' ? 'selected' : ''}>ملغي</option>
+        </select>
       </div>`;
   }).join('');
+
+  wrap.querySelectorAll('.order-row').forEach(row=>{
+    const orderId = row.dataset.orderId;
+    const select = row.querySelector('[data-action="statusSelect"]');
+    select.addEventListener('change', async ()=>{
+      const newStatus = select.value;
+      select.disabled = true;
+      const { error: updErr } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
+      select.disabled = false;
+      if(updErr){ toast('تعذر تحديث حالة الطلب'); return; }
+      const badge = row.querySelector('.status-badge');
+      badge.className = `status-badge ${newStatus}`;
+      badge.textContent = STATUS_LABELS[newStatus] || newStatus;
+      toast('تم تحديث حالة الطلب');
+    });
+  });
 });
 
 document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
