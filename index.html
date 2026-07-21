@@ -1893,6 +1893,11 @@ async function loadPublic(slug){
   }
   const { data: zonesData } = await sb.from('delivery_zones').select('*').eq('restaurant_id', rest.id).order('area_name');
   const pubZones = zonesData || [];
+  let topItemIds = new Set();
+  try{
+    const { data: topItemsData } = await sb.rpc('get_top_items', { p_restaurant_id: rest.id, p_limit: 5 });
+    topItemIds = new Set((topItemsData || []).map(t=>t.item_id));
+  }catch(e){}
   setPageMeta({
     title: rest.name,
     description: `اطلب أونلاين من ${rest.name} بسهولة وسرعة`,
@@ -2098,7 +2103,7 @@ async function loadPublic(slug){
         <span class="chevron" data-action="toggle">${i.description ? '▾' : ''}</span>
         ${i.image_url ? `<img src="${i.image_url}">` : `<div class="no-img">🍽</div>`}
         <div class="info">
-          <div class="name-primary">${escapeHtml(tName(i.name, i.name_en))}</div>
+          <div class="name-primary">${escapeHtml(tName(i.name, i.name_en))}${topItemIds.has(i.id) ? ` <span title="${lang==='en' ? 'Bestseller' : 'الأكثر طلبًا'}">🔥</span>` : ''}</div>
           ${secondaryName(i.name, i.name_en) ? `<div class="name-secondary">${escapeHtml(secondaryName(i.name, i.name_en))}</div>` : ''}
           <div class="price">${priceLine}</div>
           ${i.description ? `<div class="desc-expand">${escapeHtml(i.description)}</div>` : ''}
