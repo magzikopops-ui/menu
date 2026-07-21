@@ -36,6 +36,12 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .auth-brand{ font-family:var(--display); color:var(--paper); font-size:32px; display:flex; align-items:center; gap:10px; margin-bottom:26px; }
 .auth-brand .dot{width:10px;height:10px;border-radius:50%;background:var(--ember);}
 .auth-box{ background:#2A2825; border:1px solid #3a3733; border-radius:14px; padding:26px; width:min(380px,92vw); }
+.auth-showcase{ margin-top:22px; width:min(380px,92vw); text-align:center; }
+.auth-showcase-label{ color:var(--stone-light); font-size:12px; font-weight:700; margin-bottom:10px; }
+.auth-showcase-link{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:#2A2825; border:1px solid #3a3733; border-radius:12px; padding:14px 18px; text-decoration:none; transition:border-color .15s ease, transform .15s ease; }
+.auth-showcase-link:hover{ border-color:var(--basil); transform:translateY(-1px); }
+.auth-showcase-name{ color:var(--paper); font-weight:800; font-size:14px; font-family:var(--display); }
+.auth-showcase-cta{ color:var(--basil); font-weight:700; font-size:12px; white-space:nowrap; }
 .auth-box h3{ font-family:var(--display); color:var(--paper); font-size:20px; margin:0 0 16px; }
 .auth-tabs{display:flex; gap:8px; margin-bottom:18px;}
 .auth-tab{ flex:1; text-align:center; padding:9px; border-radius:8px; font-weight:700; font-size:13px; color:var(--stone); cursor:pointer; background:#221F1C; }
@@ -265,6 +271,13 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
     </div>
     <button class="auth-btn" id="authSubmitBtn">دخول</button>
     <div class="auth-err" id="authErr"></div>
+  </div>
+  <div class="auth-showcase">
+    <div class="auth-showcase-label">✨ نموذج حي من أحد عملائنا</div>
+    <a href="https://magzikopops-ui.github.io/menu/?r=al-refaey" target="_blank" rel="noopener" class="auth-showcase-link">
+      <span class="auth-showcase-name">الرفاعي للأمن الغذائي</span>
+      <span class="auth-showcase-cta">تصفح المنيو ←</span>
+    </a>
   </div>
 </div>
 
