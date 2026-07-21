@@ -201,10 +201,19 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .cart-empty-note{ text-align:center; color:var(--stone); padding:24px; font-size:13.5px; }
 
 .orders-list{ display:flex; flex-direction:column; gap:10px; max-height:60vh; overflow-y:auto; }
-.order-row{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+.order-row{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; position:relative; }
+.order-row.is-new{ border-color:var(--ember); background:rgba(184,57,14,.06); }
+.order-row.is-today:not(.is-new){ border-color:var(--basil); }
 .order-row .o-name{font-weight:800; color:var(--ink); font-size:14px;}
 .order-row .o-phone{font-family:var(--mono); direction:ltr; color:var(--ember); font-size:13px; margin-top:2px; display:inline-block;}
 .order-row .o-time{color:var(--stone); font-size:11px; margin-top:4px;}
+.o-tag{ display:inline-block; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:10px; margin-inline-start:6px; }
+.o-tag.new{ background:var(--ember); color:#fff; }
+.o-tag.today{ background:rgba(63,98,71,.15); color:var(--basil); }
+.order-filters{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+.order-filter-btn{ border:1.5px solid var(--line); background:var(--paper); color:var(--stone); font-family:var(--body); font-size:12.5px; font-weight:700; padding:6px 14px; border-radius:20px; cursor:pointer; transition:.15s; }
+.order-filter-btn:hover{ border-color:var(--ember); color:var(--ember); }
+.order-filter-btn.active{ background:var(--ember); border-color:var(--ember); color:#fff; }
 .status-badge{ display:inline-block; font-size:11px; font-weight:800; padding:3px 10px; border-radius:12px; margin-inline-start:6px; }
 .status-badge.pending{background:#efe6d0; color:#8a6d1a;}
 .status-badge.preparing{background:rgba(184,57,14,.15); color:var(--ember);}
@@ -797,6 +806,12 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
   overlay.innerHTML = `
     <div class="modal">
       <h3>الطلبات الواردة</h3>
+      <div class="order-filters" id="ordersFilters">
+        <button type="button" class="order-filter-btn active" data-filter="all">الكل</button>
+        <button type="button" class="order-filter-btn" data-filter="new">جديدة</button>
+        <button type="button" class="order-filter-btn" data-filter="today">طلبات اليوم</button>
+        <button type="button" class="order-filter-btn" data-filter="previous">أيام سابقة</button>
+      </div>
       <div class="orders-list" id="ordersListWrap"><div class="orders-empty">جارِ التحميل...</div></div>
       <div class="modal-actions">
         <button class="btn-cancel" id="ordersCloseBtn">إغلاق</button>
@@ -823,7 +838,13 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
 
   const STATUS_LABELS = { pending:'قيد الانتظار', preparing:'قيد التجهيز', delivered:'تم التسليم', cancelled:'ملغي' };
 
-  wrap.innerHTML = orders.map(o=>{
+  const todayStr = new Date().toDateString();
+  const isToday = (o)=> new Date(o.created_at).toDateString() === todayStr;
+  const isNewOrder = (o)=> (o.status || 'pending') === 'pending';
+
+  let currentFilter = 'all';
+
+  function orderRowHtml(o){
     const d = new Date(o.created_at);
     const time = d.toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' });
     const typeLabel = o.order_type === 'pickup' ? 'استلام' : 'توصيل';
@@ -831,9 +852,13 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
     const linesHtml = lines.length ? `<div class="o-time" style="margin-top:6px;">${lines.map(l=> l.item_note ? `${escapeHtml(l.item_name)} ×${l.quantity} <span style="color:#a33;">(${escapeHtml(l.item_note)})</span>` : `${escapeHtml(l.item_name)} ×${l.quantity}`).join('، ')}</div>` : '';
     const totalsHtml = o.total != null ? `<div class="o-time" style="margin-top:4px; font-weight:700; color:var(--ink);">الإجمالي: ${Number(o.total).toFixed(2)} EGP</div>` : '';
     const status = o.status || 'pending';
+    const today = isToday(o);
+    const fresh = isNewOrder(o);
+    const rowClasses = ['order-row', fresh ? 'is-new' : '', today ? 'is-today' : ''].filter(Boolean).join(' ');
+    const tagsHtml = `${fresh ? '<span class="o-tag new">جديد</span>' : ''}${today ? '<span class="o-tag today">اليوم</span>' : ''}`;
     return `
-      <div class="order-row" data-order-id="${o.id}">
-        <div class="o-name">${escapeHtml(o.customer_name)} <span style="font-weight:400; color:var(--stone); font-size:12px;">(${typeLabel})</span><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span></div>
+      <div class="${rowClasses}" data-order-id="${o.id}">
+        <div class="o-name">${escapeHtml(o.customer_name)} <span style="font-weight:400; color:var(--stone); font-size:12px;">(${typeLabel})</span><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${tagsHtml}</div>
         <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}
         <div class="o-time">${escapeHtml(o.city || '')}${o.area ? ' — ' + escapeHtml(o.area) : ''}${o.delivery_fee != null ? ` (رسوم التوصيل: ${Number(o.delivery_fee).toFixed(2)} EGP)` : ''}</div>
         ${o.address ? `<div class="o-time">${escapeHtml(o.address)}</div>` : ''}
@@ -849,33 +874,65 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
         </select>
         ${(status==='delivered' || status==='cancelled') ? `<div class="o-time" style="margin-top:2px; font-size:11px;">لا يمكن تغيير الحالة بعد أن أصبحت نهائية</div>` : ''}
       </div>`;
-  }).join('');
+  }
 
-  wrap.querySelectorAll('.order-row').forEach(row=>{
-    const orderId = row.dataset.orderId;
-    const select = row.querySelector('[data-action="statusSelect"]');
-    select.addEventListener('change', async ()=>{
-      const newStatus = select.value;
-      select.disabled = true;
-      const { error: updErr } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
-      if(updErr){ toast('تعذر تحديث حالة الطلب'); select.disabled = false; return; }
-      const badge = row.querySelector('.status-badge');
-      badge.className = `status-badge ${newStatus}`;
-      badge.textContent = STATUS_LABELS[newStatus] || newStatus;
-      if(newStatus === 'delivered' || newStatus === 'cancelled'){
+  function attachRowHandlers(){
+    wrap.querySelectorAll('.order-row').forEach(row=>{
+      const orderId = row.dataset.orderId;
+      const select = row.querySelector('[data-action="statusSelect"]');
+      select.addEventListener('change', async ()=>{
+        const newStatus = select.value;
         select.disabled = true;
-        select.title = 'لا يمكن تغيير حالة الطلب بعد أن أصبح نهائيًا';
-        const note = document.createElement('div');
-        note.className = 'o-time';
-        note.style.cssText = 'margin-top:2px; font-size:11px;';
-        note.textContent = 'لا يمكن تغيير الحالة بعد أن أصبحت نهائية';
-        select.insertAdjacentElement('afterend', note);
-      } else {
-        select.disabled = false;
-      }
-      toast('تم تحديث حالة الطلب');
+        const { error: updErr } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
+        if(updErr){ toast('تعذر تحديث حالة الطلب'); select.disabled = false; return; }
+        const orderObj = orders.find(o=> o.id === orderId);
+        if(orderObj) orderObj.status = newStatus;
+        const badge = row.querySelector('.status-badge');
+        badge.className = `status-badge ${newStatus}`;
+        badge.textContent = STATUS_LABELS[newStatus] || newStatus;
+        row.classList.toggle('is-new', newStatus === 'pending');
+        const existingTag = row.querySelector('.o-tag.new');
+        if(newStatus !== 'pending' && existingTag) existingTag.remove();
+        if(newStatus === 'delivered' || newStatus === 'cancelled'){
+          select.disabled = true;
+          select.title = 'لا يمكن تغيير حالة الطلب بعد أن أصبح نهائيًا';
+          const note = document.createElement('div');
+          note.className = 'o-time';
+          note.style.cssText = 'margin-top:2px; font-size:11px;';
+          note.textContent = 'لا يمكن تغيير الحالة بعد أن أصبحت نهائية';
+          select.insertAdjacentElement('afterend', note);
+        } else {
+          select.disabled = false;
+        }
+        toast('تم تحديث حالة الطلب');
+      });
+    });
+  }
+
+  function renderList(){
+    const filtered = orders.filter(o=>{
+      if(currentFilter === 'new') return isNewOrder(o);
+      if(currentFilter === 'today') return isToday(o);
+      if(currentFilter === 'previous') return !isToday(o);
+      return true;
+    });
+    if(filtered.length === 0){
+      wrap.innerHTML = `<div class="orders-empty">لا توجد طلبات في هذا التصنيف</div>`;
+      return;
+    }
+    wrap.innerHTML = filtered.map(orderRowHtml).join('');
+    attachRowHandlers();
+  }
+
+  overlay.querySelectorAll('.order-filter-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      currentFilter = btn.dataset.filter;
+      overlay.querySelectorAll('.order-filter-btn').forEach(b=> b.classList.toggle('active', b === btn));
+      renderList();
     });
   });
+
+  renderList();
 });
 
 document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
