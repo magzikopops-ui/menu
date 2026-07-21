@@ -29,7 +29,7 @@
   --display:'Lalezar','Tajawal',sans-serif; --body:'Tajawal',sans-serif; --mono:'JetBrains Mono',monospace;
 }
 *{box-sizing:border-box;}
-body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink); min-height:100vh;}
+body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink); min-height:100vh; overflow-x:hidden;}
 .hidden{display:none !important;}
 
 #authScreen{ min-height:100vh; background:var(--ink); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px 20px; }
@@ -70,7 +70,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--ember);}
 .switch-link{color:var(--stone); font-size:12px; cursor:pointer; text-decoration:underline; text-underline-offset:3px;}
 .switch-link:hover{color:var(--paper);}
-.topbar-actions{display:flex; gap:10px;}
+.topbar-actions{display:flex; gap:10px; flex-wrap:wrap;}
 .link-btn{ background:#2A2825; color:var(--paper); border:1px solid #454138; font-family:var(--body); font-weight:700; font-size:13px; padding:9px 16px; border-radius:6px; cursor:pointer; }
 .link-btn:hover{border-color:var(--stone);}
 .save-btn{ background:var(--basil); color:var(--paper); border:none; font-family:var(--body); font-weight:700; font-size:14px; padding:9px 20px; border-radius:6px; cursor:pointer; }
