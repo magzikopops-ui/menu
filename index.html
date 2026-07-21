@@ -352,6 +352,17 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
   <button class="pub-order-btn" id="pubOrderBtn"><span id="pubOrderBtnLabel">السلة</span><span class="cart-badge hidden" id="pubCartBadge">0</span></button>
 </div>
 
+<div id="trackingScreen" class="hidden" style="min-height:100vh; background:var(--paper); display:flex; align-items:center; justify-content:center; padding:20px;">
+  <div style="max-width:420px; width:100%; background:#fff; border:1px solid var(--line); border-radius:14px; padding:28px 24px; text-align:center;">
+    <div id="trackLogoWrap" style="margin-bottom:10px;"></div>
+    <h2 id="trackRestName" style="font-family:var(--display); margin:0 0 20px; color:var(--ink); font-size:22px;"></h2>
+    <div id="trackStatusWrap"></div>
+    <div id="trackItemsWrap" style="text-align:right; margin-top:22px;"></div>
+    <div id="trackTotalWrap" style="margin-top:12px; font-weight:700; color:var(--ink); text-align:left;"></div>
+    <div style="margin-top:18px; font-size:11px; color:var(--stone);">آخر تحديث: <span id="trackUpdatedAt"></span></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -391,7 +402,7 @@ function toast(msg){
   setTimeout(()=> el.classList.remove('show'), 2200);
 }
 function show(id){
-  ['loadingScreen','authScreen','onboardScreen','dashboardScreen','publicScreen'].forEach(s=>{
+  ['loadingScreen','authScreen','onboardScreen','dashboardScreen','publicScreen','trackingScreen'].forEach(s=>{
     document.getElementById(s).classList.toggle('hidden', s!==id);
   });
 }
@@ -418,6 +429,12 @@ function setPageMeta({ title, description, image }){
 async function boot(){
   const params = new URLSearchParams(location.search);
   const publicSlug = params.get('r');
+  const trackId = params.get('t');
+  if(trackId){
+    setFavicon('menu-favicon.png');
+    await loadOrderTracking(trackId);
+    return;
+  }
   if(publicSlug){
     setFavicon('menu-favicon.png');
     await loadPublic(publicSlug);
@@ -1780,6 +1797,59 @@ function openItemModal(existing){
 document.getElementById('addItemBtn').addEventListener('click', ()=> openItemModal(null));
 
 /* ================= public menu (no auth) ================= */
+let trackingInterval = null;
+async function loadOrderTracking(orderId){
+  show('trackingScreen');
+  await refreshTrackingData(orderId);
+  if(trackingInterval) clearInterval(trackingInterval);
+  trackingInterval = setInterval(()=> refreshTrackingData(orderId), 15000);
+}
+
+async function refreshTrackingData(orderId){
+  const { data, error } = await sb.rpc('get_order_tracking', { p_order_id: orderId });
+  const row = Array.isArray(data) ? data[0] : data;
+  if(error || !row){
+    document.getElementById('trackRestName').textContent = 'لم يتم العثور على هذا الطلب';
+    document.getElementById('trackStatusWrap').innerHTML = '';
+    document.getElementById('trackItemsWrap').innerHTML = '';
+    document.getElementById('trackTotalWrap').innerHTML = '';
+    if(trackingInterval){ clearInterval(trackingInterval); trackingInterval = null; }
+    return;
+  }
+  document.getElementById('trackLogoWrap').innerHTML = row.restaurant_logo
+    ? `<img src="${row.restaurant_logo}" style="max-height:56px; max-width:200px; object-fit:contain;">` : '';
+  document.getElementById('trackRestName').textContent = row.restaurant_name || '';
+  document.getElementById('trackStatusWrap').innerHTML = renderTrackingStatus(row.order_status);
+  const items = row.items || [];
+  document.getElementById('trackItemsWrap').innerHTML = items.map(it=>`
+    <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--line); font-size:13px; color:var(--ink);">
+      <span>${escapeHtml(it.item_name)}${it.variant_label ? ' (' + escapeHtml(it.variant_label) + ')' : ''}</span>
+      <span>× ${it.quantity}</span>
+    </div>`).join('');
+  document.getElementById('trackTotalWrap').textContent = row.total != null ? `الإجمالي: ${Number(row.total).toFixed(2)} EGP` : '';
+  document.getElementById('trackUpdatedAt').textContent = new Date().toLocaleTimeString('ar-EG');
+}
+
+function renderTrackingStatus(status){
+  if(status === 'cancelled'){
+    return `<div style="color:#a33; font-weight:700; font-size:16px; padding:10px 0;">❌ تم إلغاء هذا الطلب</div>`;
+  }
+  const steps = [
+    { key:'pending', label:'قيد الانتظار', icon:'🕒' },
+    { key:'preparing', label:'قيد التجهيز', icon:'👨‍🍳' },
+    { key:'delivered', label:'تم التسليم', icon:'✅' }
+  ];
+  const order = ['pending','preparing','delivered'];
+  const currentIdx = Math.max(0, order.indexOf(status));
+  return `<div style="display:flex; justify-content:space-between; align-items:flex-start;">
+    ${steps.map((s,i)=>`
+      <div style="flex:1; text-align:center;">
+        <div style="width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 6px; font-size:17px; background:${i<=currentIdx ? '#2e7d32' : 'var(--paper-dim)'};">${s.icon}</div>
+        <div style="font-size:11px; font-weight:700; color:${i<=currentIdx ? 'var(--ink)' : 'var(--stone)'};">${s.label}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
 function getRestaurantOpenStatus(rest){
   if(!rest.opening_time || !rest.closing_time) return { isOpen: true };
   const openParts = rest.opening_time.split(':').map(Number);
@@ -2369,11 +2439,38 @@ async function loadPublic(slug){
       cart = {};
       renderPublicBody();
       overlay.remove();
-      if(!rest.phone){
-        toast(lang==='en' ? 'Order sent! (restaurant has no WhatsApp number set)' : 'تم إرسال طلبك بنجاح! (لم يضف المطعم رقم واتساب)');
-      } else {
-        toast(lang==='en' ? 'Your order request was sent!' : 'تم إرسال طلبك بنجاح!');
-      }
+      showOrderSuccessModal(orderRow.id, !!rest.phone);
+    });
+  }
+
+  function showOrderSuccessModal(orderId, hasWhatsapp){
+    const trackLink = `${location.origin}${location.pathname}?t=${orderId}`;
+    const successOverlay = document.createElement('div');
+    successOverlay.className = 'overlay';
+    successOverlay.innerHTML = `
+      <div class="modal" style="text-align:center;">
+        <h3>${lang==='en' ? 'Order sent! ✅' : 'تم إرسال طلبك بنجاح! ✅'}</h3>
+        <div class="orders-empty" style="padding:0 0 14px;">${hasWhatsapp
+          ? (lang==='en' ? 'Your order was sent to the restaurant.' : 'تم إرسال طلبك للمطعم.')
+          : (lang==='en' ? 'Order saved (restaurant has no WhatsApp number set).' : 'تم حفظ طلبك (لم يضف المطعم رقم واتساب).')}</div>
+        <div class="orders-empty" style="padding:0 0 8px; font-weight:700; color:var(--ink);">${lang==='en' ? 'Track your order status here:' : 'تابع حالة طلبك من هنا:'}</div>
+        <div class="orders-empty" style="padding:0 0 14px; font-size:12px; word-break:break-all;">${escapeHtml(trackLink)}</div>
+        <div class="modal-actions">
+          <button class="btn-cancel" id="successCloseBtn">${lang==='en' ? 'Close' : 'إغلاق'}</button>
+          <button class="btn-cancel" id="successCopyBtn">${lang==='en' ? 'Copy link' : 'نسخ الرابط'}</button>
+          <button class="btn-confirm" id="successTrackBtn">${lang==='en' ? 'Track order' : 'تتبع الطلب'}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(successOverlay);
+    successOverlay.querySelector('#successCloseBtn').addEventListener('click', ()=> successOverlay.remove());
+    successOverlay.addEventListener('click', (e)=>{ if(e.target===successOverlay) successOverlay.remove(); });
+    successOverlay.querySelector('#successCopyBtn').addEventListener('click', ()=>{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(trackLink).then(()=> toast(lang==='en' ? 'Link copied' : 'تم نسخ الرابط')).catch(()=> toast(trackLink));
+      } else { toast(trackLink); }
+    });
+    successOverlay.querySelector('#successTrackBtn').addEventListener('click', ()=>{
+      window.open(trackLink, '_blank');
     });
   }
 
