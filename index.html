@@ -744,7 +744,7 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
     const time = d.toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' });
     const typeLabel = o.order_type === 'pickup' ? 'استلام' : 'توصيل';
     const lines = itemsByOrder[o.id] || [];
-    const linesHtml = lines.length ? `<div class="o-time" style="margin-top:6px;">${lines.map(l=>`${escapeHtml(l.item_name)} ×${l.quantity}`).join('، ')}</div>` : '';
+    const linesHtml = lines.length ? `<div class="o-time" style="margin-top:6px;">${lines.map(l=> l.item_note ? `${escapeHtml(l.item_name)} ×${l.quantity} <span style="color:#a33;">(${escapeHtml(l.item_note)})</span>` : `${escapeHtml(l.item_name)} ×${l.quantity}`).join('، ')}</div>` : '';
     const totalsHtml = o.total != null ? `<div class="o-time" style="margin-top:4px; font-weight:700; color:var(--ink);">الإجمالي: ${Number(o.total).toFixed(2)} EGP</div>` : '';
     const status = o.status || 'pending';
     return `
@@ -2188,11 +2188,12 @@ async function loadPublic(slug){
       const total = subtotal + fee;
       const showMinOrderNote = orderType === 'delivery' && rest.min_delivery_order != null && subtotal < Number(rest.min_delivery_order);
       overlay.querySelector('#ordSummaryWrap').innerHTML = `
-        ${Object.values(cart).map(c=>`
+        ${Object.entries(cart).map(([key,c])=>`
           <div class="cart-row">
             <span class="cr-name">${escapeHtml(tName(c.item.name, c.item.name_en))}${c.variantLabel ? ' (' + escapeHtml(c.variantLabel) + ')' : ''} × ${c.qty}</span>
             <span class="cr-line-total">${(c.qty * Number(c.unitPrice)).toFixed(2)} EGP</span>
-          </div>`).join('')}
+          </div>
+          <input type="text" class="cart-item-note" data-cart-key="${key}" value="${escapeHtml(c.note || '')}" placeholder="${lang==='en' ? 'Note for this item (optional) — e.g. no onions' : 'ملاحظة على الصنف (اختياري) — مثال: من غير بصل'}" style="width:100%; margin:2px 0 10px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-family:var(--body); font-size:12px; background:#fff; color:var(--ink);">`).join('')}
         <div class="cart-summary-row"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${subtotal.toFixed(2)} EGP</span></div>
         <div class="cart-summary-row"><span>${lang==='en' ? 'Delivery fee' : 'رسوم التوصيل'}</span><span>${fee.toFixed(2)} EGP</span></div>
         <div class="cart-summary-row total"><span>${lang==='en' ? 'Total' : 'الإجمالي'}</span><span>${total.toFixed(2)} EGP</span></div>
@@ -2200,6 +2201,12 @@ async function loadPublic(slug){
           ? `Minimum delivery order is ${rest.min_delivery_order} EGP — add ${(Number(rest.min_delivery_order) - subtotal).toFixed(2)} EGP more`
           : `أقل قيمة طلب للتوصيل ${rest.min_delivery_order} جنيه — أضف ${(Number(rest.min_delivery_order) - subtotal).toFixed(2)} جنيه لإتمام الطلب`}</div>` : ''}
       `;
+      overlay.querySelectorAll('.cart-item-note').forEach(inp=>{
+        inp.addEventListener('input', ()=>{
+          const key = inp.dataset.cartKey;
+          if(cart[key]) cart[key].note = inp.value;
+        });
+      });
     }
     renderSummary();
 
@@ -2249,9 +2256,10 @@ async function loadPublic(slug){
       const lines = Object.values(cart).map(c=>{
         const name = tName(c.item.name, c.item.name_en) + (c.variantLabel ? ` (${c.variantLabel})` : '');
         const lineTotal = (c.qty * Number(c.unitPrice)).toFixed(2);
-        return lang==='en'
+        const base = lang==='en'
           ? `- ${name} × ${c.qty} — ${lineTotal} EGP`
           : `- ${name} × ${c.qty} — ${lineTotal} جنيه`;
+        return c.note ? `${base}\n  ${lang==='en' ? '(note: ' : '(ملاحظة: '}${c.note})` : base;
       }).join('\n');
       const restName = tName(rest.name, rest.name_en);
       if(lang==='en'){
@@ -2353,7 +2361,7 @@ async function loadPublic(slug){
       const cartLines = Object.values(cart).map(c=>({
         order_id: orderRow.id, item_id: c.item.id,
         item_name: c.variantLabel ? `${c.item.name} (${c.variantLabel})` : c.item.name,
-        variant_label: c.variantLabel, price: c.unitPrice, quantity: c.qty
+        variant_label: c.variantLabel, price: c.unitPrice, quantity: c.qty, item_note: c.note || null
       }));
       if(cartLines.length){
         await sb.from('order_items').insert(cartLines);
