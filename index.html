@@ -339,6 +339,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
     </div>
   </div>
   <div class="pub-logo-wrap" id="pubLogoWrap"></div>
+  <div id="pubClosedBanner" class="hidden" style="max-width:640px; margin:0 auto 10px; padding:10px 20px; text-align:center; background:#5c2b2b; color:#fff; font-weight:700; font-size:13px; border-radius:8px;"></div>
   <div class="pub-search">
     <input type="text" id="pubSearchInput" placeholder="ابحث في القائمة...">
   </div>
@@ -1010,6 +1011,10 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         <button type="button" class="add-btn" id="removeLogoBtn" style="margin-top:8px; margin-bottom:0; ${pendingLogo ? '' : 'display:none;'}">حذف الشعار</button>
       </div>
       <div class="field">
+        <label>اسم المطعم</label>
+        <input type="text" id="restNameInput" value="${escapeHtml(restaurant.name)}" placeholder="مثال: مطعم الأصايل">
+      </div>
+      <div class="field">
         <label>اسم المطعم بالإنجليزية (اختياري)</label>
         <input type="text" id="restNameEnInput" value="${restaurant.name_en ? escapeHtml(restaurant.name_en) : ''}" placeholder="e.g. Al Asayel Restaurant">
       </div>
@@ -1020,6 +1025,19 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
       <div class="field">
         <label>عنوان المطعم (اختياري)</label>
         <input type="text" id="restAddressInput" value="${restaurant.address ? escapeHtml(restaurant.address) : ''}" placeholder="مثال: شارع الجمهورية، أمام محطة المترو">
+      </div>
+      <div class="field">
+        <label>أوقات العمل (اختياري — اتركهما فاضيين ليكون المطعم مفتوحًا طوال الوقت)</label>
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <small>يفتح الساعة</small>
+            <input type="time" id="restOpenTimeInput" value="${restaurant.opening_time ? restaurant.opening_time.slice(0,5) : ''}">
+          </div>
+          <div style="flex:1;">
+            <small>يقفل الساعة</small>
+            <input type="time" id="restCloseTimeInput" value="${restaurant.closing_time ? restaurant.closing_time.slice(0,5) : ''}">
+          </div>
+        </div>
       </div>
       <div class="field">
         <label>إشعار واتساب بالطلبات الجديدة (اختياري)</label>
@@ -1062,16 +1080,22 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
   overlay.querySelector('#rsCancel').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#rsConfirm').addEventListener('click', async ()=>{
+    const name = overlay.querySelector('#restNameInput').value.trim();
+    if(!name){ toast('اسم المطعم مطلوب'); return; }
     const name_en = overlay.querySelector('#restNameEnInput').value.trim() || null;
     const phone = overlay.querySelector('#restPhoneInput').value.trim() || null;
     const address = overlay.querySelector('#restAddressInput').value.trim() || null;
+    const opening_time = overlay.querySelector('#restOpenTimeInput').value || null;
+    const closing_time = overlay.querySelector('#restCloseTimeInput').value || null;
     const notification_phone = overlay.querySelector('#notifPhoneInput').value.trim() || null;
     const notification_apikey = overlay.querySelector('#notifApikeyInput').value.trim() || null;
     const btn = overlay.querySelector('#rsConfirm');
     btn.disabled = true;
-    const { data, error } = await sb.from('restaurants').update({ logo_url: pendingLogo, name_en, phone, address, notification_phone, notification_apikey }).eq('id', restaurant.id).select().single();
+    const { data, error } = await sb.from('restaurants').update({ logo_url: pendingLogo, name, name_en, phone, address, opening_time, closing_time, notification_phone, notification_apikey }).eq('id', restaurant.id).select().single();
     if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     restaurant = data;
+    document.getElementById('dashRestaurantName').textContent = restaurant.name;
+    document.getElementById('ticketShopName').textContent = restaurant.name;
     overlay.remove();
     toast('تم الحفظ');
   });
@@ -1750,6 +1774,21 @@ function openItemModal(existing){
 document.getElementById('addItemBtn').addEventListener('click', ()=> openItemModal(null));
 
 /* ================= public menu (no auth) ================= */
+function getRestaurantOpenStatus(rest){
+  if(!rest.opening_time || !rest.closing_time) return { isOpen: true };
+  const openParts = rest.opening_time.split(':').map(Number);
+  const closeParts = rest.closing_time.split(':').map(Number);
+  const openMin = openParts[0]*60 + openParts[1];
+  const closeMin = closeParts[0]*60 + closeParts[1];
+  const now = new Date();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  let isOpen;
+  if(openMin === closeMin) isOpen = true;
+  else if(openMin < closeMin) isOpen = nowMin >= openMin && nowMin < closeMin;
+  else isOpen = nowMin >= openMin || nowMin < closeMin;
+  return { isOpen, openLabel: rest.opening_time.slice(0,5), closeLabel: rest.closing_time.slice(0,5) };
+}
+
 async function loadPublic(slug){
   show('loadingScreen');
   const { data: rest, error: restErr } = await sb.from('restaurants').select('*').eq('slug', slug).maybeSingle();
@@ -1788,6 +1827,7 @@ async function loadPublic(slug){
   let lang = 'ar'; // 'ar' or 'en'
   let searchTerm = '';
   let cart = {}; // item_id -> { item, qty }
+  let isRestaurantOpenNow = true;
 
   function cartCount(){
     return Object.values(cart).reduce((sum,c)=> sum + c.qty, 0);
@@ -1855,6 +1895,17 @@ async function loadPublic(slug){
     document.getElementById('pubSearchInput').placeholder = lang==='en' ? 'Search the menu...' : 'ابحث في القائمة...';
     document.getElementById('pubOrderBtnLabel').textContent = lang==='en' ? 'Cart' : 'السلة';
     document.getElementById('pubRepeatOrderBtn').textContent = lang==='en' ? '🔁 Repeat last order' : '🔁 كرر آخر طلب';
+    const openStatus = getRestaurantOpenStatus(rest);
+    isRestaurantOpenNow = openStatus.isOpen;
+    const closedBanner = document.getElementById('pubClosedBanner');
+    if(!openStatus.isOpen){
+      closedBanner.textContent = lang==='en'
+        ? `Currently closed — open ${openStatus.openLabel} to ${openStatus.closeLabel}`
+        : `المطعم مغلق حاليًا — مواعيد العمل من ${openStatus.openLabel} إلى ${openStatus.closeLabel}`;
+      closedBanner.classList.remove('hidden');
+    } else {
+      closedBanner.classList.add('hidden');
+    }
     const callBtn = document.getElementById('pubCallBtn');
     if(rest.phone){
       callBtn.href = `tel:${rest.phone}`;
@@ -2216,6 +2267,10 @@ async function loadPublic(slug){
     overlay.querySelector('#ordCancel').addEventListener('click', ()=> overlay.remove());
     overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
     overlay.querySelector('#ordConfirm').addEventListener('click', async ()=>{
+      if(!isRestaurantOpenNow){
+        toast(lang==='en' ? 'Sorry, we are currently closed' : 'عذرًا، المطعم مغلق حاليًا ولا يمكن إتمام الطلب');
+        return;
+      }
       const customer_name = overlay.querySelector('#ordName').value.trim();
       const customer_phone = overlay.querySelector('#ordPhone').value.trim();
       const secondary_phone = overlay.querySelector('#ordPhone2').value.trim() || null;
