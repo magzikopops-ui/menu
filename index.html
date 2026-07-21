@@ -219,6 +219,8 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .status-badge.preparing{background:rgba(184,57,14,.15); color:var(--ember);}
 .status-badge.delivered{background:rgba(63,98,71,.15); color:var(--basil);}
 .status-badge.cancelled{background:rgba(166,57,43,.15); color:var(--danger);}
+.new-orders-badge{ display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; margin-inline-start:5px; border-radius:999px; background:var(--danger); color:#fff; font-size:11px; font-weight:800; font-family:var(--mono); vertical-align:middle; animation:badge-pulse 1.6s infinite; }
+@keyframes badge-pulse{ 0%{ box-shadow:0 0 0 0 rgba(166,57,43,.55);} 70%{ box-shadow:0 0 0 7px rgba(166,57,43,0);} 100%{ box-shadow:0 0 0 0 rgba(166,57,43,0);} }
 .status-select{ margin-top:8px; border:1.5px solid var(--line); border-radius:8px; padding:6px 10px; font-family:var(--body); font-size:12.5px; color:var(--ink); background:var(--paper); }
 .orders-empty{text-align:center; color:var(--stone); padding:30px;}
 .ord-type-toggle{ display:flex; gap:8px; }
@@ -323,7 +325,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
       <span class="switch-link" id="signOutLink">تسجيل الخروج</span>
     </div>
     <div class="topbar-actions">
-      <button class="link-btn" id="viewOrdersBtn">الطلبات <span id="newOrdersBadge" class="status-badge pending hidden" style="margin-inline-start:4px;">0</span></button>
+      <button class="link-btn" id="viewOrdersBtn">الطلبات <span id="newOrdersBadge" class="new-orders-badge hidden">0</span></button>
       <button class="link-btn" id="viewStatsBtn">الإحصائيات</button>
       <button class="link-btn" id="cleanupOrdersBtn">حذف الطلبات القديمة</button>
       <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
@@ -660,6 +662,7 @@ async function openDashboard(){
   refreshAllBizLabels();
   await refreshData();
   subscribeToNewOrders();
+  refreshNewOrdersCount();
   show('dashboardScreen');
 }
 
@@ -695,11 +698,19 @@ async function refreshData(){
 function updateNewOrdersBadge(){
   const badge = document.getElementById('newOrdersBadge');
   if(newOrdersCount > 0){
-    badge.textContent = newOrdersCount;
+    badge.textContent = newOrdersCount > 99 ? '99+' : newOrdersCount;
     badge.classList.remove('hidden');
   } else {
     badge.classList.add('hidden');
   }
+}
+
+async function refreshNewOrdersCount(){
+  if(!restaurant) return;
+  const { count, error } = await sb.from('orders').select('id', { count: 'exact', head: true }).eq('restaurant_id', restaurant.id).eq('status', 'pending');
+  if(error) return;
+  newOrdersCount = count || 0;
+  updateNewOrdersBadge();
 }
 
 function playNewOrderSound(){
@@ -732,6 +743,14 @@ function subscribeToNewOrders(){
       updateNewOrdersBadge();
       playNewOrderSound();
       toast(`طلب جديد من ${payload.new && payload.new.customer_name ? payload.new.customer_name : 'عميل'}! 🔔`);
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'orders',
+      filter: `restaurant_id=eq.${restaurant.id}`
+    }, ()=>{
+      refreshNewOrdersCount();
     })
     .subscribe();
 }
@@ -799,8 +818,6 @@ document.getElementById('deliveryZonesBtn').addEventListener('click', async ()=>
 });
 
 document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
-  newOrdersCount = 0;
-  updateNewOrdersBadge();
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
@@ -887,6 +904,7 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
         if(updErr){ toast('تعذر تحديث حالة الطلب'); select.disabled = false; return; }
         const orderObj = orders.find(o=> o.id === orderId);
         if(orderObj) orderObj.status = newStatus;
+        refreshNewOrdersCount();
         const badge = row.querySelector('.status-badge');
         badge.className = `status-badge ${newStatus}`;
         badge.textContent = STATUS_LABELS[newStatus] || newStatus;
