@@ -210,6 +210,9 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .o-tag{ display:inline-block; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:10px; margin-inline-start:6px; }
 .o-tag.new{ background:var(--ember); color:#fff; }
 .o-tag.today{ background:rgba(63,98,71,.15); color:var(--basil); }
+.o-number{ font-family:var(--mono); direction:ltr; display:inline-block; color:var(--stone); font-weight:800; font-size:12.5px; margin-inline-end:6px; }
+.orders-search-input{ width:100%; box-sizing:border-box; border:1.5px solid var(--line); border-radius:10px; padding:9px 12px; font-family:var(--body); font-size:13px; color:var(--ink); background:var(--paper); margin-bottom:12px; }
+.orders-search-input:focus{ outline:none; border-color:var(--ember); }
 .order-filters{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
 .order-filter-btn{ border:1.5px solid var(--line); background:var(--paper); color:var(--stone); font-family:var(--body); font-size:12.5px; font-weight:700; padding:6px 14px; border-radius:20px; cursor:pointer; transition:.15s; }
 .order-filter-btn:hover{ border-color:var(--ember); color:var(--ember); }
@@ -829,6 +832,7 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
         <button type="button" class="order-filter-btn" data-filter="today">طلبات اليوم</button>
         <button type="button" class="order-filter-btn" data-filter="previous">أيام سابقة</button>
       </div>
+      <input type="text" id="ordersSearchInput" class="orders-search-input" placeholder="بحث برقم الطلب، اسم العميل، أو رقم الهاتف...">
       <div class="orders-list" id="ordersListWrap"><div class="orders-empty">جارِ التحميل...</div></div>
       <div class="modal-actions">
         <button class="btn-cancel" id="ordersCloseBtn">إغلاق</button>
@@ -860,6 +864,18 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
   const isNewOrder = (o)=> (o.status || 'pending') === 'pending';
 
   let currentFilter = 'all';
+  let searchQuery = '';
+
+  function matchesSearch(o){
+    if(!searchQuery) return true;
+    const q = searchQuery.trim().toLowerCase();
+    if(!q) return true;
+    const inNumber = o.order_number != null && String(o.order_number).includes(q);
+    const inName = (o.customer_name || '').toLowerCase().includes(q);
+    const inPhone = (o.customer_phone || '').includes(q);
+    const inSecondaryPhone = (o.secondary_phone || '').includes(q);
+    return inNumber || inName || inPhone || inSecondaryPhone;
+  }
 
   function orderRowHtml(o){
     const d = new Date(o.created_at);
@@ -873,9 +889,10 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
     const fresh = isNewOrder(o);
     const rowClasses = ['order-row', fresh ? 'is-new' : '', today ? 'is-today' : ''].filter(Boolean).join(' ');
     const tagsHtml = `${fresh ? '<span class="o-tag new">جديد</span>' : ''}${today ? '<span class="o-tag today">اليوم</span>' : ''}`;
+    const numberHtml = o.order_number != null ? `<span class="o-number">#${o.order_number}</span>` : '';
     return `
       <div class="${rowClasses}" data-order-id="${o.id}">
-        <div class="o-name">${escapeHtml(o.customer_name)} <span style="font-weight:400; color:var(--stone); font-size:12px;">(${typeLabel})</span><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${tagsHtml}</div>
+        <div class="o-name">${numberHtml}${escapeHtml(o.customer_name)} <span style="font-weight:400; color:var(--stone); font-size:12px;">(${typeLabel})</span><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${tagsHtml}</div>
         <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}
         <div class="o-time">${escapeHtml(o.city || '')}${o.area ? ' — ' + escapeHtml(o.area) : ''}${o.delivery_fee != null ? ` (رسوم التوصيل: ${Number(o.delivery_fee).toFixed(2)} EGP)` : ''}</div>
         ${o.address ? `<div class="o-time">${escapeHtml(o.address)}</div>` : ''}
@@ -929,18 +946,24 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
 
   function renderList(){
     const filtered = orders.filter(o=>{
+      if(!matchesSearch(o)) return false;
       if(currentFilter === 'new') return isNewOrder(o);
       if(currentFilter === 'today') return isToday(o);
       if(currentFilter === 'previous') return !isToday(o);
       return true;
     });
     if(filtered.length === 0){
-      wrap.innerHTML = `<div class="orders-empty">لا توجد طلبات في هذا التصنيف</div>`;
+      wrap.innerHTML = `<div class="orders-empty">${searchQuery ? 'لا توجد نتائج مطابقة للبحث' : 'لا توجد طلبات في هذا التصنيف'}</div>`;
       return;
     }
     wrap.innerHTML = filtered.map(orderRowHtml).join('');
     attachRowHandlers();
   }
+
+  overlay.querySelector('#ordersSearchInput').addEventListener('input', (e)=>{
+    searchQuery = e.target.value;
+    renderList();
+  });
 
   overlay.querySelectorAll('.order-filter-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -2626,17 +2649,22 @@ async function loadPublic(slug){
       cart = {};
       renderPublicBody();
       overlay.remove();
-      showOrderSuccessModal(orderRow.id, !!rest.phone);
+      showOrderSuccessModal(orderRow, !!rest.phone);
     });
   }
 
-  function showOrderSuccessModal(orderId, hasWhatsapp){
+  function showOrderSuccessModal(orderRow, hasWhatsapp){
+    const orderId = orderRow.id;
+    const orderNumberHtml = orderRow.order_number != null
+      ? `<div class="orders-empty" style="padding:0 0 10px; font-size:20px; font-weight:800; color:var(--ember); font-family:var(--mono); direction:ltr;">#${orderRow.order_number}</div>`
+      : '';
     const trackLink = `${location.origin}${location.pathname}?t=${orderId}`;
     const successOverlay = document.createElement('div');
     successOverlay.className = 'overlay';
     successOverlay.innerHTML = `
       <div class="modal" style="text-align:center;">
         <h3>${lang==='en' ? 'Order sent! ✅' : 'تم إرسال طلبك بنجاح! ✅'}</h3>
+        ${orderNumberHtml}
         <div class="orders-empty" style="padding:0 0 14px;">${hasWhatsapp
           ? (lang==='en' ? `Your order was sent to the ${biz(rest.business_type,'entityEn').toLowerCase()}.` : `تم إرسال طلبك لـ${biz(rest.business_type,'entityDef')}.`)
           : (lang==='en' ? `Order saved (${biz(rest.business_type,'entityEn').toLowerCase()} has no WhatsApp number set).` : `تم حفظ طلبك (لم يضف ${biz(rest.business_type,'entityDef')} رقم واتساب).`)}</div>
