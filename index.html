@@ -2051,12 +2051,9 @@ async function loadPublic(slug){
     document.documentElement.dir = lang==='en' ? 'ltr' : 'rtl';
     document.getElementById('pubLangLabel').textContent = lang==='en' ? 'العربية' : 'English';
     const restName = tName(rest.name, rest.name_en);
-    const restSecondaryName = secondaryName(rest.name, rest.name_en);
-    const nameBlockHtml = `
-      <div class="name-fallback">${escapeHtml(restName)}</div>
-      ${restSecondaryName ? `<div class="pub-rest-subname">${escapeHtml(restSecondaryName)}</div>` : ''}`;
+    const nameBlockHtml = `<div class="name-fallback">${escapeHtml(restName)}</div>`;
     document.getElementById('pubLogoWrap').innerHTML = rest.logo_url
-      ? `<img src="${rest.logo_url}" alt="${escapeHtml(restName)}"><div class="pub-rest-name">${escapeHtml(restName)}</div>${restSecondaryName ? `<div class="pub-rest-subname">${escapeHtml(restSecondaryName)}</div>` : ''}`
+      ? `<img src="${rest.logo_url}" alt="${escapeHtml(restName)}"><div class="pub-rest-name">${escapeHtml(restName)}</div>`
       : nameBlockHtml;
     document.getElementById('pubSearchInput').placeholder = lang==='en' ? 'Search the menu...' : 'ابحث في القائمة...';
     document.getElementById('pubOrderBtnLabel').textContent = lang==='en' ? 'Cart' : 'السلة';
