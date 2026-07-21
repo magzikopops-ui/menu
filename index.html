@@ -1040,6 +1040,10 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         </div>
       </div>
       <div class="field">
+        <label>حد أدنى لقيمة الطلب في التوصيل (اختياري — اتركه فاضيًا لعدم وجود حد أدنى)</label>
+        <input type="number" id="restMinOrderInput" value="${restaurant.min_delivery_order != null ? restaurant.min_delivery_order : ''}" placeholder="مثال: 100" min="0" step="0.01">
+      </div>
+      <div class="field">
         <label>إشعار واتساب بالطلبات الجديدة (اختياري)</label>
         <small>لتفعيل الإشعار: احفظ رقم <span dir="ltr" style="font-family:var(--mono);">+34 684 74 26 79</span> في هاتفك، وابعتله على واتساب رسالة نصها بالإنجليزية بالظبط: <span dir="ltr" style="font-family:var(--mono);">I allow callmebot to send me messages</span>، وهيردلك برسالة فيها الرمز الخاص بيك (apikey). اكتب رقمك ورمزك تحت.</small>
         <input type="text" id="notifPhoneInput" value="${restaurant.notification_phone ? escapeHtml(restaurant.notification_phone) : ''}" placeholder="رقم واتساب بصيغة دولية: 201154361888" style="margin-top:8px; direction:ltr;">
@@ -1087,11 +1091,13 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     const address = overlay.querySelector('#restAddressInput').value.trim() || null;
     const opening_time = overlay.querySelector('#restOpenTimeInput').value || null;
     const closing_time = overlay.querySelector('#restCloseTimeInput').value || null;
+    const minOrderRaw = overlay.querySelector('#restMinOrderInput').value.trim();
+    const min_delivery_order = minOrderRaw ? Number(minOrderRaw) : null;
     const notification_phone = overlay.querySelector('#notifPhoneInput').value.trim() || null;
     const notification_apikey = overlay.querySelector('#notifApikeyInput').value.trim() || null;
     const btn = overlay.querySelector('#rsConfirm');
     btn.disabled = true;
-    const { data, error } = await sb.from('restaurants').update({ logo_url: pendingLogo, name, name_en, phone, address, opening_time, closing_time, notification_phone, notification_apikey }).eq('id', restaurant.id).select().single();
+    const { data, error } = await sb.from('restaurants').update({ logo_url: pendingLogo, name, name_en, phone, address, opening_time, closing_time, min_delivery_order, notification_phone, notification_apikey }).eq('id', restaurant.id).select().single();
     if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     restaurant = data;
     document.getElementById('dashRestaurantName').textContent = restaurant.name;
@@ -2180,6 +2186,7 @@ async function loadPublic(slug){
     function renderSummary(){
       const fee = currentDeliveryFee();
       const total = subtotal + fee;
+      const showMinOrderNote = orderType === 'delivery' && rest.min_delivery_order != null && subtotal < Number(rest.min_delivery_order);
       overlay.querySelector('#ordSummaryWrap').innerHTML = `
         ${Object.values(cart).map(c=>`
           <div class="cart-row">
@@ -2189,6 +2196,9 @@ async function loadPublic(slug){
         <div class="cart-summary-row"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${subtotal.toFixed(2)} EGP</span></div>
         <div class="cart-summary-row"><span>${lang==='en' ? 'Delivery fee' : 'رسوم التوصيل'}</span><span>${fee.toFixed(2)} EGP</span></div>
         <div class="cart-summary-row total"><span>${lang==='en' ? 'Total' : 'الإجمالي'}</span><span>${total.toFixed(2)} EGP</span></div>
+        ${showMinOrderNote ? `<div class="orders-empty" style="color:#a33; font-weight:700; padding-top:6px;">${lang==='en'
+          ? `Minimum delivery order is ${rest.min_delivery_order} EGP — add ${(Number(rest.min_delivery_order) - subtotal).toFixed(2)} EGP more`
+          : `أقل قيمة طلب للتوصيل ${rest.min_delivery_order} جنيه — أضف ${(Number(rest.min_delivery_order) - subtotal).toFixed(2)} جنيه لإتمام الطلب`}</div>` : ''}
       `;
     }
     renderSummary();
@@ -2293,6 +2303,13 @@ async function loadPublic(slug){
 
       if(!customer_name || !customer_phone || !city || (orderType==='delivery' && (!area || !address))){
         toast(lang==='en' ? 'Please fill in all required fields' : 'يرجى إدخال جميع الحقول المطلوبة');
+        return;
+      }
+      if(orderType === 'delivery' && rest.min_delivery_order != null && subtotal < Number(rest.min_delivery_order)){
+        const remaining = (Number(rest.min_delivery_order) - subtotal).toFixed(2);
+        toast(lang==='en'
+          ? `Minimum delivery order is ${rest.min_delivery_order} EGP. Add ${remaining} EGP more`
+          : `أقل قيمة طلب للتوصيل ${rest.min_delivery_order} جنيه — أضف ${remaining} جنيه لإتمام الطلب`);
         return;
       }
       const fee = delivery_fee != null ? Number(delivery_fee) : 0;
