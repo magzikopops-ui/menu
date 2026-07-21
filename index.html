@@ -828,12 +828,13 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
         ${totalsHtml}
         ${o.notes ? `<div class="o-time" style="margin-top:4px;">${escapeHtml(o.notes)}</div>` : ''}
         <div class="o-time" style="margin-top:4px;">${time}</div>
-        <select class="status-select" data-action="statusSelect">
+        <select class="status-select" data-action="statusSelect" ${(status==='delivered' || status==='cancelled') ? 'disabled title="لا يمكن تغيير حالة الطلب بعد أن أصبح نهائيًا"' : ''}>
           <option value="pending" ${status==='pending' ? 'selected' : ''}>قيد الانتظار</option>
           <option value="preparing" ${status==='preparing' ? 'selected' : ''}>قيد التجهيز</option>
           <option value="delivered" ${status==='delivered' ? 'selected' : ''}>تم التسليم</option>
           <option value="cancelled" ${status==='cancelled' ? 'selected' : ''}>ملغي</option>
         </select>
+        ${(status==='delivered' || status==='cancelled') ? `<div class="o-time" style="margin-top:2px; font-size:11px;">لا يمكن تغيير الحالة بعد أن أصبحت نهائية</div>` : ''}
       </div>`;
   }).join('');
 
@@ -844,11 +845,21 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
       const newStatus = select.value;
       select.disabled = true;
       const { error: updErr } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
-      select.disabled = false;
-      if(updErr){ toast('تعذر تحديث حالة الطلب'); return; }
+      if(updErr){ toast('تعذر تحديث حالة الطلب'); select.disabled = false; return; }
       const badge = row.querySelector('.status-badge');
       badge.className = `status-badge ${newStatus}`;
       badge.textContent = STATUS_LABELS[newStatus] || newStatus;
+      if(newStatus === 'delivered' || newStatus === 'cancelled'){
+        select.disabled = true;
+        select.title = 'لا يمكن تغيير حالة الطلب بعد أن أصبح نهائيًا';
+        const note = document.createElement('div');
+        note.className = 'o-time';
+        note.style.cssText = 'margin-top:2px; font-size:11px;';
+        note.textContent = 'لا يمكن تغيير الحالة بعد أن أصبحت نهائية';
+        select.insertAdjacentElement('afterend', note);
+      } else {
+        select.disabled = false;
+      }
       toast('تم تحديث حالة الطلب');
     });
   });
