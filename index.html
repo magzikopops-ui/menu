@@ -269,14 +269,21 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 
 <div id="onboardScreen" class="hidden">
   <div class="onboard-box">
-    <h3>أنشئ مطعمك</h3>
-    <p>لم يُربط بهذا الحساب أي مطعم بعد. يرجى اختيار اسم المطعم والرابط العام الذي سيظهر لعملائك.</p>
+    <h3 id="obHeading">أنشئ حسابك</h3>
+    <p id="obIntro">لم يُربط بهذا الحساب أي نشاط بعد. اختار نوع نشاطك أولًا، ثم اسمه والرابط العام اللي هيظهر لعملائك.</p>
     <div class="field">
-      <label>اسم المطعم</label>
+      <label>نوع النشاط</label>
+      <div class="ord-type-toggle">
+        <div class="ord-type-btn active" id="obTypeRestaurant">مطعم</div>
+        <div class="ord-type-btn" id="obTypeStore">متجر عام</div>
+      </div>
+    </div>
+    <div class="field">
+      <label id="obNameLabel">اسم المطعم</label>
       <input type="text" id="obName" placeholder="مثال: مطعم الأصايل">
     </div>
     <div class="field">
-      <label>رابط القائمة (بالإنجليزية، بدون مسافات)</label>
+      <label id="obSlugLabel">رابط القائمة (بالإنجليزية، بدون مسافات)</label>
       <input type="text" id="obSlug" placeholder="al-asayel">
       <small>سيكون رابطك على الشكل التالي: ...html?r=al-asayel</small>
     </div>
@@ -384,6 +391,24 @@ let ordersChannel = null;
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+const BIZ_TERMS = {
+  restaurant: {
+    entityDef:'المطعم', entityIndef:'مطعم', entityPossessive:'مطعمك', entityInfo:'معلومات المطعم',
+    itemIndef:'صنف', itemDef:'الصنف', itemsIndef:'أصناف', itemsDef:'الأصناف',
+    itemNamePh:'مثال: بيتزا مارجريتا', itemDescPh:'مكونات الصنف أو ملاحظات إضافية',
+    entityEn:'Restaurant', itemEn:'item', itemsEn:'items'
+  },
+  store: {
+    entityDef:'المتجر', entityIndef:'متجر', entityPossessive:'متجرك', entityInfo:'معلومات المتجر',
+    itemIndef:'منتج', itemDef:'المنتج', itemsIndef:'منتجات', itemsDef:'المنتجات',
+    itemNamePh:'مثال: قميص قطن', itemDescPh:'تفاصيل المنتج أو ملاحظات إضافية',
+    entityEn:'Store', itemEn:'product', itemsEn:'products'
+  }
+};
+function biz(type, key){
+  return BIZ_TERMS[type === 'store' ? 'store' : 'restaurant'][key];
 }
 
 const CUSTOMER_INFO_KEY = 'menuCustomerInfo';
@@ -547,7 +572,7 @@ document.getElementById('signOutLink').addEventListener('click', async ()=>{
 async function afterLogin(){
   show('loadingScreen');
   const { data, error } = await sb.from('restaurants').select('*').eq('owner_id', currentUser.id).maybeSingle();
-  if(error){ toast('خطأ في تحميل بيانات المطعم'); show('authScreen'); return; }
+  if(error){ toast('حدث خطأ في تحميل البيانات'); show('authScreen'); return; }
   if(data){
     restaurant = data;
     await openDashboard();
@@ -556,6 +581,28 @@ async function afterLogin(){
   }
 }
 
+let obBusinessType = 'restaurant';
+function updateOnboardingLabels(){
+  const t = BIZ_TERMS[obBusinessType];
+  document.getElementById('obHeading').textContent = `أنشئ ${t.entityPossessive}`;
+  document.getElementById('obIntro').textContent = `لم يُربط بهذا الحساب أي ${t.entityIndef} بعد. يرجى اختيار اسم ${t.entityIndef} والرابط العام الذي سيظهر لعملائك.`;
+  document.getElementById('obNameLabel').textContent = `اسم ${t.entityDef}`;
+  document.getElementById('obName').placeholder = obBusinessType === 'store' ? 'مثال: متجر الأناقة' : 'مثال: مطعم الأصايل';
+  document.getElementById('obSubmitBtn').textContent = `إنشاء ${t.entityDef}`;
+}
+document.getElementById('obTypeRestaurant').addEventListener('click', ()=>{
+  obBusinessType = 'restaurant';
+  document.getElementById('obTypeRestaurant').classList.add('active');
+  document.getElementById('obTypeStore').classList.remove('active');
+  updateOnboardingLabels();
+});
+document.getElementById('obTypeStore').addEventListener('click', ()=>{
+  obBusinessType = 'store';
+  document.getElementById('obTypeStore').classList.add('active');
+  document.getElementById('obTypeRestaurant').classList.remove('active');
+  updateOnboardingLabels();
+});
+
 document.getElementById('obSubmitBtn').addEventListener('click', async ()=>{
   const name = document.getElementById('obName').value.trim();
   let slug = document.getElementById('obSlug').value.trim().toLowerCase();
@@ -563,11 +610,11 @@ document.getElementById('obSubmitBtn').addEventListener('click', async ()=>{
   const errEl = document.getElementById('obErr');
   errEl.style.color = '#e08a78';
   errEl.textContent = '';
-  if(!name){ errEl.textContent = 'يرجى إدخال اسم المطعم'; return; }
+  if(!name){ errEl.textContent = `يرجى إدخال اسم ${biz(obBusinessType,'entityDef')}`; return; }
   if(!slug){ errEl.textContent = 'يرجى إدخال رابط صالح بالإنجليزية'; return; }
   const btn = document.getElementById('obSubmitBtn');
   btn.disabled = true;
-  const { data, error } = await sb.from('restaurants').insert({ owner_id: currentUser.id, name, slug }).select().single();
+  const { data, error } = await sb.from('restaurants').insert({ owner_id: currentUser.id, name, slug, business_type: obBusinessType }).select().single();
   btn.disabled = false;
   if(error){
     errEl.textContent = error.message.includes('duplicate') ? 'هذا الرابط مستخدم بالفعل، يرجى تجربة رابط آخر' : (error.message || 'حدث خطأ');
@@ -578,10 +625,16 @@ document.getElementById('obSubmitBtn').addEventListener('click', async ()=>{
 });
 
 /* ================= dashboard ================= */
+function refreshAllBizLabels(){
+  document.getElementById('restaurantSettingsBtn').textContent = `إعدادات ${biz(restaurant.business_type,'entityDef')}`;
+  document.getElementById('addItemBtn').textContent = `+ إضافة ${biz(restaurant.business_type,'itemIndef')} جديد`;
+}
+
 async function openDashboard(){
   show('loadingScreen');
   document.getElementById('dashRestaurantName').textContent = restaurant.name;
   document.getElementById('ticketShopName').textContent = restaurant.name;
+  refreshAllBizLabels();
   await refreshData();
   subscribeToNewOrders();
   show('dashboardScreen');
@@ -847,7 +900,7 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
     <div class="orders-empty" style="text-align:right; padding:10px 0 0; font-size:12px;">
       هذه الأرقام تشمل الطلبات المحذوفة أيضًا ولا تتأثر بحذف الطلبات القديمة.
     </div>
-    <h3 style="margin-top:20px;">الأصناف الأكثر طلبًا</h3>
+    <h3 style="margin-top:20px;">${biz(restaurant.business_type,'itemsDef')} الأكثر طلبًا</h3>
     <div id="topItemsWrap"><div class="orders-empty">جارِ التحميل...</div></div>`;
 
   const topItemsWrap = overlay.querySelector('#topItemsWrap');
@@ -1013,13 +1066,22 @@ document.getElementById('changePasswordLink').addEventListener('click', ()=>{
 
 document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
   let pendingLogo = restaurant.logo_url || null;
+  let pendingBizType = restaurant.business_type === 'store' ? 'store' : 'restaurant';
+  const t = () => BIZ_TERMS[pendingBizType];
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
     <div class="modal">
-      <h3>إعدادات المطعم</h3>
+      <h3 id="rsHeading">إعدادات ${t().entityDef}</h3>
       <div class="field">
-        <label>شعار المطعم (اختياري)</label>
+        <label>نوع النشاط</label>
+        <div class="ord-type-toggle">
+          <div class="ord-type-btn ${pendingBizType==='restaurant'?'active':''}" id="rsTypeRestaurant">مطعم</div>
+          <div class="ord-type-btn ${pendingBizType==='store'?'active':''}" id="rsTypeStore">متجر عام</div>
+        </div>
+      </div>
+      <div class="field">
+        <label id="rsLogoLabel">شعار ${t().entityDef} (اختياري)</label>
         <div class="img-drop" id="logoDrop">
           ${pendingLogo ? `<img src="${pendingLogo}"><br>` : ''}
           <span id="logoDropText">${pendingLogo ? 'انقر لتغيير الشعار' : 'انقر لرفع الشعار'}</span>
@@ -1028,23 +1090,23 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         <button type="button" class="add-btn" id="removeLogoBtn" style="margin-top:8px; margin-bottom:0; ${pendingLogo ? '' : 'display:none;'}">حذف الشعار</button>
       </div>
       <div class="field">
-        <label>اسم المطعم</label>
+        <label id="rsNameLabel">اسم ${t().entityDef}</label>
         <input type="text" id="restNameInput" value="${escapeHtml(restaurant.name)}" placeholder="مثال: مطعم الأصايل">
       </div>
       <div class="field">
-        <label>اسم المطعم بالإنجليزية (اختياري)</label>
+        <label id="rsNameEnLabel">اسم ${t().entityDef} بالإنجليزية (اختياري)</label>
         <input type="text" id="restNameEnInput" value="${restaurant.name_en ? escapeHtml(restaurant.name_en) : ''}" placeholder="e.g. Al Asayel Restaurant">
       </div>
       <div class="field">
-        <label>رقم تليفون المطعم (يظهر للعميل - اتصال)</label>
+        <label id="rsPhoneLabel">رقم تليفون ${t().entityDef} (يظهر للعميل - اتصال)</label>
         <input type="text" id="restPhoneInput" value="${restaurant.phone ? escapeHtml(restaurant.phone) : ''}" placeholder="رقم بصيغة دولية: 201154361888" style="direction:ltr;">
       </div>
       <div class="field">
-        <label>عنوان المطعم (اختياري)</label>
+        <label id="rsAddressLabel">عنوان ${t().entityDef} (اختياري)</label>
         <input type="text" id="restAddressInput" value="${restaurant.address ? escapeHtml(restaurant.address) : ''}" placeholder="مثال: شارع الجمهورية، أمام محطة المترو">
       </div>
       <div class="field">
-        <label>أوقات العمل (اختياري — اتركهما فاضيين ليكون المطعم مفتوحًا طوال الوقت)</label>
+        <label id="rsHoursLabel">أوقات العمل (اختياري — اتركهما فاضيين ليكون ${t().entityDef} مفتوحًا طوال الوقت)</label>
         <div style="display:flex; gap:10px;">
           <div style="flex:1;">
             <small>يفتح الساعة</small>
@@ -1072,6 +1134,27 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  function refreshBizLabels(){
+    overlay.querySelector('#rsHeading').textContent = `إعدادات ${t().entityDef}`;
+    overlay.querySelector('#rsLogoLabel').textContent = `شعار ${t().entityDef} (اختياري)`;
+    overlay.querySelector('#rsNameLabel').textContent = `اسم ${t().entityDef}`;
+    overlay.querySelector('#rsNameEnLabel').textContent = `اسم ${t().entityDef} بالإنجليزية (اختياري)`;
+    overlay.querySelector('#rsPhoneLabel').textContent = `رقم تليفون ${t().entityDef} (يظهر للعميل - اتصال)`;
+    overlay.querySelector('#rsAddressLabel').textContent = `عنوان ${t().entityDef} (اختياري)`;
+    overlay.querySelector('#rsHoursLabel').textContent = `أوقات العمل (اختياري — اتركهما فاضيين ليكون ${t().entityDef} مفتوحًا طوال الوقت)`;
+  }
+  overlay.querySelector('#rsTypeRestaurant').addEventListener('click', ()=>{
+    pendingBizType = 'restaurant';
+    overlay.querySelector('#rsTypeRestaurant').classList.add('active');
+    overlay.querySelector('#rsTypeStore').classList.remove('active');
+    refreshBizLabels();
+  });
+  overlay.querySelector('#rsTypeStore').addEventListener('click', ()=>{
+    pendingBizType = 'store';
+    overlay.querySelector('#rsTypeStore').classList.add('active');
+    overlay.querySelector('#rsTypeRestaurant').classList.remove('active');
+    refreshBizLabels();
+  });
   const logoDrop = overlay.querySelector('#logoDrop');
   const logoInput = overlay.querySelector('#logoInput');
   logoDrop.addEventListener('click', ()=> logoInput.click());
@@ -1088,7 +1171,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     }catch(e){ toast('تعذر تحميل الشعار'); }
   });
   removeLogoBtn.addEventListener('click', async ()=>{
-    if(!confirm('هل تريد حذف شعار المطعم؟')) return;
+    if(!confirm(`هل تريد حذف شعار ${t().entityDef}؟`)) return;
     const oldLogo = pendingLogo;
     pendingLogo = null;
     logoDrop.innerHTML = `<span id="logoDropText">انقر لرفع الشعار</span>`;
@@ -1102,7 +1185,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#rsConfirm').addEventListener('click', async ()=>{
     const name = overlay.querySelector('#restNameInput').value.trim();
-    if(!name){ toast('اسم المطعم مطلوب'); return; }
+    if(!name){ toast(`اسم ${t().entityDef} مطلوب`); return; }
     const name_en = overlay.querySelector('#restNameEnInput').value.trim() || null;
     const phone = overlay.querySelector('#restPhoneInput').value.trim() || null;
     const address = overlay.querySelector('#restAddressInput').value.trim() || null;
@@ -1114,11 +1197,12 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     const notification_apikey = overlay.querySelector('#notifApikeyInput').value.trim() || null;
     const btn = overlay.querySelector('#rsConfirm');
     btn.disabled = true;
-    const { data, error } = await sb.from('restaurants').update({ logo_url: pendingLogo, name, name_en, phone, address, opening_time, closing_time, min_delivery_order, notification_phone, notification_apikey }).eq('id', restaurant.id).select().single();
+    const { data, error } = await sb.from('restaurants').update({ logo_url: pendingLogo, name, name_en, phone, address, opening_time, closing_time, min_delivery_order, notification_phone, notification_apikey, business_type: pendingBizType }).eq('id', restaurant.id).select().single();
     if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     restaurant = data;
     document.getElementById('dashRestaurantName').textContent = restaurant.name;
     document.getElementById('ticketShopName').textContent = restaurant.name;
+    refreshAllBizLabels();
     overlay.remove();
     toast('تم الحفظ');
   });
@@ -1205,7 +1289,7 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
   });
 
   if(parsed.length === 0){
-    toast('لم يتم العثور على صفوف صالحة (فئة، صنف، سعر)');
+    toast(`لم يتم العثور على صفوف صالحة (فئة، ${biz(restaurant.business_type,'itemIndef')}، سعر)`);
     return;
   }
 
@@ -1223,12 +1307,12 @@ function openImportPreviewModal(parsed, uniqueCats){
     </div>`).join('');
   overlay.innerHTML = `
     <div class="modal">
-      <h3>استيراد أصناف من إكسيل</h3>
+      <h3>استيراد ${biz(restaurant.business_type,'itemsIndef')} من إكسيل</h3>
       <div class="orders-empty" style="text-align:right; padding:6px 0 14px;">
-        تم العثور على <b>${parsed.length}</b> صنف ضمن <b>${uniqueCats.length}</b> فئة.
-        سيتم إنشاء أي فئة غير موجودة تلقائيًا، وإضافة الأصناف كأسعار ثابتة.
+        تم العثور على <b>${parsed.length}</b> ${biz(restaurant.business_type,'itemIndef')} ضمن <b>${uniqueCats.length}</b> فئة.
+        سيتم إنشاء أي فئة غير موجودة تلقائيًا، وإضافة ${biz(restaurant.business_type,'itemsDef')} كأسعار ثابتة.
       </div>
-      <div id="importPreviewWrap">${previewRows}${parsed.length > 8 ? `<div class="orders-empty">و ${parsed.length - 8} صنف آخر...</div>` : ''}</div>
+      <div id="importPreviewWrap">${previewRows}${parsed.length > 8 ? `<div class="orders-empty">و ${parsed.length - 8} ${biz(restaurant.business_type,'itemIndef')} آخر...</div>` : ''}</div>
       <div class="modal-actions">
         <button class="btn-cancel" id="importCancelBtn">إلغاء</button>
         <button class="btn-confirm" id="importConfirmBtn">استيراد الآن</button>
@@ -1246,7 +1330,7 @@ function openImportPreviewModal(parsed, uniqueCats){
       await runImport(parsed, uniqueCats);
       overlay.remove();
       await refreshData();
-      toast('تم استيراد الأصناف بنجاح');
+      toast(`تم استيراد ${biz(restaurant.business_type,'itemsDef')} بنجاح`);
     }catch(err){
       toast('حدث خطأ أثناء الاستيراد');
       btn.disabled = false;
@@ -1300,10 +1384,10 @@ async function runImport(parsed, uniqueCats){
 /* ================= Excel Export ================= */
 document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   if(categories.length === 0){
-    toast('لا توجد فئات أو أصناف لتصديرها');
+    toast(`لا توجد فئات أو ${biz(restaurant.business_type,'itemsIndef')} لتصديرها`);
     return;
   }
-  const rows = [['الفئة', 'الصنف', 'السعر']];
+  const rows = [['الفئة', biz(restaurant.business_type,'itemDef'), 'السعر']];
   categories.forEach(cat=>{
     const catItems = items.filter(i=>i.category_id === cat.id);
     catItems.forEach(item=>{
@@ -1406,14 +1490,14 @@ function renderItems(){
   const cat = categories.find(c=>c.id===selectedCategoryId);
   document.getElementById('mainTitle').textContent = cat ? cat.name : 'يرجى إضافة فئة أولاً';
   const catItems = cat ? items.filter(i=>i.category_id===cat.id) : [];
-  document.getElementById('mainSub').textContent = cat ? `${catItems.length} صنف في هذه الفئة` : 'ابدأ بإضافة فئة من القائمة على اليمين';
+  document.getElementById('mainSub').textContent = cat ? `${catItems.length} ${biz(restaurant.business_type,'itemIndef')} في هذه الفئة` : 'ابدأ بإضافة فئة من القائمة على اليمين';
   document.getElementById('addItemBtn').style.display = cat ? 'block' : 'none';
 
   const wrap = document.getElementById('itemList');
   wrap.innerHTML = '';
   if(!cat) return;
   if(catItems.length === 0){
-    wrap.innerHTML = `<div class="empty"><span class="big">لا توجد أصناف بعد</span>يرجى إضافة أول صنف في "${escapeHtml(cat.name)}"</div>`;
+    wrap.innerHTML = `<div class="empty"><span class="big">لا توجد ${biz(restaurant.business_type,'itemsIndef')} بعد</span>يرجى إضافة أول ${biz(restaurant.business_type,'itemIndef')} في "${escapeHtml(cat.name)}"</div>`;
     return;
   }
   catItems.forEach(item=>{
@@ -1447,9 +1531,9 @@ function renderItems(){
 
 async function toggleItemAvailability(item, makeAvailable){
   const { error } = await sb.from('items').update({ is_available: makeAvailable }).eq('id', item.id);
-  if(error){ toast('تعذر تحديث حالة الصنف'); return; }
+  if(error){ toast(`تعذر تحديث حالة ${biz(restaurant.business_type,'itemDef')}`); return; }
   item.is_available = makeAvailable;
-  toast(makeAvailable ? 'الصنف ظاهر للعملاء الآن' : 'الصنف مخفي مؤقتًا عن العملاء');
+  toast(makeAvailable ? `${biz(restaurant.business_type,'itemDef')} ظاهر للعملاء الآن` : `${biz(restaurant.business_type,'itemDef')} مخفي مؤقتًا عن العملاء`);
   renderItems();
 }
 
@@ -1471,7 +1555,7 @@ function initItemSortable(){
       try{
         await Promise.all(reordered.map((it, idx)=> sb.from('items').update({ position: idx }).eq('id', it.id)));
       }catch(err){
-        toast('تعذر حفظ ترتيب الأصناف');
+        toast(`تعذر حفظ ترتيب ${biz(restaurant.business_type,'itemsDef')}`);
       }
     }
   });
@@ -1494,7 +1578,7 @@ function renderTicket(){
   const catItems = items.filter(i=>i.category_id===previewCategoryId);
   const itemsWrap = document.getElementById('ticketItems');
   if(catItems.length === 0){
-    itemsWrap.innerHTML = `<div class="ticket-empty">لا توجد أصناف في هذه الفئة</div>`;
+    itemsWrap.innerHTML = `<div class="ticket-empty">لا توجد ${biz(restaurant.business_type,'itemsIndef')} في هذه الفئة</div>`;
     return;
   }
   itemsWrap.innerHTML = catItems.map(i=>`
@@ -1508,7 +1592,7 @@ function renderTicket(){
 /* ================= category CRUD ================= */
 async function deleteCategory(id){
   const cat = categories.find(c=>c.id===id);
-  if(!confirm(`حذف فئة "${cat.name}" وكل الأصناف بداخلها؟`)) return;
+  if(!confirm(`حذف فئة "${cat.name}" وكل ${biz(restaurant.business_type,'itemsDef')} بداخلها؟`)) return;
   const { error } = await sb.from('categories').delete().eq('id', id);
   if(error){ toast('تعذر الحذف'); return; }
   await refreshData();
@@ -1616,7 +1700,7 @@ async function migrateLegacyImages(){
 }
 
 async function deleteItem(id){
-  if(!confirm('حذف هذا الصنف؟')) return;
+  if(!confirm(`حذف هذا ${biz(restaurant.business_type,'itemDef')}؟`)) return;
   const { error } = await sb.from('items').delete().eq('id', id);
   if(error){ toast('تعذر الحذف'); return; }
   await refreshData();
@@ -1632,9 +1716,9 @@ function openItemModal(existing){
   overlay.className = 'overlay';
   overlay.innerHTML = `
     <div class="modal">
-      <h3>${existing ? 'تعديل الصنف' : 'إضافة صنف جديد'}</h3>
+      <h3>${existing ? `تعديل ${biz(restaurant.business_type,'itemDef')}` : `إضافة ${biz(restaurant.business_type,'itemIndef')} جديد`}</h3>
       <div class="field">
-        <label>صورة الصنف (اختياري)</label>
+        <label>صورة ${biz(restaurant.business_type,'itemDef')} (اختياري)</label>
         <div class="img-drop" id="imgDrop">
           ${pendingImage ? `<img src="${pendingImage}"><br>` : ''}
           <span id="imgDropText">${pendingImage ? 'انقر لتغيير الصورة' : 'انقر لرفع صورة'}</span>
@@ -1643,8 +1727,8 @@ function openItemModal(existing){
         <button type="button" class="add-btn" id="removeImgBtn" style="margin-top:8px; margin-bottom:0; ${pendingImage ? '' : 'display:none;'}">حذف الصورة</button>
       </div>
       <div class="field">
-        <label>اسم الصنف (بالعربية)</label>
-        <input type="text" id="itemName" value="${existing ? escapeHtml(existing.name) : ''}" placeholder="مثال: بيتزا مارجريتا">
+        <label>اسم ${biz(restaurant.business_type,'itemDef')} (بالعربية)</label>
+        <input type="text" id="itemName" value="${existing ? escapeHtml(existing.name) : ''}" placeholder="${biz(restaurant.business_type,'itemNamePh')}">
       </div>
       <div class="field">
         <label>الاسم بالإنجليزية (اختياري)</label>
@@ -1655,7 +1739,7 @@ function openItemModal(existing){
         <select id="itemPricingType" style="width:100%; border:1.5px solid var(--line); border-radius:8px; padding:10px 12px; font-family:var(--body); font-size:14px; color:var(--ink); background:var(--paper);">
           <option value="unit" ${pricingType==='unit' ? 'selected' : ''}>بالعدد (سعر ثابت لكل قطعة)</option>
           <option value="weight" ${pricingType==='weight' ? 'selected' : ''}>بالوزن (سعر لكل كيلوجرام)</option>
-          <option value="sizes" ${pricingType==='sizes' ? 'selected' : ''}>أحجام مختلفة، كل حجم بسعره</option>
+          <option value="sizes" ${pricingType==='sizes' ? 'selected' : ''}>أحجام/خيارات مختلفة، كل واحد بسعره</option>
         </select>
       </div>
       <div class="field" id="priceFieldWrap">
@@ -1669,7 +1753,7 @@ function openItemModal(existing){
       </div>
       <div class="field">
         <label>الوصف (اختياري)</label>
-        <textarea id="itemDesc" placeholder="مكونات الصنف أو ملاحظات إضافية">${existing ? escapeHtml(existing.description||'') : ''}</textarea>
+        <textarea id="itemDesc" placeholder="${biz(restaurant.business_type,'itemDescPh')}">${existing ? escapeHtml(existing.description||'') : ''}</textarea>
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" id="itemCancel">إلغاء</button>
@@ -1733,7 +1817,7 @@ function openItemModal(existing){
     }catch(e){ toast('تعذر تحميل الصورة'); }
   });
   removeImgBtn.addEventListener('click', ()=>{
-    if(!confirm('هل تريد حذف صورة الصنف؟')) return;
+    if(!confirm(`هل تريد حذف صورة ${biz(restaurant.business_type,'itemDef')}؟`)) return;
     pendingImage = null;
     imgDrop.innerHTML = `<span id="imgDropText">انقر لرفع صورة</span>`;
     removeImgBtn.style.display = 'none';
@@ -1784,7 +1868,7 @@ function openItemModal(existing){
       await sb.from('item_sizes').delete().eq('item_id', itemId);
       const rowsToInsert = sizesToSave.map((s, idx)=>({ item_id: itemId, size_name: s.size_name, price: s.price, position: idx }));
       const { error: sizeErr } = await sb.from('item_sizes').insert(rowsToInsert);
-      if(sizeErr){ toast('تم حفظ الصنف لكن تعذر حفظ الأحجام'); overlay.remove(); await refreshData(); return; }
+      if(sizeErr){ toast(`تم حفظ ${biz(restaurant.business_type,'itemDef')} لكن تعذر حفظ الأحجام`); overlay.remove(); await refreshData(); return; }
     } else if(existing){
       await sb.from('item_sizes').delete().eq('item_id', itemId);
     }
@@ -1870,9 +1954,9 @@ async function loadPublic(slug){
   const { data: rest, error: restErr } = await sb.from('restaurants').select('*').eq('slug', slug).maybeSingle();
   if(restErr || !rest){
     show('publicScreen');
-    document.getElementById('pubLogoWrap').innerHTML = `<div class="name-fallback">المطعم غير موجود</div>`;
+    document.getElementById('pubLogoWrap').innerHTML = `<div class="name-fallback">الصفحة غير موجودة</div>`;
     document.getElementById('pubTabs').innerHTML = '';
-    document.getElementById('pubBody').innerHTML = `<div class="pub-empty">هذا الرابط غير صحيح أو تم حذف المطعم.</div>`;
+    document.getElementById('pubBody').innerHTML = `<div class="pub-empty">هذا الرابط غير صحيح.</div>`;
     return;
   }
   const { data: cats } = await sb.from('categories').select('*').eq('restaurant_id', rest.id).order('position');
@@ -1943,11 +2027,11 @@ async function loadPublic(slug){
     });
     updateCartButton();
     if(restoredCount === 0){
-      toast(lang==='en' ? 'These items are no longer available' : 'هذه الأصناف لم تعد متاحة');
+      toast(lang==='en' ? `These ${biz(rest.business_type,'itemsEn')} are no longer available` : `هذه ${biz(rest.business_type,'itemsDef')} لم تعد متاحة`);
       return;
     }
     toast(skippedCount > 0
-      ? (lang==='en' ? 'Order restored (some items unavailable)' : 'تم استرجاع الطلب (بعض الأصناف لم تعد متاحة)')
+      ? (lang==='en' ? `Order restored (some ${biz(rest.business_type,'itemsEn')} unavailable)` : `تم استرجاع الطلب (بعض ${biz(rest.business_type,'itemsDef')} لم تعد متاحة)`)
       : (lang==='en' ? 'Order restored!' : 'تم استرجاع الطلب!'));
     openCartModal();
   };
@@ -1976,13 +2060,14 @@ async function loadPublic(slug){
     document.getElementById('pubSearchInput').placeholder = lang==='en' ? 'Search the menu...' : 'ابحث في القائمة...';
     document.getElementById('pubOrderBtnLabel').textContent = lang==='en' ? 'Cart' : 'السلة';
     document.getElementById('pubRepeatOrderBtn').textContent = lang==='en' ? '🔁 Repeat last order' : '🔁 كرر آخر طلب';
+    document.getElementById('pubInfoBtn').title = lang==='en' ? `${biz(rest.business_type,'entityEn')} info` : `معلومات ${biz(rest.business_type,'entityDef')}`;
     const openStatus = getRestaurantOpenStatus(rest);
     isRestaurantOpenNow = openStatus.isOpen;
     const closedBanner = document.getElementById('pubClosedBanner');
     if(!openStatus.isOpen){
       closedBanner.textContent = lang==='en'
-        ? `Currently closed — open ${openStatus.openLabel} to ${openStatus.closeLabel}`
-        : `المطعم مغلق حاليًا — مواعيد العمل من ${openStatus.openLabel} إلى ${openStatus.closeLabel}`;
+        ? `${biz(rest.business_type,'entityEn')} currently closed — open ${openStatus.openLabel} to ${openStatus.closeLabel}`
+        : `${biz(rest.business_type,'entityDef')} مغلق حاليًا — مواعيد العمل من ${openStatus.openLabel} إلى ${openStatus.closeLabel}`;
       closedBanner.classList.remove('hidden');
     } else {
       closedBanner.classList.add('hidden');
@@ -2027,7 +2112,7 @@ async function loadPublic(slug){
     const tabsWrap = document.getElementById('pubTabs');
     tabsWrap.innerHTML = '';
     if(pubCats.length === 0){
-      document.getElementById('pubBody').innerHTML = `<div class="pub-empty">${lang==='en' ? 'No items yet.' : 'لا توجد أصناف في القائمة بعد.'}</div>`;
+      document.getElementById('pubBody').innerHTML = `<div class="pub-empty">${lang==='en' ? `No ${biz(rest.business_type,'itemsEn')} yet.` : `لا توجد ${biz(rest.business_type,'itemsIndef')} في القائمة بعد.`}</div>`;
       return;
     }
     pubCats.forEach(cat=>{
@@ -2048,7 +2133,7 @@ async function loadPublic(slug){
       catItems = pubItems.filter(i=>i.category_id===activeCat);
     }
     if(catItems.length === 0){
-      body.innerHTML = `<div class="pub-empty">${lang==='en' ? 'Nothing found.' : 'لا توجد أصناف هنا.'}</div>`;
+      body.innerHTML = `<div class="pub-empty">${lang==='en' ? 'Nothing found.' : `لا توجد ${biz(rest.business_type,'itemsIndef')} هنا.`}</div>`;
       return;
     }
     const weightPresets = [250,500,750,1000,1500,2000];
@@ -2268,7 +2353,7 @@ async function loadPublic(slug){
             <span class="cr-name">${escapeHtml(tName(c.item.name, c.item.name_en))}${c.variantLabel ? ' (' + escapeHtml(c.variantLabel) + ')' : ''} × ${c.qty}</span>
             <span class="cr-line-total">${(c.qty * Number(c.unitPrice)).toFixed(2)} EGP</span>
           </div>
-          <input type="text" class="cart-item-note" data-cart-key="${key}" value="${escapeHtml(c.note || '')}" placeholder="${lang==='en' ? 'Note for this item (optional) — e.g. no onions' : 'ملاحظة على الصنف (اختياري) — مثال: من غير بصل'}" style="width:100%; margin:2px 0 10px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-family:var(--body); font-size:12px; background:#fff; color:var(--ink);">`).join('')}
+          <input type="text" class="cart-item-note" data-cart-key="${key}" value="${escapeHtml(c.note || '')}" placeholder="${lang==='en' ? `Note for this ${biz(rest.business_type,'itemEn')} (optional)` : `ملاحظة على ${biz(rest.business_type,'itemDef')} (اختياري)`}" style="width:100%; margin:2px 0 10px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-family:var(--body); font-size:12px; background:#fff; color:var(--ink);">`).join('')}
         <div class="cart-summary-row"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${subtotal.toFixed(2)} EGP</span></div>
         <div class="cart-summary-row"><span>${lang==='en' ? 'Delivery fee' : 'رسوم التوصيل'}</span><span>${fee.toFixed(2)} EGP</span></div>
         <div class="cart-summary-row total"><span>${lang==='en' ? 'Total' : 'الإجمالي'}</span><span>${total.toFixed(2)} EGP</span></div>
@@ -2361,7 +2446,7 @@ async function loadPublic(slug){
     overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
     overlay.querySelector('#ordConfirm').addEventListener('click', async ()=>{
       if(!isRestaurantOpenNow){
-        toast(lang==='en' ? 'Sorry, we are currently closed' : 'عذرًا، المطعم مغلق حاليًا ولا يمكن إتمام الطلب');
+        toast(lang==='en' ? `Sorry, we are currently closed` : `عذرًا، ${biz(rest.business_type,'entityDef')} مغلق حاليًا ولا يمكن إتمام الطلب`);
         return;
       }
       const customer_name = overlay.querySelector('#ordName').value.trim();
@@ -2456,8 +2541,8 @@ async function loadPublic(slug){
       <div class="modal" style="text-align:center;">
         <h3>${lang==='en' ? 'Order sent! ✅' : 'تم إرسال طلبك بنجاح! ✅'}</h3>
         <div class="orders-empty" style="padding:0 0 14px;">${hasWhatsapp
-          ? (lang==='en' ? 'Your order was sent to the restaurant.' : 'تم إرسال طلبك للمطعم.')
-          : (lang==='en' ? 'Order saved (restaurant has no WhatsApp number set).' : 'تم حفظ طلبك (لم يضف المطعم رقم واتساب).')}</div>
+          ? (lang==='en' ? `Your order was sent to the ${biz(rest.business_type,'entityEn').toLowerCase()}.` : `تم إرسال طلبك لـ${biz(rest.business_type,'entityDef')}.`)
+          : (lang==='en' ? `Order saved (${biz(rest.business_type,'entityEn').toLowerCase()} has no WhatsApp number set).` : `تم حفظ طلبك (لم يضف ${biz(rest.business_type,'entityDef')} رقم واتساب).`)}</div>
         <div class="orders-empty" style="padding:0 0 8px; font-weight:700; color:var(--ink);">${lang==='en' ? 'Track your order status here:' : 'تابع حالة طلبك من هنا:'}</div>
         <div class="orders-empty" style="padding:0 0 14px; font-size:12px; word-break:break-all;">${escapeHtml(trackLink)}</div>
         <div class="modal-actions">
