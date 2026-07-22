@@ -2474,6 +2474,7 @@ async function loadPublic(slug){
         <h3>${escapeHtml(restName)}</h3>
         ${rest.address ? `<div class="field-row"><span class="icon">📍</span><span class="txt">${escapeHtml(rest.address)}</span></div>` : ''}
         ${rest.phone ? `<div class="field-row"><span class="icon">📞</span><span class="txt"><a href="tel:${rest.phone}" dir="ltr">${escapeHtml(rest.phone)}</a></span></div>` : ''}
+        ${rest.phone ? `<div class="field-row"><span class="icon">💬</span><span class="txt"><a href="https://wa.me/${rest.phone.replace(/[^\d]/g,'')}" target="_blank" rel="noopener">${lang==='en' ? 'Chat on WhatsApp' : 'تواصل عبر واتساب'}</a></span></div>` : ''}
         <div class="modal-actions">
           <button class="btn-confirm" id="infoCloseBtn">${lang==='en' ? 'Close' : 'إغلاق'}</button>
         </div>
