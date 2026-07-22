@@ -2929,8 +2929,8 @@ async function loadPublic(slug){
         <div id="cartLinesWrap">
           ${lines.length === 0 ? `<div class="cart-empty-note">${lang==='en' ? 'Your cart is empty' : 'السلة فارغة'}</div>` : ''}
         </div>
-        ${lines.length > 0 ? `<div class="cart-summary-row total"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${cartSubtotal().toFixed(2)} EGP</span></div>` : ''}
-        <div class="modal-actions">
+        <div id="cartSubtotalWrap"></div>
+        <div class="modal-actions" id="cartActionsWrap">
           <button class="btn-cancel" id="cartCloseBtn">${lang==='en' ? 'Close' : 'إغلاق'}</button>
           ${lines.length > 0 ? `<button class="btn-confirm" id="cartProceedBtn">${lang==='en' ? 'Proceed to order' : 'المتابعة للطلب'}</button>` : ''}
         </div>
@@ -2939,6 +2939,7 @@ async function loadPublic(slug){
 
     function renderLines(){
       const wrap = overlay.querySelector('#cartLinesWrap');
+      const subtotalWrap = overlay.querySelector('#cartSubtotalWrap');
       const entries = Object.entries(cart);
       if(entries.length === 0){
         overlay.remove();
@@ -2955,16 +2956,19 @@ async function loadPublic(slug){
           </div>
           <span class="cr-line-total">${(c.qty * Number(c.unitPrice)).toFixed(2)} EGP</span>
         </div>`).join('');
+      subtotalWrap.innerHTML = `<div class="cart-summary-row total"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${cartSubtotal().toFixed(2)} EGP</span></div>`;
       wrap.querySelectorAll('.cart-row').forEach(row=>{
         const key = row.dataset.cartKey;
         row.querySelector('[data-action="inc"]').addEventListener('click', ()=>{
           cart[key].qty += 1;
           renderLines();
+          updateCartButton();
         });
         row.querySelector('[data-action="dec"]').addEventListener('click', ()=>{
           cart[key].qty -= 1;
           if(cart[key].qty <= 0) delete cart[key];
           renderLines();
+          updateCartButton();
         });
       });
     }
