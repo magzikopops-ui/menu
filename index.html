@@ -2584,7 +2584,7 @@ async function loadPublic(slug){
         const key = `${itemId}:${grams}`;
         const unitPrice = Number(item.price) * grams / 1000;
         if(cart[key]){ cart[key].qty += 1; }
-        else { cart[key] = { item, variantLabel: weightLabel(grams), unitPrice, qty: 1 }; }
+        else { cart[key] = { item, variantLabel: weightLabel(grams), unitPrice, weightGrams: grams, qty: 1 }; }
         renderPublicBody();
       });
     });
@@ -2870,7 +2870,8 @@ async function loadPublic(slug){
       const cartLines = Object.values(cart).map(c=>({
         order_id: orderRow.id, item_id: c.item.id,
         item_name: c.variantLabel ? `${c.item.name} (${c.variantLabel})` : c.item.name,
-        variant_label: c.variantLabel, price: c.unitPrice, quantity: c.qty, item_note: c.note || null
+        variant_label: c.variantLabel, price: c.unitPrice, quantity: c.qty, item_note: c.note || null,
+        weight_grams: c.weightGrams || null
       }));
       if(cartLines.length){
         await sb.from('order_items').insert(cartLines);
