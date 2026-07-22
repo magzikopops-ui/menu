@@ -330,14 +330,12 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
     <div class="topbar-actions">
       <button class="link-btn" id="viewOrdersBtn">الطلبات <span id="newOrdersBadge" class="new-orders-badge hidden">0</span></button>
       <button class="link-btn" id="viewStatsBtn">الإحصائيات</button>
-      <button class="link-btn" id="cleanupOrdersBtn">حذف الطلبات القديمة</button>
-      <button class="link-btn" id="cleanupImagesBtn">تنظيف وتحسين الصور</button>
-      <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
-      <button class="link-btn" id="restaurantSettingsBtn">إعدادات المطعم</button>
       <button class="link-btn" id="copyPublicLinkBtn">نسخ رابط القائمة العام</button>
       <button class="link-btn" id="showQrBtn">QR Code</button>
+      <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
       <button class="link-btn" id="importExcelBtn">استيراد من إكسيل</button>
       <button class="link-btn" id="exportExcelBtn">تصدير إلى إكسيل</button>
+      <button class="link-btn" id="restaurantSettingsBtn">إعدادات المطعم</button>
       <input type="file" id="importExcelInput" accept=".xlsx,.xls" style="display:none;">
     </div>
   </div>
@@ -1055,7 +1053,7 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
   }
 });
 
-document.getElementById('cleanupOrdersBtn').addEventListener('click', ()=>{
+function openCleanupOrdersModal(){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
@@ -1137,9 +1135,9 @@ document.getElementById('cleanupOrdersBtn').addEventListener('click', ()=>{
     toast('تم حذف الطلبات القديمة بنجاح');
     close();
   });
-});
+}
 
-document.getElementById('cleanupImagesBtn').addEventListener('click', ()=>{
+function openCleanupImagesModal(){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
@@ -1193,7 +1191,7 @@ document.getElementById('cleanupImagesBtn').addEventListener('click', ()=>{
       await refreshData();
     });
   });
-});
+}
 
 document.getElementById('changePasswordLink').addEventListener('click', ()=>{
   const overlay = document.createElement('div');
@@ -1309,12 +1307,28 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         <input type="text" id="notifPhoneInput" value="${restaurant.notification_phone ? escapeHtml(restaurant.notification_phone) : ''}" placeholder="رقم واتساب بصيغة دولية: 201154361888" style="margin-top:8px; direction:ltr;">
         <input type="text" id="notifApikeyInput" value="${restaurant.notification_apikey ? escapeHtml(restaurant.notification_apikey) : ''}" placeholder="الرمز (apikey) اللي وصلك من البوت" style="margin-top:8px; direction:ltr;">
       </div>
+      <div class="field">
+        <label>الصيانة</label>
+        <small>أدوات صيانة دورية، مش لازم تستخدمها كتير</small>
+        <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+          <button type="button" class="add-btn" id="rsCleanupOrdersBtn" style="margin:0; flex:1;">حذف الطلبات القديمة</button>
+          <button type="button" class="add-btn" id="rsCleanupImagesBtn" style="margin:0; flex:1;">تنظيف وتحسين الصور</button>
+        </div>
+      </div>
       <div class="modal-actions">
         <button class="btn-cancel" id="rsCancel">إلغاء</button>
         <button class="btn-confirm" id="rsConfirm">حفظ</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  overlay.querySelector('#rsCleanupOrdersBtn').addEventListener('click', ()=>{
+    overlay.remove();
+    openCleanupOrdersModal();
+  });
+  overlay.querySelector('#rsCleanupImagesBtn').addEventListener('click', ()=>{
+    overlay.remove();
+    openCleanupImagesModal();
+  });
   function refreshBizLabels(){
     overlay.querySelector('#rsHeading').textContent = `إعدادات ${t().entityDef}`;
     overlay.querySelector('#rsLogoLabel').textContent = `شعار ${t().entityDef} (اختياري)`;
