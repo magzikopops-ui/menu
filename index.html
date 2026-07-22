@@ -2445,19 +2445,19 @@ async function loadPublic(slug){
     const overlay = document.createElement('div');
     overlay.className = 'overlay';
     const waLink = 'https://wa.me/201154361888?text=' + encodeURIComponent(
-      lang==='en' ? `Hi, I'd like an online menu like this for my ${biz(rest.business_type,'entityIndef')}` : `مرحبًا، عايز منيو أونلاين زي ده لـ${biz(rest.business_type,'entityIndef')} بتاعي`
+      lang==='en' ? `Hello, I would like to get an online menu like this for my ${biz(rest.business_type,'entityIndef')}` : `مرحبًا، أرغب في الحصول على قائمة إلكترونية مثل هذه لـ${biz(rest.business_type,'entityIndef')}ي`
     );
     overlay.innerHTML = `
       <div class="modal info-modal">
         <h3>✨ منيو m@g</h3>
         <p style="margin:0 0 16px; color:var(--stone); font-size:14px; line-height:1.7;">
           ${lang==='en'
-            ? `This online menu was built with منيو m@g — a platform that lets any restaurant or store launch its own online menu and start taking orders online.`
-            : `المنيو دي اتعملت باستخدام منيو m@g — منصة بتسمح لأي مطعم أو متجر يعمل منيو أونلاين خاص بيه ويستقبل طلبات مباشرة.`}
+            ? `This menu was created using Menu m@g — a platform that enables any restaurant or store to build its own online menu and receive orders directly.`
+            : `تم إنشاء هذه القائمة باستخدام منيو m@g — منصة تتيح لأي مطعم أو متجر إنشاء قائمة طعام إلكترونية خاصة به واستقبال الطلبات مباشرة.`}
         </p>
         <div class="modal-actions">
           <button class="btn-cancel" id="aboutCloseBtn">${lang==='en' ? 'Close' : 'إغلاق'}</button>
-          <a class="btn-confirm" style="display:flex; align-items:center; justify-content:center; text-decoration:none;" href="${waLink}" target="_blank" rel="noopener">${lang==='en' ? 'Get one for my business' : 'عايز واحد لمشروعي'}</a>
+          <a class="btn-confirm" style="display:flex; align-items:center; justify-content:center; text-decoration:none;" href="${waLink}" target="_blank" rel="noopener">${lang==='en' ? 'Get one for my business' : 'أرغب في الحصول على واحدة لمشروعي'}</a>
         </div>
       </div>`;
     document.body.appendChild(overlay);
