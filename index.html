@@ -2703,6 +2703,10 @@ async function loadPublic(slug){
           <label>${lang==='en' ? 'Notes (optional)' : 'ملاحظات (اختياري)'}</label>
           <textarea id="ordNotes" placeholder="${lang==='en' ? 'Any special requests' : 'أي طلبات خاصة'}"></textarea>
         </div>
+        <div class="field" style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
+          <label>${lang==='en' ? 'Website' : 'الموقع الإلكتروني'}</label>
+          <input type="text" id="ordWebsite" name="website" tabindex="-1" autocomplete="off">
+        </div>
         <div class="modal-actions">
           <button class="btn-cancel" id="ordCancel">${lang==='en' ? 'Cancel' : 'إلغاء'}</button>
           <button class="btn-confirm" id="ordConfirm">${lang==='en' ? 'Confirm order' : 'تأكيد الطلب'}</button>
@@ -2822,6 +2826,9 @@ async function loadPublic(slug){
     overlay.querySelector('#ordCancel').addEventListener('click', ()=> overlay.remove());
     overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
     overlay.querySelector('#ordConfirm').addEventListener('click', async ()=>{
+      if(overlay.querySelector('#ordWebsite').value.trim()){
+        return; // حقل فخ للبوتات — أي إنسان حقيقي مش هيلاقيه أو يملاه
+      }
       if(!isRestaurantOpenNow){
         toast(lang==='en' ? `Sorry, we are currently closed` : `عذرًا، ${biz(rest.business_type,'entityDef')} مغلق حاليًا ولا يمكن إتمام الطلب`);
         return;
