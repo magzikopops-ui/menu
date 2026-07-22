@@ -1179,6 +1179,7 @@ function openCleanupImagesModal(){
     modal.innerHTML = `
       <h3>تم الانتهاء ✅</h3>
       <div class="orders-empty" style="text-align:right; padding:6px 0 0;">
+        ${report.scanFailed ? '⚠️ تعذر فحص ملفات التخزين (مشكلة صلاحيات محتملة)، لكن تم فحص الصور المحفوظة في قاعدة البيانات بنجاح.<br>' : ''}
         🗑️ ملفات غير مستخدمة اتمسحت: <b>${report.orphansDeleted}</b> (${freedKB > 0 ? `~${freedKB}KB اتوفرت` : 'مفيش مساحة إضافية'})
         <br>🗜️ صور اتضغطت وحُسّنت: <b>${report.imagesOptimized}</b> ${savedKB > 0 ? `(اتوفر منها ~${savedKB}KB)` : ''}
         ${report.errors > 0 ? `<br>⚠️ حصل خطأ في ${report.errors} عملية، ممكن تعيد المحاولة تاني.` : ''}
@@ -1361,7 +1362,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     if(!validation.ok){ toast(validation.message); logoInput.value = ''; return; }
     logoDrop.querySelector('#logoDropText').textContent = 'جارِ الضغط...';
     try{
-      const dataUrl = await compressImage(file, { maxDimension: 500, maxSizeKB: 300 });
+      const dataUrl = await compressImage(file, { maxDimension: 500, maxSizeKB: 180 });
       logoDrop.innerHTML = `<img src="${dataUrl}"><br><span id="logoDropText">انقر لتغيير الشعار</span>`;
       pendingLogo = dataUrl;
       removeLogoBtn.style.display = '';
@@ -1852,23 +1853,24 @@ async function deleteStorageFileFromUrl(url){
 
 async function listStorageFolder(folder){
   const { data, error } = await sb.storage.from('menu-images').list(folder, { limit: 1000 });
-  if(error || !data) return [];
-  return data.filter(f => f.name && f.id !== null).map(f => ({ path: `${folder}/${f.name}`, size: (f.metadata && f.metadata.size) || 0 }));
+  if(error) return { files: [], failed: true };
+  return { files: (data || []).filter(f => f.name && f.id !== null).map(f => ({ path: `${folder}/${f.name}`, size: (f.metadata && f.metadata.size) || 0 })), failed: false };
 }
 
-// يمر على ملفات الصور الخاصة بالمطعم في التخزين:
-// 1) يمسح أي ملف مش مرتبط بصنف أو لوجو حاليًا (orphan)
-// 2) يعيد ضغط أي صورة لسه بالنظام القديم (مش WebP) للنظام الجديد الأخف
+// يمر على ملفات الصور الخاصة بالمطعم في التخزين وفي قاعدة البيانات:
+// 1) يمسح أي ملف مش مرتبط بصنف أو لوجو حاليًا (orphan) من التخزين
+// 2) يعيد ضغط أي صورة لسه بالنظام القديم أو محفوظة كـ base64 خام جوه قاعدة البيانات (لم تُرفع للتخزين أصلاً)
 async function runImageCleanupAndOptimization(onProgress){
-  const report = { orphansDeleted: 0, orphanBytesFreed: 0, imagesOptimized: 0, bytesBefore: 0, bytesAfter: 0, errors: 0 };
+  const report = { orphansDeleted: 0, orphanBytesFreed: 0, imagesOptimized: 0, bytesBefore: 0, bytesAfter: 0, errors: 0, scanFailed: false };
 
   const usedUrls = new Set();
   if(restaurant.logo_url && restaurant.logo_url.includes('/menu-images/')) usedUrls.add(restaurant.logo_url);
   items.forEach(i => { if(i.image_url && i.image_url.includes('/menu-images/')) usedUrls.add(i.image_url); });
 
-  const logoFiles = await listStorageFolder(`logos/${restaurant.id}`);
-  const itemFiles = await listStorageFolder(`items/${restaurant.id}`);
-  const allFiles = [...logoFiles, ...itemFiles];
+  const logoResult = await listStorageFolder(`logos/${restaurant.id}`);
+  const itemResult = await listStorageFolder(`items/${restaurant.id}`);
+  report.scanFailed = logoResult.failed || itemResult.failed;
+  const allFiles = [...logoResult.files, ...itemResult.files];
 
   onProgress && onProgress(`جارِ فحص ${allFiles.length} ملف...`);
 
@@ -1883,16 +1885,18 @@ async function runImageCleanupAndOptimization(onProgress){
     }
   }
 
+  // بيشتغل مع 3 حالات: صورة base64 خام لسه في قاعدة البيانات، أو ملف مرفوع لكن مش WebP، أو ملف WebP بالفعل (يتجاهله)
   async function optimizeIfNeeded(url, folder, maxDimension, maxSizeKB, applyFn){
-    if(!url || !url.includes('/menu-images/')) return;
-    if(url.toLowerCase().endsWith('.webp')) return; // اترفعت بالفعل بالنظام الجديد، مفيش داعي نكررها
+    if(!url) return;
+    const isStorageUrl = url.includes('/menu-images/');
+    if(isStorageUrl && url.toLowerCase().endsWith('.webp')) return; // اترفعت بالفعل بالنظام الجديد، مفيش داعي نكررها
     try{
       const blob = await (await fetch(url)).blob();
       const originalSize = blob.size;
       const dataUrl = await compressImage(blob, { maxDimension, maxSizeKB });
       const newUrl = await uploadImageToStorage(dataUrl, folder);
       await applyFn(newUrl);
-      await deleteStorageFileFromUrl(url);
+      if(isStorageUrl) await deleteStorageFileFromUrl(url); // امسح الملف القديم بس لو كان أصلاً مرفوع في التخزين
       const newBlob = await (await fetch(newUrl)).blob();
       report.imagesOptimized++;
       report.bytesBefore += originalSize;
@@ -1902,7 +1906,7 @@ async function runImageCleanupAndOptimization(onProgress){
 
   if(restaurant.logo_url){
     onProgress && onProgress('جارِ تحسين الشعار...');
-    await optimizeIfNeeded(restaurant.logo_url, `logos/${restaurant.id}`, 500, 300, async (newUrl)=>{
+    await optimizeIfNeeded(restaurant.logo_url, `logos/${restaurant.id}`, 500, 180, async (newUrl)=>{
       const { data, error } = await sb.from('restaurants').update({ logo_url: newUrl }).eq('id', restaurant.id).select().single();
       if(!error) restaurant = data;
     });
@@ -1912,7 +1916,7 @@ async function runImageCleanupAndOptimization(onProgress){
   for(let idx = 0; idx < itemsWithImages.length; idx++){
     const it = itemsWithImages[idx];
     onProgress && onProgress(`جارِ تحسين الصور... (${idx + 1}/${itemsWithImages.length})`);
-    await optimizeIfNeeded(it.image_url, `items/${restaurant.id}`, 800, 200, async (newUrl)=>{
+    await optimizeIfNeeded(it.image_url, `items/${restaurant.id}`, 800, 130, async (newUrl)=>{
       const { error } = await sb.from('items').update({ image_url: newUrl }).eq('id', it.id);
       if(!error) it.image_url = newUrl;
     });
@@ -2142,7 +2146,7 @@ function openItemModal(existing){
     if(!validation.ok){ toast(validation.message); imgInput.value = ''; return; }
     imgDrop.querySelector('#imgDropText').textContent = 'جارِ الضغط...';
     try{
-      const dataUrl = await compressImage(file, { maxDimension: 800, maxSizeKB: 200 });
+      const dataUrl = await compressImage(file, { maxDimension: 800, maxSizeKB: 130 });
       imgDrop.innerHTML = `<img src="${dataUrl}"><br><span id="imgDropText">انقر لتغيير الصورة</span>`;
       pendingImage = dataUrl;
       removeImgBtn.style.display = '';
