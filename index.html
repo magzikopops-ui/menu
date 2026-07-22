@@ -1264,7 +1264,8 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         <label id="rsLogoLabel">شعار ${t().entityDef} (اختياري)</label>
         <div class="img-drop" id="logoDrop">
           ${pendingLogo ? `<img src="${pendingLogo}"><br>` : ''}
-          <span id="logoDropText">${pendingLogo ? 'انقر لتغيير الشعار' : 'انقر لرفع الشعار'}</span>
+          <span id="logoDropText">${pendingLogo ? 'انقر لتغيير الشعار' : 'انقر لرفع الشعار'}</span><br>
+          <span id="logoSizeNote" style="font-size:12px;color:var(--stone);">${dataUrlSizeKB(pendingLogo) ? `الحجم: ${dataUrlSizeKB(pendingLogo)} KB` : ''}</span>
         </div>
         <input type="file" id="logoInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none;">
         <button type="button" class="add-btn" id="removeLogoBtn" style="margin-top:8px; margin-bottom:0; ${pendingLogo ? '' : 'display:none;'}">حذف الشعار</button>
@@ -1363,7 +1364,8 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     logoDrop.querySelector('#logoDropText').textContent = 'جارِ الضغط...';
     try{
       const dataUrl = await compressImage(file, { maxDimension: 500, maxSizeKB: 180 });
-      logoDrop.innerHTML = `<img src="${dataUrl}"><br><span id="logoDropText">انقر لتغيير الشعار</span>`;
+      const sizeKB = dataUrlSizeKB(dataUrl);
+      logoDrop.innerHTML = `<img src="${dataUrl}"><br><span id="logoDropText">انقر لتغيير الشعار</span><br><span id="logoSizeNote" style="font-size:12px;color:var(--stone);">${sizeKB ? `الحجم بعد الضغط: ${sizeKB} KB` : ''}</span>`;
       pendingLogo = dataUrl;
       removeLogoBtn.style.display = '';
     }catch(e){ toast('تعذر ضغط الصورة، برجاء تجربة صورة أخرى'); }
@@ -1372,7 +1374,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
   removeLogoBtn.addEventListener('click', async ()=>{
     if(!confirm(`هل تريد حذف شعار ${t().entityDef}؟`)) return;
     pendingLogo = null;
-    logoDrop.innerHTML = `<span id="logoDropText">انقر لرفع الشعار</span>`;
+    logoDrop.innerHTML = `<span id="logoDropText">انقر لرفع الشعار</span><br><span id="logoSizeNote"></span>`;
     removeLogoBtn.style.display = 'none';
   });
   overlay.querySelector('#rsCancel').addEventListener('click', ()=> overlay.remove());
@@ -1963,6 +1965,14 @@ function canvasEncode(canvas, mimeType, quality){
   return { dataUrl, sizeBytes };
 }
 
+// بيرجع الحجم التقريبي بالكيلوبايت لأي data URL (زي اللي بنخزنها في القاعدة)، أو null لو مش data URL
+function dataUrlSizeKB(dataUrl){
+  if(!dataUrl || !dataUrl.startsWith('data:')) return null;
+  const base64Length = (dataUrl.split(',')[1] || '').length;
+  const sizeBytes = Math.ceil(base64Length * 3 / 4);
+  return Math.round(sizeBytes / 1024);
+}
+
 // يضغط الصورة تلقائيًا: يصغّر الأبعاد للحد الأقصى المطلوب، وبعدين يقلل الجودة تدريجيًا
 // (وأخيرًا الأبعاد لو لسه أكبر من المطلوب) لحد ما يوصل للحجم المستهدف بالكيلوبايت
 async function compressImage(file, { maxDimension = 800, maxSizeKB = 300 } = {}){
@@ -2055,7 +2065,8 @@ function openItemModal(existing){
         <label>صورة ${biz(restaurant.business_type,'itemDef')} (اختياري)</label>
         <div class="img-drop" id="imgDrop">
           ${pendingImage ? `<img src="${pendingImage}"><br>` : ''}
-          <span id="imgDropText">${pendingImage ? 'انقر لتغيير الصورة' : 'انقر لرفع صورة'}</span>
+          <span id="imgDropText">${pendingImage ? 'انقر لتغيير الصورة' : 'انقر لرفع صورة'}</span><br>
+          <span id="imgSizeNote" style="font-size:12px;color:var(--stone);">${dataUrlSizeKB(pendingImage) ? `الحجم: ${dataUrlSizeKB(pendingImage)} KB` : ''}</span>
         </div>
         <input type="file" id="imgInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none;">
         <button type="button" class="add-btn" id="removeImgBtn" style="margin-top:8px; margin-bottom:0; ${pendingImage ? '' : 'display:none;'}">حذف الصورة</button>
@@ -2147,7 +2158,8 @@ function openItemModal(existing){
     imgDrop.querySelector('#imgDropText').textContent = 'جارِ الضغط...';
     try{
       const dataUrl = await compressImage(file, { maxDimension: 800, maxSizeKB: 130 });
-      imgDrop.innerHTML = `<img src="${dataUrl}"><br><span id="imgDropText">انقر لتغيير الصورة</span>`;
+      const sizeKB = dataUrlSizeKB(dataUrl);
+      imgDrop.innerHTML = `<img src="${dataUrl}"><br><span id="imgDropText">انقر لتغيير الصورة</span><br><span id="imgSizeNote" style="font-size:12px;color:var(--stone);">${sizeKB ? `الحجم بعد الضغط: ${sizeKB} KB` : ''}</span>`;
       pendingImage = dataUrl;
       removeImgBtn.style.display = '';
     }catch(e){ toast('تعذر ضغط الصورة، برجاء تجربة صورة أخرى'); }
@@ -2156,7 +2168,7 @@ function openItemModal(existing){
   removeImgBtn.addEventListener('click', ()=>{
     if(!confirm(`هل تريد حذف صورة ${biz(restaurant.business_type,'itemDef')}؟`)) return;
     pendingImage = null;
-    imgDrop.innerHTML = `<span id="imgDropText">انقر لرفع صورة</span>`;
+    imgDrop.innerHTML = `<span id="imgDropText">انقر لرفع صورة</span><br><span id="imgSizeNote"></span>`;
     removeImgBtn.style.display = 'none';
   });
 
