@@ -1209,7 +1209,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
           ${pendingLogo ? `<img src="${pendingLogo}"><br>` : ''}
           <span id="logoDropText">${pendingLogo ? 'انقر لتغيير الشعار' : 'انقر لرفع الشعار'}</span>
         </div>
-        <input type="file" id="logoInput" accept="image/*" style="display:none;">
+        <input type="file" id="logoInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none;">
         <button type="button" class="add-btn" id="removeLogoBtn" style="margin-top:8px; margin-bottom:0; ${pendingLogo ? '' : 'display:none;'}">حذف الشعار</button>
       </div>
       <div class="field">
@@ -1285,13 +1285,16 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
   logoInput.addEventListener('change', async ()=>{
     const file = logoInput.files[0];
     if(!file) return;
-    logoDrop.querySelector('#logoDropText').textContent = 'جارِ المعالجة...';
+    const validation = validateImageFile(file);
+    if(!validation.ok){ toast(validation.message); logoInput.value = ''; return; }
+    logoDrop.querySelector('#logoDropText').textContent = 'جارِ الضغط...';
     try{
-      const dataUrl = await resizeImage(file, 320);
+      const dataUrl = await compressImage(file, { maxDimension: 500, maxSizeKB: 300 });
       logoDrop.innerHTML = `<img src="${dataUrl}"><br><span id="logoDropText">انقر لتغيير الشعار</span>`;
       pendingLogo = dataUrl;
       removeLogoBtn.style.display = '';
-    }catch(e){ toast('تعذر تحميل الشعار'); }
+    }catch(e){ toast('تعذر ضغط الصورة، برجاء تجربة صورة أخرى'); }
+    logoInput.value = '';
   });
   removeLogoBtn.addEventListener('click', async ()=>{
     if(!confirm(`هل تريد حذف شعار ${t().entityDef}؟`)) return;
@@ -1769,32 +1772,83 @@ function openCategoryModal(existing){
 document.getElementById('addCategoryBtn').addEventListener('click', ()=> openCategoryModal(null));
 
 /* ================= item CRUD ================= */
-function resizeImage(file, maxW){
+const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_IMAGE_EXT = ['jpg', 'jpeg', 'png', 'webp'];
+const MAX_RAW_UPLOAD_MB = 20; // حد أقصى للملف الأصلي قبل أي معالجة، لمنع تعليق المتصفح
+
+function validateImageFile(file){
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  const typeOk = ALLOWED_IMAGE_MIME.includes(file.type) || ALLOWED_IMAGE_EXT.includes(ext);
+  if(!typeOk){
+    return { ok:false, message:'صيغة الصورة غير مدعومة. الصيغ المسموح بها: JPG أو JPEG أو PNG أو WEBP فقط.' };
+  }
+  if(file.size > MAX_RAW_UPLOAD_MB * 1024 * 1024){
+    return { ok:false, message:`حجم الصورة كبير جدًا (الحد الأقصى ${MAX_RAW_UPLOAD_MB}MB). من فضلك اختر صورة أصغر.` };
+  }
+  return { ok:true };
+}
+
+function loadImageFromFile(file){
   return new Promise((resolve, reject)=>{
     const reader = new FileReader();
     reader.onload = (e)=>{
       const img = new Image();
-      img.onload = ()=>{
-        const scale = Math.min(1, maxW / img.width);
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.72));
-      };
-      img.onerror = reject;
+      img.onload = ()=> resolve(img);
+      img.onerror = ()=> reject(new Error('تعذرت قراءة الصورة'));
       img.src = e.target.result;
     };
-    reader.onerror = reject;
+    reader.onerror = ()=> reject(new Error('تعذرت قراءة الملف'));
     reader.readAsDataURL(file);
   });
 }
 
+function canvasEncode(canvas, mimeType, quality){
+  const dataUrl = canvas.toDataURL(mimeType, quality);
+  const base64Length = (dataUrl.split(',')[1] || '').length;
+  const sizeBytes = Math.ceil(base64Length * 3 / 4);
+  return { dataUrl, sizeBytes };
+}
+
+// يضغط الصورة تلقائيًا: يصغّر الأبعاد للحد الأقصى المطلوب، وبعدين يقلل الجودة تدريجيًا
+// (وأخيرًا الأبعاد لو لسه أكبر من المطلوب) لحد ما يوصل للحجم المستهدف بالكيلوبايت
+async function compressImage(file, { maxDimension = 800, maxSizeKB = 300 } = {}){
+  const img = await loadImageFromFile(file);
+  let scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+  let width = Math.max(1, Math.round(img.width * scale));
+  let height = Math.max(1, Math.round(img.height * scale));
+
+  const targetBytes = maxSizeKB * 1024;
+  let quality = 0.85;
+  let best = null;
+
+  for(let attempt = 0; attempt < 9; attempt++){
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+    const encoded = canvasEncode(canvas, 'image/webp', quality);
+    best = encoded;
+    if(encoded.sizeBytes <= targetBytes) break;
+
+    if(quality > 0.42){
+      quality -= 0.11;
+    } else {
+      width = Math.round(width * 0.85);
+      height = Math.round(height * 0.85);
+      quality = 0.7;
+      if(width < 250 || height < 250) break; // ما تصغرش أكتر من كده عشان الجودة متبقاش سيئة جدًا
+    }
+  }
+  return best.dataUrl;
+}
+
 async function uploadImageToStorage(dataUrl, folder){
   const blob = await (await fetch(dataUrl)).blob();
-  const path = `${folder}/${crypto.randomUUID()}.jpg`;
-  const { error } = await sb.storage.from('menu-images').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+  const mime = blob.type || 'image/jpeg';
+  const ext = mime === 'image/webp' ? 'webp' : mime === 'image/png' ? 'png' : 'jpg';
+  const path = `${folder}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await sb.storage.from('menu-images').upload(path, blob, { contentType: mime, upsert: false });
   if(error) throw error;
   const { data } = sb.storage.from('menu-images').getPublicUrl(path);
   return data.publicUrl;
@@ -1846,7 +1900,7 @@ function openItemModal(existing){
           ${pendingImage ? `<img src="${pendingImage}"><br>` : ''}
           <span id="imgDropText">${pendingImage ? 'انقر لتغيير الصورة' : 'انقر لرفع صورة'}</span>
         </div>
-        <input type="file" id="imgInput" accept="image/*" style="display:none;">
+        <input type="file" id="imgInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none;">
         <button type="button" class="add-btn" id="removeImgBtn" style="margin-top:8px; margin-bottom:0; ${pendingImage ? '' : 'display:none;'}">حذف الصورة</button>
       </div>
       <div class="field">
@@ -1931,13 +1985,16 @@ function openItemModal(existing){
   imgInput.addEventListener('change', async ()=>{
     const file = imgInput.files[0];
     if(!file) return;
-    imgDrop.querySelector('#imgDropText').textContent = 'جارِ المعالجة...';
+    const validation = validateImageFile(file);
+    if(!validation.ok){ toast(validation.message); imgInput.value = ''; return; }
+    imgDrop.querySelector('#imgDropText').textContent = 'جارِ الضغط...';
     try{
-      const dataUrl = await resizeImage(file, 240);
+      const dataUrl = await compressImage(file, { maxDimension: 800, maxSizeKB: 200 });
       imgDrop.innerHTML = `<img src="${dataUrl}"><br><span id="imgDropText">انقر لتغيير الصورة</span>`;
       pendingImage = dataUrl;
       removeImgBtn.style.display = '';
-    }catch(e){ toast('تعذر تحميل الصورة'); }
+    }catch(e){ toast('تعذر ضغط الصورة، برجاء تجربة صورة أخرى'); }
+    imgInput.value = '';
   });
   removeImgBtn.addEventListener('click', ()=>{
     if(!confirm(`هل تريد حذف صورة ${biz(restaurant.business_type,'itemDef')}؟`)) return;
