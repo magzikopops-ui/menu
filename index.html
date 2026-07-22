@@ -370,6 +370,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
     <div class="pub-actions" id="pubActionsWrap">
       <a class="pub-icon-btn call-btn hidden" id="pubCallBtn" href="#" title="اتصال">📞</a>
       <div class="pub-icon-btn hidden" id="pubInfoBtn" title="معلومات المطعم">ℹ️</div>
+      <div class="pub-icon-btn" id="pubAboutBtn" title="عن منيو m@g">✨</div>
     </div>
   </div>
   <div class="pub-logo-wrap" id="pubLogoWrap"></div>
@@ -2435,7 +2436,33 @@ async function loadPublic(slug){
     } else {
       infoBtn.classList.add('hidden');
     }
+    const aboutBtn = document.getElementById('pubAboutBtn');
+    aboutBtn.onclick = ()=> showAboutModal();
     updateCartButton();
+  }
+
+  function showAboutModal(){
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    const waLink = 'https://wa.me/201154361888?text=' + encodeURIComponent(
+      lang==='en' ? `Hi, I'd like an online menu like this for my ${biz(rest.business_type,'entityIndef')}` : `مرحبًا، عايز منيو أونلاين زي ده لـ${biz(rest.business_type,'entityIndef')} بتاعي`
+    );
+    overlay.innerHTML = `
+      <div class="modal info-modal">
+        <h3>✨ منيو m@g</h3>
+        <p style="margin:0 0 16px; color:var(--stone); font-size:14px; line-height:1.7;">
+          ${lang==='en'
+            ? `This online menu was built with منيو m@g — a platform that lets any restaurant or store launch its own online menu and start taking orders online.`
+            : `المنيو دي اتعملت باستخدام منيو m@g — منصة بتسمح لأي مطعم أو متجر يعمل منيو أونلاين خاص بيه ويستقبل طلبات مباشرة.`}
+        </p>
+        <div class="modal-actions">
+          <button class="btn-cancel" id="aboutCloseBtn">${lang==='en' ? 'Close' : 'إغلاق'}</button>
+          <a class="btn-confirm" style="display:flex; align-items:center; justify-content:center; text-decoration:none;" href="${waLink}" target="_blank" rel="noopener">${lang==='en' ? 'Get one for my business' : 'عايز واحد لمشروعي'}</a>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#aboutCloseBtn').addEventListener('click', ()=> overlay.remove());
+    overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   }
 
   function showRestaurantInfoModal(){
