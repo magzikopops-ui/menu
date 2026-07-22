@@ -2303,7 +2303,7 @@ function getRestaurantOpenStatus(rest){
 
 async function loadPublic(slug){
   show('loadingScreen');
-  const { data: rest, error: restErr } = await sb.from('restaurants').select('*').eq('slug', slug).maybeSingle();
+  const { data: rest, error: restErr } = await sb.from('restaurants_public').select('*').eq('slug', slug).maybeSingle();
   if(restErr || !rest){
     show('publicScreen');
     document.getElementById('pubLogoWrap').innerHTML = `<div class="name-fallback">الصفحة غير موجودة</div>`;
