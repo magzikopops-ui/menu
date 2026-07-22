@@ -2506,7 +2506,7 @@ async function loadPublic(slug){
         controlHtml = `
           <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
             <select class="variant-select" data-weight-select="${i.id}" style="border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-family:var(--body); font-size:12px; background:#fff; color:var(--ink);">
-              ${weightPresets.map(g=>`<option value="${g}">${weightLabel(g)}</option>`).join('')}
+              ${weightPresets.map(g=>`<option value="${g}" ${g===1000 ? 'selected' : ''}>${weightLabel(g)}</option>`).join('')}
             </select>
             <button class="add-to-cart-btn" data-action="addWeight" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>
           </div>
