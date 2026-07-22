@@ -1189,6 +1189,7 @@ document.getElementById('changePasswordLink').addEventListener('click', ()=>{
 
 document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
   let pendingLogo = restaurant.logo_url || null;
+  const originalLogoUrl = restaurant.logo_url || null;
   let pendingBizType = restaurant.business_type === 'store' ? 'store' : 'restaurant';
   const t = () => BIZ_TERMS[pendingBizType];
   const overlay = document.createElement('div');
@@ -1298,14 +1299,9 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
   });
   removeLogoBtn.addEventListener('click', async ()=>{
     if(!confirm(`هل تريد حذف شعار ${t().entityDef}؟`)) return;
-    const oldLogo = pendingLogo;
     pendingLogo = null;
     logoDrop.innerHTML = `<span id="logoDropText">انقر لرفع الشعار</span>`;
     removeLogoBtn.style.display = 'none';
-    if(oldLogo && oldLogo.includes('/menu-images/')){
-      const path = oldLogo.split('/menu-images/')[1];
-      if(path){ try{ await sb.storage.from('menu-images').remove([path]); }catch(e){} }
-    }
   });
   overlay.querySelector('#rsCancel').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
@@ -1326,6 +1322,9 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     const { data, error } = await sb.from('restaurants').update({ logo_url: pendingLogo, name, name_en, phone, address, opening_time, closing_time, min_delivery_order, notification_phone, notification_apikey, business_type: pendingBizType }).eq('id', restaurant.id).select().single();
     if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     restaurant = data;
+    if(originalLogoUrl && originalLogoUrl !== pendingLogo){
+      await deleteStorageFileFromUrl(originalLogoUrl); // امسح الشعار القديم من التخزين بعد نجاح الحفظ فقط
+    }
     document.getElementById('dashRestaurantName').textContent = restaurant.name;
     document.getElementById('ticketShopName').textContent = restaurant.name;
     refreshAllBizLabels();
@@ -1719,8 +1718,10 @@ function renderTicket(){
 async function deleteCategory(id){
   const cat = categories.find(c=>c.id===id);
   if(!confirm(`حذف فئة "${cat.name}" وكل ${biz(restaurant.business_type,'itemsDef')} بداخلها؟`)) return;
+  const catItemImages = items.filter(i=>i.category_id===id && i.image_url).map(i=>i.image_url);
   const { error } = await sb.from('categories').delete().eq('id', id);
   if(error){ toast('تعذر الحذف'); return; }
+  for(const url of catItemImages){ await deleteStorageFileFromUrl(url); }
   await refreshData();
   toast('تم الحذف');
 }
@@ -1770,6 +1771,13 @@ function openCategoryModal(existing){
   });
 }
 document.getElementById('addCategoryBtn').addEventListener('click', ()=> openCategoryModal(null));
+
+async function deleteStorageFileFromUrl(url){
+  if(!url || !url.includes('/menu-images/')) return; // مش ملف مرفوع في التخزين (زي data: url مؤقت)
+  const path = url.split('/menu-images/')[1];
+  if(!path) return;
+  try{ await sb.storage.from('menu-images').remove([path]); }catch(e){ /* تجاهل: الملف ممكن يكون اتمسح بالفعل */ }
+}
 
 /* ================= item CRUD ================= */
 const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp'];
@@ -1878,8 +1886,10 @@ async function migrateLegacyImages(){
 
 async function deleteItem(id){
   if(!confirm(`حذف هذا ${biz(restaurant.business_type,'itemDef')}؟`)) return;
+  const item = items.find(i=>i.id===id);
   const { error } = await sb.from('items').delete().eq('id', id);
   if(error){ toast('تعذر الحذف'); return; }
+  if(item && item.image_url) await deleteStorageFileFromUrl(item.image_url);
   await refreshData();
   toast('تم الحذف');
 }
@@ -1887,6 +1897,7 @@ async function deleteItem(id){
 function openItemModal(existing){
   if(!selectedCategoryId){ toast('يرجى إضافة فئة أولاً'); return; }
   pendingImage = existing ? existing.image_url : null;
+  const originalItemImageUrl = existing ? existing.image_url : null;
   const existingSizes = existing ? (itemSizes[existing.id] || []) : [];
   const pricingType = existing ? (existing.pricing_type || 'unit') : 'unit';
   const overlay = document.createElement('div');
@@ -2037,6 +2048,9 @@ function openItemModal(existing){
     if(existing){
       const { error } = await sb.from('items').update({ name, name_en, price, description, image_url: pendingImage, pricing_type }).eq('id', existing.id);
       if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
+      if(originalItemImageUrl && originalItemImageUrl !== pendingImage){
+        await deleteStorageFileFromUrl(originalItemImageUrl); // امسح الصورة القديمة بعد نجاح الحفظ فقط
+      }
     } else {
       const newPos = items.filter(i=>i.category_id===selectedCategoryId).length;
       const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, description, image_url: pendingImage, pricing_type, position: newPos }).select().single();
