@@ -425,13 +425,13 @@ const BIZ_TERMS = {
     entityDef:'المطعم', entityIndef:'مطعم', entityPossessive:'مطعمك', entityInfo:'معلومات المطعم',
     itemIndef:'صنف', itemDef:'الصنف', itemsIndef:'أصناف', itemsDef:'الأصناف',
     itemNamePh:'مثال: بيتزا مارجريتا', itemDescPh:'مكونات الصنف أو ملاحظات إضافية',
-    entityEn:'Restaurant', itemEn:'item', itemsEn:'items'
+    entityEn:'Restaurant', itemEn:'item', itemsEn:'items', placeholderIcon:'🍽'
   },
   store: {
     entityDef:'المتجر', entityIndef:'متجر', entityPossessive:'متجرك', entityInfo:'معلومات المتجر',
     itemIndef:'منتج', itemDef:'المنتج', itemsIndef:'منتجات', itemsDef:'المنتجات',
     itemNamePh:'مثال: قميص قطن', itemDescPh:'تفاصيل المنتج أو ملاحظات إضافية',
-    entityEn:'Store', itemEn:'product', itemsEn:'products'
+    entityEn:'Store', itemEn:'product', itemsEn:'products', placeholderIcon:'🛍'
   }
 };
 function biz(type, key){
@@ -1707,7 +1707,7 @@ function renderItems(){
     if(!isAvailable) div.style.opacity = '0.55';
     div.innerHTML = `
       <span class="drag-handle" title="اسحب لإعادة الترتيب">⋮⋮</span>
-      ${item.image_url ? `<img src="${item.image_url}">` : `<div class="no-img">🍽</div>`}
+      ${item.image_url ? `<img src="${item.image_url}">` : `<div class="no-img">${biz(restaurant.business_type,'placeholderIcon')}</div>`}
       <div class="item-body">
         <div class="item-top">
           <span class="item-name">${escapeHtml(item.name)}${!isAvailable ? ' <span style="color:var(--danger); font-size:12px; font-weight:700;">(غير متوفر)</span>' : ''}</span>
@@ -2535,7 +2535,7 @@ async function loadPublic(slug){
       return `
       <div class="pub-item" data-id="${i.id}">
         <span class="chevron" data-action="toggle">${i.description ? '▾' : ''}</span>
-        ${i.image_url ? `<img src="${i.image_url}">` : `<div class="no-img">🍽</div>`}
+        ${i.image_url ? `<img src="${i.image_url}">` : `<div class="no-img">${biz(rest.business_type,'placeholderIcon')}</div>`}
         <div class="info">
           <div class="name-primary">${escapeHtml(tName(i.name, i.name_en))}${topItemIds.has(i.id) ? ` <span title="${lang==='en' ? 'Bestseller' : 'الأكثر طلبًا'}">🔥</span>` : ''}</div>
           ${secondaryName(i.name, i.name_en) ? `<div class="name-secondary">${escapeHtml(secondaryName(i.name, i.name_en))}</div>` : ''}
