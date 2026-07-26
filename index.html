@@ -374,6 +374,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
       <a class="pub-icon-btn call-btn hidden" id="pubCallBtn" href="#" title="اتصال">📞</a>
       <div class="pub-icon-btn hidden" id="pubInfoBtn" title="معلومات المطعم">ℹ️</div>
       <div class="pub-icon-btn" id="pubAboutBtn" title="عن منيو m@g">✨</div>
+      <div class="pub-icon-btn" id="pubSignupBtn" title="أنشئ منيو زي دي لمشروعك">🏪</div>
     </div>
   </div>
   <div class="pub-logo-wrap" id="pubLogoWrap"></div>
@@ -503,6 +504,7 @@ async function boot(){
   const params = new URLSearchParams(location.search);
   const publicSlug = params.get('r');
   const trackId = params.get('t');
+  const wantSignup = params.get('signup');
   if(trackId){
     setFavicon('menu-favicon.png');
     await loadOrderTracking(trackId);
@@ -520,6 +522,7 @@ async function boot(){
     await afterLogin();
   } else {
     show('authScreen');
+    if(wantSignup) document.getElementById('tabSignup').click();
   }
 }
 
@@ -2604,6 +2607,9 @@ async function loadPublic(slug){
     }
     const aboutBtn = document.getElementById('pubAboutBtn');
     aboutBtn.onclick = ()=> showAboutModal();
+    const signupBtn = document.getElementById('pubSignupBtn');
+    signupBtn.title = lang==='en' ? 'Create a menu like this for your business' : 'أنشئ منيو زي دي لمشروعك';
+    signupBtn.onclick = ()=>{ location.href = `${location.origin}${location.pathname}?signup=1`; };
     updateCartButton();
   }
 
