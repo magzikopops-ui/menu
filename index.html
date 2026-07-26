@@ -120,6 +120,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .item-top{display:flex; justify-content:space-between; align-items:baseline; gap:10px;}
 .item-name{font-weight:800; font-size:16px; color:var(--ink);}
 .item-price{font-family:var(--mono); direction:ltr; font-weight:700; color:var(--ember); font-size:15px; white-space:nowrap;}
+.item-price .old-price{color:var(--stone); text-decoration:line-through; font-weight:600; font-size:12.5px; margin-inline-end:6px;}
 .item-desc{color:var(--stone); font-size:13px; margin-top:4px; line-height:1.5;}
 .item-tools{display:flex; gap:8px; margin-top:8px;}
 .item-tools button{ background:none; border:1px solid var(--line); border-radius:6px; font-family:var(--body); font-size:12px; padding:5px 10px; cursor:pointer; color:var(--stone); }
@@ -175,6 +176,8 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .pub-item .name-primary{ font-weight:800; font-size:15px; color:var(--ink); }
 .pub-item .name-secondary{ font-size:12px; color:var(--stone); margin-top:1px; }
 .pub-item .price{ font-family:var(--mono); direction:ltr; font-weight:700; color:var(--ember); font-size:14px; margin-top:5px; display:inline-block; }
+.pub-item .price .old-price{ color:var(--stone); text-decoration:line-through; font-weight:600; font-size:12.5px; margin-inline-end:6px; }
+.discount-badge{ display:inline-block; background:var(--danger); color:#fff; font-family:var(--body); font-weight:700; font-size:10.5px; border-radius:5px; padding:2px 6px; margin-inline-start:6px; vertical-align:middle; }
 .pub-item img{ width:64px; height:64px; border-radius:8px; object-fit:cover; background:var(--stone-light); flex-shrink:0; }
 .pub-item .no-img{ width:64px; height:64px; border-radius:8px; background:var(--stone-light); display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--stone); flex-shrink:0; }
 .pub-item .desc-expand{ font-size:12.5px; color:var(--stone); margin-top:6px; line-height:1.6; display:none; }
@@ -2021,16 +2024,21 @@ function initCategorySortable(){
   });
 }
 
+function oldPriceHtml(item){
+  const hasDiscount = item.old_price != null && Number(item.old_price) > Number(item.price);
+  return hasDiscount ? `<span class="old-price">${Number(item.old_price).toFixed(2)}</span>` : '';
+}
+
 function formatItemPriceLabel(item){
   if(item.pricing_type === 'weight'){
-    return `${Number(item.price).toFixed(2)} EGP / كجم`;
+    return `${oldPriceHtml(item)}${Number(item.price).toFixed(2)} EGP / كجم`;
   }
   if(item.pricing_type === 'sizes'){
     const sizes = itemSizes[item.id] || [];
     if(sizes.length === 0) return 'لم تُضَف أحجام بعد';
     return sizes.map(s=>`${escapeHtml(s.size_name)} ${Number(s.price).toFixed(2)}`).join(' · ') + ' EGP';
   }
-  return `${Number(item.price).toFixed(2)} EGP`;
+  return `${oldPriceHtml(item)}${Number(item.price).toFixed(2)} EGP`;
 }
 
 function renderItems(){
@@ -2439,6 +2447,10 @@ function openItemModal(existing){
         <label id="itemPriceLabel">السعر (EGP)</label>
         <input type="number" id="itemPrice" step="0.01" value="${existing && pricingType!=='sizes' ? existing.price : ''}" placeholder="0.00">
       </div>
+      <div class="field" id="oldPriceFieldWrap">
+        <label>السعر قبل الخصم (اختياري) — اتركه فارغًا إذا لا يوجد خصم</label>
+        <input type="number" id="itemOldPrice" step="0.01" value="${existing && existing.old_price != null && pricingType!=='sizes' ? existing.old_price : ''}" placeholder="0.00">
+      </div>
       <div class="field" id="sizesFieldWrap">
         <label>الأحجام والأسعار</label>
         <div id="sizesRowsWrap"></div>
@@ -2456,6 +2468,7 @@ function openItemModal(existing){
   document.body.appendChild(overlay);
 
   const priceFieldWrap = overlay.querySelector('#priceFieldWrap');
+  const oldPriceFieldWrap = overlay.querySelector('#oldPriceFieldWrap');
   const sizesFieldWrap = overlay.querySelector('#sizesFieldWrap');
   const priceLabel = overlay.querySelector('#itemPriceLabel');
   const pricingTypeSelect = overlay.querySelector('#itemPricingType');
@@ -2478,9 +2491,11 @@ function openItemModal(existing){
     const type = pricingTypeSelect.value;
     if(type === 'sizes'){
       priceFieldWrap.classList.add('hidden');
+      oldPriceFieldWrap.classList.add('hidden');
       sizesFieldWrap.classList.remove('hidden');
     } else {
       priceFieldWrap.classList.remove('hidden');
+      oldPriceFieldWrap.classList.remove('hidden');
       sizesFieldWrap.classList.add('hidden');
       priceLabel.textContent = type === 'weight' ? 'السعر لكل كيلوجرام (EGP)' : 'السعر (EGP)';
     }
@@ -2530,6 +2545,7 @@ function openItemModal(existing){
     if(!name){ overlay.querySelector('#itemName').focus(); return; }
 
     let price = 0;
+    let old_price = null;
     let sizesToSave = [];
     if(pricing_type === 'sizes'){
       const rows = sizesRowsWrap.querySelectorAll('.zone-add-row');
@@ -2546,20 +2562,31 @@ function openItemModal(existing){
     } else {
       price = parseFloat(overlay.querySelector('#itemPrice').value);
       if(isNaN(price) || price < 0){ overlay.querySelector('#itemPrice').focus(); return; }
+      const oldPriceRaw = overlay.querySelector('#itemOldPrice').value.trim();
+      if(oldPriceRaw !== ''){
+        const parsedOld = parseFloat(oldPriceRaw);
+        if(isNaN(parsedOld) || parsedOld < 0){ overlay.querySelector('#itemOldPrice').focus(); return; }
+        if(parsedOld <= price){
+          toast('السعر قبل الخصم يجب أن يكون أعلى من السعر الحالي');
+          overlay.querySelector('#itemOldPrice').focus();
+          return;
+        }
+        old_price = parsedOld;
+      }
     }
 
     const btn = overlay.querySelector('#itemConfirm');
     btn.disabled = true;
     let itemId = existing ? existing.id : null;
     if(existing){
-      const { error } = await sb.from('items').update({ name, name_en, price, description, image_url: pendingImage, pricing_type }).eq('id', existing.id);
+      const { error } = await sb.from('items').update({ name, name_en, price, old_price, description, image_url: pendingImage, pricing_type }).eq('id', existing.id);
       if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
       if(originalItemImageUrl && originalItemImageUrl !== pendingImage){
         await deleteStorageFileFromUrl(originalItemImageUrl); // امسح الصورة القديمة بعد نجاح الحفظ فقط
       }
     } else {
       const newPos = items.filter(i=>i.category_id===selectedCategoryId).length;
-      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, description, image_url: pendingImage, pricing_type, position: newPos }).select().single();
+      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, old_price, description, image_url: pendingImage, pricing_type, position: newPos }).select().single();
       if(error){ toast('تعذر الإضافة'); btn.disabled=false; return; }
       itemId = data.id;
     }
@@ -2880,8 +2907,11 @@ async function loadPublic(slug){
     body.innerHTML = catItems.map(i=>{
       const sizes = pubItemSizes[i.id] || [];
       let priceLine, controlHtml;
+      const hasDiscount = i.old_price != null && Number(i.old_price) > Number(i.price);
+      const discountBadge = hasDiscount ? `<span class="discount-badge">${lang==='en' ? '-' : '-'}${Math.round((1 - Number(i.price)/Number(i.old_price))*100)}%</span>` : '';
+      const oldPriceSpan = hasDiscount ? `<span class="old-price">${Number(i.old_price).toFixed(2)}</span>` : '';
       if(i.pricing_type === 'weight'){
-        priceLine = `${lang==='en' ? 'EGP' : 'EGP'} ${Number(i.price).toFixed(2)} / ${lang==='en' ? 'kg' : 'كجم'}`;
+        priceLine = `${oldPriceSpan}${lang==='en' ? 'EGP' : 'EGP'} ${Number(i.price).toFixed(2)} / ${lang==='en' ? 'kg' : 'كجم'}${discountBadge}`;
         controlHtml = `
           <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
             <select class="variant-select" data-weight-select="${i.id}" style="border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-family:var(--body); font-size:12px; background:#fff; color:var(--ink);">
@@ -2902,7 +2932,7 @@ async function loadPublic(slug){
           ${itemCartLinesHtml(i.id)}` : '';
       } else {
         const qty = cart[i.id] ? cart[i.id].qty : 0;
-        priceLine = `EGP ${Number(i.price).toFixed(2)}`;
+        priceLine = `${oldPriceSpan}EGP ${Number(i.price).toFixed(2)}${discountBadge}`;
         controlHtml = qty > 0 ? `
           <div class="qty-stepper">
             <button class="qty-btn" data-action="dec" data-item-id="${i.id}">−</button>
