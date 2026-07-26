@@ -247,7 +247,8 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .modal h3{ font-family:var(--display); font-size:20px; margin:0 0 16px; color:var(--ink); }
 .img-drop{ border:2px dashed var(--stone-light); border-radius:10px; padding:16px; text-align:center; cursor:pointer; color:var(--stone); font-size:13px; }
 .img-drop img{max-width:100%; max-height:120px; border-radius:8px; margin-bottom:8px;}
-.modal-actions{display:flex; gap:10px; margin-top:18px;}
+.modal-actions{display:flex; flex-wrap:wrap; gap:10px; margin-top:18px;}
+.modal-actions button, .modal-actions a{ min-width:120px; }
 .modal-actions button{ flex:1; padding:11px; border-radius:8px; border:none; font-family:var(--body); font-weight:800; font-size:14px; cursor:pointer; }
 .btn-cancel{background:var(--paper-dim); color:var(--ink);}
 .btn-danger{background:var(--danger); color:#fff;}
@@ -374,7 +375,6 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
       <a class="pub-icon-btn call-btn hidden" id="pubCallBtn" href="#" title="اتصال">📞</a>
       <div class="pub-icon-btn hidden" id="pubInfoBtn" title="معلومات المطعم">ℹ️</div>
       <div class="pub-icon-btn" id="pubAboutBtn" title="عن منيو m@g">✨</div>
-      <div class="pub-icon-btn" id="pubSignupBtn" title="أنشئ منيو زي دي لمشروعك">🏪</div>
     </div>
   </div>
   <div class="pub-logo-wrap" id="pubLogoWrap"></div>
@@ -2607,9 +2607,6 @@ async function loadPublic(slug){
     }
     const aboutBtn = document.getElementById('pubAboutBtn');
     aboutBtn.onclick = ()=> showAboutModal();
-    const signupBtn = document.getElementById('pubSignupBtn');
-    signupBtn.title = lang==='en' ? 'Create a menu like this for your business' : 'أنشئ منيو زي دي لمشروعك';
-    signupBtn.onclick = ()=>{ location.href = `${location.origin}${location.pathname}?signup=1`; };
     updateCartButton();
   }
 
@@ -2629,11 +2626,15 @@ async function loadPublic(slug){
         </p>
         <div class="modal-actions">
           <button class="btn-cancel" id="aboutCloseBtn">${lang==='en' ? 'Close' : 'إغلاق'}</button>
-          <a class="btn-confirm" style="display:flex; align-items:center; justify-content:center; text-decoration:none;" href="${waLink}" target="_blank" rel="noopener">${lang==='en' ? 'Get one for my business' : 'أرغب في الحصول على واحدة لمشروعي'}</a>
+          <button class="btn-confirm" id="aboutSignupBtn" type="button">${lang==='en' ? 'Create your account now' : 'أنشئ حسابك دلوقتي'}</button>
+          <a class="btn-confirm" style="display:flex; align-items:center; justify-content:center; text-decoration:none;" href="${waLink}" target="_blank" rel="noopener">${lang==='en' ? 'Ask us on WhatsApp' : 'اسألنا عبر واتساب'}</a>
         </div>
       </div>`;
     document.body.appendChild(overlay);
     overlay.querySelector('#aboutCloseBtn').addEventListener('click', ()=> overlay.remove());
+    overlay.querySelector('#aboutSignupBtn').addEventListener('click', ()=>{
+      location.href = `${location.origin}${location.pathname}?signup=1`;
+    });
     overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   }
 
