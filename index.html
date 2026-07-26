@@ -207,8 +207,8 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .order-row .o-name{font-weight:800; color:var(--ink); font-size:14px;}
 .order-row .o-phone{font-family:var(--mono); direction:ltr; color:var(--ember); font-size:13px; margin-top:2px; display:inline-block;}
 .order-row .o-time{color:var(--stone); font-size:11px; margin-top:4px;}
-.order-row .o-wa-btn{ display:inline-flex; align-items:center; gap:5px; margin-inline-start:8px; background:#25D366; color:#fff; border:none; border-radius:20px; padding:3px 10px; font-size:12px; font-weight:700; cursor:pointer; font-family:var(--body); vertical-align:middle; }
-.order-row .o-wa-btn:hover{ background:#1ebe57; }
+.o-wa-btn{ display:inline-flex; align-items:center; gap:5px; margin-inline-start:8px; background:#25D366; color:#fff; border:none; border-radius:20px; padding:3px 10px; font-size:12px; font-weight:700; cursor:pointer; font-family:var(--body); vertical-align:middle; }
+.o-wa-btn:hover{ background:#1ebe57; }
 .o-tag{ display:inline-block; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:10px; margin-inline-start:6px; }
 .o-tag.new{ background:var(--ember); color:#fff; }
 .o-tag.today{ background:rgba(63,98,71,.15); color:var(--basil); }
@@ -335,6 +335,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
       <button class="link-btn" id="copyPublicLinkBtn">نسخ رابط القائمة العام</button>
       <button class="link-btn" id="showQrBtn">QR Code</button>
       <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
+      <button class="link-btn" id="customersBtn">العملاء</button>
       <button class="link-btn" id="importExcelBtn">استيراد من إكسيل</button>
       <button class="link-btn" id="exportExcelBtn">تصدير إلى إكسيل</button>
       <button class="link-btn" id="restaurantSettingsBtn">إعدادات المطعم</button>
@@ -455,6 +456,23 @@ function toast(msg){
   el.textContent = msg;
   el.classList.add('show');
   setTimeout(()=> el.classList.remove('show'), 2200);
+}
+
+function toEgyptWaDigits(phone){
+  // أرقام العملاء متخزنة بصيغة محلية 01xxxxxxxxx، لازم نحولها لصيغة دولية 20xxxxxxxxxx عشان رابط واتساب يشتغل صح
+  let digits = (phone || '').replace(/[^\d]/g, '');
+  if(!digits) return '';
+  if(digits.startsWith('0')) digits = '20' + digits.slice(1);
+  else if(!digits.startsWith('20')) digits = '20' + digits;
+  return digits;
+}
+
+function sendMenuLinkWhatsApp(phone, name){
+  const digits = toEgyptWaDigits(phone);
+  if(!digits){ toast('لا يوجد رقم تليفون صالح لهذا العميل'); return; }
+  const link = `${location.origin}${location.pathname}?r=${restaurant.slug}`;
+  const msg = `أهلًا بيك ${name || ''} 🌟\nيسعدنا نرحّب بيك في ${restaurant.name}! تقدر تتصفح المنيو وتطلب أونلاين مباشرة من هنا:\n${link}`;
+  window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 function show(id){
   ['loadingScreen','authScreen','onboardScreen','dashboardScreen','publicScreen','trackingScreen'].forEach(s=>{
@@ -822,6 +840,148 @@ document.getElementById('deliveryZonesBtn').addEventListener('click', async ()=>
   });
 });
 
+document.getElementById('customersBtn').addEventListener('click', async ()=>{
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>عملاء ${escapeHtml(restaurant.name)}</h3>
+      <div class="orders-empty" style="text-align:right; padding:0 0 10px; font-size:12px;">
+        سجّل عملاءك يدويًا أو استورد ملف إكسيل بعمودين بالترتيب: <b>Customer name</b> ثم <b>Customer phone</b>، وابعتلهم رسالة ترحيبية ورابط المنيو على واتساب بضغطة واحدة.
+      </div>
+      <input type="text" id="customersSearchInput" class="orders-search-input" placeholder="بحث بالاسم أو رقم التليفون...">
+      <div id="customersListWrap"><div class="orders-empty">جارِ التحميل...</div></div>
+      <div class="zone-add-row">
+        <input type="text" id="newCustomerName" placeholder="اسم العميل">
+        <input type="text" id="newCustomerPhone" placeholder="01xxxxxxxxx">
+      </div>
+      <input type="file" id="customersExcelInput" accept=".xlsx,.xls" style="display:none;">
+      <div class="modal-actions">
+        <button class="btn-cancel" id="customersCloseBtn">إغلاق</button>
+        <button class="link-btn" id="customersImportBtn" type="button">استيراد من إكسيل</button>
+        <button class="btn-confirm" id="customerAddBtn">إضافة عميل</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#customersCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+
+  let allCustomers = [];
+
+  async function loadCustomers(){
+    const { data, error } = await sb.from('customers').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending:false });
+    if(error){ allCustomers = []; return false; }
+    allCustomers = data || [];
+    return true;
+  }
+
+  function renderCustomers(){
+    const wrap = overlay.querySelector('#customersListWrap');
+    const q = overlay.querySelector('#customersSearchInput').value.trim().toLowerCase();
+    const list = q ? allCustomers.filter(c=> (c.name||'').toLowerCase().includes(q) || (c.phone||'').includes(q)) : allCustomers;
+    if(list.length === 0){
+      wrap.innerHTML = `<div class="orders-empty">${allCustomers.length===0 ? 'لا يوجد عملاء مسجلين بعد' : 'لا توجد نتائج مطابقة'}</div>`;
+      return;
+    }
+    wrap.innerHTML = list.map(c=>`
+      <div class="zone-row" data-id="${c.id}">
+        <span class="zone-name">${escapeHtml(c.name)}</span>
+        <span class="zone-fee" style="direction:ltr;">${escapeHtml(c.phone)}</span>
+        <button type="button" class="o-wa-btn" data-action="send" data-phone="${escapeHtml(c.phone)}" data-name="${escapeHtml(c.name)}">📲 واتساب</button>
+        <button type="button" data-action="delete">حذف</button>
+      </div>`).join('');
+    wrap.querySelectorAll('[data-action="send"]').forEach(btn=>{
+      btn.addEventListener('click', ()=> sendMenuLinkWhatsApp(btn.dataset.phone, btn.dataset.name));
+    });
+    wrap.querySelectorAll('[data-action="delete"]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const row = btn.closest('.zone-row');
+        const id = row.dataset.id;
+        if(!confirm('حذف هذا العميل؟')) return;
+        const { error } = await sb.from('customers').delete().eq('id', id);
+        if(error){ toast('تعذر الحذف'); return; }
+        await loadCustomers();
+        renderCustomers();
+      });
+    });
+  }
+
+  const ok = await loadCustomers();
+  if(!ok){ overlay.querySelector('#customersListWrap').innerHTML = `<div class="orders-empty">تعذر تحميل العملاء، تأكد من إضافة جدول customers في قاعدة البيانات (راجع تعليمات الإعداد)</div>`; }
+  else renderCustomers();
+
+  overlay.querySelector('#customersSearchInput').addEventListener('input', renderCustomers);
+
+  overlay.querySelector('#customerAddBtn').addEventListener('click', async ()=>{
+    const nameInput = overlay.querySelector('#newCustomerName');
+    const phoneInput = overlay.querySelector('#newCustomerPhone');
+    const name = nameInput.value.trim();
+    const phone = phoneInput.value.replace(/[^\d]/g,'');
+    if(!name){ nameInput.focus(); return; }
+    if(phone.length < 8){ phoneInput.focus(); return; }
+    const btn = overlay.querySelector('#customerAddBtn');
+    btn.disabled = true;
+    const { error } = await sb.from('customers').upsert({ restaurant_id: restaurant.id, name, phone }, { onConflict: 'restaurant_id,phone' });
+    btn.disabled = false;
+    if(error){ toast('تعذر إضافة العميل'); return; }
+    nameInput.value = '';
+    phoneInput.value = '';
+    await loadCustomers();
+    renderCustomers();
+  });
+
+  overlay.querySelector('#customersImportBtn').addEventListener('click', ()=>{
+    overlay.querySelector('#customersExcelInput').click();
+  });
+
+  overlay.querySelector('#customersExcelInput').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+
+    let rows;
+    try{
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+    }catch(err){
+      toast('تعذرت قراءة الملف، تأكد أنه ملف إكسيل صالح');
+      return;
+    }
+
+    // نتجاهل صف العناوين لو العمود الثاني مش شكله رقم تليفون (يعني نص زي "Customer phone")
+    const looksLikePhone = v => String(v ?? '').replace(/[^\d]/g,'').length >= 8;
+    if(rows.length && !looksLikePhone(rows[0][1])){
+      rows = rows.slice(1);
+    }
+
+    const byPhone = new Map();
+    rows.forEach(r=>{
+      const name = String(r[0] ?? '').trim();
+      const phone = String(r[1] ?? '').replace(/[^\d]/g,'');
+      if(!name || phone.length < 8) return;
+      byPhone.set(phone, { restaurant_id: restaurant.id, name, phone });
+    });
+    const parsed = [...byPhone.values()];
+
+    if(parsed.length === 0){
+      toast('لم يتم العثور على صفوف صالحة (اسم، رقم تليفون)');
+      return;
+    }
+    if(!confirm(`سيتم استيراد ${parsed.length} عميل. متابعة؟`)) return;
+
+    const importBtn = overlay.querySelector('#customersImportBtn');
+    importBtn.disabled = true;
+    const { error } = await sb.from('customers').upsert(parsed, { onConflict: 'restaurant_id,phone' });
+    importBtn.disabled = false;
+    if(error){ toast('حدث خطأ أثناء الاستيراد'); return; }
+    await loadCustomers();
+    renderCustomers();
+    toast(`تم استيراد ${parsed.length} عميل بنجاح`);
+  });
+});
+
 document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
@@ -910,23 +1070,6 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
         </select>
         ${(status==='delivered' || status==='cancelled') ? `<div class="o-time" style="margin-top:2px; font-size:11px;">لا يمكن تغيير الحالة بعد أن أصبحت نهائية</div>` : ''}
       </div>`;
-  }
-
-  function toEgyptWaDigits(phone){
-    // أرقام العملاء متخزنة بصيغة محلية 01xxxxxxxxx، لازم نحولها لصيغة دولية 20xxxxxxxxxx عشان رابط واتساب يشتغل صح
-    let digits = (phone || '').replace(/[^\d]/g, '');
-    if(!digits) return '';
-    if(digits.startsWith('0')) digits = '20' + digits.slice(1);
-    else if(!digits.startsWith('20')) digits = '20' + digits;
-    return digits;
-  }
-
-  function sendMenuLinkWhatsApp(phone, name){
-    const digits = toEgyptWaDigits(phone);
-    if(!digits){ toast('لا يوجد رقم تليفون صالح لهذا العميل'); return; }
-    const link = `${location.origin}${location.pathname}?r=${restaurant.slug}`;
-    const msg = `مرحبًا ${name || ''} 👋\nده رابط منيو ${restaurant.name}، تقدر تتصفح وتطلب مباشرة من هنا:\n${link}`;
-    window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
   }
 
   function attachRowHandlers(){
