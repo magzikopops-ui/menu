@@ -335,6 +335,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
       <button class="link-btn" id="viewStatsBtn">الإحصائيات</button>
       <button class="link-btn" id="copyPublicLinkBtn">نسخ رابط القائمة العام</button>
       <button class="link-btn" id="showQrBtn">QR Code</button>
+      <button class="link-btn" id="shareMenuBtn">📤 مشاركة القائمة</button>
       <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
       <button class="link-btn" id="customersBtn">العملاء</button>
       <button class="link-btn" id="importExcelBtn">استيراد من إكسيل</button>
@@ -1620,6 +1621,183 @@ document.getElementById('showQrBtn').addEventListener('click', ()=>{
       toast('افتحنا الصورة في تاب جديد، اضغط عليها بزرار الفأرة اليمين واحفظها');
     }
   });
+});
+
+/* ================= مشاركة القائمة (صورة ستوري) ================= */
+function loadImageAsBlobUrl(src){
+  return fetch(src).then(res=>{
+    if(!res.ok) throw new Error('fetch failed');
+    return res.blob();
+  }).then(blob=> URL.createObjectURL(blob));
+}
+function loadImageEl(url){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=> resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+function canvasRoundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+function canvasWrapText(ctx, text, x, y, maxWidth, lineHeight){
+  const words = String(text || '').split(' ').filter(Boolean);
+  let line = '';
+  const lines = [];
+  words.forEach(word=>{
+    const testLine = line ? (line + ' ' + word) : word;
+    if(ctx.measureText(testLine).width > maxWidth && line){
+      lines.push(line);
+      line = word;
+    } else {
+      line = testLine;
+    }
+  });
+  if(line) lines.push(line);
+  const startY = y - (lines.length - 1) * lineHeight / 2;
+  lines.forEach((l, i)=> ctx.fillText(l, x, startY + i * lineHeight));
+  return lines.length;
+}
+
+async function buildShareStoryBlob(){
+  if(document.fonts && document.fonts.ready){ try{ await document.fonts.ready; }catch(e){} }
+
+  const W = 1080, H = 1920;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#2E4A35');
+  grad.addColorStop(1, '#201F1D');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = 'rgba(184,57,14,0.20)';
+  ctx.beginPath(); ctx.arc(W*0.88, H*0.10, 260, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(184,57,14,0.12)';
+  ctx.beginPath(); ctx.arc(W*0.08, H*0.92, 220, 0, Math.PI*2); ctx.fill();
+
+  const logoY = 280, logoR = 130;
+  let logoImg = null;
+  if(restaurant.logo_url){
+    try{
+      const url = await loadImageAsBlobUrl(restaurant.logo_url);
+      logoImg = await loadImageEl(url);
+    }catch(e){ logoImg = null; }
+  }
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(W/2, logoY, logoR, 0, Math.PI*2);
+  ctx.closePath();
+  ctx.fillStyle = '#F6F1E4';
+  ctx.fill();
+  ctx.clip();
+  if(logoImg){
+    ctx.drawImage(logoImg, W/2 - logoR, logoY - logoR, logoR*2, logoR*2);
+  } else {
+    ctx.fillStyle = '#201F1D';
+    ctx.font = "700 120px 'Lalezar','Tajawal',sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText((restaurant.name || 'م').trim().charAt(0), W/2, logoY + 10);
+  }
+  ctx.restore();
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#F6F1E4';
+  ctx.font = "700 78px 'Lalezar','Tajawal',sans-serif";
+  const nameLines = canvasWrapText(ctx, restaurant.name || '', W/2, 520, 900, 92);
+
+  ctx.font = "500 40px 'Tajawal',sans-serif";
+  ctx.fillStyle = '#D8D2C0';
+  ctx.fillText(`${biz(restaurant.business_type,'itemsDef')} أونلاين — اطلب دلوقتي`, W/2, 520 + (nameLines>1 ? 100 : 60));
+
+  const qrSize = 520, qrX = W/2 - qrSize/2, qrY = 760, pad = 40;
+  canvasRoundRect(ctx, qrX - pad, qrY - pad, qrSize + pad*2, qrSize + pad*2, 32);
+  ctx.fillStyle = '#F6F1E4';
+  ctx.fill();
+
+  const link = `${location.origin}${location.pathname}?r=${restaurant.slug}`;
+  const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&margin=6&data=${encodeURIComponent(link)}`;
+  const qrBlobUrl = await loadImageAsBlobUrl(qrImgUrl);
+  const qrImg = await loadImageEl(qrBlobUrl);
+  ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+
+  ctx.font = "700 44px 'Tajawal',sans-serif";
+  ctx.fillStyle = '#F6F1E4';
+  ctx.fillText('امسح الكود واطلب دلوقتي 📲', W/2, qrY + qrSize + pad + 74);
+
+  ctx.font = "600 30px 'Tajawal',sans-serif";
+  ctx.fillStyle = '#8A8577';
+  ctx.fillText('POWERED BY منيو m@g', W/2, H - 80);
+
+  return new Promise((resolve, reject)=>{
+    canvas.toBlob(blob=> blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/png');
+  });
+}
+
+document.getElementById('shareMenuBtn').addEventListener('click', async ()=>{
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="text-align:center;">
+      <h3>شارك قائمة ${escapeHtml(restaurant.name)}</h3>
+      <div class="orders-empty" style="padding:0 0 12px; font-size:12px;">صورة جاهزة بمقاس ستوري إنستجرام/فيسبوك، نزّلها أو ابعتها على طول من هنا</div>
+      <div style="display:flex; justify-content:center; padding:6px 0 14px;">
+        <div id="shareImgWrap" style="width:180px; aspect-ratio:9/16; border-radius:14px; overflow:hidden; background:#151412; display:flex; align-items:center; justify-content:center; color:#D8D2C0; font-size:12px; text-align:center; padding:10px;">جارِ تجهيز الصورة...</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="shareCloseBtn">إغلاق</button>
+        <button class="btn-confirm" id="shareDownloadBtn" disabled>تحميل الصورة</button>
+        <button class="btn-confirm hidden" id="shareNativeBtn" type="button">مشاركة</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#shareCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+
+  let blob;
+  try{
+    blob = await buildShareStoryBlob();
+  }catch(err){
+    overlay.querySelector('#shareImgWrap').textContent = 'تعذر تجهيز الصورة، حاول مرة أخرى';
+    return;
+  }
+  if(!overlay.isConnected) return; // المستخدم قفل المودال قبل ما التجهيز يخلص
+
+  const objUrl = URL.createObjectURL(blob);
+  overlay.querySelector('#shareImgWrap').innerHTML = `<img src="${objUrl}" style="width:100%; height:100%; object-fit:cover;" alt="صورة مشاركة القائمة">`;
+
+  const downloadBtn = overlay.querySelector('#shareDownloadBtn');
+  downloadBtn.disabled = false;
+  downloadBtn.addEventListener('click', ()=>{
+    const a = document.createElement('a');
+    a.href = objUrl;
+    a.download = `menu-story-${restaurant.slug}.png`;
+    a.click();
+  });
+
+  try{
+    const file = new File([blob], `menu-story-${restaurant.slug}.png`, { type:'image/png' });
+    if(navigator.canShare && navigator.canShare({ files:[file] })){
+      const nativeBtn = overlay.querySelector('#shareNativeBtn');
+      nativeBtn.classList.remove('hidden');
+      nativeBtn.addEventListener('click', async ()=>{
+        try{
+          await navigator.share({ files:[file], title: restaurant.name, text: `قائمة ${restaurant.name} أونلاين` });
+        }catch(e){ /* المستخدم لغى المشاركة، لا داعي لأي رسالة */ }
+      });
+    }
+  }catch(e){ /* المتصفح ميدعمش المشاركة بالملفات، زرار التحميل هيفضل شغال */ }
 });
 
 /* ================= Excel Import ================= */
