@@ -429,6 +429,33 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+/* ================= تسهيلات لوحة المفاتيح للنوافذ المنبثقة ================= */
+// Escape يقفل أعلى نافذة مفتوحة
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  const overlays = document.querySelectorAll('.overlay');
+  if(overlays.length === 0) return;
+  overlays[overlays.length - 1].remove();
+});
+
+// تحديد النص بالكامل تلقائيًا عند التركيز على أي حقل رقمي (سعر، رسوم...) عشان يسهل الكتابة فوقه
+document.addEventListener('focusin', function(e){
+  if(e.target.tagName === 'INPUT' && e.target.type === 'number'){
+    e.target.select();
+  }
+});
+
+// ربط زر Enter بزر تأكيد معيّن داخل نافذة/عنصر معين (يتجاهل الأزرار وtextarea وselect وحقول الملفات)
+function wireEnterToConfirm(container, confirmBtn){
+  container.addEventListener('keydown', function(e){
+    if(e.key !== 'Enter') return;
+    if(e.target.tagName !== 'INPUT') return;
+    if(e.target.type === 'file' || e.target.type === 'checkbox' || e.target.type === 'radio') return;
+    e.preventDefault();
+    confirmBtn.click();
+  });
+}
+
 const BIZ_TERMS = {
   restaurant: {
     entityDef:'المطعم', entityIndef:'مطعم', entityPossessive:'مطعمك', entityInfo:'معلومات المطعم',
@@ -549,6 +576,7 @@ document.getElementById('tabSignup').addEventListener('click', ()=>{
   document.getElementById('forgotPasswordLink').classList.add('hidden');
 });
 
+wireEnterToConfirm(document.querySelector('#authScreen .auth-box'), document.getElementById('authSubmitBtn'));
 document.getElementById('authSubmitBtn').addEventListener('click', async ()=>{
   const email = document.getElementById('authEmail').value.trim();
   const password = document.getElementById('authPassword').value;
@@ -804,6 +832,7 @@ document.getElementById('deliveryZonesBtn').addEventListener('click', async ()=>
   document.body.appendChild(overlay);
   overlay.querySelector('#zonesCloseBtn').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  wireEnterToConfirm(overlay.querySelector('.zone-add-row'), overlay.querySelector('#zoneAddBtn'));
 
   async function renderZones(){
     const wrap = overlay.querySelector('#zonesListWrap');
@@ -872,6 +901,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
   document.body.appendChild(overlay);
   overlay.querySelector('#customersCloseBtn').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  wireEnterToConfirm(overlay.querySelector('.zone-add-row'), overlay.querySelector('#customerAddBtn'));
 
   let allCustomers = [];
 
@@ -1497,6 +1527,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  wireEnterToConfirm(overlay, overlay.querySelector('#rsConfirm'));
   overlay.querySelector('#rsCleanupOrdersBtn').addEventListener('click', ()=>{
     overlay.remove();
     openCleanupOrdersModal();
@@ -2181,6 +2212,7 @@ function openCategoryModal(existing){
   input.focus();
   overlay.querySelector('#catCancel').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  wireEnterToConfirm(overlay, overlay.querySelector('#catConfirm'));
   overlay.querySelector('#catConfirm').addEventListener('click', async ()=>{
     const name = input.value.trim();
     const name_en = inputEn.value.trim() || null;
@@ -2535,14 +2567,10 @@ function openItemModal(existing){
     removeImgBtn.style.display = 'none';
   });
 
+  overlay.querySelector('#itemName').focus();
   overlay.querySelector('#itemCancel').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
-  overlay.addEventListener('keydown', (e)=>{
-    if(e.key !== 'Enter') return;
-    if(e.target.tagName === 'TEXTAREA') return; // اسمح بسطر جديد داخل الوصف
-    e.preventDefault();
-    overlay.querySelector('#itemConfirm').click();
-  });
+  wireEnterToConfirm(overlay, overlay.querySelector('#itemConfirm'));
   overlay.querySelector('#itemConfirm').addEventListener('click', async ()=>{
     const name = overlay.querySelector('#itemName').value.trim();
     const name_en = overlay.querySelector('#itemNameEn').value.trim() || null;
