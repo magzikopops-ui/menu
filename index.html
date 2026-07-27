@@ -212,6 +212,9 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .order-row .o-time{color:var(--stone); font-size:11px; margin-top:4px;}
 .o-wa-btn{ display:inline-flex; align-items:center; gap:5px; margin-inline-start:8px; background:#25D366; color:#fff; border:none; border-radius:20px; padding:3px 10px; font-size:12px; font-weight:700; cursor:pointer; font-family:var(--body); vertical-align:middle; }
 .o-wa-btn:hover{ background:#1ebe57; }
+.wa-template-list{ display:flex; flex-direction:column; gap:8px; max-height:min(50vh,360px); overflow-y:auto; margin-bottom:14px; }
+.wa-template-card{ display:block; width:100%; text-align:right; background:var(--paper-dim); color:var(--ink); border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; font-size:12.5px; line-height:1.65; white-space:pre-wrap; cursor:pointer; font-family:var(--body); transition:border-color .15s ease, background .15s ease; }
+.wa-template-card:hover{ border-color:var(--basil); background:rgba(63,98,71,.06); }
 .o-tag{ display:inline-block; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:10px; margin-inline-start:6px; }
 .o-tag.new{ background:var(--ember); color:#fff; }
 .o-tag.today{ background:rgba(63,98,71,.15); color:var(--basil); }
@@ -499,12 +502,54 @@ function toEgyptWaDigits(phone){
   return digits;
 }
 
+// نصوص متنوعة لرسالة "شارك المنيو" — التنويع بيقلل احتمالية إن واتساب يعتبر الرسائل المتكررة سبام
+// وبعضها من غير اسم العميل، لأن الاسم المسجل ممكن يكون غلط
+const MENU_WA_TEMPLATES = [
+  { withName:true,  text:(name,link,rest)=> `أهلًا بيك ${name} 🌟\nيسعدنا نرحّب بيك في ${rest}! تقدر تتصفح المنيو وتطلب أونلاين مباشرة من هنا:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `أهلاً بيك 👋\n${rest} دلوقتي أونلاين! تقدر تشوف المنيو وتطلب من هنا:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `يا هلا ${name} ✨\nمنيو ${rest} بقى متاح أونلاين، تقدر تطلب براحتك من الرابط ده:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `تحية طيبة 🙏\nندعوك تتصفح منيو ${rest} وتطلب أونلاين من خلال الرابط:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `إزيك ${name}؟ 😊\n${rest} عندها منيو أونلاين دلوقتي، جرّب تطلب من هنا:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `منيو ${rest} أونلاين 🍽️\nاطلب دلوقتي من هنا:\n${link}` },
+];
+
+function openWaTemplatePicker(templates, name, link, digits){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>اختر نص الرسالة</h3>
+      <div class="orders-empty" style="padding:0 0 10px; font-size:12px;">تنويع النص كل مرة بيقلل احتمال حظر واتساب للأرقام اللي بترسلها كتير</div>
+      <div class="wa-template-list" id="waTemplateList"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="waTemplateCancel">إلغاء</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#waTemplateCancel').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  const list = overlay.querySelector('#waTemplateList');
+  templates.forEach(t=>{
+    const msg = t.text(name, link, restaurant.name);
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'wa-template-card';
+    card.textContent = msg;
+    card.addEventListener('click', ()=>{
+      window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
+      overlay.remove();
+    });
+    list.appendChild(card);
+  });
+}
+
 function sendMenuLinkWhatsApp(phone, name){
   const digits = toEgyptWaDigits(phone);
   if(!digits){ toast('لا يوجد رقم تليفون صالح لهذا العميل'); return; }
   const link = `${location.origin}${location.pathname}?r=${restaurant.slug}`;
-  const msg = `أهلًا بيك ${name || ''} 🌟\nيسعدنا نرحّب بيك في ${restaurant.name}! تقدر تتصفح المنيو وتطلب أونلاين مباشرة من هنا:\n${link}`;
-  window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
+  const cleanName = (name || '').trim();
+  const templates = cleanName ? MENU_WA_TEMPLATES : MENU_WA_TEMPLATES.filter(t=> !t.withName);
+  openWaTemplatePicker(templates, cleanName, link, digits);
 }
 function show(id){
   ['loadingScreen','authScreen','onboardScreen','dashboardScreen','publicScreen','trackingScreen'].forEach(s=>{
