@@ -2537,6 +2537,12 @@ function openItemModal(existing){
 
   overlay.querySelector('#itemCancel').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.addEventListener('keydown', (e)=>{
+    if(e.key !== 'Enter') return;
+    if(e.target.tagName === 'TEXTAREA') return; // اسمح بسطر جديد داخل الوصف
+    e.preventDefault();
+    overlay.querySelector('#itemConfirm').click();
+  });
   overlay.querySelector('#itemConfirm').addEventListener('click', async ()=>{
     const name = overlay.querySelector('#itemName').value.trim();
     const name_en = overlay.querySelector('#itemNameEn').value.trim() || null;
