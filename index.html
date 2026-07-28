@@ -79,6 +79,9 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .topbar-actions{display:flex; gap:10px; flex-wrap:wrap;}
 .link-btn{ background:#2A2825; color:var(--paper); border:1px solid #454138; font-family:var(--body); font-weight:700; font-size:13px; padding:9px 16px; border-radius:6px; cursor:pointer; }
 .link-btn:hover{border-color:var(--stone);}
+.link-btn-split{ display:inline-flex; }
+.link-btn-split .split-copy{ border-radius:6px 0 0 6px; border-left:none; }
+.link-btn-split .split-open{ border-radius:0 6px 6px 0; padding:9px 12px; }
 .save-btn{ background:var(--basil); color:var(--paper); border:none; font-family:var(--body); font-weight:700; font-size:14px; padding:9px 20px; border-radius:6px; cursor:pointer; }
 .save-btn:hover{background:var(--basil-dark);}
 
@@ -339,7 +342,9 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
     <div class="topbar-actions">
       <button class="link-btn" id="viewOrdersBtn">الطلبات <span id="newOrdersBadge" class="new-orders-badge hidden">0</span></button>
       <button class="link-btn" id="viewStatsBtn">الإحصائيات</button>
-      <button class="link-btn" id="copyPublicLinkBtn">نسخ رابط القائمة العام</button>
+      <span class="link-btn-split" id="publicLinkSplitBtn">
+        <button class="link-btn split-copy" id="copyPublicLinkBtn">نسخ رابط القائمة العام</button><button class="link-btn split-open" id="openPublicLinkBtn" title="فتح المنيو مباشرة">🔗</button>
+      </span>
       <button class="link-btn" id="showQrBtn">QR Code</button>
       <button class="link-btn" id="shareMenuBtn">📤 مشاركة القائمة</button>
       <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
@@ -1670,6 +1675,11 @@ document.getElementById('copyPublicLinkBtn').addEventListener('click', ()=>{
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(link).then(()=> toast('تم نسخ الرابط')).catch(()=> toast(link));
   } else { toast(link); }
+});
+
+document.getElementById('openPublicLinkBtn').addEventListener('click', ()=>{
+  const link = `${location.origin}${location.pathname}?r=${restaurant.slug}`;
+  window.open(link, '_blank', 'noopener');
 });
 
 document.getElementById('showQrBtn').addEventListener('click', ()=>{
