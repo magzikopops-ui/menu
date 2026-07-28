@@ -190,6 +190,15 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .pub-order-btn{ position:fixed; bottom:22px; inset-inline-end:22px; background:var(--ember); color:#fff; border:none; padding:13px 24px; border-radius:30px; font-family:var(--body); font-weight:800; font-size:14px; cursor:pointer; box-shadow:0 10px 24px rgba(0,0,0,.3); z-index:40; display:flex; align-items:center; gap:8px; }
 .pub-order-btn:hover{background:var(--ember-dark);}
 .pub-order-btn-icon{ font-size:20px; line-height:1; }
+.pub-order-btn.cart-btn-pop{ animation:cartBtnPop .55s ease; }
+@keyframes cartBtnPop{
+  0%{ transform:scale(1) rotate(0deg); }
+  20%{ transform:scale(1.22) rotate(-6deg); }
+  40%{ transform:scale(1.12) rotate(6deg); }
+  60%{ transform:scale(1.18) rotate(-4deg); }
+  80%{ transform:scale(1.06) rotate(3deg); }
+  100%{ transform:scale(1) rotate(0deg); }
+}
 .cart-badge{ background:#fff; color:var(--ember); border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; }
 
 .qty-stepper{ display:flex; align-items:center; gap:8px; margin-top:6px; }
@@ -2825,8 +2834,10 @@ async function loadPublic(slug){
   function cartSubtotal(){
     return Object.values(cart).reduce((sum,c)=> sum + (c.qty * Number(c.unitPrice)), 0);
   }
+  let prevPubCartCount = 0;
   function updateCartButton(){
     const badge = document.getElementById('pubCartBadge');
+    const btn = document.getElementById('pubOrderBtn');
     const count = cartCount();
     if(count > 0){
       badge.textContent = count;
@@ -2834,6 +2845,13 @@ async function loadPublic(slug){
     } else {
       badge.classList.add('hidden');
     }
+    if(count > prevPubCartCount){
+      btn.classList.remove('cart-btn-pop');
+      void btn.offsetWidth; // إعادة تشغيل الأنيميشن حتى لو كانت مفعّلة قبل كده
+      btn.classList.add('cart-btn-pop');
+      setTimeout(()=> btn.classList.remove('cart-btn-pop'), 600);
+    }
+    prevPubCartCount = count;
   }
 
   const repeatOrderBtn = document.getElementById('pubRepeatOrderBtn');
