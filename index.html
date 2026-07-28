@@ -59,6 +59,11 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 
 .field{margin-bottom:14px;}
 .field label{display:block; font-size:13px; font-weight:700; margin-bottom:6px;}
+.field-row{ display:flex; gap:10px; }
+.field-row .field{ flex:1; min-width:0; }
+.optional-details-toggle{ display:flex; align-items:center; gap:6px; background:none; border:none; color:var(--basil); font-family:var(--body); font-weight:700; font-size:13px; padding:6px 0; margin-bottom:10px; cursor:pointer; }
+.optional-details-wrap{ overflow:hidden; max-height:0; transition:max-height .25s ease; }
+.optional-details-wrap.open{ max-height:260px; }
 #authScreen .field label, #onboardScreen .field label{color:var(--stone-light);}
 .field input[type=text], .field input[type=email], .field input[type=password], .field input[type=number], .field textarea{
   width:100%; border:1.5px solid var(--line); border-radius:8px; padding:10px 12px;
@@ -3276,21 +3281,15 @@ async function loadPublic(slug){
             <div class="ord-type-btn" id="ordTypePickup">${lang==='en' ? 'Pickup' : 'استلام'}</div>
           </div>
         </div>
-        <div class="field">
-          <label>${lang==='en' ? 'Full name' : 'الاسم الكامل'} *</label>
-          <input type="text" id="ordName" placeholder="${lang==='en' ? 'Full name' : 'مثال: أحمد محمد'}">
-        </div>
-        <div class="field">
-          <label>${lang==='en' ? 'Phone number' : 'رقم الهاتف'} *</label>
-          <input type="text" id="ordPhone" placeholder="01xxxxxxxxx">
-        </div>
-        <div class="field">
-          <label>${lang==='en' ? 'Additional phone (optional)' : 'رقم هاتف إضافي (اختياري)'}</label>
-          <input type="text" id="ordPhone2" placeholder="01xxxxxxxxx">
-        </div>
-        <div class="field">
-          <label>${lang==='en' ? 'City' : 'المدينة'} *</label>
-          <input type="text" id="ordCity" placeholder="${lang==='en' ? 'e.g. Cairo' : 'مثال: القاهرة'}">
+        <div class="field-row">
+          <div class="field">
+            <label>${lang==='en' ? 'Full name' : 'الاسم الكامل'} *</label>
+            <input type="text" id="ordName" placeholder="${lang==='en' ? 'Full name' : 'مثال: أحمد محمد'}">
+          </div>
+          <div class="field">
+            <label>${lang==='en' ? 'Phone number' : 'رقم الهاتف'} *</label>
+            <input type="text" id="ordPhone" placeholder="01xxxxxxxxx">
+          </div>
         </div>
         <div class="field" id="ordAreaField">
           <label>${lang==='en' ? 'Area / district' : 'المنطقة'} *</label>
@@ -3307,9 +3306,22 @@ async function loadPublic(slug){
           <label>${lang==='en' ? 'Detailed address' : 'العنوان بالتفصيل'} *</label>
           <textarea id="ordAddress" placeholder="${lang==='en' ? 'Street, building, floor, landmark...' : 'الشارع، رقم المبنى، الدور، أقرب علامة مميزة...'}"></textarea>
         </div>
-        <div class="field">
-          <label>${lang==='en' ? 'Notes (optional)' : 'ملاحظات (اختياري)'}</label>
-          <textarea id="ordNotes" placeholder="${lang==='en' ? 'Any special requests' : 'أي طلبات خاصة'}"></textarea>
+        <button type="button" class="optional-details-toggle" id="ordOptionalToggle">
+          <span id="ordOptionalToggleIcon">▸</span> ${lang==='en' ? 'More details (optional)' : 'تفاصيل إضافية (اختياري)'}
+        </button>
+        <div class="optional-details-wrap" id="ordOptionalWrap">
+          <div class="field">
+            <label>${lang==='en' ? 'Additional phone (optional)' : 'رقم هاتف إضافي (اختياري)'}</label>
+            <input type="text" id="ordPhone2" placeholder="01xxxxxxxxx">
+          </div>
+          <div class="field">
+            <label>${lang==='en' ? 'City (optional)' : 'المدينة (اختياري)'}</label>
+            <input type="text" id="ordCity" placeholder="${lang==='en' ? 'e.g. Cairo' : 'مثال: القاهرة'}">
+          </div>
+          <div class="field">
+            <label>${lang==='en' ? 'Notes (optional)' : 'ملاحظات (اختياري)'}</label>
+            <textarea id="ordNotes" placeholder="${lang==='en' ? 'Any special requests' : 'أي طلبات خاصة'}"></textarea>
+          </div>
         </div>
         <div class="field" style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
           <label>${lang==='en' ? 'Website' : 'الموقع الإلكتروني'}</label>
@@ -3359,6 +3371,14 @@ async function loadPublic(slug){
     }
     renderSummary();
 
+    const optionalToggle = overlay.querySelector('#ordOptionalToggle');
+    const optionalWrap = overlay.querySelector('#ordOptionalWrap');
+    const optionalIcon = overlay.querySelector('#ordOptionalToggleIcon');
+    optionalToggle.addEventListener('click', ()=>{
+      const isOpen = optionalWrap.classList.toggle('open');
+      optionalIcon.textContent = isOpen ? '▾' : '▸';
+    });
+
     const saved = loadSavedCustomerInfo();
     if(saved){
       if(saved.name) overlay.querySelector('#ordName').value = saved.name;
@@ -3366,6 +3386,7 @@ async function loadPublic(slug){
       if(saved.phone2) overlay.querySelector('#ordPhone2').value = saved.phone2;
       if(saved.city) overlay.querySelector('#ordCity').value = saved.city;
       if(saved.address) overlay.querySelector('#ordAddress').value = saved.address;
+      if(saved.phone2 || saved.city){ optionalWrap.classList.add('open'); optionalIcon.textContent = '▾'; }
       const savedZoneSelect = overlay.querySelector('#ordZoneSelect');
       if(savedZoneSelect && saved.zoneId){
         const opt = Array.from(savedZoneSelect.options).find(o=>o.value===saved.zoneId);
@@ -3417,7 +3438,7 @@ async function loadPublic(slug){
         msg += `\nTotal: ${total.toFixed(2)} EGP`;
         msg += `\n\nOrder type: ${typeLabel}\nName: ${customer_name}\nPhone: ${customer_phone}`;
         if(secondary_phone) msg += `\nAlt. phone: ${secondary_phone}`;
-        if(orderType==='delivery'){ msg += `\nCity: ${city}`; if(address) msg += `\nAddress: ${address}`; }
+        if(orderType==='delivery'){ if(city) msg += `\nCity: ${city}`; if(address) msg += `\nAddress: ${address}`; }
         if(notes) msg += `\nNotes: ${notes}`;
         return msg;
       }
@@ -3426,7 +3447,7 @@ async function loadPublic(slug){
       msg += `\nالإجمالي: ${total.toFixed(2)} جنيه`;
       msg += `\n\nنوع الطلب: ${typeLabel}\nالاسم: ${customer_name}\nالتليفون: ${customer_phone}`;
       if(secondary_phone) msg += `\nتليفون إضافي: ${secondary_phone}`;
-      if(orderType==='delivery'){ msg += `\nالمدينة: ${city}`; if(address) msg += `\nالعنوان: ${address}`; }
+      if(orderType==='delivery'){ if(city) msg += `\nالمدينة: ${city}`; if(address) msg += `\nالعنوان: ${address}`; }
       if(notes) msg += `\nملاحظات: ${notes}`;
       return msg;
     }
@@ -3444,7 +3465,7 @@ async function loadPublic(slug){
       const customer_name = overlay.querySelector('#ordName').value.trim();
       const customer_phone = overlay.querySelector('#ordPhone').value.trim();
       const secondary_phone = overlay.querySelector('#ordPhone2').value.trim() || null;
-      const city = overlay.querySelector('#ordCity').value.trim();
+      const city = overlay.querySelector('#ordCity').value.trim() || null;
       const address = orderType === 'delivery' ? overlay.querySelector('#ordAddress').value.trim() : null;
       const notes = overlay.querySelector('#ordNotes').value.trim() || null;
 
@@ -3461,7 +3482,7 @@ async function loadPublic(slug){
         }
       }
 
-      if(!customer_name || !customer_phone || !city || (orderType==='delivery' && (!area || !address))){
+      if(!customer_name || !customer_phone || (orderType==='delivery' && (!area || !address))){
         toast(lang==='en' ? 'Please fill in all required fields' : 'يرجى إدخال جميع الحقول المطلوبة');
         return;
       }
