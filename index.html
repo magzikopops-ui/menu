@@ -26,6 +26,7 @@
   --ember:#B8390E; --ember-dark:#8F2C0B;
   --basil:#3F6247; --basil-dark:#2E4A35;
   --stone:#8A8577; --stone-light:#D8D2C0; --line:#E4DCC7; --danger:#A6392B;
+  --confirm-strong:#1858C9; --confirm-strong-dark:#123F94;
   --display:'Lalezar','Tajawal',sans-serif; --body:'Tajawal',sans-serif; --mono:'JetBrains Mono',monospace;
 }
 *{box-sizing:border-box;}
@@ -149,14 +150,15 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .ticket-empty{ text-align:center; color:var(--stone); font-size:13px; padding:30px 10px; }
 
 #publicScreen{ min-height:100vh; background:var(--paper); }
-.pub-topbar{ display:flex; align-items:center; justify-content:space-between; padding:18px 20px 4px; max-width:640px; margin:0 auto; }
-.pub-lang-btn{ display:flex; align-items:center; gap:6px; background:var(--paper-dim); border:1px solid var(--line); border-radius:20px; padding:7px 14px; font-size:13px; font-weight:700; color:var(--ink); cursor:pointer; }
+.pub-topbar{ display:flex; align-items:center; justify-content:space-between; padding:18px 20px 4px; max-width:640px; margin:0 auto; gap:8px; flex-wrap:wrap; }
+.pub-lang-btn{ display:flex; align-items:center; gap:6px; background:var(--paper-dim); border:1px solid var(--line); border-radius:20px; padding:9px 14px; font-size:13px; font-weight:700; color:var(--ink); cursor:pointer; min-height:44px; }
 .pub-lang-btn:hover{border-color:var(--stone);}
 .pub-actions{ display:flex; align-items:center; gap:8px; }
-.pub-icon-btn{ display:flex; align-items:center; justify-content:center; width:36px; height:36px; background:var(--paper-dim); border:1px solid var(--line); border-radius:50%; font-size:15px; color:var(--ink); cursor:pointer; text-decoration:none; }
+.pub-icon-btn{ display:flex; align-items:center; justify-content:center; width:44px; height:44px; background:var(--paper-dim); border:1px solid var(--line); border-radius:50%; font-size:17px; color:var(--ink); cursor:pointer; text-decoration:none; }
 .pub-icon-btn:hover{border-color:var(--stone);}
 .pub-icon-btn.call-btn{ background:var(--basil); border-color:var(--basil); color:#fff; }
 .pub-icon-btn.call-btn:hover{ background:var(--basil-dark); }
+.pub-icon-btn.font-size-btn.active{ background:var(--ink); border-color:var(--ink); color:#fff; }
 .info-modal .field-row{ display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-bottom:1px dotted var(--stone-light); }
 .info-modal .field-row:last-child{ border-bottom:none; }
 .info-modal .field-row .icon{ font-size:16px; flex-shrink:0; width:22px; text-align:center; }
@@ -176,18 +178,18 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .pub-item{ display:flex; align-items:center; gap:12px; padding:14px 12px; border:1px solid var(--line); border-radius:10px; margin-bottom:10px; background:#fff; }
 .pub-item .chevron{ color:var(--stone); font-size:13px; flex-shrink:0; cursor:pointer; user-select:none; }
 .pub-item .info{ flex:1; min-width:0; }
-.pub-item .name-primary{ font-weight:800; font-size:15px; color:var(--ink); }
-.pub-item .name-secondary{ font-size:12px; color:var(--stone); margin-top:1px; }
-.pub-item .price{ font-family:var(--mono); direction:ltr; font-weight:700; color:var(--ember); font-size:14px; margin-top:5px; display:inline-block; }
-.pub-item .price .old-price{ color:var(--stone); text-decoration:line-through; font-weight:600; font-size:12.5px; margin-inline-end:6px; }
+.pub-item .name-primary{ font-weight:800; font-size:17px; color:var(--ink); }
+.pub-item .name-secondary{ font-size:13px; color:var(--stone); margin-top:1px; }
+.pub-item .price{ font-family:var(--mono); direction:ltr; font-weight:700; color:var(--ember); font-size:16px; margin-top:5px; display:inline-block; }
+.pub-item .price .old-price{ color:var(--stone); text-decoration:line-through; font-weight:600; font-size:13.5px; margin-inline-end:6px; }
 .discount-badge{ display:inline-block; background:var(--danger); color:#fff; font-family:var(--body); font-weight:700; font-size:10.5px; border-radius:5px; padding:2px 6px; margin-inline-start:6px; vertical-align:middle; }
 .pub-item img{ width:64px; height:64px; border-radius:8px; object-fit:cover; background:var(--stone-light); flex-shrink:0; }
 .pub-item .no-img{ width:64px; height:64px; border-radius:8px; background:var(--stone-light); display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--stone); flex-shrink:0; }
-.pub-item .desc-expand{ font-size:12.5px; color:var(--stone); margin-top:6px; line-height:1.6; display:none; }
+.pub-item .desc-expand{ font-size:13.5px; color:var(--stone); margin-top:6px; line-height:1.6; display:none; }
 .pub-item.expanded .desc-expand{display:block;}
 .pub-empty{ text-align:center; color:var(--stone); padding:60px 20px; }
 .pub-footer{ text-align:center; color:var(--stone); font-size:11px; padding:20px; font-family:var(--mono); direction:ltr; letter-spacing:1px; }
-.pub-order-btn{ position:fixed; bottom:22px; inset-inline-end:22px; background:var(--ember); color:#fff; border:none; padding:13px 24px; border-radius:30px; font-family:var(--body); font-weight:800; font-size:14px; cursor:pointer; box-shadow:0 10px 24px rgba(0,0,0,.3); z-index:40; display:flex; align-items:center; gap:8px; }
+.pub-order-btn{ position:fixed; bottom:22px; inset-inline-end:22px; background:var(--ember); color:#fff; border:none; padding:13px 24px; border-radius:30px; font-family:var(--body); font-weight:800; font-size:14px; cursor:pointer; box-shadow:0 10px 24px rgba(0,0,0,.3); z-index:40; display:flex; align-items:center; gap:8px; min-height:44px; }
 .pub-order-btn:hover{background:var(--ember-dark);}
 .pub-order-btn-icon{ font-size:20px; line-height:1; }
 .pub-order-btn.cart-btn-pop{ animation:cartBtnPop .55s ease; }
@@ -202,11 +204,11 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .fly-to-cart{ position:fixed; z-index:999; background-size:cover; background-position:center; background-color:#fff; border-radius:10px; box-shadow:0 6px 16px rgba(0,0,0,.35); pointer-events:none; display:flex; align-items:center; justify-content:center; font-size:20px; transition:left .55s cubic-bezier(.4,-0.2,.4,1.3), top .55s cubic-bezier(.4,-0.2,.4,1.3), width .55s ease, height .55s ease, opacity .55s ease .1s, border-radius .55s ease; }
 .cart-badge{ background:#fff; color:var(--ember); border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; }
 
-.qty-stepper{ display:flex; align-items:center; gap:8px; margin-top:6px; }
-.qty-btn{ width:26px; height:26px; border-radius:6px; border:1px solid var(--line); background:var(--paper-dim); color:var(--ink); font-weight:800; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.qty-stepper{ display:flex; align-items:center; gap:12px; margin-top:6px; }
+.qty-btn{ width:40px; height:40px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper-dim); color:var(--ink); font-weight:800; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 .qty-btn:hover{border-color:var(--ember); color:var(--ember);}
-.qty-val{font-family:var(--mono); font-weight:700; font-size:13px; min-width:18px; text-align:center;}
-.add-to-cart-btn{ margin-top:6px; background:var(--basil); color:#fff; border:none; padding:6px 14px; border-radius:16px; font-family:var(--body); font-weight:700; font-size:12px; cursor:pointer; }
+.qty-val{font-family:var(--mono); font-weight:700; font-size:15px; min-width:22px; text-align:center;}
+.add-to-cart-btn{ margin-top:6px; background:var(--basil); color:#fff; border:none; padding:10px 18px; border-radius:18px; font-family:var(--body); font-weight:700; font-size:14px; cursor:pointer; min-height:44px; }
 .add-to-cart-btn:hover{background:var(--basil-dark);}
 
 .cart-row{ display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line); padding:10px 0; }
@@ -275,6 +277,33 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .btn-confirm{background:var(--basil); color:#fff;}
 .btn-confirm:hover{background:var(--basil-dark);}
 .btn-confirm:disabled{opacity:.6;cursor:default;}
+.btn-confirm-final{ background:var(--confirm-strong); color:#fff; font-size:15px; min-height:48px; box-shadow:0 6px 16px rgba(24,88,201,.35); }
+.btn-confirm-final:hover{ background:var(--confirm-strong-dark); }
+.btn-confirm-final:disabled{opacity:.6;cursor:default;}
+
+.order-steps{ display:flex; align-items:flex-start; margin-bottom:18px; }
+.order-step{ display:flex; flex-direction:column; align-items:center; gap:5px; flex:0 0 auto; }
+.order-step-circle{ width:30px; height:30px; border-radius:50%; background:var(--paper-dim); border:2px solid var(--line); color:var(--stone); font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; }
+.order-step-label{ font-size:11px; color:var(--stone); font-weight:700; white-space:nowrap; }
+.order-step.done .order-step-circle{ background:var(--basil); border-color:var(--basil); color:#fff; }
+.order-step.done .order-step-label{ color:var(--basil); }
+.order-step.active .order-step-circle{ background:var(--ember); border-color:var(--ember); color:#fff; }
+.order-step.active .order-step-label{ color:var(--ink); }
+.order-step-line{ flex:1; height:2px; background:var(--line); margin:14px 4px 0; }
+.order-step-line.done{ background:var(--basil); }
+
+body.pub-large-font .pub-item .name-primary{ font-size:19px; }
+body.pub-large-font .pub-item .name-secondary{ font-size:14.5px; }
+body.pub-large-font .pub-item .price{ font-size:18px; }
+body.pub-large-font .pub-item .desc-expand{ font-size:15px; }
+body.pub-large-font .pub-search input{ font-size:16px; }
+body.pub-large-font .cr-name{ font-size:15px; }
+body.pub-large-font .cart-summary-row{ font-size:15px; }
+body.pub-large-font .modal h3{ font-size:22px; }
+body.pub-large-font .field label{ font-size:14px; }
+body.pub-large-font .field input, body.pub-large-font .field textarea{ font-size:16px; }
+body.pub-large-font .modal-actions button{ font-size:16px; }
+body.pub-large-font .order-step-label{ font-size:12px; }
 
 .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--paper); padding:12px 22px; border-radius:8px; font-family:var(--body); font-weight:700; font-size:14px; opacity:0; pointer-events:none; transition:all .25s ease; z-index:80; }
 .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
@@ -395,6 +424,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
   <div class="pub-topbar">
     <div class="pub-lang-btn" id="pubLangBtn">🌐 <span id="pubLangLabel">English</span></div>
     <div class="pub-actions" id="pubActionsWrap">
+      <div class="pub-icon-btn font-size-btn" id="pubFontSizeBtn" title="تكبير/تصغير الخط">🔠</div>
       <a class="pub-icon-btn call-btn hidden" id="pubCallBtn" href="#" title="اتصال">📞</a>
       <div class="pub-icon-btn hidden" id="pubInfoBtn" title="معلومات المطعم">ℹ️</div>
       <div class="pub-icon-btn" id="pubAboutBtn" title="عن منيو m@g">✨</div>
@@ -3198,6 +3228,37 @@ async function loadPublic(slug){
     renderPublicBody();
   });
 
+  const fontSizeBtn = document.getElementById('pubFontSizeBtn');
+  const LARGE_FONT_KEY = 'menuLargeFont';
+  function applyLargeFontPref(){
+    const on = localStorage.getItem(LARGE_FONT_KEY) === '1';
+    document.body.classList.toggle('pub-large-font', on);
+    fontSizeBtn.classList.toggle('active', on);
+  }
+  try{ applyLargeFontPref(); }catch(e){}
+  fontSizeBtn.addEventListener('click', ()=>{
+    const isOn = document.body.classList.contains('pub-large-font');
+    try{ localStorage.setItem(LARGE_FONT_KEY, isOn ? '0' : '1'); }catch(e){}
+    applyLargeFontPref();
+    toast(isOn ? (lang==='en' ? 'Normal text size' : 'الخط العادي') : (lang==='en' ? 'Large text size' : 'تكبير الخط'));
+  });
+
+  function renderOrderSteps(step){
+    const labels = lang==='en'
+      ? ['Choose items','Review order','Confirm order']
+      : ['اختيار الأصناف','مراجعة الطلب','تأكيد الطلب'];
+    return `
+      <div class="order-steps">
+        ${labels.map((label,i)=>{
+          const n = i+1;
+          const cls = n < step ? 'done' : (n === step ? 'active' : '');
+          const circle = n < step ? '✓' : n;
+          const lineCls = n < step ? 'done' : '';
+          return `${i>0 ? `<div class="order-step-line ${lineCls}"></div>` : ''}<div class="order-step ${cls}"><span class="order-step-circle">${circle}</span><span class="order-step-label">${label}</span></div>`;
+        }).join('')}
+      </div>`;
+  }
+
   function openOrderDetailsModal(){
     let orderType = 'delivery';
     const subtotal = cartSubtotal();
@@ -3206,6 +3267,7 @@ async function loadPublic(slug){
     overlay.innerHTML = `
       <div class="modal">
         <h3>${lang==='en' ? 'Complete your order' : 'إتمام الطلب'}</h3>
+        ${renderOrderSteps(3)}
         <div id="ordSummaryWrap"></div>
         <div class="field">
           <label>${lang==='en' ? 'Order type' : 'نوع الطلب'} *</label>
@@ -3255,7 +3317,7 @@ async function loadPublic(slug){
         </div>
         <div class="modal-actions">
           <button class="btn-cancel" id="ordCancel">${lang==='en' ? 'Cancel' : 'إلغاء'}</button>
-          <button class="btn-confirm" id="ordConfirm">${lang==='en' ? 'Confirm order' : 'تأكيد الطلب'}</button>
+          <button class="btn-confirm btn-confirm-final" id="ordConfirm">${lang==='en' ? 'Confirm order' : 'تأكيد الطلب'}</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -3507,6 +3569,7 @@ async function loadPublic(slug){
     overlay.innerHTML = `
       <div class="modal">
         <h3>${lang==='en' ? 'Your cart' : 'سلة المشتريات'}</h3>
+        ${renderOrderSteps(2)}
         <div id="cartLinesWrap">
           ${lines.length === 0 ? `<div class="cart-empty-note">${lang==='en' ? 'Your cart is empty' : 'السلة فارغة'}</div>` : ''}
         </div>
