@@ -3093,7 +3093,7 @@ async function loadPublic(slug){
         (i.name||'').toLowerCase().includes(q) || (i.name_en||'').toLowerCase().includes(q)
       );
     } else if(activeCat === 'ALL'){
-      catItems = pubItems;
+      catItems = pubCats.flatMap(cat => pubItems.filter(i=>i.category_id===cat.id));
     } else {
       catItems = pubItems.filter(i=>i.category_id===activeCat);
     }
