@@ -188,6 +188,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .pub-tab .pub-tab-count{ font-family:var(--mono); font-size:10px; font-weight:700; background:var(--paper-dim); color:var(--stone); border-radius:9px; padding:1px 6px; direction:ltr; }
 .pub-tab.active{ background:linear-gradient(135deg, var(--ember), var(--ember-dark)); color:#fff; border-color:transparent; box-shadow:0 6px 14px -4px rgba(184,57,14,.45); transform:translateY(-1px); }
 .pub-tab.active .pub-tab-count{ background:rgba(255,255,255,.22); color:#fff; }
+.pub-cat-heading{ font-family:var(--display); font-size:19px; color:var(--ink); margin:26px 2px 12px; padding-bottom:8px; border-bottom:2px solid var(--ember); letter-spacing:.3px; }
 .pub-body{ max-width:640px; margin:0 auto; padding:4px 20px 60px; }
 .pub-item{ display:flex; align-items:center; gap:12px; padding:14px 12px; border:1px solid var(--line); border-radius:10px; margin-bottom:10px; background:#fff; }
 .pub-item .chevron{ color:var(--stone); font-size:13px; flex-shrink:0; cursor:pointer; user-select:none; }
@@ -2867,7 +2868,7 @@ async function loadPublic(slug){
     image: rest.logo_url || undefined
   });
   if(rest.logo_url) setFavicon(rest.logo_url);
-  let activeCat = pubCats[0] ? pubCats[0].id : null;
+  let activeCat = 'ALL';
   let lang = 'ar'; // 'ar' or 'en'
   let searchTerm = '';
   let cart = {}; // item_id -> { item, qty }
@@ -3067,6 +3068,13 @@ async function loadPublic(slug){
       document.getElementById('pubBody').innerHTML = `<div class="pub-empty">${lang==='en' ? `No ${biz(rest.business_type,'itemsEn')} yet.` : `لا توجد ${biz(rest.business_type,'itemsIndef')} في القائمة بعد.`}</div>`;
       return;
     }
+    const allTab = document.createElement('div');
+    const isAllActive = activeCat==='ALL' && !searchTerm;
+    allTab.className = 'pub-tab pub-tab-all' + (isAllActive ? ' active' : '');
+    allTab.innerHTML = `<span>📋 ${lang==='en' ? 'All' : 'الكل'}</span><span class="pub-tab-count">${pubItems.length}</span>`;
+    allTab.addEventListener('click', ()=>{ activeCat = 'ALL'; searchTerm=''; document.getElementById('pubSearchInput').value=''; renderPublicBody(); });
+    tabsWrap.appendChild(allTab);
+    if(isAllActive){ requestAnimationFrame(()=> allTab.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' })); }
     pubCats.forEach(cat=>{
       const isActive = cat.id===activeCat && !searchTerm;
       const t = document.createElement('div');
@@ -3084,6 +3092,8 @@ async function loadPublic(slug){
       catItems = pubItems.filter(i=>
         (i.name||'').toLowerCase().includes(q) || (i.name_en||'').toLowerCase().includes(q)
       );
+    } else if(activeCat === 'ALL'){
+      catItems = pubItems;
     } else {
       catItems = pubItems.filter(i=>i.category_id===activeCat);
     }
@@ -3104,7 +3114,15 @@ async function loadPublic(slug){
         </div>`).join('');
     }
 
-    body.innerHTML = catItems.map(i=>{
+    body.innerHTML = catItems.map((i, idx)=>{
+      let headerHtml = '';
+      if(activeCat === 'ALL' && !searchTerm){
+        const prevCatId = idx>0 ? catItems[idx-1].category_id : null;
+        if(i.category_id !== prevCatId){
+          const cat = pubCats.find(c=>c.id===i.category_id);
+          if(cat) headerHtml = `<div class="pub-cat-heading"${idx===0 ? ' style="margin-top:0;"' : ''}>${escapeHtml(tName(cat.name, cat.name_en))}</div>`;
+        }
+      }
       const sizes = pubItemSizes[i.id] || [];
       let priceLine, controlHtml;
       const hasDiscount = i.old_price != null && Number(i.old_price) > Number(i.price);
@@ -3141,7 +3159,7 @@ async function loadPublic(slug){
           </div>
         ` : `<button class="add-to-cart-btn" data-action="add" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>`;
       }
-      return `
+      return `${headerHtml}
       <div class="pub-item" data-id="${i.id}">
         <span class="chevron" data-action="toggle">${i.description ? '▾' : ''}</span>
         ${i.image_url ? `<img src="${i.image_url}">` : `<div class="no-img">${biz(rest.business_type,'placeholderIcon')}</div>`}
