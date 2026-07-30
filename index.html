@@ -1312,24 +1312,41 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
 
   const wrap = overlay.querySelector('#statsSummaryWrap');
   const { data: rows, error } = await sb.from('order_stats_daily').select('*').eq('restaurant_id', restaurant.id).order('day', { ascending:false });
+  const { data: visitRows } = await sb.from('menu_visits_daily').select('*').eq('restaurant_id', restaurant.id).order('day', { ascending:false });
   if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل الإحصائيات</div>`; return; }
-  if(!rows || rows.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا توجد إحصائيات بعد</div>`; return; }
+  if((!rows || rows.length === 0) && (!visitRows || visitRows.length === 0)){ wrap.innerHTML = `<div class="orders-empty">لا توجد إحصائيات بعد</div>`; return; }
 
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
-  const sumSince = (daysAgo)=>{
+  const sumSince = (list, field, daysAgo)=>{
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - daysAgo);
+    const cutoffStr = cutoff.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+    return list.filter(r=> r.day >= cutoffStr).reduce((acc,r)=> acc + Number(r[field] || 0), 0);
+  };
+  const sumSinceOrders = (daysAgo)=>{
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - daysAgo);
     const cutoffStr = cutoff.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
     return rows.filter(r=> r.day >= cutoffStr).reduce((acc,r)=>({ count: acc.count + r.orders_count, total: acc.total + Number(r.orders_total) }), { count:0, total:0 });
   };
   const today = rows.find(r=> r.day === todayStr) || { orders_count:0, orders_total:0 };
-  const week = sumSince(7);
-  const month = sumSince(30);
+  const week = sumSinceOrders(7);
+  const month = sumSinceOrders(30);
   const allTime = rows.reduce((acc,r)=>({ count: acc.count + r.orders_count, total: acc.total + Number(r.orders_total) }), { count:0, total:0 });
+
+  const vRows = visitRows || [];
+  const todayVisits = (vRows.find(r=> r.day === todayStr) || { visits_count:0 }).visits_count;
+  const weekVisits = sumSince(vRows, 'visits_count', 7);
+  const monthVisits = sumSince(vRows, 'visits_count', 30);
+  const allTimeVisits = vRows.reduce((acc,r)=> acc + Number(r.visits_count || 0), 0);
 
   const card = (label, count, total)=> `
     <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
       <span class="o-name" style="font-weight:700;">${label}</span>
       <span class="o-time" style="text-align:left; margin:0;">${count} طلب — ${total.toFixed(2)} EGP</span>
+    </div>`;
+  const visitCard = (label, count)=> `
+    <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
+      <span class="o-name" style="font-weight:700;">${label}</span>
+      <span class="o-time" style="text-align:left; margin:0;">${count} زيارة</span>
     </div>`;
 
   wrap.innerHTML = `
@@ -1341,6 +1358,13 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
     </div>
     <div class="orders-empty" style="text-align:right; padding:10px 0 0; font-size:12px;">
       هذه الأرقام تشمل الطلبات المحذوفة أيضًا ولا تتأثر بحذف الطلبات القديمة.
+    </div>
+    <h3 style="margin-top:20px;">عدد زيارات المنيو</h3>
+    <div class="orders-list">
+      ${visitCard('اليوم', todayVisits)}
+      ${visitCard('آخر 7 أيام', weekVisits)}
+      ${visitCard('آخر 30 يوم', monthVisits)}
+      ${visitCard('الإجمالي منذ البداية', allTimeVisits)}
     </div>
     <h3 style="margin-top:20px;">${biz(restaurant.business_type,'itemsDef')} الأكثر طلبًا</h3>
     <div id="topItemsWrap"><div class="orders-empty">جارِ التحميل...</div></div>`;
@@ -2841,6 +2865,7 @@ async function loadPublic(slug){
     document.getElementById('pubBody').innerHTML = `<div class="pub-empty">هذا الرابط غير صحيح.</div>`;
     return;
   }
+  sb.rpc('track_menu_visit', { p_restaurant_id: rest.id }).catch(()=>{});
   const { data: cats } = await sb.from('categories').select('*').eq('restaurant_id', rest.id).order('position');
   const pubCats = cats || [];
   let pubItems = [];
