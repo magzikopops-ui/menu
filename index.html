@@ -2865,7 +2865,7 @@ async function loadPublic(slug){
     document.getElementById('pubBody').innerHTML = `<div class="pub-empty">هذا الرابط غير صحيح.</div>`;
     return;
   }
-  sb.rpc('track_menu_visit', { p_restaurant_id: rest.id }).catch(()=>{});
+  try{ await sb.rpc('track_menu_visit', { p_restaurant_id: rest.id }); }catch(e){}
   const { data: cats } = await sb.from('categories').select('*').eq('restaurant_id', rest.id).order('position');
   const pubCats = cats || [];
   let pubItems = [];
