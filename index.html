@@ -3684,7 +3684,7 @@ async function loadPublic(slug){
       <div class="modal">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
           <h3 style="margin:0;">${lang==='en' ? 'Your cart' : 'سلة المشتريات'}</h3>
-          ${lines.length > 0 ? `<button type="button" id="cartClearBtn" style="background:none; border:none; color:var(--stone); font-family:var(--body); font-size:12.5px; text-decoration:underline; cursor:pointer; padding:4px;">${lang==='en' ? 'Empty cart' : 'إفراغ السلة'}</button>` : ''}
+          ${lines.length > 0 ? `<button type="button" id="cartClearBtn" style="background:#fff; border:1.5px solid var(--line); color:var(--danger); font-family:var(--body); font-weight:700; font-size:12.5px; border-radius:16px; cursor:pointer; padding:7px 12px; display:flex; align-items:center; gap:5px; flex-shrink:0;">🗑 ${lang==='en' ? 'Empty cart' : 'إفراغ السلة'}</button>` : ''}
         </div>
         ${renderOrderSteps(2)}
         <div id="cartLinesWrap">
