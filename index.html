@@ -2906,6 +2906,30 @@ async function loadPublic(slug){
   let searchTerm = '';
   let cart = {}; // item_id -> { item, qty }
   let isRestaurantOpenNow = true;
+  const CART_STORAGE_KEY = `menuCart_${rest.id}`;
+
+  function saveCart(){
+    try{
+      const toStore = {};
+      Object.entries(cart).forEach(([key,c])=>{
+        toStore[key] = { itemId: c.item.id, variantLabel: c.variantLabel || null, unitPrice: c.unitPrice, qty: c.qty, weightGrams: c.weightGrams || null, note: c.note || null };
+      });
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(toStore));
+    }catch(e){}
+  }
+  function loadCart(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(CART_STORAGE_KEY));
+      if(!raw) return;
+      const restored = {};
+      Object.entries(raw).forEach(([key,v])=>{
+        const item = pubItems.find(x=>x.id===v.itemId);
+        if(!item || !v.qty || v.qty <= 0) return; // تجاهل الأصناف اللي اتشالت من المنيو
+        restored[key] = { item, variantLabel: v.variantLabel || null, unitPrice: Number(v.unitPrice), qty: v.qty, weightGrams: v.weightGrams || null, note: v.note || null };
+      });
+      cart = restored;
+    }catch(e){}
+  }
 
   function cartCount(){
     return Object.values(cart).reduce((sum,c)=> sum + c.qty, 0);
@@ -2915,6 +2939,7 @@ async function loadPublic(slug){
   }
   let prevPubCartCount = 0;
   function updateCartButton(){
+    saveCart();
     const badge = document.getElementById('pubCartBadge');
     const btn = document.getElementById('pubOrderBtn');
     const label = document.getElementById('pubOrderBtnLabel');
@@ -3431,7 +3456,7 @@ async function loadPublic(slug){
       overlay.querySelectorAll('.cart-item-note').forEach(inp=>{
         inp.addEventListener('input', ()=>{
           const key = inp.dataset.cartKey;
-          if(cart[key]) cart[key].note = inp.value;
+          if(cart[key]){ cart[key].note = inp.value; saveCart(); }
         });
       });
     }
@@ -3655,7 +3680,10 @@ async function loadPublic(slug){
     const lines = Object.values(cart);
     overlay.innerHTML = `
       <div class="modal">
-        <h3>${lang==='en' ? 'Your cart' : 'سلة المشتريات'}</h3>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <h3 style="margin:0;">${lang==='en' ? 'Your cart' : 'سلة المشتريات'}</h3>
+          ${lines.length > 0 ? `<button type="button" id="cartClearBtn" style="background:none; border:none; color:var(--stone); font-family:var(--body); font-size:12.5px; text-decoration:underline; cursor:pointer; padding:4px;">${lang==='en' ? 'Empty cart' : 'إفراغ السلة'}</button>` : ''}
+        </div>
         ${renderOrderSteps(2)}
         <div id="cartLinesWrap">
           ${lines.length === 0 ? `<div class="cart-empty-note">${lang==='en' ? 'Your cart is empty' : 'السلة فارغة'}</div>` : ''}
@@ -3667,6 +3695,18 @@ async function loadPublic(slug){
         </div>
       </div>`;
     document.body.appendChild(overlay);
+
+    const clearBtn = overlay.querySelector('#cartClearBtn');
+    if(clearBtn){
+      clearBtn.addEventListener('click', ()=>{
+        const msg = lang==='en' ? 'Empty the whole cart? This cannot be undone.' : 'هل تريد إفراغ السلة بالكامل؟ لا يمكن التراجع عن هذا الإجراء.';
+        if(!confirm(msg)) return;
+        cart = {};
+        saveCart();
+        overlay.remove();
+        renderPublicBody();
+      });
+    }
 
     function renderLines(){
       const wrap = overlay.querySelector('#cartLinesWrap');
@@ -3718,6 +3758,7 @@ async function loadPublic(slug){
 
   document.getElementById('pubOrderBtn').addEventListener('click', ()=> openCartModal());
 
+  loadCart();
   renderPublicBody();
   show('publicScreen');
 }
