@@ -193,6 +193,12 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .pub-item{ display:flex; align-items:center; gap:12px; padding:14px 12px; border:1px solid var(--line); border-radius:10px; margin-bottom:10px; background:#fff; }
 .pub-item .chevron{ color:var(--stone); font-size:13px; flex-shrink:0; cursor:pointer; user-select:none; }
 .pub-item .info{ flex:1; min-width:0; }
+.pub-item .item-control{ flex-shrink:0; width:104px; display:flex; flex-direction:column; align-items:stretch; justify-content:center; gap:6px; align-self:center; }
+.pub-item .item-control .variant-select{ width:100%; border:1px solid var(--line); border-radius:8px; padding:6px 6px; font-family:var(--body); font-size:11.5px; background:#fff; color:var(--ink); }
+.pub-item .item-control .add-to-cart-btn{ margin-top:0; width:100%; padding:10px 8px; }
+.pub-item .item-control .qty-stepper{ margin-top:0; justify-content:center; gap:6px; }
+.pub-item .item-control .qty-btn{ width:34px; height:34px; font-size:16px; }
+.pub-item .variant-cart-lines{ margin-top:6px; }
 .pub-item .name-primary{ font-weight:800; font-size:17px; color:var(--ink); }
 .pub-item .name-secondary{ font-size:13px; color:var(--stone); margin-top:1px; }
 .pub-item .price{ font-family:var(--mono); direction:ltr; font-weight:700; color:var(--ember); font-size:16px; margin-top:5px; display:inline-block; }
@@ -3151,30 +3157,26 @@ async function loadPublic(slug){
         }
       }
       const sizes = pubItemSizes[i.id] || [];
-      let priceLine, controlHtml;
+      let priceLine, controlHtml, cartLinesHtml = '';
       const hasDiscount = i.old_price != null && Number(i.old_price) > Number(i.price);
       const discountBadge = hasDiscount ? `<span class="discount-badge">${lang==='en' ? '-' : '-'}${Math.round((1 - Number(i.price)/Number(i.old_price))*100)}%</span>` : '';
       const oldPriceSpan = hasDiscount ? `<span class="old-price">${Number(i.old_price).toFixed(2)}</span>` : '';
       if(i.pricing_type === 'weight'){
         priceLine = `${oldPriceSpan}${lang==='en' ? 'EGP' : 'EGP'} ${Number(i.price).toFixed(2)} / ${lang==='en' ? 'kg' : 'كجم'}${discountBadge}`;
         controlHtml = `
-          <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
-            <select class="variant-select" data-weight-select="${i.id}" style="border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-family:var(--body); font-size:12px; background:#fff; color:var(--ink);">
-              ${weightPresets.map(g=>`<option value="${g}" ${g===1000 ? 'selected' : ''}>${weightLabel(g)}</option>`).join('')}
-            </select>
-            <button class="add-to-cart-btn" data-action="addWeight" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>
-          </div>
-          ${itemCartLinesHtml(i.id)}`;
+          <select class="variant-select" data-weight-select="${i.id}">
+            ${weightPresets.map(g=>`<option value="${g}" ${g===1000 ? 'selected' : ''}>${weightLabel(g)}</option>`).join('')}
+          </select>
+          <button class="add-to-cart-btn" data-action="addWeight" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>`;
+        cartLinesHtml = itemCartLinesHtml(i.id);
       } else if(i.pricing_type === 'sizes'){
         priceLine = sizes.length ? sizes.map(s=>`${escapeHtml(s.size_name)} ${Number(s.price).toFixed(2)}`).join(' · ') + ' EGP' : (lang==='en' ? 'No sizes available yet' : 'لا تتوفر أحجام حاليًا');
         controlHtml = sizes.length ? `
-          <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
-            <select class="variant-select" data-size-select="${i.id}" style="border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-family:var(--body); font-size:12px; background:#fff; color:var(--ink);">
-              ${sizes.map(s=>`<option value="${s.id}">${escapeHtml(s.size_name)} — ${Number(s.price).toFixed(2)} EGP</option>`).join('')}
-            </select>
-            <button class="add-to-cart-btn" data-action="addSize" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>
-          </div>
-          ${itemCartLinesHtml(i.id)}` : '';
+          <select class="variant-select" data-size-select="${i.id}">
+            ${sizes.map(s=>`<option value="${s.id}">${escapeHtml(s.size_name)} — ${Number(s.price).toFixed(2)} EGP</option>`).join('')}
+          </select>
+          <button class="add-to-cart-btn" data-action="addSize" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>` : '';
+        cartLinesHtml = itemCartLinesHtml(i.id);
       } else {
         const qty = cart[i.id] ? cart[i.id].qty : 0;
         priceLine = `${oldPriceSpan}EGP ${Number(i.price).toFixed(2)}${discountBadge}`;
@@ -3195,8 +3197,9 @@ async function loadPublic(slug){
           ${secondaryName(i.name, i.name_en) ? `<div class="name-secondary">${escapeHtml(secondaryName(i.name, i.name_en))}</div>` : ''}
           <div class="price">${priceLine}</div>
           ${i.description ? `<div class="desc-expand">${escapeHtml(i.description)}</div>` : ''}
-          <div class="cart-control">${controlHtml}</div>
+          ${cartLinesHtml ? `<div class="variant-cart-lines">${cartLinesHtml}</div>` : ''}
         </div>
+        <div class="item-control">${controlHtml}</div>
       </div>`;
     }).join('');
 
