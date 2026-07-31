@@ -236,6 +236,8 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .cart-row:last-child{border-bottom:none;}
 .cart-row .cr-name{flex:1; font-weight:700; font-size:14px; color:var(--ink);}
 .cart-row .cr-line-total{font-family:var(--mono); direction:ltr; color:var(--ember); font-weight:700; font-size:13px;}
+.cart-row .cr-delete-btn{ background:none; border:none; color:var(--stone); font-size:17px; line-height:1; cursor:pointer; padding:4px; flex-shrink:0; }
+.cart-row .cr-delete-btn:hover{ color:var(--danger); }
 .cart-summary-row{ display:flex; justify-content:space-between; padding:6px 0; font-size:13.5px; color:var(--stone); }
 .cart-summary-row.total{ font-weight:800; color:var(--ink); font-size:15px; border-top:1.5px dashed var(--stone-light); margin-top:6px; padding-top:10px; }
 .cart-empty-note{ text-align:center; color:var(--stone); padding:24px; font-size:13.5px; }
@@ -3726,6 +3728,7 @@ async function loadPublic(slug){
             <button class="qty-btn" data-action="inc">+</button>
           </div>
           <span class="cr-line-total">${(c.qty * Number(c.unitPrice)).toFixed(2)} EGP</span>
+          <button type="button" class="cr-delete-btn" data-action="removeLine" title="${lang==='en' ? 'Remove item' : 'حذف الصنف'}">🗑</button>
         </div>`).join('');
       subtotalWrap.innerHTML = `<div class="cart-summary-row total"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${cartSubtotal().toFixed(2)} EGP</span></div>`;
       wrap.querySelectorAll('.cart-row').forEach(row=>{
@@ -3738,6 +3741,11 @@ async function loadPublic(slug){
         row.querySelector('[data-action="dec"]').addEventListener('click', ()=>{
           cart[key].qty -= 1;
           if(cart[key].qty <= 0) delete cart[key];
+          renderLines();
+          updateCartButton();
+        });
+        row.querySelector('[data-action="removeLine"]').addEventListener('click', ()=>{
+          delete cart[key];
           renderLines();
           updateCartButton();
         });
