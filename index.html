@@ -15,6 +15,12 @@
 <meta name="twitter:image" id="twImage" content="favicon.png">
 <link rel="icon" id="faviconLink" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" id="appleTouchIconLink" href="favicon.png">
+<link rel="manifest" id="manifestLink">
+<meta name="theme-color" content="#B8390E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" id="appleWebAppTitle" content="منيو m@g">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -490,6 +496,7 @@ body.pub-large-font .order-step-label{ font-size:12px; }
     <div class="pub-lang-btn" id="pubLangBtn">🌐 <span id="pubLangLabel">English</span></div>
     <div class="pub-actions" id="pubActionsWrap">
       <div class="pub-icon-btn font-size-btn" id="pubFontSizeBtn" title="تكبير/تصغير الخط">🔠</div>
+      <div class="pub-icon-btn hidden" id="pubInstallBtn" title="احفظ المنيو على شاشتك الرئيسية">📲</div>
       <a class="pub-icon-btn call-btn hidden" id="pubCallBtn" href="#" title="اتصال">📞</a>
       <div class="pub-icon-btn hidden" id="pubInfoBtn" title="معلومات المطعم">ℹ️</div>
       <div class="pub-icon-btn" id="pubAboutBtn" title="عن منيو m@g">✨</div>
@@ -540,6 +547,109 @@ let previewCategoryId = null;
 let pendingImage = null;
 let newOrdersCount = 0;
 let ordersChannel = null;
+
+/* ================= PWA install (save menu to home screen) ================= */
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById('pubInstallBtn');
+  if(btn && !btn.classList.contains('hidden-by-standalone')) btn.classList.remove('hidden');
+});
+function isRunningStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function setupInstallableMenu(rest){
+  try{
+    const startUrl = `${location.pathname}?r=${rest.slug}`;
+    const manifest = {
+      name: rest.name || 'منيو',
+      short_name: (rest.name || 'منيو').slice(0, 12),
+      start_url: startUrl,
+      scope: location.pathname,
+      display: 'standalone',
+      background_color: '#F6F1E4',
+      theme_color: '#B8390E',
+      icons: rest.logo_url ? [
+        { src: rest.logo_url, sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: rest.logo_url, sizes: '512x512', type: 'image/png', purpose: 'any' }
+      ] : []
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    document.getElementById('manifestLink').setAttribute('href', URL.createObjectURL(blob));
+    const appleTitle = document.getElementById('appleWebAppTitle');
+    if(appleTitle) appleTitle.setAttribute('content', rest.name || 'منيو');
+  }catch(e){}
+}
+function detectPlatformForInstall(){
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
+  const isAndroid = /Android/.test(ua);
+  const isSamsung = /SamsungBrowser/.test(ua);
+  const isFirefox = /Firefox|FxiOS/.test(ua);
+  if(isIOS && isSafari) return 'ios-safari';
+  if(isIOS) return 'ios-other';
+  if(isSamsung) return 'android-samsung';
+  if(isAndroid && isFirefox) return 'android-firefox';
+  if(isAndroid) return 'android-other';
+  return 'desktop';
+}
+async function handleInstallClick(){
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    try{ await deferredInstallPrompt.userChoice; }catch(e){}
+    deferredInstallPrompt = null;
+    return;
+  }
+  showInstallInstructionsModal();
+}
+function showInstallInstructionsModal(){
+  const platform = detectPlatformForInstall();
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  let steps;
+  if(platform === 'ios-safari' || platform === 'ios-other'){
+    steps = [
+      'افتح المنيو من متصفح Safari (وليس أي متصفح آخر)',
+      'اضغط على زر المشاركة ⬆️ الموجود أسفل الشاشة',
+      'اختر "إضافة إلى الشاشة الرئيسية" Add to Home Screen',
+      'اضغط "إضافة" في الأعلى'
+    ];
+  } else if(platform === 'android-samsung'){
+    steps = [
+      'اضغط على قائمة المتصفح (☰) في الأسفل أو الأعلى',
+      'اختر "إضافة صفحة إلى" ثم "الشاشة الرئيسية"'
+    ];
+  } else if(platform === 'android-firefox'){
+    steps = [
+      'اضغط على قائمة المتصفح (⋮)',
+      'اختر "تثبيت" أو "إضافة إلى الشاشة الرئيسية"'
+    ];
+  } else if(platform === 'android-other'){
+    steps = [
+      'اضغط على قائمة المتصفح (⋮) أعلى الشاشة',
+      'اختر "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية"'
+    ];
+  } else {
+    steps = [
+      'افتح المنيو من متصفح على موبايلك (Chrome أو Safari)',
+      'من قائمة المتصفح اختر "إضافة إلى الشاشة الرئيسية" أو "تثبيت"'
+    ];
+  }
+  overlay.innerHTML = `
+    <div class="modal info-modal">
+      <h3>📲 احفظ المنيو على شاشتك الرئيسية</h3>
+      <p style="margin:0 0 12px; color:var(--stone); font-size:13.5px; line-height:1.7;">بعد الحفظ، هتلاقي أيقونة المنيو زي أي تطبيق عادي على شاشتك، وتقدر تفتحها بضغطة واحدة في أي وقت.</p>
+      ${steps.map((s,i)=>`<div class="field-row"><span class="icon">${i+1}️⃣</span><span class="txt">${escapeHtml(s)}</span></div>`).join('')}
+      <div class="modal-actions">
+        <button class="btn-confirm" id="installInstructionsCloseBtn">تمام، فهمت</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#installInstructionsCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+}
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -3115,6 +3225,7 @@ async function loadPublic(slug){
     image: rest.logo_url || undefined
   });
   if(rest.logo_url) setFavicon(rest.logo_url);
+  setupInstallableMenu(rest);
   let activeCat = 'ALL';
   let lang = 'ar'; // 'ar' or 'en'
   let searchTerm = '';
@@ -3140,7 +3251,21 @@ async function loadPublic(slug){
       Object.entries(raw).forEach(([key,v])=>{
         const item = pubItems.find(x=>x.id===v.itemId);
         if(!item || !v.qty || v.qty <= 0) return; // تجاهل الأصناف اللي اتشالت من المنيو
-        restored[key] = { item, variantLabel: v.variantLabel || null, unitPrice: Number(v.unitPrice), qty: v.qty, weightGrams: v.weightGrams || null, note: v.note || null };
+        // نحسب السعر من بيانات المنيو الحالية بدل ما نثق في السعر المحفوظ، عشان لو صاحب المطعم غيّر السعر يظهر التحديث فورًا
+        let unitPrice = Number(v.unitPrice);
+        let variantLabel = v.variantLabel || null;
+        if(item.pricing_type === 'weight' && v.weightGrams){
+          unitPrice = Number(item.price) * Number(v.weightGrams) / 1000;
+        } else if(item.pricing_type === 'sizes'){
+          const sizeId = key.includes(':') ? key.split(':')[1] : null;
+          const sizeObj = sizeId ? (pubItemSizes[v.itemId] || []).find(s=>s.id===sizeId) : null;
+          if(!sizeObj) return; // الحجم ده اتشال من المنيو
+          unitPrice = Number(sizeObj.price);
+          variantLabel = sizeObj.size_name;
+        } else if(item.pricing_type === 'unit'){
+          unitPrice = Number(item.price);
+        }
+        restored[key] = { item, variantLabel, unitPrice, qty: v.qty, weightGrams: v.weightGrams || null, note: v.note || null };
       });
       cart = restored;
     }catch(e){}
@@ -3283,6 +3408,15 @@ async function loadPublic(slug){
     }
     const aboutBtn = document.getElementById('pubAboutBtn');
     aboutBtn.onclick = ()=> showAboutModal();
+    const installBtn = document.getElementById('pubInstallBtn');
+    if(installBtn){
+      if(isRunningStandalone()){
+        installBtn.classList.add('hidden');
+      } else {
+        installBtn.classList.remove('hidden');
+        installBtn.onclick = ()=> handleInstallClick();
+      }
+    }
     updateCartButton();
   }
 
