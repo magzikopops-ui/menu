@@ -260,6 +260,34 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .o-tag.new{ background:var(--ember); color:#fff; }
 .o-tag.today{ background:rgba(63,98,71,.15); color:var(--basil); }
 .o-number{ font-family:var(--mono); direction:ltr; display:inline-block; color:var(--stone); font-weight:800; font-size:12.5px; margin-inline-end:6px; }
+.o-print-btn{ display:inline-flex; align-items:center; gap:5px; margin-inline-start:8px; background:var(--ink); color:#fff; border:none; border-radius:20px; padding:3px 10px; font-size:12px; font-weight:700; cursor:pointer; font-family:var(--body); vertical-align:middle; }
+.o-print-btn:hover{ background:#3a3733; }
+.receipt-width-toggle{ display:flex; gap:6px; margin-bottom:12px; }
+.receipt-width-btn{ flex:1; border:1.5px solid var(--line); background:var(--paper); color:var(--stone); font-family:var(--body); font-size:12.5px; font-weight:700; padding:7px 10px; border-radius:8px; cursor:pointer; }
+.receipt-width-btn.active{ background:var(--ember); border-color:var(--ember); color:#fff; }
+.receipt-preview-wrap{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px; max-height:50vh; overflow-y:auto; }
+#receiptPrintArea{ display:none; }
+.receipt{ font-family:var(--mono),'Tajawal',monospace; width:100%; color:#000; direction:rtl; font-size:12px; line-height:1.5; }
+.receipt-center{ text-align:center; }
+.receipt hr{ border:none; border-top:1px dashed #000; margin:6px 0; }
+.receipt-title{ font-size:16px; font-weight:800; margin:0 0 2px; }
+.receipt-sub{ font-size:11px; margin:0 0 2px; }
+.receipt-row{ display:flex; justify-content:space-between; gap:8px; margin:2px 0; }
+.receipt-row .lbl{ flex:1; }
+.receipt-row .val{ direction:ltr; text-align:left; white-space:nowrap; }
+.receipt-item{ margin:4px 0; }
+.receipt-item-top{ display:flex; justify-content:space-between; gap:8px; font-weight:700; }
+.receipt-item-note{ font-size:10.5px; color:#333; margin-inline-start:4px; }
+.receipt-total-row{ display:flex; justify-content:space-between; font-weight:800; font-size:13.5px; margin-top:4px; }
+.receipt-footer{ text-align:center; font-size:11px; margin-top:8px; }
+@media print{
+  body *{ visibility:hidden; }
+  #receiptPrintArea, #receiptPrintArea *{ visibility:visible; }
+  #receiptPrintArea{ display:block !important; position:absolute; top:0; left:0; width:100%; margin:0; padding:0; }
+}
+@page{ margin:2mm; }
+.receipt-page-58{ width:58mm; }
+.receipt-page-80{ width:80mm; }
 .orders-search-input{ width:100%; box-sizing:border-box; border:1.5px solid var(--line); border-radius:10px; padding:9px 12px; font-family:var(--body); font-size:13px; color:var(--ink); background:var(--paper); margin-bottom:12px; }
 .orders-search-input:focus{ outline:none; border-color:var(--ember); }
 .order-filters{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
@@ -1218,7 +1246,7 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
     return `
       <div class="${rowClasses}" data-order-id="${o.id}">
         <div class="o-name">${numberHtml}${escapeHtml(o.customer_name)} <span style="font-weight:400; color:var(--stone); font-size:12px;">(${typeLabel})</span><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${tagsHtml}</div>
-        <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}<button type="button" class="o-wa-btn" data-action="sendMenuWa" data-phone="${escapeHtml(o.customer_phone)}" data-name="${escapeHtml(o.customer_name)}" title="إرسال رابط المنيو للعميل عبر واتساب">📲 إرسال المنيو</button>
+        <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}<button type="button" class="o-wa-btn" data-action="sendMenuWa" data-phone="${escapeHtml(o.customer_phone)}" data-name="${escapeHtml(o.customer_name)}" title="إرسال رابط المنيو للعميل عبر واتساب">📲 إرسال المنيو</button><button type="button" class="o-print-btn" data-action="printReceipt" data-order-id="${o.id}" title="طباعة الطلب / Print Order">🖨️ طباعة الطلب <span style="opacity:.75;">| Print Order</span></button>
         <div class="o-time">${escapeHtml(o.city || '')}${o.area ? ' — ' + escapeHtml(o.area) : ''}${o.delivery_fee != null ? ` (رسوم التوصيل: ${Number(o.delivery_fee).toFixed(2)} EGP)` : ''}</div>
         ${o.address ? `<div class="o-time">${escapeHtml(o.address)}</div>` : ''}
         ${linesHtml}
@@ -1241,6 +1269,13 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
       const waBtn = row.querySelector('[data-action="sendMenuWa"]');
       if(waBtn){
         waBtn.addEventListener('click', ()=> sendMenuLinkWhatsApp(waBtn.dataset.phone, waBtn.dataset.name));
+      }
+      const printBtn = row.querySelector('[data-action="printReceipt"]');
+      if(printBtn){
+        printBtn.addEventListener('click', ()=>{
+          const orderObj = orders.find(o=> o.id === printBtn.dataset.orderId);
+          if(orderObj) openReceiptPreviewModal(orderObj, itemsByOrder[orderObj.id] || []);
+        });
       }
       const select = row.querySelector('[data-action="statusSelect"]');
       select.addEventListener('change', async ()=>{
@@ -1304,6 +1339,128 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
 
   renderList();
 });
+
+const RECEIPT_WIDTH_KEY = 'menuReceiptWidth';
+function getSavedReceiptWidth(){
+  const w = localStorage.getItem(RECEIPT_WIDTH_KEY);
+  return (w === '58' || w === '80') ? w : '80';
+}
+function saveReceiptWidth(w){
+  try{ localStorage.setItem(RECEIPT_WIDTH_KEY, w); }catch(e){}
+}
+
+const RECEIPT_STATUS_LABELS = { pending:'قيد الانتظار', preparing:'قيد التجهيز', delivered:'تم التسليم', cancelled:'ملغي' };
+
+function buildReceiptHtml(order, lines, widthMm){
+  const d = new Date(order.created_at);
+  const dateStr = d.toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' });
+  const typeLabel = order.order_type === 'pickup' ? 'استلام من المحل' : 'توصيل';
+  const numberHtml = order.order_number != null ? `<div class="receipt-sub">طلب رقم: #${order.order_number}</div>` : '';
+
+  const itemsHtml = lines.map(l=>{
+    const lineTotal = (Number(l.price) * Number(l.quantity)).toFixed(2);
+    const variant = l.variant_label ? ` (${escapeHtml(l.variant_label)})` : '';
+    const weight = l.weight_grams ? ` — ${escapeHtml(String(l.weight_grams))} جم` : '';
+    const note = l.item_note ? `<div class="receipt-item-note">ملاحظة: ${escapeHtml(l.item_note)}</div>` : '';
+    return `
+      <div class="receipt-item">
+        <div class="receipt-item-top">
+          <span>${escapeHtml(l.item_name)}${variant}${weight} ×${l.quantity}</span>
+          <span>${lineTotal}</span>
+        </div>
+        ${note}
+      </div>`;
+  }).join('');
+
+  const subtotalRow = order.subtotal != null ? `<div class="receipt-row"><span class="lbl">الإجمالي الفرعي</span><span class="val">${Number(order.subtotal).toFixed(2)}</span></div>` : '';
+  const feeRow = order.delivery_fee != null ? `<div class="receipt-row"><span class="lbl">رسوم التوصيل</span><span class="val">${Number(order.delivery_fee).toFixed(2)}</span></div>` : '';
+  const totalRow = order.total != null ? `<div class="receipt-total-row"><span>الإجمالي</span><span>${Number(order.total).toFixed(2)} EGP</span></div>` : '';
+
+  const addressLine = order.order_type === 'pickup'
+    ? ''
+    : `<div class="receipt-row"><span class="lbl">${escapeHtml([order.city, order.area].filter(Boolean).join(' — '))}</span></div>${order.address ? `<div class="receipt-row"><span class="lbl">${escapeHtml(order.address)}</span></div>` : ''}`;
+
+  const notesHtml = order.notes ? `<hr>${escapeHtml(order.notes)}` : '';
+
+  return `
+    <div class="receipt receipt-page-${widthMm}">
+      <div class="receipt-center">
+        <div class="receipt-title">${escapeHtml(restaurant.name || '')}</div>
+        ${restaurant.phone ? `<div class="receipt-sub">${escapeHtml(restaurant.phone)}</div>` : ''}
+        ${restaurant.address ? `<div class="receipt-sub">${escapeHtml(restaurant.address)}</div>` : ''}
+      </div>
+      <hr>
+      ${numberHtml}
+      <div class="receipt-sub">${dateStr}</div>
+      <div class="receipt-sub">نوع الطلب: ${typeLabel}</div>
+      <div class="receipt-sub">الحالة: ${RECEIPT_STATUS_LABELS[order.status || 'pending'] || order.status}</div>
+      <hr>
+      <div class="receipt-row"><span class="lbl">العميل: ${escapeHtml(order.customer_name || '')}</span></div>
+      <div class="receipt-row"><span class="lbl val" style="text-align:right; direction:ltr;">${escapeHtml(order.customer_phone || '')}</span></div>
+      ${addressLine}
+      <hr>
+      ${itemsHtml}
+      <hr>
+      ${subtotalRow}
+      ${feeRow}
+      ${totalRow}
+      ${notesHtml}
+      <div class="receipt-footer">شكرًا لطلبكم${restaurant.name ? ' من ' + escapeHtml(restaurant.name) : ''}</div>
+    </div>`;
+}
+
+function openReceiptPreviewModal(order, lines){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  let widthMm = getSavedReceiptWidth();
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>طباعة الطلب <span style="opacity:.7; font-size:13px;">Print Order</span>${order.order_number != null ? ` #${order.order_number}` : ''}</h3>
+      <div class="receipt-width-toggle">
+        <button type="button" class="receipt-width-btn" data-width="58">ورق 58مم</button>
+        <button type="button" class="receipt-width-btn" data-width="80">ورق 80مم</button>
+      </div>
+      <div class="receipt-preview-wrap" id="receiptPreviewWrap"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="receiptCloseBtn">إغلاق</button>
+        <button class="btn-confirm" id="receiptPrintBtn">🖨️ طباعة</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const previewWrap = overlay.querySelector('#receiptPreviewWrap');
+  function renderPreview(){
+    overlay.querySelectorAll('.receipt-width-btn').forEach(b=> b.classList.toggle('active', b.dataset.width === widthMm));
+    previewWrap.innerHTML = buildReceiptHtml(order, lines, widthMm);
+  }
+  renderPreview();
+
+  overlay.querySelectorAll('.receipt-width-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      widthMm = btn.dataset.width;
+      saveReceiptWidth(widthMm);
+      renderPreview();
+    });
+  });
+
+  overlay.querySelector('#receiptCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+
+  overlay.querySelector('#receiptPrintBtn').addEventListener('click', ()=>{
+    let printArea = document.getElementById('receiptPrintArea');
+    if(!printArea){
+      printArea = document.createElement('div');
+      printArea.id = 'receiptPrintArea';
+      document.body.appendChild(printArea);
+    }
+    printArea.innerHTML = buildReceiptHtml(order, lines, widthMm);
+    const prevTitle = document.title;
+    document.title = order.order_number != null ? `طباعة الطلب Print Order #${order.order_number}` : 'طباعة الطلب Print Order';
+    const restoreTitle = ()=>{ document.title = prevTitle; window.removeEventListener('afterprint', restoreTitle); };
+    window.addEventListener('afterprint', restoreTitle);
+    window.print();
+  });
+}
 
 document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
   const overlay = document.createElement('div');
