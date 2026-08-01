@@ -3828,15 +3828,6 @@ async function loadPublic(slug){
       const fee = delivery_fee != null ? Number(delivery_fee) : 0;
       const total = subtotal + fee;
 
-      // نفتح نافذة فاضية فورًا (قبل أي انتظار) عشان المتصفح ما يمنعش النافذة المنبثقة،
-      // وهنحطّلها رابط واتساب بعد ما نتأكد إن الطلب اتحفظ في قاعدة البيانات بنجاح.
-      // (السبب: على الموبايل، فتح واتساب مباشرة بيوقف تنفيذ الجافاسكريبت في الصفحة قبل ما عملية
-      // الحفظ تخلص، فالطلب كان بيضيع وميظهرش في شاشة الطلبات)
-      let waWindow = null;
-      if(rest.phone){
-        waWindow = window.open('', '_blank');
-      }
-
       const btn = overlay.querySelector('#ordConfirm');
       btn.disabled = true;
       const { data: orderRow, error } = await sb.from('orders').insert({
@@ -3847,7 +3838,6 @@ async function loadPublic(slug){
       if(error){
         toast(lang==='en' ? 'Something went wrong, try again' : 'حدث خطأ، حاول مرة أخرى');
         btn.disabled = false;
-        if(waWindow) waWindow.close();
         return;
       }
       saveCustomerInfo({
@@ -3875,19 +3865,19 @@ async function loadPublic(slug){
         await sb.from('order_items').insert(cartLines);
       }
 
-      // دلوقتي الطلب اتحفظ فعليًا في قاعدة البيانات — نكمّل ونوجّه نافذة واتساب اللي فتحناها فورًا
-      if(rest.phone && waWindow){
-        const digits = rest.phone.replace(/[^\d]/g,'');
-        const text = buildWhatsAppMessage({customer_name, customer_phone, secondary_phone, orderType, city, area, address, notes, fee, total});
-        waWindow.location.href = `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
-      } else if(waWindow){
-        waWindow.close();
-      }
-
       cart = {};
       renderPublicBody();
       overlay.remove();
-      showOrderSuccessModal(orderRow, !!rest.phone);
+
+      // الطلب اتحفظ فعليًا في قاعدة البيانات وهيظهر في شاشة الطلبات — دلوقتي ننقل المستخدم لواتساب
+      // في نفس التاب (من غير نافذة منبثقة) عشان نضمن إن ده يشتغل على كل المتصفحات من غير مشاكل
+      if(rest.phone){
+        const digits = rest.phone.replace(/[^\d]/g,'');
+        const text = buildWhatsAppMessage({customer_name, customer_phone, secondary_phone, orderType, city, area, address, notes, fee, total});
+        window.location.href = `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+      } else {
+        showOrderSuccessModal(orderRow, false);
+      }
     });
   }
 
