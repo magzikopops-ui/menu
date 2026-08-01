@@ -3850,6 +3850,11 @@ async function loadPublic(slug){
         return;
       }
       const orderRow = { id: newOrderId, order_number: null };
+      // نجيب رقم الطلب بعد الحفظ (صلاحية القراءة دلوقتي بتسمح بالطلبات اللي اتحفظت في آخر دقيقتين بس)
+      try{
+        const { data: numData } = await sb.from('orders').select('order_number').eq('id', newOrderId).single();
+        if(numData && numData.order_number != null) orderRow.order_number = numData.order_number;
+      }catch(e){ /* لو فشلت، هنكمل عادي من غير ما نوقف الطلب */ }
       saveCustomerInfo({
         name: customer_name,
         phone: customer_phone,
