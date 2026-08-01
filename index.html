@@ -1454,6 +1454,17 @@ function openReceiptPreviewModal(order, lines){
       document.body.appendChild(printArea);
     }
     printArea.innerHTML = buildReceiptHtml(order, lines, widthMm);
+
+    // نظبط حجم صفحة الطباعة على قد عرض الرول واختيار الارتفاع تلقائي (auto)
+    // عشان الطابعة توقف عند آخر سطر في الفاتورة من غير مساحة فاضية بعدها
+    let pageStyle = document.getElementById('receiptPageStyle');
+    if(!pageStyle){
+      pageStyle = document.createElement('style');
+      pageStyle.id = 'receiptPageStyle';
+      document.head.appendChild(pageStyle);
+    }
+    pageStyle.textContent = `@page{ size:${widthMm}mm auto; margin:2mm; }`;
+
     const prevTitle = document.title;
     document.title = order.order_number != null ? `طباعة الطلب Print Order #${order.order_number}` : 'طباعة الطلب Print Order';
     const restoreTitle = ()=>{ document.title = prevTitle; window.removeEventListener('afterprint', restoreTitle); };
@@ -3755,6 +3766,11 @@ async function loadPublic(slug){
 
     function buildWhatsAppMessage({customer_name, customer_phone, secondary_phone, orderType, city, area, address, notes, fee, total}){
       const typeLabel = orderType==='delivery' ? (lang==='en' ? 'Delivery' : 'توصيل') : (lang==='en' ? 'Pickup' : 'استلام');
+      const now = new Date();
+      const dateTimeStr = now.toLocaleString(lang==='en' ? 'en-GB' : 'ar-EG', {
+        timeZone: 'Africa/Cairo', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: true
+      });
       const lines = Object.values(cart).map(c=>{
         const name = tName(c.item.name, c.item.name_en) + (c.variantLabel ? ` (${c.variantLabel})` : '');
         const lineTotal = (c.qty * Number(c.unitPrice)).toFixed(2);
@@ -3765,7 +3781,7 @@ async function loadPublic(slug){
       }).join('\n');
       const restName = tName(rest.name, rest.name_en);
       if(lang==='en'){
-        let msg = `New order — ${restName}\n\n${lines}\n\nSubtotal: ${subtotal.toFixed(2)} EGP`;
+        let msg = `New order — ${restName}\nDate/time: ${dateTimeStr}\n\n${lines}\n\nSubtotal: ${subtotal.toFixed(2)} EGP`;
         if(orderType==='delivery') msg += `\nDelivery fee${area ? ' ('+area+')' : ''}: ${fee.toFixed(2)} EGP`;
         msg += `\nTotal: ${total.toFixed(2)} EGP`;
         msg += `\n\nOrder type: ${typeLabel}\nName: ${customer_name}\nPhone: ${customer_phone}`;
@@ -3774,7 +3790,7 @@ async function loadPublic(slug){
         if(notes) msg += `\nNotes: ${notes}`;
         return msg;
       }
-      let msg = `طلب جديد — ${restName}\n\n${lines}\n\nالمجموع الفرعي: ${subtotal.toFixed(2)} جنيه`;
+      let msg = `طلب جديد — ${restName}\nالتاريخ والوقت: ${dateTimeStr}\n\n${lines}\n\nالمجموع الفرعي: ${subtotal.toFixed(2)} جنيه`;
       if(orderType==='delivery') msg += `\nرسوم التوصيل${area ? ' ('+area+')' : ''}: ${fee.toFixed(2)} جنيه`;
       msg += `\nالإجمالي: ${total.toFixed(2)} جنيه`;
       msg += `\n\nنوع الطلب: ${typeLabel}\nالاسم: ${customer_name}\nالتليفون: ${customer_phone}`;
