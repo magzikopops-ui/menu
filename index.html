@@ -3830,13 +3830,18 @@ async function loadPublic(slug){
 
       const btn = overlay.querySelector('#ordConfirm');
       btn.disabled = true;
-      const { data: orderRow, error } = await sb.from('orders').insert({
-        restaurant_id: rest.id, customer_name, customer_phone, secondary_phone,
-        order_type: orderType, city, area, address, notes, zone_id, delivery_fee,
-        subtotal, total
-      }).select().single();
-      if(error){
-        toast(lang==='en' ? 'Something went wrong, try again' : 'حدث خطأ، حاول مرة أخرى');
+      let orderRow;
+      try{
+        const { data, error } = await sb.from('orders').insert({
+          restaurant_id: rest.id, customer_name, customer_phone, secondary_phone,
+          order_type: orderType, city, area, address, notes, zone_id, delivery_fee,
+          subtotal, total
+        }).select().single();
+        if(error) throw error;
+        orderRow = data;
+      }catch(err){
+        console.error('order insert error:', err);
+        toast((lang==='en' ? 'Something went wrong, try again' : 'حدث خطأ، حاول مرة أخرى') + ' — ' + (err && (err.message || err.code) || (lang==='en' ? 'network issue' : 'مشكلة في الاتصال')));
         btn.disabled = false;
         return;
       }
