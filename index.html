@@ -3830,21 +3830,26 @@ async function loadPublic(slug){
 
       const btn = overlay.querySelector('#ordConfirm');
       btn.disabled = true;
-      let orderRow;
-      try{
-        const { data, error } = await sb.from('orders').insert({
-          restaurant_id: rest.id, customer_name, customer_phone, secondary_phone,
-          order_type: orderType, city, area, address, notes, zone_id, delivery_fee,
-          subtotal, total
-        }).select().single();
-        if(error) throw error;
-        orderRow = data;
-      }catch(err){
-        console.error('order insert error:', err);
-        toast((lang==='en' ? 'Something went wrong, try again' : 'حدث خطأ، حاول مرة أخرى') + ' — ' + (err && (err.message || err.code) || (lang==='en' ? 'network issue' : 'مشكلة في الاتصال')));
+
+      // بنولّد رقم الطلب (id) من المتصفح نفسه، وبنحفظ من غير ما نطلب "استرجاع" الصف من السيرفر
+      // (.select() محتاج صلاحية قراءة مش متاحة للعميل) — كده الحفظ يشتغل مضمون 100%
+      const newOrderId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
+        const r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8); return v.toString(16);
+      }));
+      const orderPayload = {
+        id: newOrderId,
+        restaurant_id: rest.id, customer_name, customer_phone, secondary_phone,
+        order_type: orderType, city, area, address, notes, zone_id, delivery_fee,
+        subtotal, total
+      };
+      const { error } = await sb.from('orders').insert(orderPayload);
+      if(error){
+        console.error('order insert error:', error);
+        toast((lang==='en' ? 'Something went wrong, try again' : 'حدث خطأ، حاول مرة أخرى') + ' — ' + (error.message || error.code || ''));
         btn.disabled = false;
         return;
       }
+      const orderRow = { id: newOrderId, order_number: null };
       saveCustomerInfo({
         name: customer_name,
         phone: customer_phone,
@@ -3874,15 +3879,13 @@ async function loadPublic(slug){
       renderPublicBody();
       overlay.remove();
 
-      // الطلب اتحفظ فعليًا في قاعدة البيانات وهيظهر في شاشة الطلبات — دلوقتي ننقل المستخدم لواتساب
-      // في نفس التاب (من غير نافذة منبثقة) عشان نضمن إن ده يشتغل على كل المتصفحات من غير مشاكل
+      // الطلب اتحفظ فعليًا في قاعدة البيانات وهيظهر في شاشة الطلبات — دلوقتي نبعت رسالة واتساب
       if(rest.phone){
         const digits = rest.phone.replace(/[^\d]/g,'');
         const text = buildWhatsAppMessage({customer_name, customer_phone, secondary_phone, orderType, city, area, address, notes, fee, total});
-        window.location.href = `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
-      } else {
-        showOrderSuccessModal(orderRow, false);
+        window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text)}`, '_blank');
       }
+      showOrderSuccessModal(orderRow, !!rest.phone);
     });
   }
 
