@@ -281,9 +281,8 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .receipt-total-row{ display:flex; justify-content:space-between; font-weight:800; font-size:13.5px; margin-top:4px; }
 .receipt-footer{ text-align:center; font-size:11px; margin-top:8px; }
 @media print{
-  body *{ visibility:hidden; }
-  #receiptPrintArea, #receiptPrintArea *{ visibility:visible; }
-  #receiptPrintArea{ display:block !important; position:absolute; top:0; left:0; width:100%; margin:0; padding:0; }
+  body > *:not(#receiptPrintArea){ display:none !important; }
+  #receiptPrintArea{ display:block !important; margin:0; padding:0; }
 }
 @page{ margin:2mm; }
 .receipt-page-58{ width:58mm; }
@@ -1359,13 +1358,11 @@ function buildReceiptHtml(order, lines, widthMm){
 
   const itemsHtml = lines.map(l=>{
     const lineTotal = (Number(l.price) * Number(l.quantity)).toFixed(2);
-    const variant = l.variant_label ? ` (${escapeHtml(l.variant_label)})` : '';
-    const weight = l.weight_grams ? ` — ${escapeHtml(String(l.weight_grams))} جم` : '';
     const note = l.item_note ? `<div class="receipt-item-note">ملاحظة: ${escapeHtml(l.item_note)}</div>` : '';
     return `
       <div class="receipt-item">
         <div class="receipt-item-top">
-          <span>${escapeHtml(l.item_name)}${variant}${weight} ×${l.quantity}</span>
+          <span>${escapeHtml(l.item_name)} ×${l.quantity}</span>
           <span>${lineTotal}</span>
         </div>
         ${note}
@@ -2810,6 +2807,10 @@ function openItemModal(existing){
           <option value="both" ${!existing || !existing.weight_sale_mode || existing.weight_sale_mode==='both' ? 'selected' : ''}>بالوزن أو بالمبلغ (الاثنان معًا)</option>
         </select>
       </div>
+      <div class="field" id="minWeightFieldWrap">
+        <label>أقل وزن مسموح بطلبه (جرام) — اختياري</label>
+        <input type="number" id="itemMinWeight" min="1" step="1" value="${existing && existing.min_weight_grams != null ? existing.min_weight_grams : ''}" placeholder="مثال: 500">
+      </div>
       <div class="field" id="oldPriceFieldWrap">
         <label>السعر قبل الخصم (اختياري) — اتركه فارغًا إذا لا يوجد خصم</label>
         <input type="number" id="itemOldPrice" step="0.01" value="${existing && existing.old_price != null && pricingType!=='sizes' ? existing.old_price : ''}" placeholder="0.00">
@@ -2834,6 +2835,7 @@ function openItemModal(existing){
   const oldPriceFieldWrap = overlay.querySelector('#oldPriceFieldWrap');
   const sizesFieldWrap = overlay.querySelector('#sizesFieldWrap');
   const weightSaleModeFieldWrap = overlay.querySelector('#weightSaleModeFieldWrap');
+  const minWeightFieldWrap = overlay.querySelector('#minWeightFieldWrap');
   const priceLabel = overlay.querySelector('#itemPriceLabel');
   const pricingTypeSelect = overlay.querySelector('#itemPricingType');
   const sizesRowsWrap = overlay.querySelector('#sizesRowsWrap');
@@ -2858,12 +2860,14 @@ function openItemModal(existing){
       oldPriceFieldWrap.classList.add('hidden');
       sizesFieldWrap.classList.remove('hidden');
       weightSaleModeFieldWrap.classList.add('hidden');
+      minWeightFieldWrap.classList.add('hidden');
     } else {
       priceFieldWrap.classList.remove('hidden');
       oldPriceFieldWrap.classList.remove('hidden');
       sizesFieldWrap.classList.add('hidden');
       priceLabel.textContent = type === 'weight' ? 'السعر لكل كيلوجرام (EGP)' : 'السعر (EGP)';
       weightSaleModeFieldWrap.classList.toggle('hidden', type !== 'weight');
+      minWeightFieldWrap.classList.toggle('hidden', type !== 'weight');
     }
   }
   if(existingSizes.length){
@@ -2916,6 +2920,19 @@ function openItemModal(existing){
     let old_price = null;
     let sizesToSave = [];
     const weight_sale_mode = pricing_type === 'weight' ? overlay.querySelector('#itemWeightSaleMode').value : 'both';
+    let min_weight_grams = null;
+    if(pricing_type === 'weight'){
+      const minWeightRaw = overlay.querySelector('#itemMinWeight').value.trim();
+      if(minWeightRaw !== ''){
+        const parsedMinWeight = parseInt(minWeightRaw, 10);
+        if(isNaN(parsedMinWeight) || parsedMinWeight <= 0){
+          toast('أقل وزن مسموح لازم يكون رقم صحيح أكبر من صفر');
+          overlay.querySelector('#itemMinWeight').focus();
+          return;
+        }
+        min_weight_grams = parsedMinWeight;
+      }
+    }
     if(pricing_type === 'sizes'){
       const rows = sizesRowsWrap.querySelectorAll('.zone-add-row');
       for(const row of rows){
@@ -2948,14 +2965,14 @@ function openItemModal(existing){
     btn.disabled = true;
     let itemId = existing ? existing.id : null;
     if(existing){
-      const { error } = await sb.from('items').update({ name, name_en, price, old_price, description, image_url: pendingImage, pricing_type, weight_sale_mode }).eq('id', existing.id);
+      const { error } = await sb.from('items').update({ name, name_en, price, old_price, description, image_url: pendingImage, pricing_type, weight_sale_mode, min_weight_grams }).eq('id', existing.id);
       if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
       if(originalItemImageUrl && originalItemImageUrl !== pendingImage){
         await deleteStorageFileFromUrl(originalItemImageUrl); // امسح الصورة القديمة بعد نجاح الحفظ فقط
       }
     } else {
       const newPos = items.filter(i=>i.category_id===selectedCategoryId).length;
-      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, old_price, description, image_url: pendingImage, pricing_type, weight_sale_mode, position: newPos }).select().single();
+      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, old_price, description, image_url: pendingImage, pricing_type, weight_sale_mode, min_weight_grams, position: newPos }).select().single();
       if(error){ toast('تعذر الإضافة'); btn.disabled=false; return; }
       itemId = data.id;
     }
@@ -3003,7 +3020,7 @@ async function refreshTrackingData(orderId){
   const items = row.items || [];
   document.getElementById('trackItemsWrap').innerHTML = items.map(it=>`
     <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--line); font-size:13px; color:var(--ink);">
-      <span>${escapeHtml(it.item_name)}${it.variant_label ? ' (' + escapeHtml(it.variant_label) + ')' : ''}</span>
+      <span>${escapeHtml(it.item_name)}</span>
       <span>× ${it.quantity}</span>
     </div>`).join('');
   document.getElementById('trackTotalWrap').textContent = row.total != null ? `الإجمالي: ${Number(row.total).toFixed(2)} EGP` : '';
@@ -3376,19 +3393,26 @@ async function loadPublic(slug){
         const saleMode = i.weight_sale_mode || 'both';
         const wMode = saleMode === 'price_only' ? 'price' : (saleMode === 'weight_only' ? 'weight' : (weightInputMode[i.id] || 'weight'));
         const showToggle = saleMode === 'both';
+        const minG = i.min_weight_grams != null ? Number(i.min_weight_grams) : null;
+        const minNote = minG ? `<div class="min-weight-note" style="font-size:11.5px; color:var(--stone); margin-top:3px;">${lang==='en' ? `Min. order: ${weightLabel(minG)}` : `أقل كمية: ${weightLabel(minG)}`}</div>` : '';
         if(wMode === 'price'){
           controlHtml = `
             <input type="number" inputmode="decimal" min="1" step="1" class="variant-select price-input" data-price-input="${i.id}" placeholder="${lang==='en' ? 'Price (EGP)' : 'السعر (EGP)'}">
             <div class="price-preview" data-price-preview="${i.id}"></div>
             <button class="add-to-cart-btn" data-action="addWeightByPrice" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>
-            ${showToggle ? `<span class="mode-toggle-link" data-mode-toggle="${i.id}">${lang==='en' ? 'Choose by weight' : 'اختر بالوزن'}</span>` : ''}`;
+            ${showToggle ? `<span class="mode-toggle-link" data-mode-toggle="${i.id}">${lang==='en' ? 'Choose by weight' : 'اختر بالوزن'}</span>` : ''}
+            ${minNote}`;
         } else {
+          const allowedPresets = minG ? weightPresets.filter(g=>g>=minG) : weightPresets;
+          const presetOptions = allowedPresets.length ? allowedPresets : [minG];
+          const defaultG = presetOptions.includes(1000) ? 1000 : presetOptions[0];
           controlHtml = `
-            <select class="variant-select" data-weight-select="${i.id}">
-              ${weightPresets.map(g=>`<option value="${g}" ${g===1000 ? 'selected' : ''}>${weightLabel(g)}</option>`).join('')}
+            <select class="variant-select" data-weight-select="${i.id}" data-min-weight="${minG || ''}">
+              ${presetOptions.map(g=>`<option value="${g}" ${g===defaultG ? 'selected' : ''}>${weightLabel(g)}</option>`).join('')}
             </select>
             <button class="add-to-cart-btn" data-action="addWeight" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>
-            ${showToggle ? `<span class="mode-toggle-link" data-mode-toggle="${i.id}">${lang==='en' ? 'Order by price' : 'اطلب بسعر محدد'}</span>` : ''}`;
+            ${showToggle ? `<span class="mode-toggle-link" data-mode-toggle="${i.id}">${lang==='en' ? 'Order by price' : 'اطلب بسعر محدد'}</span>` : ''}
+            ${minNote}`;
         }
         cartLinesHtml = itemCartLinesHtml(i.id);
       } else if(i.pricing_type === 'sizes'){
@@ -3496,7 +3520,14 @@ async function loadPublic(slug){
         if(!preview) return;
         if(!desiredPrice || desiredPrice <= 0 || !pricePerKg){ preview.textContent = ''; return; }
         const grams = Math.max(1, Math.round(desiredPrice * 1000 / pricePerKg));
-        preview.textContent = lang==='en' ? `≈ ${weightLabel(grams)}` : `≈ ${weightLabel(grams)}`;
+        const minG = item.min_weight_grams != null ? Number(item.min_weight_grams) : null;
+        if(minG && grams < minG){
+          preview.textContent = lang==='en' ? `≈ ${weightLabel(grams)} — below min. (${weightLabel(minG)})` : `≈ ${weightLabel(grams)} — أقل من الحد الأدنى (${weightLabel(minG)})`;
+          preview.style.color = 'var(--danger)';
+        } else {
+          preview.textContent = lang==='en' ? `≈ ${weightLabel(grams)}` : `≈ ${weightLabel(grams)}`;
+          preview.style.color = '';
+        }
       };
       inp.addEventListener('input', updatePreview);
       inp.addEventListener('keydown', (e)=>{
@@ -3521,6 +3552,15 @@ async function loadPublic(slug){
         }
         const pricePerKg = Number(item.price);
         const grams = Math.max(1, Math.round(desiredPrice * 1000 / pricePerKg));
+        const minG = item.min_weight_grams != null ? Number(item.min_weight_grams) : null;
+        if(minG && grams < minG){
+          const minPrice = (pricePerKg * minG / 1000).toFixed(2);
+          toast(lang==='en'
+            ? `Minimum order for this item is ${weightLabel(minG)} (≈ ${minPrice} EGP)`
+            : `أقل كمية يمكن طلبها لهذا الصنف ${weightLabel(minG)} (بسعر تقريبي ${minPrice} EGP)`);
+          input.focus();
+          return;
+        }
         const key = `${itemId}:${grams}`;
         const unitPrice = pricePerKg * grams / 1000;
         if(cart[key]){ cart[key].qty += 1; }
