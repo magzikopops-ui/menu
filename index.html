@@ -2634,6 +2634,14 @@ function openItemModal(existing){
         <label id="itemPriceLabel">السعر (EGP)</label>
         <input type="number" id="itemPrice" step="0.01" value="${existing && pricingType!=='sizes' ? existing.price : ''}" placeholder="0.00">
       </div>
+      <div class="field" id="weightSaleModeFieldWrap">
+        <label>طريقة الطلب لهذا الصنف</label>
+        <select id="itemWeightSaleMode" style="width:100%; border:1.5px solid var(--line); border-radius:8px; padding:10px 12px; font-family:var(--body); font-size:14px; color:var(--ink); background:var(--paper);">
+          <option value="weight_only" ${(existing && existing.weight_sale_mode)==='weight_only' ? 'selected' : ''}>بالوزن فقط</option>
+          <option value="price_only" ${(existing && existing.weight_sale_mode)==='price_only' ? 'selected' : ''}>بالمبلغ فقط</option>
+          <option value="both" ${!existing || !existing.weight_sale_mode || existing.weight_sale_mode==='both' ? 'selected' : ''}>بالوزن أو بالمبلغ (الاثنان معًا)</option>
+        </select>
+      </div>
       <div class="field" id="oldPriceFieldWrap">
         <label>السعر قبل الخصم (اختياري) — اتركه فارغًا إذا لا يوجد خصم</label>
         <input type="number" id="itemOldPrice" step="0.01" value="${existing && existing.old_price != null && pricingType!=='sizes' ? existing.old_price : ''}" placeholder="0.00">
@@ -2657,6 +2665,7 @@ function openItemModal(existing){
   const priceFieldWrap = overlay.querySelector('#priceFieldWrap');
   const oldPriceFieldWrap = overlay.querySelector('#oldPriceFieldWrap');
   const sizesFieldWrap = overlay.querySelector('#sizesFieldWrap');
+  const weightSaleModeFieldWrap = overlay.querySelector('#weightSaleModeFieldWrap');
   const priceLabel = overlay.querySelector('#itemPriceLabel');
   const pricingTypeSelect = overlay.querySelector('#itemPricingType');
   const sizesRowsWrap = overlay.querySelector('#sizesRowsWrap');
@@ -2680,11 +2689,13 @@ function openItemModal(existing){
       priceFieldWrap.classList.add('hidden');
       oldPriceFieldWrap.classList.add('hidden');
       sizesFieldWrap.classList.remove('hidden');
+      weightSaleModeFieldWrap.classList.add('hidden');
     } else {
       priceFieldWrap.classList.remove('hidden');
       oldPriceFieldWrap.classList.remove('hidden');
       sizesFieldWrap.classList.add('hidden');
       priceLabel.textContent = type === 'weight' ? 'السعر لكل كيلوجرام (EGP)' : 'السعر (EGP)';
+      weightSaleModeFieldWrap.classList.toggle('hidden', type !== 'weight');
     }
   }
   if(existingSizes.length){
@@ -2736,6 +2747,7 @@ function openItemModal(existing){
     let price = 0;
     let old_price = null;
     let sizesToSave = [];
+    const weight_sale_mode = pricing_type === 'weight' ? overlay.querySelector('#itemWeightSaleMode').value : 'both';
     if(pricing_type === 'sizes'){
       const rows = sizesRowsWrap.querySelectorAll('.zone-add-row');
       for(const row of rows){
@@ -2768,14 +2780,14 @@ function openItemModal(existing){
     btn.disabled = true;
     let itemId = existing ? existing.id : null;
     if(existing){
-      const { error } = await sb.from('items').update({ name, name_en, price, old_price, description, image_url: pendingImage, pricing_type }).eq('id', existing.id);
+      const { error } = await sb.from('items').update({ name, name_en, price, old_price, description, image_url: pendingImage, pricing_type, weight_sale_mode }).eq('id', existing.id);
       if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
       if(originalItemImageUrl && originalItemImageUrl !== pendingImage){
         await deleteStorageFileFromUrl(originalItemImageUrl); // امسح الصورة القديمة بعد نجاح الحفظ فقط
       }
     } else {
       const newPos = items.filter(i=>i.category_id===selectedCategoryId).length;
-      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, old_price, description, image_url: pendingImage, pricing_type, position: newPos }).select().single();
+      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, old_price, description, image_url: pendingImage, pricing_type, weight_sale_mode, position: newPos }).select().single();
       if(error){ toast('تعذر الإضافة'); btn.disabled=false; return; }
       itemId = data.id;
     }
@@ -3193,20 +3205,22 @@ async function loadPublic(slug){
       const oldPriceSpan = hasDiscount ? `<span class="old-price">${Number(i.old_price).toFixed(2)}</span>` : '';
       if(i.pricing_type === 'weight'){
         priceLine = `${oldPriceSpan}${lang==='en' ? 'EGP' : 'EGP'} ${Number(i.price).toFixed(2)} / ${lang==='en' ? 'kg' : 'كجم'}${discountBadge}`;
-        const wMode = weightInputMode[i.id] || 'weight';
+        const saleMode = i.weight_sale_mode || 'both';
+        const wMode = saleMode === 'price_only' ? 'price' : (saleMode === 'weight_only' ? 'weight' : (weightInputMode[i.id] || 'weight'));
+        const showToggle = saleMode === 'both';
         if(wMode === 'price'){
           controlHtml = `
             <input type="number" inputmode="decimal" min="1" step="1" class="variant-select price-input" data-price-input="${i.id}" placeholder="${lang==='en' ? 'Price (EGP)' : 'السعر (EGP)'}">
             <div class="price-preview" data-price-preview="${i.id}"></div>
             <button class="add-to-cart-btn" data-action="addWeightByPrice" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>
-            <span class="mode-toggle-link" data-mode-toggle="${i.id}">${lang==='en' ? 'Choose by weight' : 'اختر بالوزن'}</span>`;
+            ${showToggle ? `<span class="mode-toggle-link" data-mode-toggle="${i.id}">${lang==='en' ? 'Choose by weight' : 'اختر بالوزن'}</span>` : ''}`;
         } else {
           controlHtml = `
             <select class="variant-select" data-weight-select="${i.id}">
               ${weightPresets.map(g=>`<option value="${g}" ${g===1000 ? 'selected' : ''}>${weightLabel(g)}</option>`).join('')}
             </select>
             <button class="add-to-cart-btn" data-action="addWeight" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>
-            <span class="mode-toggle-link" data-mode-toggle="${i.id}">${lang==='en' ? 'Order by price' : 'اطلب بسعر محدد'}</span>`;
+            ${showToggle ? `<span class="mode-toggle-link" data-mode-toggle="${i.id}">${lang==='en' ? 'Order by price' : 'اطلب بسعر محدد'}</span>` : ''}`;
         }
         cartLinesHtml = itemCartLinesHtml(i.id);
       } else if(i.pricing_type === 'sizes'){
