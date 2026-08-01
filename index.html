@@ -198,6 +198,8 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .pub-item .item-control .add-to-cart-btn{ margin-top:0; width:100%; padding:10px 8px; }
 .pub-item .item-control .qty-stepper{ margin-top:0; justify-content:center; gap:6px; }
 .pub-item .item-control .qty-btn{ width:34px; height:34px; font-size:16px; }
+.mode-toggle-link{ display:block; text-align:center; font-size:10px; color:var(--basil-dark); text-decoration:underline; cursor:pointer; margin-top:2px; }
+.price-preview{ font-size:10px; color:var(--stone); text-align:center; min-height:12px; line-height:1.3; }
 .pub-item .variant-cart-lines{ margin-top:6px; }
 .pub-item .name-primary{ font-weight:800; font-size:17px; color:var(--ink); }
 .pub-item .name-secondary{ font-size:13px; color:var(--stone); margin-top:1px; }
@@ -2907,6 +2909,7 @@ async function loadPublic(slug){
   let lang = 'ar'; // 'ar' or 'en'
   let searchTerm = '';
   let cart = {}; // item_id -> { item, qty }
+  let weightInputMode = {}; // item_id -> 'weight' | 'price' (لأصناف البيع بالوزن)
   let isRestaurantOpenNow = true;
   const CART_STORAGE_KEY = `menuCart_${rest.id}`;
 
@@ -3190,11 +3193,21 @@ async function loadPublic(slug){
       const oldPriceSpan = hasDiscount ? `<span class="old-price">${Number(i.old_price).toFixed(2)}</span>` : '';
       if(i.pricing_type === 'weight'){
         priceLine = `${oldPriceSpan}${lang==='en' ? 'EGP' : 'EGP'} ${Number(i.price).toFixed(2)} / ${lang==='en' ? 'kg' : 'كجم'}${discountBadge}`;
-        controlHtml = `
-          <select class="variant-select" data-weight-select="${i.id}">
-            ${weightPresets.map(g=>`<option value="${g}" ${g===1000 ? 'selected' : ''}>${weightLabel(g)}</option>`).join('')}
-          </select>
-          <button class="add-to-cart-btn" data-action="addWeight" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>`;
+        const wMode = weightInputMode[i.id] || 'weight';
+        if(wMode === 'price'){
+          controlHtml = `
+            <input type="number" inputmode="decimal" min="1" step="1" class="variant-select price-input" data-price-input="${i.id}" placeholder="${lang==='en' ? 'Price (EGP)' : 'السعر (EGP)'}">
+            <div class="price-preview" data-price-preview="${i.id}"></div>
+            <button class="add-to-cart-btn" data-action="addWeightByPrice" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>
+            <span class="mode-toggle-link" data-mode-toggle="${i.id}">${lang==='en' ? 'Choose by weight' : 'اختر بالوزن'}</span>`;
+        } else {
+          controlHtml = `
+            <select class="variant-select" data-weight-select="${i.id}">
+              ${weightPresets.map(g=>`<option value="${g}" ${g===1000 ? 'selected' : ''}>${weightLabel(g)}</option>`).join('')}
+            </select>
+            <button class="add-to-cart-btn" data-action="addWeight" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>
+            <span class="mode-toggle-link" data-mode-toggle="${i.id}">${lang==='en' ? 'Order by price' : 'اطلب بسعر محدد'}</span>`;
+        }
         cartLinesHtml = itemCartLinesHtml(i.id);
       } else if(i.pricing_type === 'sizes'){
         priceLine = sizes.length ? sizes.map(s=>`${escapeHtml(s.size_name)} ${Number(s.price).toFixed(2)}`).join(' · ') + ' EGP' : (lang==='en' ? 'No sizes available yet' : 'لا تتوفر أحجام حاليًا');
@@ -3273,6 +3286,61 @@ async function loadPublic(slug){
         const grams = parseInt(sel.value);
         const key = `${itemId}:${grams}`;
         const unitPrice = Number(item.price) * grams / 1000;
+        if(cart[key]){ cart[key].qty += 1; }
+        else { cart[key] = { item, variantLabel: weightLabel(grams), unitPrice, weightGrams: grams, qty: 1 }; }
+        const card = btn.closest('.pub-item');
+        flyToCart(card ? (card.querySelector('img') || card) : btn);
+        showAddedToast(tName(item.name, item.name_en));
+        renderPublicBody();
+      });
+    });
+    // weight items: toggle between "by weight" and "by price" input modes
+    body.querySelectorAll('[data-mode-toggle]').forEach(el=>{
+      el.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const itemId = el.dataset.modeToggle;
+        weightInputMode[itemId] = (weightInputMode[itemId] === 'price') ? 'weight' : 'price';
+        renderPublicBody();
+      });
+    });
+    // weight items: live preview of the approximate weight while typing a desired price
+    body.querySelectorAll('[data-price-input]').forEach(inp=>{
+      const itemId = inp.dataset.priceInput;
+      const item = pubItems.find(x=>x.id===itemId);
+      const preview = body.querySelector(`[data-price-preview="${itemId}"]`);
+      const updatePreview = ()=>{
+        const desiredPrice = Number(inp.value);
+        const pricePerKg = Number(item.price);
+        if(!preview) return;
+        if(!desiredPrice || desiredPrice <= 0 || !pricePerKg){ preview.textContent = ''; return; }
+        const grams = Math.max(1, Math.round(desiredPrice * 1000 / pricePerKg));
+        preview.textContent = lang==='en' ? `≈ ${weightLabel(grams)}` : `≈ ${weightLabel(grams)}`;
+      };
+      inp.addEventListener('input', updatePreview);
+      inp.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          const btn = body.querySelector(`[data-action="addWeightByPrice"][data-item-id="${itemId}"]`);
+          if(btn) btn.click();
+        }
+      });
+    });
+    // weight items: add by desired price, computing the closest matching weight
+    body.querySelectorAll('[data-action="addWeightByPrice"]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const itemId = btn.dataset.itemId;
+        const item = pubItems.find(x=>x.id===itemId);
+        const input = body.querySelector(`[data-price-input="${itemId}"]`);
+        const desiredPrice = Number(input.value);
+        if(!desiredPrice || desiredPrice <= 0){
+          input.focus();
+          return;
+        }
+        const pricePerKg = Number(item.price);
+        const grams = Math.max(1, Math.round(desiredPrice * 1000 / pricePerKg));
+        const key = `${itemId}:${grams}`;
+        const unitPrice = pricePerKg * grams / 1000;
         if(cart[key]){ cart[key].qty += 1; }
         else { cart[key] = { item, variantLabel: weightLabel(grams), unitPrice, weightGrams: grams, qty: 1 }; }
         const card = btn.closest('.pub-item');
