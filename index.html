@@ -3828,12 +3828,13 @@ async function loadPublic(slug){
       const fee = delivery_fee != null ? Number(delivery_fee) : 0;
       const total = subtotal + fee;
 
-      // نفتح واتساب فورًا (قبل أي انتظار) عشان المتصفح ما يمنعش النافذة
+      // نفتح نافذة فاضية فورًا (قبل أي انتظار) عشان المتصفح ما يمنعش النافذة المنبثقة،
+      // وهنحطّلها رابط واتساب بعد ما نتأكد إن الطلب اتحفظ في قاعدة البيانات بنجاح.
+      // (السبب: على الموبايل، فتح واتساب مباشرة بيوقف تنفيذ الجافاسكريبت في الصفحة قبل ما عملية
+      // الحفظ تخلص، فالطلب كان بيضيع وميظهرش في شاشة الطلبات)
       let waWindow = null;
       if(rest.phone){
-        const digits = rest.phone.replace(/[^\d]/g,'');
-        const text = buildWhatsAppMessage({customer_name, customer_phone, secondary_phone, orderType, city, area, address, notes, fee, total});
-        waWindow = window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text)}`, '_blank');
+        waWindow = window.open('', '_blank');
       }
 
       const btn = overlay.querySelector('#ordConfirm');
@@ -3846,6 +3847,7 @@ async function loadPublic(slug){
       if(error){
         toast(lang==='en' ? 'Something went wrong, try again' : 'حدث خطأ، حاول مرة أخرى');
         btn.disabled = false;
+        if(waWindow) waWindow.close();
         return;
       }
       saveCustomerInfo({
@@ -3872,6 +3874,16 @@ async function loadPublic(slug){
       if(cartLines.length){
         await sb.from('order_items').insert(cartLines);
       }
+
+      // دلوقتي الطلب اتحفظ فعليًا في قاعدة البيانات — نكمّل ونوجّه نافذة واتساب اللي فتحناها فورًا
+      if(rest.phone && waWindow){
+        const digits = rest.phone.replace(/[^\d]/g,'');
+        const text = buildWhatsAppMessage({customer_name, customer_phone, secondary_phone, orderType, city, area, address, notes, fee, total});
+        waWindow.location.href = `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+      } else if(waWindow){
+        waWindow.close();
+      }
+
       cart = {};
       renderPublicBody();
       overlay.remove();
