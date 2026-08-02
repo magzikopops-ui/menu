@@ -2654,6 +2654,38 @@ document.getElementById('shareMenuBtn').addEventListener('click', async ()=>{
 });
 
 /* ================= Excel Import ================= */
+const DETAILED_IMPORT_HEADERS = ['الفئة','الاسم (عربي)','الاسم (إنجليزي)','طريقة التسعير','السعر','السعر قبل الخصم','طريقة الطلب بالوزن','أقل وزن مسموح (جرام)','الأحجام والأسعار','الوصف','الحالة','رابط الصورة'];
+
+function pricingTypeValueFromLabel(label){
+  const t = String(label ?? '').trim();
+  if(t === 'بالوزن') return 'weight';
+  if(t === 'أحجام متعددة') return 'sizes';
+  return 'unit';
+}
+function weightSaleModeValueFromLabel(label){
+  const t = String(label ?? '').trim();
+  if(t === 'بالوزن فقط') return 'weight_only';
+  if(t === 'بالمبلغ فقط') return 'price_only';
+  return 'both';
+}
+function isAvailableValueFromLabel(label){
+  const t = String(label ?? '').trim();
+  if(t === 'غير متاح') return false;
+  return true; // فارغ أو 'متاح' أو أي حاجة تانية = متاح افتراضيًا
+}
+function parseSizesText(text){
+  const t = String(text ?? '').trim();
+  if(!t) return [];
+  return t.split('|').map(part=>{
+    const idx = part.lastIndexOf(':');
+    if(idx === -1) return null;
+    const sizeName = part.slice(0, idx).trim();
+    const price = parseFloat(part.slice(idx+1).trim());
+    if(!sizeName || isNaN(price) || price < 0) return null;
+    return { size_name: sizeName, price };
+  }).filter(Boolean);
+}
+
 document.getElementById('importExcelBtn').addEventListener('click', ()=>{
   document.getElementById('importExcelInput').click();
 });
@@ -2674,19 +2706,76 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
     return;
   }
 
-  // Detect and skip a header row if the 3rd column of the first row isn't a number
-  if(rows.length && isNaN(parseFloat(rows[0][2]))){
-    rows = rows.slice(1);
+  if(!rows.length){
+    toast('الملف فارغ');
+    return;
   }
 
+  // Detect the detailed (full-details) export format via its header row
+  const firstRowNormalized = (rows[0] || []).map(v=> String(v ?? '').trim());
+  const isDetailedFormat = firstRowNormalized[0] === 'الفئة'
+    && DETAILED_IMPORT_HEADERS.every(h => firstRowNormalized.includes(h));
+
   const parsed = [];
-  rows.forEach(r=>{
-    const catName = String(r[0] ?? '').trim();
-    const itemName = String(r[1] ?? '').trim();
-    const price = parseFloat(r[2]);
-    if(!catName || !itemName || isNaN(price) || price < 0) return;
-    parsed.push({ catName, itemName, price });
-  });
+
+  if(isDetailedFormat){
+    const colIdx = {};
+    DETAILED_IMPORT_HEADERS.forEach(h => { colIdx[h] = firstRowNormalized.indexOf(h); });
+    rows.slice(1).forEach(r=>{
+      const catName = String(r[colIdx['الفئة']] ?? '').trim();
+      const itemName = String(r[colIdx['الاسم (عربي)']] ?? '').trim();
+      if(!catName || !itemName) return;
+      const pricing_type = pricingTypeValueFromLabel(r[colIdx['طريقة التسعير']]);
+      const sizes = pricing_type === 'sizes' ? parseSizesText(r[colIdx['الأحجام والأسعار']]) : [];
+      let price = parseFloat(r[colIdx['السعر']]);
+      if(pricing_type === 'sizes'){
+        if(sizes.length === 0) return; // لازم حجم واحد على الأقل بسعره
+        price = 0;
+      } else {
+        if(isNaN(price) || price < 0) return;
+      }
+      let old_price = null;
+      if(pricing_type !== 'sizes'){
+        const rawOld = parseFloat(r[colIdx['السعر قبل الخصم']]);
+        if(!isNaN(rawOld) && rawOld > price) old_price = rawOld;
+      }
+      let min_weight_grams = null;
+      if(pricing_type === 'weight'){
+        const rawMin = parseInt(r[colIdx['أقل وزن مسموح (جرام)']], 10);
+        if(!isNaN(rawMin) && rawMin > 0) min_weight_grams = rawMin;
+      }
+      parsed.push({
+        catName, itemName,
+        name_en: String(r[colIdx['الاسم (إنجليزي)']] ?? '').trim() || null,
+        pricing_type,
+        price,
+        old_price,
+        weight_sale_mode: pricing_type === 'weight' ? weightSaleModeValueFromLabel(r[colIdx['طريقة الطلب بالوزن']]) : 'both',
+        min_weight_grams,
+        sizes,
+        description: String(r[colIdx['الوصف']] ?? '').trim(),
+        is_available: isAvailableValueFromLabel(r[colIdx['الحالة']]),
+        image_url: String(r[colIdx['رابط الصورة']] ?? '').trim() || null
+      });
+    });
+  } else {
+    // الشكل البسيط: فئة، اسم، سعر فقط (مع أو من غير صف عناوين)
+    let simpleRows = rows;
+    if(simpleRows.length && isNaN(parseFloat(simpleRows[0][2]))){
+      simpleRows = simpleRows.slice(1);
+    }
+    simpleRows.forEach(r=>{
+      const catName = String(r[0] ?? '').trim();
+      const itemName = String(r[1] ?? '').trim();
+      const price = parseFloat(r[2]);
+      if(!catName || !itemName || isNaN(price) || price < 0) return;
+      parsed.push({
+        catName, itemName, name_en: null, pricing_type: 'unit', price, old_price: null,
+        weight_sale_mode: 'both', min_weight_grams: null, sizes: [], description: '',
+        is_available: true, image_url: null
+      });
+    });
+  }
 
   if(parsed.length === 0){
     toast(`لم يتم العثور على صفوف صالحة (فئة، ${biz(restaurant.business_type,'itemIndef')}، سعر)`);
@@ -2694,23 +2783,23 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
   }
 
   const uniqueCats = [...new Set(parsed.map(p=>p.catName))];
-  openImportPreviewModal(parsed, uniqueCats);
+  openImportPreviewModal(parsed, uniqueCats, isDetailedFormat);
 });
 
-function openImportPreviewModal(parsed, uniqueCats){
+function openImportPreviewModal(parsed, uniqueCats, isDetailedFormat){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   const previewRows = parsed.slice(0, 8).map(p=>`
     <div class="zone-row">
       <span class="zone-name">${escapeHtml(p.catName)} — ${escapeHtml(p.itemName)}</span>
-      <span class="zone-fee">${p.price.toFixed(2)} EGP</span>
+      <span class="zone-fee">${p.pricing_type === 'sizes' ? 'أحجام' : p.price.toFixed(2) + ' EGP'}</span>
     </div>`).join('');
   overlay.innerHTML = `
     <div class="modal">
       <h3>استيراد ${biz(restaurant.business_type,'itemsIndef')} من إكسيل</h3>
       <div class="orders-empty" style="text-align:right; padding:6px 0 14px;">
         تم العثور على <b>${parsed.length}</b> ${biz(restaurant.business_type,'itemIndef')} ضمن <b>${uniqueCats.length}</b> فئة.
-        سيتم إنشاء أي فئة غير موجودة تلقائيًا، وإضافة ${biz(restaurant.business_type,'itemsDef')} كأسعار ثابتة.
+        سيتم إنشاء أي فئة غير موجودة تلقائيًا. ${isDetailedFormat ? `أي ${biz(restaurant.business_type,'itemIndef')} موجود بنفس الاسم داخل نفس الفئة هيتم تحديث بياناته بالكامل، وأي صنف جديد هيتضاف بكل تفاصيله.` : `سيتم إضافة ${biz(restaurant.business_type,'itemsDef')} كأسعار ثابتة، وتحديث السعر لو الصنف موجود بالفعل بنفس الاسم.`}
       </div>
       <div id="importPreviewWrap">${previewRows}${parsed.length > 8 ? `<div class="orders-empty">و ${parsed.length - 8} ${biz(restaurant.business_type,'itemIndef')} آخر...</div>` : ''}</div>
       <div class="modal-actions">
@@ -2756,28 +2845,54 @@ async function runImport(parsed, uniqueCats){
     newCats.forEach(c=> catMap[c.name.trim().toLowerCase()] = c.id);
   }
 
+  // خريطة الأصناف الحالية: category_id + الاسم (بالعربي) بحروف صغيرة -> item
+  const existingItemMap = {};
+  items.forEach(it=>{ existingItemMap[`${it.category_id}::${it.name.trim().toLowerCase()}`] = it; });
+
   const catItemCounts = {};
   categories.forEach(c=>{ catItemCounts[c.id] = items.filter(i=>i.category_id===c.id).length; });
 
-  const itemsToInsert = parsed.map(p=>{
+  for(const p of parsed){
     const catId = catMap[p.catName.trim().toLowerCase()];
-    const pos = catItemCounts[catId] || 0;
-    catItemCounts[catId] = pos + 1;
-    return {
-      category_id: catId,
-      name: p.itemName,
-      price: p.price,
-      pricing_type: 'unit',
-      position: pos
-    };
-  });
+    if(!catId) continue;
+    const key = `${catId}::${p.itemName.trim().toLowerCase()}`;
+    const existing = existingItemMap[key];
 
-  // Insert in batches to avoid overly large single requests
-  const BATCH = 200;
-  for(let i=0; i<itemsToInsert.length; i+=BATCH){
-    const chunk = itemsToInsert.slice(i, i+BATCH);
-    const { error } = await sb.from('items').insert(chunk);
-    if(error) throw error;
+    const payload = {
+      name: p.itemName,
+      name_en: p.name_en,
+      price: p.price,
+      old_price: p.old_price,
+      description: p.description,
+      pricing_type: p.pricing_type,
+      weight_sale_mode: p.weight_sale_mode,
+      min_weight_grams: p.min_weight_grams,
+      is_available: p.is_available
+    };
+    if(p.image_url) payload.image_url = p.image_url;
+
+    let itemId;
+    if(existing){
+      const { error } = await sb.from('items').update(payload).eq('id', existing.id);
+      if(error) throw error;
+      itemId = existing.id;
+    } else {
+      const pos = catItemCounts[catId] || 0;
+      catItemCounts[catId] = pos + 1;
+      const { data, error } = await sb.from('items').insert({ ...payload, category_id: catId, position: pos }).select().single();
+      if(error) throw error;
+      itemId = data.id;
+      existingItemMap[key] = { id: itemId, category_id: catId, name: p.itemName };
+    }
+
+    if(p.pricing_type === 'sizes'){
+      await sb.from('item_sizes').delete().eq('item_id', itemId);
+      const rowsToInsert = p.sizes.map((s, idx)=>({ item_id: itemId, size_name: s.size_name, price: s.price, position: idx }));
+      const { error: sizeErr } = await sb.from('item_sizes').insert(rowsToInsert);
+      if(sizeErr) throw sizeErr;
+    } else if(existing){
+      await sb.from('item_sizes').delete().eq('item_id', itemId);
+    }
   }
 }
 
