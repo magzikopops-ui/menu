@@ -286,15 +286,31 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .cart-summary-row.total{ font-weight:800; color:var(--ink); font-size:15px; border-top:1.5px dashed var(--stone-light); margin-top:6px; padding-top:10px; }
 .cart-empty-note{ text-align:center; color:var(--stone); padding:24px; font-size:13.5px; }
 
-.orders-list{ display:flex; flex-direction:column; gap:10px; max-height:60vh; overflow-y:auto; }
-.order-row{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; position:relative; }
-.order-row.is-new{ border-color:var(--ember); background:rgba(184,57,14,.06); }
+.orders-list{ display:flex; flex-direction:column; gap:14px; max-height:60vh; overflow-y:auto; }
+.order-row{ border:1.5px solid var(--line); border-radius:14px; padding:16px 16px 14px; position:relative; background:var(--paper); box-shadow:0 1px 3px rgba(32,31,29,.05); }
+.order-row.is-new{ border-color:var(--ember); background:rgba(184,57,14,.05); box-shadow:0 2px 10px rgba(184,57,14,.12); }
 .order-row.is-today:not(.is-new){ border-color:var(--basil); }
-.order-row .o-name{font-weight:800; color:var(--ink); font-size:14px;}
-.order-row .o-phone{font-family:var(--mono); direction:ltr; color:var(--ember); font-size:13px; margin-top:2px; display:inline-block;}
-.order-row .o-time{color:var(--stone); font-size:11px; margin-top:4px;}
+.o-card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; flex-wrap:wrap; border-bottom:1px dashed var(--stone-light); padding-bottom:10px; margin-bottom:10px; }
+.order-row .o-name{font-weight:800; color:var(--ink); font-size:16px; display:flex; align-items:center; flex-wrap:wrap; gap:6px;}
+.o-type-badge{ font-weight:700; font-size:11.5px; color:var(--stone); background:var(--paper-dim); border-radius:8px; padding:2px 8px; }
+.o-badges{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.o-contact-row{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
+.order-row .o-phone{font-family:var(--mono); direction:ltr; color:var(--ember); font-size:13px; display:inline-block; font-weight:700;}
+.order-row .o-time{color:var(--stone); font-size:12px; margin-top:4px;}
+.o-fee{ color:var(--stone); }
 .o-wa-btn{ display:inline-flex; align-items:center; gap:5px; margin-inline-start:8px; background:#25D366; color:#fff; border:none; border-radius:20px; padding:3px 10px; font-size:12px; font-weight:700; cursor:pointer; font-family:var(--body); vertical-align:middle; }
 .o-wa-btn:hover{ background:#1ebe57; }
+.o-items{ background:var(--paper-dim); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-top:10px; }
+.o-items-head{ font-weight:800; color:var(--ink); font-size:12.5px; display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.o-items-count{ font-weight:700; font-size:11px; color:var(--stone); background:var(--paper); border-radius:8px; padding:1px 8px; }
+.o-items-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:5px; }
+.o-item-line{ display:flex; align-items:baseline; gap:8px; font-size:13.5px; color:var(--ink); background:var(--paper); border-radius:7px; padding:6px 9px; }
+.o-item-qty{ font-family:var(--mono); font-weight:800; color:#fff; background:var(--ember); border-radius:6px; padding:1px 7px; font-size:12px; min-width:26px; text-align:center; flex-shrink:0; }
+.o-item-name{ font-weight:700; flex:1; }
+.o-item-note{ color:var(--danger); font-size:11.5px; font-weight:600; }
+.o-total{ display:flex; justify-content:space-between; align-items:center; font-weight:800; color:var(--ink); font-size:14px; margin-top:8px; padding-top:8px; border-top:1px dashed var(--stone-light); }
+.o-total span{ color:var(--ember); font-family:var(--mono); font-size:15px; }
+.o-notes{ margin-top:6px; font-size:12.5px; color:var(--ink); background:rgba(184,57,14,.07); border-radius:8px; padding:6px 9px; }
 .wa-template-list{ display:flex; flex-direction:column; gap:8px; max-height:min(50vh,360px); overflow-y:auto; margin-bottom:14px; }
 .wa-template-card{ display:block; width:100%; text-align:right; background:var(--paper-dim); color:var(--ink); border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; font-size:12.5px; line-height:1.65; white-space:pre-wrap; cursor:pointer; font-family:var(--body); transition:border-color .15s ease, background .15s ease; }
 .wa-template-card:hover{ border-color:var(--basil); background:rgba(63,98,71,.06); }
@@ -317,6 +333,8 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .receipt-row{ display:flex; justify-content:space-between; gap:8px; margin:2px 0; }
 .receipt-row .lbl{ flex:1; }
 .receipt-row .val{ direction:ltr; text-align:left; white-space:nowrap; }
+.receipt-highlight{ font-size:16px; font-weight:800; margin:3px 0; line-height:1.4; }
+.receipt-highlight.val{ direction:ltr; text-align:left; }
 .receipt-item{ margin:4px 0; }
 .receipt-item-top{ display:flex; justify-content:space-between; gap:8px; font-weight:700; }
 .receipt-item-note{ font-size:10.5px; color:#333; margin-inline-start:4px; }
@@ -1401,10 +1419,22 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
   function orderRowHtml(o){
     const d = new Date(o.created_at);
     const time = d.toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' });
-    const typeLabel = o.order_type === 'pickup' ? 'استلام' : 'توصيل';
+    const typeLabel = o.order_type === 'pickup' ? '📦 استلام' : '🛵 توصيل';
     const lines = itemsByOrder[o.id] || [];
-    const linesHtml = lines.length ? `<div class="o-time" style="margin-top:6px;">${lines.map(l=> l.item_note ? `${escapeHtml(l.item_name)} ×${l.quantity} <span style="color:#a33;">(${escapeHtml(l.item_note)})</span>` : `${escapeHtml(l.item_name)} ×${l.quantity}`).join('، ')}</div>` : '';
-    const totalsHtml = o.total != null ? `<div class="o-time" style="margin-top:4px; font-weight:700; color:var(--ink);">الإجمالي: ${Number(o.total).toFixed(2)} EGP</div>` : '';
+    const itemsCount = lines.reduce((sum,l)=> sum + (Number(l.quantity)||0), 0);
+    const itemsListHtml = lines.length ? `
+      <div class="o-items">
+        <div class="o-items-head">🧾 الأصناف <span class="o-items-count">${itemsCount} قطعة</span></div>
+        <ul class="o-items-list">
+          ${lines.map(l=> `
+            <li class="o-item-line">
+              <span class="o-item-qty">×${escapeHtml(String(l.quantity))}</span>
+              <span class="o-item-name">${escapeHtml(l.item_name)}</span>
+              ${l.item_note ? `<span class="o-item-note">${escapeHtml(l.item_note)}</span>` : ''}
+            </li>`).join('')}
+        </ul>
+      </div>` : '';
+    const totalsHtml = o.total != null ? `<div class="o-total">الإجمالي <span>${Number(o.total).toFixed(2)} EGP</span></div>` : '';
     const status = o.status || 'pending';
     const today = isToday(o);
     const fresh = isNewOrder(o);
@@ -1413,14 +1443,21 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
     const numberHtml = o.order_number != null ? `<span class="o-number">#${o.order_number}</span>` : '';
     return `
       <div class="${rowClasses}" data-order-id="${o.id}">
-        <div class="o-name">${numberHtml}${escapeHtml(o.customer_name)} <span style="font-weight:400; color:var(--stone); font-size:12px;">(${typeLabel})</span><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${tagsHtml}</div>
-        <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}<button type="button" class="o-wa-btn" data-action="sendMenuWa" data-phone="${escapeHtml(o.customer_phone)}" data-name="${escapeHtml(o.customer_name)}" title="إرسال رابط المنيو للعميل عبر واتساب">📲 إرسال المنيو</button><button type="button" class="o-print-btn" data-action="printReceipt" data-order-id="${o.id}" title="طباعة الطلب / Print Order">🖨️ طباعة الطلب <span style="opacity:.75;">| Print Order</span></button>
-        <div class="o-time">${escapeHtml(o.city || '')}${o.area ? ' — ' + escapeHtml(o.area) : ''}${o.delivery_fee != null ? ` (رسوم التوصيل: ${Number(o.delivery_fee).toFixed(2)} EGP)` : ''}</div>
+        <div class="o-card-top">
+          <div class="o-name">${numberHtml}${escapeHtml(o.customer_name)} <span class="o-type-badge">${typeLabel}</span></div>
+          <div class="o-badges"><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${tagsHtml}</div>
+        </div>
+        <div class="o-contact-row">
+          <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}
+          <button type="button" class="o-wa-btn" data-action="sendMenuWa" data-phone="${escapeHtml(o.customer_phone)}" data-name="${escapeHtml(o.customer_name)}" title="إرسال رابط المنيو للعميل عبر واتساب">📲 إرسال المنيو</button>
+          <button type="button" class="o-print-btn" data-action="printReceipt" data-order-id="${o.id}" title="طباعة الطلب / Print Order">🖨️ طباعة الطلب <span style="opacity:.75;">| Print Order</span></button>
+        </div>
+        <div class="o-time">📍 ${escapeHtml(o.city || '')}${o.area ? ' — ' + escapeHtml(o.area) : ''}${o.delivery_fee != null ? ` <span class="o-fee">(رسوم التوصيل: ${Number(o.delivery_fee).toFixed(2)} EGP)</span>` : ''}</div>
         ${o.address ? `<div class="o-time">${escapeHtml(o.address)}</div>` : ''}
-        ${linesHtml}
+        ${itemsListHtml}
         ${totalsHtml}
-        ${o.notes ? `<div class="o-time" style="margin-top:4px;">${escapeHtml(o.notes)}</div>` : ''}
-        <div class="o-time" style="margin-top:4px;">${time}</div>
+        ${o.notes ? `<div class="o-notes">📝 ${escapeHtml(o.notes)}</div>` : ''}
+        <div class="o-time" style="margin-top:6px;">🕒 ${time}</div>
         <select class="status-select" data-action="statusSelect" ${(status==='delivered' || status==='cancelled') ? 'disabled title="لا يمكن تغيير حالة الطلب بعد أن أصبح نهائيًا"' : ''}>
           <option value="pending" ${status==='pending' ? 'selected' : ''}>قيد الانتظار</option>
           <option value="preparing" ${status==='preparing' ? 'selected' : ''}>قيد التجهيز</option>
@@ -1544,7 +1581,7 @@ function buildReceiptHtml(order, lines, widthMm){
 
   const addressLine = order.order_type === 'pickup'
     ? ''
-    : `<div class="receipt-row"><span class="lbl">${escapeHtml([order.city, order.area].filter(Boolean).join(' — '))}</span></div>${order.address ? `<div class="receipt-row"><span class="lbl">${escapeHtml(order.address)}</span></div>` : ''}`;
+    : `<div class="receipt-row"><span class="lbl receipt-highlight">${escapeHtml([order.city, order.area].filter(Boolean).join(' — '))}</span></div>${order.address ? `<div class="receipt-row"><span class="lbl receipt-highlight">${escapeHtml(order.address)}</span></div>` : ''}`;
 
   const notesHtml = order.notes ? `<hr>${escapeHtml(order.notes)}` : '';
 
@@ -1561,8 +1598,8 @@ function buildReceiptHtml(order, lines, widthMm){
       <div class="receipt-sub">نوع الطلب: ${typeLabel}</div>
       <div class="receipt-sub">الحالة: ${RECEIPT_STATUS_LABELS[order.status || 'pending'] || order.status}</div>
       <hr>
-      <div class="receipt-row"><span class="lbl">العميل: ${escapeHtml(order.customer_name || '')}</span></div>
-      <div class="receipt-row"><span class="lbl val" style="text-align:right; direction:ltr;">${escapeHtml(order.customer_phone || '')}</span></div>
+      <div class="receipt-row"><span class="lbl receipt-highlight">العميل: ${escapeHtml(order.customer_name || '')}</span></div>
+      <div class="receipt-row"><span class="lbl val receipt-highlight" style="text-align:right; direction:ltr;">${escapeHtml(order.customer_phone || '')}</span></div>
       ${addressLine}
       <hr>
       ${itemsHtml}
@@ -1746,8 +1783,16 @@ function openCleanupOrdersModal(){
   overlay.className = 'overlay';
   overlay.innerHTML = `
     <div class="modal">
-      <h3>حذف الطلبات القديمة</h3>
+      <h3>حذف الطلبات</h3>
       <div class="field">
+        <label>نطاق الحذف:</label>
+        <select id="cleanupScopeSelect">
+          <option value="old" selected>الطلبات الأقدم من مدة محددة</option>
+          <option value="today">كل طلبات اليوم</option>
+          <option value="single">طلب واحد برقمه</option>
+        </select>
+      </div>
+      <div class="field" id="cleanupOldWrap">
         <label>احذف الطلبات الأقدم من:</label>
         <select id="cleanupPeriodSelect">
           <option value="1">يوم واحد</option>
@@ -1761,7 +1806,11 @@ function openCleanupOrdersModal(){
         <label>عدد الأيام</label>
         <input type="number" id="cleanupCustomDays" min="1" placeholder="مثال: 45">
       </div>
-      <div class="orders-empty" style="text-align:right; padding:6px 0 0;">
+      <div class="field hidden" id="cleanupSingleWrap">
+        <label>رقم الطلب</label>
+        <input type="number" id="cleanupOrderNumber" min="1" placeholder="مثال: 128">
+      </div>
+      <div class="orders-empty" style="text-align:right; padding:6px 0 0;" id="cleanupNote">
         هيتم حذف الطلبات وتفاصيلها نهائيًا، لكن إحصائيات عدد الطلبات وقيمتها هتفضل محفوظة حتى بعد الحذف.
       </div>
       <div class="field" style="margin-top:14px;">
@@ -1783,26 +1832,57 @@ function openCleanupOrdersModal(){
   overlay.querySelector('#cleanupCancelBtn').addEventListener('click', close);
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
 
+  const scopeSelect = overlay.querySelector('#cleanupScopeSelect');
+  const oldWrap = overlay.querySelector('#cleanupOldWrap');
+  const singleWrap = overlay.querySelector('#cleanupSingleWrap');
   const periodSelect = overlay.querySelector('#cleanupPeriodSelect');
   const customWrap = overlay.querySelector('#cleanupCustomWrap');
-  periodSelect.addEventListener('change', ()=>{
-    customWrap.classList.toggle('hidden', periodSelect.value !== 'custom');
-  });
+  const noteEl = overlay.querySelector('#cleanupNote');
+
+  function syncScopeUI(){
+    const scope = scopeSelect.value;
+    oldWrap.classList.toggle('hidden', scope !== 'old');
+    customWrap.classList.toggle('hidden', !(scope === 'old' && periodSelect.value === 'custom'));
+    singleWrap.classList.toggle('hidden', scope !== 'single');
+    if(scope === 'today'){
+      noteEl.textContent = 'هيتم حذف كل طلبات النهاردة نهائيًا. هذا الإجراء لا يمكن التراجع عنه.';
+    } else if(scope === 'single'){
+      noteEl.textContent = 'هيتم حذف الطلب المحدد برقمه نهائيًا. هذا الإجراء لا يمكن التراجع عنه.';
+    } else {
+      noteEl.textContent = 'هيتم حذف الطلبات وتفاصيلها نهائيًا، لكن إحصائيات عدد الطلبات وقيمتها هتفضل محفوظة حتى بعد الحذف.';
+    }
+  }
+  scopeSelect.addEventListener('change', syncScopeUI);
+  periodSelect.addEventListener('change', syncScopeUI);
+  syncScopeUI();
 
   overlay.querySelector('#cleanupConfirmBtn').addEventListener('click', async ()=>{
     const errEl = overlay.querySelector('#cleanupErr');
     errEl.textContent = '';
-    let days = periodSelect.value === 'custom'
-      ? parseInt(overlay.querySelector('#cleanupCustomDays').value, 10)
-      : parseInt(periodSelect.value, 10);
-    if(!days || days < 1){ errEl.textContent = 'من فضلك أدخل عدد أيام صحيح'; return; }
+    const scope = scopeSelect.value;
+
+    let days = null, orderNumber = null;
+    if(scope === 'old'){
+      days = periodSelect.value === 'custom'
+        ? parseInt(overlay.querySelector('#cleanupCustomDays').value, 10)
+        : parseInt(periodSelect.value, 10);
+      if(!days || days < 1){ errEl.textContent = 'من فضلك أدخل عدد أيام صحيح'; return; }
+    } else if(scope === 'single'){
+      orderNumber = parseInt(overlay.querySelector('#cleanupOrderNumber').value, 10);
+      if(!orderNumber || orderNumber < 1){ errEl.textContent = 'من فضلك أدخل رقم طلب صحيح'; return; }
+    }
 
     const email = overlay.querySelector('#cleanupEmail').value.trim();
     const password = overlay.querySelector('#cleanupPassword').value;
     if(!email || !password){ errEl.textContent = 'من فضلك أدخل البريد الإلكتروني وكلمة المرور للتأكيد'; return; }
     if(email.toLowerCase() !== (currentUser.email || '').toLowerCase()){ errEl.textContent = 'البريد الإلكتروني لا يطابق حساب الدخول الحالي'; return; }
 
-    if(!confirm(`هل أنت متأكد من حذف كل الطلبات الأقدم من ${days} يوم؟ هذا الإجراء لا يمكن التراجع عنه.`)) return;
+    const confirmMsg = scope === 'today'
+      ? 'هل أنت متأكد من حذف كل طلبات اليوم؟ هذا الإجراء لا يمكن التراجع عنه.'
+      : scope === 'single'
+        ? `هل أنت متأكد من حذف الطلب رقم #${orderNumber}؟ هذا الإجراء لا يمكن التراجع عنه.`
+        : `هل أنت متأكد من حذف كل الطلبات الأقدم من ${days} يوم؟ هذا الإجراء لا يمكن التراجع عنه.`;
+    if(!confirm(confirmMsg)) return;
 
     const btn = overlay.querySelector('#cleanupConfirmBtn');
     btn.disabled = true;
@@ -1816,15 +1896,50 @@ function openCleanupOrdersModal(){
     }
 
     btn.textContent = 'جارِ الحذف...';
-    const { data: deletedCount, error } = await sb.rpc('delete_old_orders', { p_restaurant_id: restaurant.id, p_older_than_days: days });
+
+    if(scope === 'old'){
+      const { data: deletedCount, error } = await sb.rpc('delete_old_orders', { p_restaurant_id: restaurant.id, p_older_than_days: days });
+      btn.disabled = false;
+      btn.textContent = 'حذف الآن';
+      if(error){ errEl.textContent = 'تعذر حذف الطلبات، حاول مرة أخرى'; return; }
+      if(!deletedCount || deletedCount === 0){
+        toast('لا توجد طلبات أقدم من المدة المحددة — لم يتم حذف أي طلب');
+      } else {
+        toast(`تم حذف ${deletedCount} طلب بنجاح`);
+      }
+      close();
+      return;
+    }
+
+    if(scope === 'single'){
+      const { data: targetOrder, error: findErr } = await sb.from('orders').select('id').eq('restaurant_id', restaurant.id).eq('order_number', orderNumber).maybeSingle();
+      btn.disabled = false;
+      btn.textContent = 'حذف الآن';
+      if(findErr || !targetOrder){ errEl.textContent = 'لم يتم العثور على طلب بهذا الرقم'; return; }
+      await sb.from('order_items').delete().eq('order_id', targetOrder.id);
+      const { error: delErr } = await sb.from('orders').delete().eq('id', targetOrder.id);
+      if(delErr){ errEl.textContent = 'تعذر حذف الطلب، حاول مرة أخرى'; return; }
+      toast(`تم حذف الطلب #${orderNumber} بنجاح`);
+      close();
+      return;
+    }
+
+    // scope === 'today'
+    const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
+    const { data: todayOrders, error: findErr } = await sb.from('orders').select('id').eq('restaurant_id', restaurant.id).gte('created_at', startOfDay.toISOString());
     btn.disabled = false;
     btn.textContent = 'حذف الآن';
-    if(error){ errEl.textContent = 'تعذر حذف الطلبات، حاول مرة أخرى'; return; }
-    if(!deletedCount || deletedCount === 0){
-      toast('لا توجد طلبات أقدم من المدة المحددة — لم يتم حذف أي طلب');
-    } else {
-      toast(`تم حذف ${deletedCount} طلب بنجاح`);
+    if(findErr){ errEl.textContent = 'تعذر حذف الطلبات، حاول مرة أخرى'; return; }
+    const todayIds = (todayOrders || []).map(o=> o.id);
+    if(!todayIds.length){
+      toast('لا توجد طلبات اليوم — لم يتم حذف أي طلب');
+      close();
+      return;
     }
+    await sb.from('order_items').delete().in('order_id', todayIds);
+    const { error: delErr } = await sb.from('orders').delete().in('id', todayIds);
+    if(delErr){ errEl.textContent = 'تعذر حذف الطلبات، حاول مرة أخرى'; return; }
+    toast(`تم حذف ${todayIds.length} طلب بنجاح`);
     close();
   });
 }
@@ -2005,7 +2120,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         <label>الصيانة</label>
         <small>أدوات صيانة دورية، مش لازم تستخدمها كتير</small>
         <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-          <button type="button" class="add-btn" id="rsCleanupOrdersBtn" style="margin:0; flex:1;">حذف الطلبات القديمة</button>
+          <button type="button" class="add-btn" id="rsCleanupOrdersBtn" style="margin:0; flex:1;">حذف الطلبات</button>
           <button type="button" class="add-btn" id="rsCleanupImagesBtn" style="margin:0; flex:1;">تنظيف وتحسين الصور</button>
         </div>
       </div>
