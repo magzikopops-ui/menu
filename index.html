@@ -4143,15 +4143,20 @@ async function loadPublic(slug){
         await sb.from('order_items').insert(cartLines);
       }
 
+      // لازم نجهّز رسالة الواتساب قبل ما نفضي السلة، لأن الدالة بتقرأ الأصناف من نفس متغيّر cart
+      let waText = null;
+      if(rest.phone){
+        waText = buildWhatsAppMessage({customer_name, customer_phone, secondary_phone, orderType, city, area, address, notes, fee, total});
+      }
+
       cart = {};
       renderPublicBody();
       overlay.remove();
 
       // الطلب اتحفظ فعليًا في قاعدة البيانات وهيظهر في شاشة الطلبات — دلوقتي نبعت رسالة واتساب
-      if(rest.phone){
+      if(rest.phone && waText){
         const digits = rest.phone.replace(/[^\d]/g,'');
-        const text = buildWhatsAppMessage({customer_name, customer_phone, secondary_phone, orderType, city, area, address, notes, fee, total});
-        window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text)}`, '_blank');
+        window.open(`https://wa.me/${digits}?text=${encodeURIComponent(waText)}`, '_blank');
       }
       showOrderSuccessModal(orderRow, !!rest.phone);
     });
