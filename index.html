@@ -100,6 +100,8 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .rail{ background:#2A2825; padding:20px 16px; border-left:1px solid #3a3733; }
 .rail h2{ font-family:var(--display); color:var(--paper); font-size:20px; margin:0 0 14px; }
 .add-btn{ width:100%; background:transparent; border:1.5px dashed var(--stone); color:var(--stone-light); font-family:var(--body); font-weight:700; font-size:14px; padding:10px; border-radius:8px; cursor:pointer; margin-bottom:14px; }
+.btn-export-sm{ width:auto; flex-shrink:0; background:var(--basil); color:#fff; border:none; font-family:var(--body); font-weight:700; font-size:12.5px; padding:6px 14px; border-radius:20px; cursor:pointer; white-space:nowrap; }
+.btn-export-sm:hover{ background:var(--basil-dark); }
 .add-btn:hover{border-color:var(--ember); color:var(--paper); background:rgba(184,57,14,.08);}
 .cat-item{ display:flex; align-items:center; justify-content:space-between; padding:11px 12px; border-radius:8px; color:var(--stone-light); cursor:pointer; margin-bottom:4px; font-weight:500; border:1px solid transparent; }
 .cat-item:hover{background:#332F2A;}
@@ -366,7 +368,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .ord-type-btn{ flex:1; text-align:center; padding:10px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper-dim); color:var(--ink); font-weight:700; font-size:13px; cursor:pointer; }
 .ord-type-btn.active{background:var(--basil); border-color:var(--basil); color:#fff;}
 
-.zone-row{ display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+.zone-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
 .zone-row .zone-name{flex:1; font-weight:700; font-size:14px; color:var(--ink);}
 .zone-row .zone-fee{font-family:var(--mono); direction:ltr; color:var(--ember); font-weight:700; font-size:13px; white-space:nowrap;}
 .zone-row button{ background:none; border:1px solid var(--line); border-radius:6px; font-family:var(--body); font-size:12px; padding:5px 9px; cursor:pointer; color:var(--stone); }
@@ -1159,14 +1161,14 @@ document.getElementById('deliveryZonesBtn').addEventListener('click', async ()=>
   overlay.innerHTML = `
     <div class="modal">
       <h3>مناطق التوصيل ورسومها</h3>
-      <div id="zonesListWrap"><div class="orders-empty">جارِ التحميل...</div></div>
       <div class="zone-add-row">
         <input type="text" id="newZoneName" placeholder="اسم المنطقة (مثال: مدينة نصر)">
         <input type="number" id="newZoneFee" placeholder="الرسوم" step="0.01">
+        <button class="btn-confirm" id="zoneAddBtn" style="white-space:nowrap;">إضافة منطقة</button>
       </div>
+      <div id="zonesListWrap" style="margin-top:12px;"><div class="orders-empty">جارِ التحميل...</div></div>
       <div class="modal-actions">
         <button class="btn-cancel" id="zonesCloseBtn">إغلاق</button>
-        <button class="btn-confirm" id="zoneAddBtn">إضافة منطقة</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -1180,9 +1182,10 @@ document.getElementById('deliveryZonesBtn').addEventListener('click', async ()=>
     if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل المناطق</div>`; return; }
     if(!zones || zones.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا توجد مناطق مضافة بعد</div>`; return; }
     wrap.innerHTML = zones.map(z=>`
-      <div class="zone-row" data-id="${z.id}">
+      <div class="zone-row" data-id="${z.id}" data-name="${escapeHtml(z.area_name)}" data-fee="${Number(z.fee)}">
         <span class="zone-name">${escapeHtml(z.area_name)}</span>
         <span class="zone-fee">${Number(z.fee).toFixed(2)} EGP</span>
+        <button data-action="edit">تعديل</button>
         <button data-action="delete">حذف</button>
       </div>`).join('');
     wrap.querySelectorAll('[data-action="delete"]').forEach(btn=>{
@@ -1193,6 +1196,35 @@ document.getElementById('deliveryZonesBtn').addEventListener('click', async ()=>
         const { error: delErr } = await sb.from('delivery_zones').delete().eq('id', zoneId);
         if(delErr){ toast('تعذر الحذف'); return; }
         await renderZones();
+      });
+    });
+    wrap.querySelectorAll('[data-action="edit"]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const row = btn.closest('.zone-row');
+        const zoneId = row.dataset.id;
+        const currentName = row.dataset.name;
+        const currentFee = row.dataset.fee;
+        row.innerHTML = `
+          <input type="text" class="zone-edit-name" value="${escapeHtml(currentName)}" style="flex:1; border:1.5px solid var(--line); border-radius:8px; padding:7px 9px; font-family:var(--body); font-size:13px; background:var(--paper); color:var(--ink);">
+          <input type="number" class="zone-edit-fee" value="${currentFee}" step="0.01" style="width:100px; direction:ltr; font-family:var(--mono); border:1.5px solid var(--line); border-radius:8px; padding:7px 9px; background:var(--paper); color:var(--ink);">
+          <button data-action="saveEdit" style="border-color:var(--basil); color:var(--basil);">حفظ</button>
+          <button data-action="cancelEdit">إلغاء</button>`;
+        const nameInput = row.querySelector('.zone-edit-name');
+        const feeInput = row.querySelector('.zone-edit-fee');
+        row.querySelector('[data-action="cancelEdit"]').addEventListener('click', renderZones);
+        row.querySelector('[data-action="saveEdit"]').addEventListener('click', async ()=>{
+          const newName = nameInput.value.trim();
+          const newFee = parseFloat(feeInput.value);
+          if(!newName){ nameInput.focus(); return; }
+          if(isNaN(newFee) || newFee < 0){ feeInput.focus(); return; }
+          const saveBtn = row.querySelector('[data-action="saveEdit"]');
+          saveBtn.disabled = true;
+          const { error: updErr } = await sb.from('delivery_zones').update({ area_name: newName, fee: newFee }).eq('id', zoneId);
+          if(updErr){ toast('تعذر حفظ التعديل'); saveBtn.disabled = false; return; }
+          toast('تم تحديث المنطقة');
+          await renderZones();
+        });
+        wireEnterToConfirm(row, row.querySelector('[data-action="saveEdit"]'));
       });
     });
   }
@@ -1221,21 +1253,25 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
   overlay.className = 'overlay';
   overlay.innerHTML = `
     <div class="modal">
-      <h3>عملاء ${escapeHtml(restaurant.name)}</h3>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px;">
+        <h3 style="margin:0;">عملاء ${escapeHtml(restaurant.name)}</h3>
+        <button type="button" class="btn-export-sm" id="customersExportBtn">📥 تصدير Excel</button>
+      </div>
       <div class="orders-empty" style="text-align:right; padding:0 0 10px; font-size:12px;">
         سجّل عملاءك يدويًا أو استورد ملف إكسيل بعمودين بالترتيب: <b>Customer name</b> ثم <b>Customer phone</b>، وابعتلهم رسالة ترحيبية ورابط المنيو على واتساب بضغطة واحدة.
       </div>
-      <input type="text" id="customersSearchInput" class="orders-search-input" placeholder="بحث بالاسم أو رقم التليفون...">
-      <div id="customersListWrap"><div class="orders-empty">جارِ التحميل...</div></div>
-      <div class="zone-add-row">
-        <input type="text" id="newCustomerName" placeholder="اسم العميل">
-        <input type="text" id="newCustomerPhone" placeholder="01xxxxxxxxx">
+      <div class="zone-add-row" style="flex-wrap:wrap;">
+        <input type="text" id="newCustomerName" placeholder="اسم العميل" style="flex:1; min-width:120px;">
+        <input type="text" id="newCustomerPhone" placeholder="01xxxxxxxxx" style="width:130px;">
+        <input type="text" id="newCustomerAddress" placeholder="العنوان (اختياري)" style="flex:1; min-width:160px;">
+        <button type="button" class="btn-confirm" id="customerAddBtn" style="white-space:nowrap;">إضافة عميل</button>
       </div>
+      <input type="text" id="customersSearchInput" class="orders-search-input" style="margin-top:14px;" placeholder="بحث بالاسم أو رقم التليفون...">
+      <div id="customersListWrap"><div class="orders-empty">جارِ التحميل...</div></div>
       <input type="file" id="customersExcelInput" accept=".xlsx,.xls" style="display:none;">
       <div class="modal-actions">
         <button class="btn-cancel" id="customersCloseBtn">إغلاق</button>
         <button class="link-btn" id="customersImportBtn" type="button">استيراد من إكسيل</button>
-        <button class="btn-confirm" id="customerAddBtn">إضافة عميل</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -1261,10 +1297,14 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
       return;
     }
     wrap.innerHTML = list.map(c=>`
-      <div class="zone-row" data-id="${c.id}">
-        <span class="zone-name">${escapeHtml(c.name)}</span>
+      <div class="zone-row" data-id="${c.id}" data-name="${escapeHtml(c.name||'')}" data-phone="${escapeHtml(c.phone||'')}" data-address="${escapeHtml(c.address||'')}">
+        <div style="flex:1; min-width:120px;">
+          <span class="zone-name" style="display:block;">${escapeHtml(c.name)}</span>
+          ${c.address ? `<span style="display:block; font-size:11.5px; color:var(--stone); margin-top:2px;">📍 ${escapeHtml(c.address)}</span>` : ''}
+        </div>
         <span class="zone-fee" style="direction:ltr;">${escapeHtml(c.phone)}</span>
         <button type="button" class="o-wa-btn" data-action="send" data-phone="${escapeHtml(c.phone)}" data-name="${escapeHtml(c.name)}">📲 واتساب</button>
+        <button type="button" data-action="edit">تعديل</button>
         <button type="button" data-action="delete">حذف</button>
       </div>`).join('');
     wrap.querySelectorAll('[data-action="send"]').forEach(btn=>{
@@ -1281,6 +1321,40 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
         renderCustomers();
       });
     });
+    wrap.querySelectorAll('[data-action="edit"]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const row = btn.closest('.zone-row');
+        const id = row.dataset.id;
+        const curName = row.dataset.name;
+        const curPhone = row.dataset.phone;
+        const curAddress = row.dataset.address;
+        row.innerHTML = `
+          <input type="text" class="cust-edit-name" value="${escapeHtml(curName)}" placeholder="اسم العميل" style="flex:1; min-width:110px; border:1.5px solid var(--line); border-radius:8px; padding:7px 9px; font-family:var(--body); font-size:13px; background:var(--paper); color:var(--ink);">
+          <input type="text" class="cust-edit-phone" value="${escapeHtml(curPhone)}" placeholder="التليفون" style="width:120px; direction:ltr; border:1.5px solid var(--line); border-radius:8px; padding:7px 9px; font-family:var(--mono); background:var(--paper); color:var(--ink);">
+          <input type="text" class="cust-edit-address" value="${escapeHtml(curAddress)}" placeholder="العنوان (اختياري)" style="flex:1; min-width:140px; border:1.5px solid var(--line); border-radius:8px; padding:7px 9px; font-family:var(--body); font-size:13px; background:var(--paper); color:var(--ink);">
+          <button type="button" data-action="saveEdit" style="border-color:var(--basil); color:var(--basil);">حفظ</button>
+          <button type="button" data-action="cancelEdit">إلغاء</button>`;
+        row.querySelector('[data-action="cancelEdit"]').addEventListener('click', renderCustomers);
+        const saveBtn = row.querySelector('[data-action="saveEdit"]');
+        saveBtn.addEventListener('click', async ()=>{
+          const nameInput = row.querySelector('.cust-edit-name');
+          const phoneInput = row.querySelector('.cust-edit-phone');
+          const addressInput = row.querySelector('.cust-edit-address');
+          const newName = nameInput.value.trim();
+          const newPhone = phoneInput.value.replace(/[^\d]/g,'');
+          const newAddress = addressInput.value.trim();
+          if(!newName){ nameInput.focus(); return; }
+          if(newPhone.length < 8){ phoneInput.focus(); return; }
+          saveBtn.disabled = true;
+          const { error: updErr } = await sb.from('customers').update({ name: newName, phone: newPhone, address: newAddress || null }).eq('id', id);
+          if(updErr){ toast('تعذر حفظ التعديل — تأكد أن رقم التليفون غير مستخدم لعميل آخر'); saveBtn.disabled = false; return; }
+          toast('تم تحديث بيانات العميل');
+          await loadCustomers();
+          renderCustomers();
+        });
+        wireEnterToConfirm(row, saveBtn);
+      });
+    });
   }
 
   const ok = await loadCustomers();
@@ -1289,20 +1363,42 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
 
   overlay.querySelector('#customersSearchInput').addEventListener('input', renderCustomers);
 
+  overlay.querySelector('#customersExportBtn').addEventListener('click', ()=>{
+    const q = overlay.querySelector('#customersSearchInput').value.trim().toLowerCase();
+    const list = q ? allCustomers.filter(c=> (c.name||'').toLowerCase().includes(q) || (c.phone||'').includes(q)) : allCustomers;
+    if(!list.length){ toast('لا يوجد عملاء لتصديرهم'); return; }
+    const header = ['اسم العميل','رقم التليفون','العنوان','تاريخ التسجيل'];
+    const rows = [header];
+    list.forEach(c=>{
+      const d = c.created_at ? new Date(c.created_at).toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' }) : '';
+      rows.push([c.name || '', c.phone || '', c.address || '', d]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch:22 },{ wch:16 },{ wch:30 },{ wch:20 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'العملاء');
+    const dateTag = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, `${restaurant.slug || 'customers'}-عملاء-${dateTag}.xlsx`);
+    toast(`تم تصدير ${list.length} عميل بنجاح`);
+  });
+
   overlay.querySelector('#customerAddBtn').addEventListener('click', async ()=>{
     const nameInput = overlay.querySelector('#newCustomerName');
     const phoneInput = overlay.querySelector('#newCustomerPhone');
+    const addressInput = overlay.querySelector('#newCustomerAddress');
     const name = nameInput.value.trim();
     const phone = phoneInput.value.replace(/[^\d]/g,'');
+    const address = addressInput.value.trim();
     if(!name){ nameInput.focus(); return; }
     if(phone.length < 8){ phoneInput.focus(); return; }
     const btn = overlay.querySelector('#customerAddBtn');
     btn.disabled = true;
-    const { error } = await sb.from('customers').upsert({ restaurant_id: restaurant.id, name, phone }, { onConflict: 'restaurant_id,phone' });
+    const { error } = await sb.from('customers').upsert({ restaurant_id: restaurant.id, name, phone, address: address || null }, { onConflict: 'restaurant_id,phone' });
     btn.disabled = false;
     if(error){ toast('تعذر إضافة العميل'); return; }
     nameInput.value = '';
     phoneInput.value = '';
+    addressInput.value = '';
     await loadCustomers();
     renderCustomers();
   });
@@ -1364,11 +1460,16 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
   overlay.className = 'overlay';
   overlay.innerHTML = `
     <div class="modal">
-      <h3>الطلبات الواردة</h3>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px;">
+        <h3 style="margin:0;">الطلبات الواردة</h3>
+        <button type="button" class="btn-export-sm" id="ordersExportBtn">📥 تصدير Excel</button>
+      </div>
       <div class="order-filters" id="ordersFilters">
         <button type="button" class="order-filter-btn active" data-filter="all">الكل</button>
         <button type="button" class="order-filter-btn" data-filter="new">جديدة</button>
         <button type="button" class="order-filter-btn" data-filter="today">طلبات اليوم</button>
+        <button type="button" class="order-filter-btn" data-filter="yesterday">أمس</button>
+        <button type="button" class="order-filter-btn" data-filter="week">آخر 7 أيام</button>
         <button type="button" class="order-filter-btn" data-filter="previous">أيام سابقة</button>
       </div>
       <input type="text" id="ordersSearchInput" class="orders-search-input" placeholder="بحث برقم الطلب، اسم العميل، أو رقم الهاتف...">
@@ -1401,6 +1502,12 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
   const todayStr = new Date().toDateString();
   const isToday = (o)=> new Date(o.created_at).toDateString() === todayStr;
   const isNewOrder = (o)=> (o.status || 'pending') === 'pending';
+
+  const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
+  const startOfYesterday = new Date(startOfToday); startOfYesterday.setDate(startOfYesterday.getDate()-1);
+  const startOf7DaysAgo = new Date(startOfToday); startOf7DaysAgo.setDate(startOf7DaysAgo.getDate()-6);
+  const isYesterday = (o)=>{ const t = new Date(o.created_at); return t >= startOfYesterday && t < startOfToday; };
+  const isLast7Days = (o)=> new Date(o.created_at) >= startOf7DaysAgo;
 
   let currentFilter = 'all';
   let searchQuery = '';
@@ -1518,6 +1625,8 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
       if(!matchesSearch(o)) return false;
       if(currentFilter === 'new') return isNewOrder(o);
       if(currentFilter === 'today') return isToday(o);
+      if(currentFilter === 'yesterday') return isYesterday(o);
+      if(currentFilter === 'week') return isLast7Days(o);
       if(currentFilter === 'previous') return !isToday(o);
       return true;
     });
@@ -1532,6 +1641,19 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
   overlay.querySelector('#ordersSearchInput').addEventListener('input', (e)=>{
     searchQuery = e.target.value;
     renderList();
+  });
+
+  overlay.querySelector('#ordersExportBtn').addEventListener('click', ()=>{
+    const filtered = orders.filter(o=>{
+      if(!matchesSearch(o)) return false;
+      if(currentFilter === 'new') return isNewOrder(o);
+      if(currentFilter === 'today') return isToday(o);
+      if(currentFilter === 'yesterday') return isYesterday(o);
+      if(currentFilter === 'week') return isLast7Days(o);
+      if(currentFilter === 'previous') return !isToday(o);
+      return true;
+    });
+    exportOrdersToExcel(filtered, itemsByOrder, 'تصدير');
   });
 
   overlay.querySelectorAll('.order-filter-btn').forEach(btn=>{
@@ -1778,6 +1900,50 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
   }
 });
 
+const ORDER_STATUS_LABELS_EXPORT = { pending:'قيد الانتظار', preparing:'قيد التجهيز', delivered:'تم التسليم', cancelled:'ملغي' };
+function exportOrdersToExcel(orderList, itemsByOrderMap, filenameLabel){
+  if(!orderList || orderList.length === 0){ toast('لا توجد طلبات لتصديرها'); return; }
+  const header = ['رقم الطلب','التاريخ والوقت','اسم العميل','رقم الهاتف','رقم هاتف إضافي','نوع الطلب','الحالة','المدينة','المنطقة','العنوان','الأصناف','عدد القطع','الإجمالي الفرعي','رسوم التوصيل','الإجمالي','ملاحظات'];
+  const rows = [header];
+  orderList.forEach(o=>{
+    const lines = (itemsByOrderMap && itemsByOrderMap[o.id]) || [];
+    const itemsText = lines.map(l=> `${l.item_name} ×${l.quantity}${l.item_note ? ` (${l.item_note})` : ''}`).join('، ');
+    const itemsCount = lines.reduce((sum,l)=> sum + (Number(l.quantity)||0), 0);
+    const d = new Date(o.created_at);
+    const dateStr = d.toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' });
+    const typeLabel = o.order_type === 'pickup' ? 'استلام' : 'توصيل';
+    rows.push([
+      o.order_number != null ? o.order_number : '',
+      dateStr,
+      o.customer_name || '',
+      o.customer_phone || '',
+      o.secondary_phone || '',
+      typeLabel,
+      ORDER_STATUS_LABELS_EXPORT[o.status || 'pending'] || o.status || '',
+      o.city || '',
+      o.area || '',
+      o.address || '',
+      itemsText,
+      itemsCount,
+      o.subtotal != null ? Number(o.subtotal) : '',
+      o.delivery_fee != null ? Number(o.delivery_fee) : '',
+      o.total != null ? Number(o.total) : '',
+      o.notes || ''
+    ]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [
+    { wch:10 },{ wch:20 },{ wch:22 },{ wch:15 },{ wch:15 },{ wch:10 },{ wch:12 },
+    { wch:14 },{ wch:16 },{ wch:26 },{ wch:40 },{ wch:10 },{ wch:14 },{ wch:14 },{ wch:14 },{ wch:24 }
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'الطلبات');
+  const dateTag = new Date().toISOString().slice(0,10);
+  const filename = `${restaurant.slug || 'orders'}-${filenameLabel || 'طلبات'}-${dateTag}.xlsx`;
+  XLSX.writeFile(wb, filename);
+  toast(`تم تصدير ${orderList.length} طلب بنجاح`);
+}
+
 function openCleanupOrdersModal(){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
@@ -1812,6 +1978,10 @@ function openCleanupOrdersModal(){
       </div>
       <div class="orders-empty" style="text-align:right; padding:6px 0 0;" id="cleanupNote">
         هيتم حذف الطلبات وتفاصيلها نهائيًا، لكن إحصائيات عدد الطلبات وقيمتها هتفضل محفوظة حتى بعد الحذف.
+      </div>
+      <div class="field" style="margin-top:10px; display:flex; flex-direction:row; align-items:center; gap:8px;">
+        <input type="checkbox" id="cleanupExportFirst" checked style="width:auto; margin:0;">
+        <label style="margin:0;" for="cleanupExportFirst">📥 تصدير الطلبات إلى Excel قبل الحذف</label>
       </div>
       <div class="field" style="margin-top:14px;">
         <label>البريد الإلكتروني</label>
@@ -1856,10 +2026,23 @@ function openCleanupOrdersModal(){
   periodSelect.addEventListener('change', syncScopeUI);
   syncScopeUI();
 
+  async function exportOrdersByIds(orderIds, label){
+    if(!orderIds.length) return;
+    const { data: fullOrders } = await sb.from('orders').select('*').in('id', orderIds);
+    const { data: allItems } = await sb.from('order_items').select('*').in('order_id', orderIds);
+    const itemsMap = {};
+    (allItems || []).forEach(oi=>{
+      if(!itemsMap[oi.order_id]) itemsMap[oi.order_id] = [];
+      itemsMap[oi.order_id].push(oi);
+    });
+    exportOrdersToExcel(fullOrders || [], itemsMap, label);
+  }
+
   overlay.querySelector('#cleanupConfirmBtn').addEventListener('click', async ()=>{
     const errEl = overlay.querySelector('#cleanupErr');
     errEl.textContent = '';
     const scope = scopeSelect.value;
+    const exportFirst = overlay.querySelector('#cleanupExportFirst').checked;
 
     let days = null, orderNumber = null;
     if(scope === 'old'){
@@ -1895,9 +2078,20 @@ function openCleanupOrdersModal(){
       return;
     }
 
-    btn.textContent = 'جارِ الحذف...';
-
     if(scope === 'old'){
+      if(exportFirst){
+        btn.textContent = 'جارِ التصدير...';
+        const cutoff = new Date(Date.now() - days*24*60*60*1000);
+        const { data: exportOrders } = await sb.from('orders').select('*').eq('restaurant_id', restaurant.id).lt('created_at', cutoff.toISOString());
+        if(exportOrders && exportOrders.length){
+          const ids = exportOrders.map(o=>o.id);
+          const { data: allItems } = await sb.from('order_items').select('*').in('order_id', ids);
+          const itemsMap = {};
+          (allItems || []).forEach(oi=>{ if(!itemsMap[oi.order_id]) itemsMap[oi.order_id]=[]; itemsMap[oi.order_id].push(oi); });
+          exportOrdersToExcel(exportOrders, itemsMap, 'قديمة');
+        }
+      }
+      btn.textContent = 'جارِ الحذف...';
       const { data: deletedCount, error } = await sb.rpc('delete_old_orders', { p_restaurant_id: restaurant.id, p_older_than_days: days });
       btn.disabled = false;
       btn.textContent = 'حذف الآن';
@@ -1912,12 +2106,20 @@ function openCleanupOrdersModal(){
     }
 
     if(scope === 'single'){
-      const { data: targetOrder, error: findErr } = await sb.from('orders').select('id').eq('restaurant_id', restaurant.id).eq('order_number', orderNumber).maybeSingle();
-      btn.disabled = false;
-      btn.textContent = 'حذف الآن';
-      if(findErr || !targetOrder){ errEl.textContent = 'لم يتم العثور على طلب بهذا الرقم'; return; }
+      const { data: targetOrder, error: findErr } = await sb.from('orders').select('*').eq('restaurant_id', restaurant.id).eq('order_number', orderNumber).maybeSingle();
+      if(findErr || !targetOrder){
+        btn.disabled = false; btn.textContent = 'حذف الآن';
+        errEl.textContent = 'لم يتم العثور على طلب بهذا الرقم'; return;
+      }
+      if(exportFirst){
+        btn.textContent = 'جارِ التصدير...';
+        await exportOrdersByIds([targetOrder.id], `طلب-${orderNumber}`);
+      }
+      btn.textContent = 'جارِ الحذف...';
       await sb.from('order_items').delete().eq('order_id', targetOrder.id);
       const { error: delErr } = await sb.from('orders').delete().eq('id', targetOrder.id);
+      btn.disabled = false;
+      btn.textContent = 'حذف الآن';
       if(delErr){ errEl.textContent = 'تعذر حذف الطلب، حاول مرة أخرى'; return; }
       toast(`تم حذف الطلب #${orderNumber} بنجاح`);
       close();
@@ -1927,17 +2129,26 @@ function openCleanupOrdersModal(){
     // scope === 'today'
     const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
     const { data: todayOrders, error: findErr } = await sb.from('orders').select('id').eq('restaurant_id', restaurant.id).gte('created_at', startOfDay.toISOString());
-    btn.disabled = false;
-    btn.textContent = 'حذف الآن';
-    if(findErr){ errEl.textContent = 'تعذر حذف الطلبات، حاول مرة أخرى'; return; }
+    if(findErr){
+      btn.disabled = false; btn.textContent = 'حذف الآن';
+      errEl.textContent = 'تعذر حذف الطلبات، حاول مرة أخرى'; return;
+    }
     const todayIds = (todayOrders || []).map(o=> o.id);
     if(!todayIds.length){
+      btn.disabled = false; btn.textContent = 'حذف الآن';
       toast('لا توجد طلبات اليوم — لم يتم حذف أي طلب');
       close();
       return;
     }
+    if(exportFirst){
+      btn.textContent = 'جارِ التصدير...';
+      await exportOrdersByIds(todayIds, 'اليوم');
+    }
+    btn.textContent = 'جارِ الحذف...';
     await sb.from('order_items').delete().in('order_id', todayIds);
     const { error: delErr } = await sb.from('orders').delete().in('id', todayIds);
+    btn.disabled = false;
+    btn.textContent = 'حذف الآن';
     if(delErr){ errEl.textContent = 'تعذر حذف الطلبات، حاول مرة أخرى'; return; }
     toast(`تم حذف ${todayIds.length} طلب بنجاح`);
     close();
@@ -2571,36 +2782,79 @@ async function runImport(parsed, uniqueCats){
 }
 
 /* ================= Excel Export ================= */
+function pricingTypeLabelAr(type){
+  if(type === 'weight') return 'بالوزن';
+  if(type === 'sizes') return 'أحجام متعددة';
+  return 'بالعدد';
+}
+function weightSaleModeLabelAr(mode){
+  if(mode === 'weight_only') return 'بالوزن فقط';
+  if(mode === 'price_only') return 'بالمبلغ فقط';
+  return 'بالوزن أو بالمبلغ';
+}
 document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   if(categories.length === 0){
     toast(`لا توجد فئات أو ${biz(restaurant.business_type,'itemsIndef')} لتصديرها`);
     return;
   }
-  const rows = [['الفئة', biz(restaurant.business_type,'itemDef'), 'السعر']];
+  const header = [
+    'الفئة',
+    'الاسم (عربي)',
+    'الاسم (إنجليزي)',
+    'طريقة التسعير',
+    'السعر',
+    'السعر قبل الخصم',
+    'طريقة الطلب بالوزن',
+    'أقل وزن مسموح (جرام)',
+    'الأحجام والأسعار',
+    'الوصف',
+    'الحالة',
+    'رابط الصورة'
+  ];
+  const rows = [header];
+  let totalItems = 0;
   categories.forEach(cat=>{
     const catItems = items.filter(i=>i.category_id === cat.id);
     catItems.forEach(item=>{
-      if(item.pricing_type === 'sizes'){
-        const sizes = itemSizes[item.id] || [];
-        if(sizes.length === 0){
-          rows.push([cat.name, item.name, '']);
-        } else {
-          sizes.forEach(s=>{
-            rows.push([cat.name, `${item.name} - ${s.size_name}`, s.price]);
-          });
-        }
-      } else {
-        rows.push([cat.name, item.name, item.price]);
-      }
+      totalItems++;
+      const isSizesType = item.pricing_type === 'sizes';
+      const sizes = isSizesType ? (itemSizes[item.id] || []) : [];
+      const sizesText = sizes.length
+        ? sizes.map(s=> `${s.size_name}: ${s.price}`).join(' | ')
+        : '';
+      const isWeightType = item.pricing_type === 'weight';
+      rows.push([
+        cat.name,
+        item.name || '',
+        item.name_en || '',
+        pricingTypeLabelAr(item.pricing_type || 'unit'),
+        isSizesType ? '' : (item.price != null ? item.price : ''),
+        (!isSizesType && item.old_price != null) ? item.old_price : '',
+        isWeightType ? weightSaleModeLabelAr(item.weight_sale_mode) : '',
+        isWeightType && item.min_weight_grams != null ? item.min_weight_grams : '',
+        sizesText,
+        item.description || '',
+        (item.is_available !== false) ? 'متاح' : 'غير متاح',
+        item.image_url || ''
+      ]);
     });
   });
+  if(totalItems === 0){
+    toast(`لا توجد ${biz(restaurant.business_type,'itemsIndef')} لتصديرها`);
+    return;
+  }
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{ wch: 22 }, { wch: 30 }, { wch: 12 }];
+  ws['!cols'] = [
+    { wch: 18 }, { wch: 26 }, { wch: 22 }, { wch: 14 },
+    { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 16 },
+    { wch: 30 }, { wch: 34 }, { wch: 10 }, { wch: 40 }
+  ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'المنيو');
-  const filename = `${restaurant.slug || 'menu'}-اصناف.xlsx`;
+  const dateTag = new Date().toISOString().slice(0,10);
+  const filename = `${restaurant.slug || 'menu'}-اصناف-${dateTag}.xlsx`;
   XLSX.writeFile(wb, filename);
-  toast('تم تصدير الملف');
+  toast(`تم تصدير ${totalItems} ${biz(restaurant.business_type, totalItems===1?'itemIndef':'itemsIndef')} بنجاح`);
 });
 
 function renderDashboard(){
