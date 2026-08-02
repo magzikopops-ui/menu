@@ -1816,11 +1816,15 @@ function openCleanupOrdersModal(){
     }
 
     btn.textContent = 'جارِ الحذف...';
-    const { error } = await sb.rpc('delete_old_orders', { p_restaurant_id: restaurant.id, p_older_than_days: days });
+    const { data: deletedCount, error } = await sb.rpc('delete_old_orders', { p_restaurant_id: restaurant.id, p_older_than_days: days });
     btn.disabled = false;
     btn.textContent = 'حذف الآن';
     if(error){ errEl.textContent = 'تعذر حذف الطلبات، حاول مرة أخرى'; return; }
-    toast('تم حذف الطلبات القديمة بنجاح');
+    if(!deletedCount || deletedCount === 0){
+      toast('لا توجد طلبات أقدم من المدة المحددة — لم يتم حذف أي طلب');
+    } else {
+      toast(`تم حذف ${deletedCount} طلب بنجاح`);
+    }
     close();
   });
 }
