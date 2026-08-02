@@ -517,6 +517,9 @@ body.pub-large-font .order-step-label{ font-size:12px; }
   <div class="main">
     <h2 id="mainTitle">—</h2>
     <div class="sub" id="mainSub"></div>
+    <div class="field" style="margin-bottom:14px;">
+      <input type="text" id="itemSearchInput" class="orders-search-input" style="margin-bottom:0;" placeholder="🔍 ابحث عن صنف بالاسم أو الوصف (في كل الفئات)...">
+    </div>
     <button class="item-add-btn" id="addItemBtn">+ إضافة صنف جديد</button>
     <div id="itemList"></div>
   </div>
@@ -3060,48 +3063,93 @@ function formatItemPriceLabel(item){
   return `${oldPriceHtml(item)}${Number(item.price).toFixed(2)} EGP`;
 }
 
+let itemSearchQuery = '';
 function renderItems(){
   const cat = categories.find(c=>c.id===selectedCategoryId);
+  const searchInput = document.getElementById('itemSearchInput');
+  if(searchInput) searchInput.style.display = categories.length ? '' : 'none';
+
+  const wrap = document.getElementById('itemList');
+  wrap.innerHTML = '';
+
+  if(itemSearchQuery.trim()){
+    const q = itemSearchQuery.trim().toLowerCase();
+    const matches = items.filter(i=>
+      (i.name && i.name.toLowerCase().includes(q)) ||
+      (i.name_en && i.name_en.toLowerCase().includes(q)) ||
+      (i.description && i.description.toLowerCase().includes(q))
+    );
+    document.getElementById('mainTitle').textContent = `نتائج البحث عن "${itemSearchQuery.trim()}"`;
+    document.getElementById('mainSub').textContent = `${matches.length} نتيجة في كل الفئات`;
+    document.getElementById('addItemBtn').style.display = 'none';
+    if(matches.length === 0){
+      wrap.innerHTML = `<div class="empty"><span class="big">لا توجد نتائج</span>جرّب كلمة بحث مختلفة</div>`;
+      return;
+    }
+    matches.forEach(item=>{
+      const itemCat = categories.find(c=>c.id===item.category_id);
+      const div = buildItemCard(item, itemCat);
+      const catBadge = document.createElement('span');
+      catBadge.textContent = itemCat ? itemCat.name : '';
+      catBadge.title = 'اضغط للانتقال إلى هذه الفئة';
+      catBadge.style.cssText = 'display:inline-block; background:var(--paper-dim); color:var(--stone); font-size:11px; padding:2px 8px; border-radius:10px; margin-inline-start:8px; cursor:pointer; vertical-align:middle;';
+      catBadge.addEventListener('click', ()=>{
+        selectedCategoryId = item.category_id;
+        itemSearchQuery = '';
+        if(searchInput) searchInput.value = '';
+        renderDashboard();
+      });
+      div.querySelector('.item-name').appendChild(catBadge);
+      wrap.appendChild(div);
+    });
+    return;
+  }
+
   document.getElementById('mainTitle').textContent = cat ? cat.name : 'يرجى إضافة فئة أولاً';
   const catItems = cat ? items.filter(i=>i.category_id===cat.id) : [];
   document.getElementById('mainSub').textContent = cat ? `${catItems.length} ${biz(restaurant.business_type,'itemIndef')} في هذه الفئة` : 'ابدأ بإضافة فئة من القائمة على اليمين';
   document.getElementById('addItemBtn').style.display = cat ? 'block' : 'none';
-
-  const wrap = document.getElementById('itemList');
-  wrap.innerHTML = '';
   if(!cat) return;
   if(catItems.length === 0){
     wrap.innerHTML = `<div class="empty"><span class="big">لا توجد ${biz(restaurant.business_type,'itemsIndef')} بعد</span>يرجى إضافة أول ${biz(restaurant.business_type,'itemIndef')} في "${escapeHtml(cat.name)}"</div>`;
     return;
   }
   catItems.forEach(item=>{
-    const div = document.createElement('div');
-    div.className = 'item-card';
-    div.dataset.id = item.id;
-    const isAvailable = item.is_available !== false;
-    if(!isAvailable) div.style.opacity = '0.55';
-    div.innerHTML = `
-      <span class="drag-handle" title="اسحب لإعادة الترتيب">⋮⋮</span>
-      ${item.image_url ? `<img src="${item.image_url}">` : `<div class="no-img">${biz(restaurant.business_type,'placeholderIcon')}</div>`}
-      <div class="item-body">
-        <div class="item-top">
-          <span class="item-name">${escapeHtml(item.name)}${!isAvailable ? ' <span style="color:var(--danger); font-size:12px; font-weight:700;">(غير متوفر)</span>' : ''}</span>
-          <span class="item-price">${formatItemPriceLabel(item)}</span>
-        </div>
-        ${item.description ? `<div class="item-desc">${escapeHtml(item.description)}</div>` : ''}
-        <div class="item-tools">
-          <button data-action="edit">تعديل</button>
-          <button data-action="toggleAvailability">${isAvailable ? 'إخفاء مؤقتًا (نفذت الكمية)' : 'إظهار مرة أخرى'}</button>
-          <button data-action="delete" class="danger">حذف</button>
-        </div>
-      </div>`;
-    div.querySelector('[data-action="edit"]').addEventListener('click', ()=> openItemModal(item));
-    div.querySelector('[data-action="delete"]').addEventListener('click', ()=> deleteItem(item.id));
-    div.querySelector('[data-action="toggleAvailability"]').addEventListener('click', ()=> toggleItemAvailability(item, !isAvailable));
-    wrap.appendChild(div);
+    wrap.appendChild(buildItemCard(item));
   });
   initItemSortable();
 }
+
+function buildItemCard(item){
+  const div = document.createElement('div');
+  div.className = 'item-card';
+  div.dataset.id = item.id;
+  const isAvailable = item.is_available !== false;
+  if(!isAvailable) div.style.opacity = '0.55';
+  div.innerHTML = `
+    <span class="drag-handle" title="اسحب لإعادة الترتيب">⋮⋮</span>
+    ${item.image_url ? `<img src="${item.image_url}">` : `<div class="no-img">${biz(restaurant.business_type,'placeholderIcon')}</div>`}
+    <div class="item-body">
+      <div class="item-top">
+        <span class="item-name">${escapeHtml(item.name)}${!isAvailable ? ' <span style="color:var(--danger); font-size:12px; font-weight:700;">(غير متوفر)</span>' : ''}</span>
+        <span class="item-price">${formatItemPriceLabel(item)}</span>
+      </div>
+      ${item.description ? `<div class="item-desc">${escapeHtml(item.description)}</div>` : ''}
+      <div class="item-tools">
+        <button data-action="edit">تعديل</button>
+        <button data-action="toggleAvailability">${isAvailable ? 'إخفاء مؤقتًا (نفذت الكمية)' : 'إظهار مرة أخرى'}</button>
+        <button data-action="delete" class="danger">حذف</button>
+      </div>
+    </div>`;
+  div.querySelector('[data-action="edit"]').addEventListener('click', ()=> openItemModal(item));
+  div.querySelector('[data-action="delete"]').addEventListener('click', ()=> deleteItem(item.id));
+  div.querySelector('[data-action="toggleAvailability"]').addEventListener('click', ()=> toggleItemAvailability(item, !isAvailable));
+  return div;
+}
+document.getElementById('itemSearchInput').addEventListener('input', (e)=>{
+  itemSearchQuery = e.target.value;
+  renderItems();
+});
 
 async function toggleItemAvailability(item, makeAvailable){
   const { error } = await sb.from('items').update({ is_available: makeAvailable }).eq('id', item.id);
