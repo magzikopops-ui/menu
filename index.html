@@ -2755,7 +2755,7 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
         sizes,
         description: String(r[colIdx['الوصف']] ?? '').trim(),
         is_available: isAvailableValueFromLabel(r[colIdx['الحالة']]),
-        image_url: String(r[colIdx['رابط الصورة']] ?? '').trim() || null
+        image_url: (()=>{ const raw = String(r[colIdx['رابط الصورة']] ?? '').trim(); return /^https?:\/\//i.test(raw) ? raw : null; })()
       });
     });
   } else {
@@ -2907,6 +2907,17 @@ function weightSaleModeLabelAr(mode){
   if(mode === 'price_only') return 'بالمبلغ فقط';
   return 'بالوزن أو بالمبلغ';
 }
+// Excel/xlsx.js بيرفض أي خلية نصها أطول من 32767 حرف (بيحصل مع صور base64 لسه محفوظة محليًا ولم تُرفع للتخزين بعد)
+const EXCEL_CELL_MAX = 32000;
+function safeExcelText(v){
+  const s = String(v ?? '');
+  return s.length > EXCEL_CELL_MAX ? (s.slice(0, EXCEL_CELL_MAX) + '…') : s;
+}
+function exportableImageUrl(url){
+  if(!url) return '';
+  if(url.startsWith('data:')) return '(صورة محفوظة محليًا - لم تُرفع للتخزين بعد)';
+  return safeExcelText(url);
+}
 document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   if(categories.length === 0){
     toast(`لا توجد فئات أو ${biz(restaurant.business_type,'itemsIndef')} لتصديرها`);
@@ -2939,18 +2950,18 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
         : '';
       const isWeightType = item.pricing_type === 'weight';
       rows.push([
-        cat.name,
-        item.name || '',
-        item.name_en || '',
+        safeExcelText(cat.name),
+        safeExcelText(item.name || ''),
+        safeExcelText(item.name_en || ''),
         pricingTypeLabelAr(item.pricing_type || 'unit'),
         isSizesType ? '' : (item.price != null ? item.price : ''),
         (!isSizesType && item.old_price != null) ? item.old_price : '',
         isWeightType ? weightSaleModeLabelAr(item.weight_sale_mode) : '',
         isWeightType && item.min_weight_grams != null ? item.min_weight_grams : '',
-        sizesText,
-        item.description || '',
+        safeExcelText(sizesText),
+        safeExcelText(item.description || ''),
         (item.is_available !== false) ? 'متاح' : 'غير متاح',
-        item.image_url || ''
+        exportableImageUrl(item.image_url)
       ]);
     });
   });
