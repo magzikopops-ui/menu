@@ -433,6 +433,7 @@ body.pub-design-grid .pub-item .desc-expand{ display:none !important; }
 body.pub-design-grid .pub-item .name-primary{ font-size:14.5px; }
 body.pub-design-grid .pub-item .price{ font-size:14.5px; }
 @media (max-width:420px){ body.pub-design-grid .pub-body{ grid-template-columns:repeat(2,1fr); gap:9px; } body.pub-design-grid .pub-item img, body.pub-design-grid .pub-item .no-img{ height:88px; } }
+@media (max-width:340px){ body.pub-design-grid .pub-body{ grid-template-columns:1fr; } body.pub-design-grid .pub-item{ flex-direction:row; text-align:start; } body.pub-design-grid .pub-item img, body.pub-design-grid .pub-item .no-img{ width:64px; height:64px; } body.pub-design-grid .pub-item .info{ padding:8px 10px; } body.pub-design-grid .pub-item .item-control{ padding:0 10px 10px; } }
 
 body.pub-design-dark{ --paper:#1C1A17; --paper-dim:#241F1A; --ink:#F1EADC; --line:#3A352D; --stone:#9C9587; --stone-light:#4A453B; --ember:#D9A441; --ember-dark:#B8872F; }
 body.pub-design-dark .pub-item, body.pub-design-dark .modal, body.pub-design-dark .pub-lang-btn, body.pub-design-dark .pub-icon-btn, body.pub-design-dark .pub-tab, body.pub-design-dark .pub-search input, body.pub-design-dark .qty-btn, body.pub-design-dark .design-card, body.pub-design-dark .variant-select, body.pub-design-dark select, body.pub-design-dark input, body.pub-design-dark textarea{ background:#2A2825; border-color:#3A352D; color:#F1EADC; }
@@ -449,6 +450,18 @@ body.pub-design-luxury .pub-item .price{ font-size:16.5px; }
 body.pub-design-luxury .pub-cat-heading{ font-size:22px; border-bottom-width:3px; }
 body.pub-design-luxury .pub-tab.active{ background:linear-gradient(135deg, var(--ember), var(--ember-dark)); }
 body.pub-design-luxury .add-to-cart-btn{ border-radius:24px; }
+@media (max-width:560px){ body.pub-design-luxury .pub-item{ padding:12px; border-radius:12px; } body.pub-design-luxury .pub-item .name-primary{ font-size:16.5px; } }
+
+body.pub-design-minimal{ --ember:#127475; --ember-dark:#0B5457; }
+body.pub-design-minimal .pub-body{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:6px 14px; }
+body.pub-design-minimal .pub-item{ border:none; border-bottom:1px solid var(--line); border-radius:0; box-shadow:none; background:transparent; padding:14px 2px; margin-bottom:0; }
+body.pub-design-minimal .pub-body > .pub-item:last-child, body.pub-design-minimal .pub-body > div:last-child .pub-item{ border-bottom:none; }
+body.pub-design-minimal .pub-item img, body.pub-design-minimal .pub-item .no-img{ width:52px; height:52px; border-radius:8px; }
+body.pub-design-minimal .pub-cat-heading{ border-bottom:none; font-size:17px; margin:20px 4px 8px; }
+body.pub-design-minimal .pub-tab{ box-shadow:none; }
+body.pub-design-minimal .add-to-cart-btn{ background:transparent; color:var(--ember); border:1.5px solid var(--ember); }
+body.pub-design-minimal .add-to-cart-btn:hover{ background:var(--ember); color:#fff; }
+@media (max-width:560px){ body.pub-design-minimal .pub-body{ padding:4px 10px; border-radius:10px; } }
 body.pub-design-dark .pub-tab.active{ background:linear-gradient(135deg, var(--ember), var(--ember-dark)); }
 body.pub-design-dark .cart-badge{ background:#2A2825; }
 body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
@@ -3881,7 +3894,8 @@ async function loadPublic(slug){
     { id:'classic', nameAr:'كلاسيكي', nameEn:'Classic', bodyClass:'', bg:'#F6F1E4', card:'#ffffff', accent:'#B8390E', line:'#E4DCC7', layout:'list' },
     { id:'grid', nameAr:'شبكة عصرية', nameEn:'Modern Grid', bodyClass:'pub-design-grid', bg:'#F6F1E4', card:'#ffffff', accent:'#1858C9', line:'#E4DCC7', layout:'grid' },
     { id:'dark', nameAr:'داكن أنيق', nameEn:'Elegant Dark', bodyClass:'pub-design-dark', bg:'#1C1A17', card:'#2A2825', accent:'#D9A441', line:'#3A352D', layout:'list' },
-    { id:'luxury', nameAr:'أنيق فاخر', nameEn:'Luxury', bodyClass:'pub-design-luxury', bg:'#F6F1E4', card:'#ffffff', accent:'#7A2048', line:'#E4DCC7', layout:'list' }
+    { id:'luxury', nameAr:'أنيق فاخر', nameEn:'Luxury', bodyClass:'pub-design-luxury', bg:'#F6F1E4', card:'#ffffff', accent:'#7A2048', line:'#E4DCC7', layout:'list' },
+    { id:'minimal', nameAr:'بسيط مرتب', nameEn:'Clean Minimal', bodyClass:'pub-design-minimal', bg:'#F6F1E4', card:'#ffffff', accent:'#127475', line:'#E4DCC7', layout:'list' }
   ];
   function getMenuDesignId(){
     try{ return localStorage.getItem(DESIGN_KEY) || 'classic'; }catch(e){ return 'classic'; }
