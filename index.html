@@ -479,6 +479,12 @@ body.pub-design-showcase .pub-cat-shelf .pub-item .name-primary{ font-size:12.5p
 body.pub-design-showcase .pub-cat-shelf .pub-item .price{ font-size:12.5px; }
 body.pub-design-showcase .pub-cat-shelf .pub-item .desc-expand{ display:none !important; }
 body.pub-design-showcase .pub-cat-shelf .pub-item .item-control{ width:auto; align-self:stretch; padding:0 9px 9px; }
+body.pub-design-showcase .shelf-wrap{ position:relative; }
+body.pub-design-showcase .shelf-arrow{ display:none; position:absolute; top:calc(50% - 8px); transform:translateY(-50%); width:34px; height:34px; border-radius:50%; border:1px solid var(--line); background:#fff; color:var(--ink); font-size:19px; font-weight:800; line-height:1; cursor:pointer; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(32,31,29,.18); z-index:5; padding:0; }
+body.pub-design-showcase .shelf-arrow:hover{ color:var(--ember); border-color:var(--ember); }
+body.pub-design-showcase .shelf-arrow-left{ left:-6px; }
+body.pub-design-showcase .shelf-arrow-right{ right:-6px; }
+@media (hover:hover) and (pointer:fine){ body.pub-design-showcase .shelf-arrow{ display:flex; } }
 body.pub-design-showcase #pubBody:not(.shelf-mode){ display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:12px; align-items:start; }
 body.pub-design-showcase #pubBody:not(.shelf-mode) .pub-cat-heading{ grid-column:1/-1; }
 body.pub-design-showcase #pubBody:not(.shelf-mode) .pub-empty{ grid-column:1/-1; }
@@ -4314,11 +4320,29 @@ async function loadPublic(slug){
           frag.appendChild(el);
           const hint = document.createElement('div');
           hint.className = 'shelf-hint';
-          hint.innerHTML = `<span class="shelf-hint-arrows">↔</span><span>${lang==='en' ? 'Swipe right or left to browse' : 'اسحب يمين أو شمال لتصفح المزيد'}</span>`;
+          hint.innerHTML = `<span class="shelf-hint-arrows">↔</span><span>${lang==='en' ? 'Swipe on mobile, or use the arrows on desktop' : 'اسحب على الموبايل، أو استخدم الأسهم على الكمبيوتر'}</span>`;
           frag.appendChild(hint);
+          const shelfWrap = document.createElement('div');
+          shelfWrap.className = 'shelf-wrap';
           currentShelf = document.createElement('div');
           currentShelf.className = 'pub-cat-shelf';
-          frag.appendChild(currentShelf);
+          const leftBtn = document.createElement('button');
+          leftBtn.type = 'button';
+          leftBtn.className = 'shelf-arrow shelf-arrow-left';
+          leftBtn.setAttribute('aria-label', lang==='en' ? 'Scroll left' : 'تمرير لليسار');
+          leftBtn.textContent = '‹';
+          const shelfRef = currentShelf;
+          leftBtn.addEventListener('click', ()=> shelfRef.scrollBy({ left: -shelfRef.clientWidth*0.8, behavior:'smooth' }));
+          const rightBtn = document.createElement('button');
+          rightBtn.type = 'button';
+          rightBtn.className = 'shelf-arrow shelf-arrow-right';
+          rightBtn.setAttribute('aria-label', lang==='en' ? 'Scroll right' : 'تمرير لليمين');
+          rightBtn.textContent = '›';
+          rightBtn.addEventListener('click', ()=> shelfRef.scrollBy({ left: shelfRef.clientWidth*0.8, behavior:'smooth' }));
+          shelfWrap.appendChild(leftBtn);
+          shelfWrap.appendChild(currentShelf);
+          shelfWrap.appendChild(rightBtn);
+          frag.appendChild(shelfWrap);
         } else if(el.classList.contains('pub-item') && currentShelf){
           currentShelf.appendChild(el);
         } else {
