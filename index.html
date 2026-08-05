@@ -440,12 +440,21 @@ body.pub-design-dark .pub-item .item-control .variant-select{ background:#2A2825
 body.pub-design-dark .variant-select option, body.pub-design-dark select option{ background:#2A2825; color:#F1EADC; }
 body.pub-design-dark #pubRepeatOrderBtn{ background:#2A2825; color:#F1EADC; border-color:#3A352D; }
 body.pub-design-dark .pub-logo-wrap img{ background:#F1EADC; border-radius:12px; padding:8px; }
+
+body.pub-design-luxury{ --ember:#7A2048; --ember-dark:#5C1836; }
+body.pub-design-luxury .pub-item{ padding:16px; border-radius:16px; border:none; box-shadow:0 4px 16px rgba(32,31,29,.09); margin-bottom:16px; }
+body.pub-design-luxury .pub-item img, body.pub-design-luxury .pub-item .no-img{ width:84px; height:84px; border-radius:12px; }
+body.pub-design-luxury .pub-item .name-primary{ font-family:var(--display); font-size:19px; letter-spacing:.2px; }
+body.pub-design-luxury .pub-item .price{ font-size:16.5px; }
+body.pub-design-luxury .pub-cat-heading{ font-size:22px; border-bottom-width:3px; }
+body.pub-design-luxury .pub-tab.active{ background:linear-gradient(135deg, var(--ember), var(--ember-dark)); }
+body.pub-design-luxury .add-to-cart-btn{ border-radius:24px; }
 body.pub-design-dark .pub-tab.active{ background:linear-gradient(135deg, var(--ember), var(--ember-dark)); }
 body.pub-design-dark .cart-badge{ background:#2A2825; }
 body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
 
-.design-picker-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:2px 0 4px; }
-@media (max-width:480px){ .design-picker-grid{ grid-template-columns:1fr; } }
+.design-picker-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:2px 0 4px; }
+@media (max-width:360px){ .design-picker-grid{ grid-template-columns:1fr; } }
 .design-card{ position:relative; border:2px solid var(--line); border-radius:14px; padding:10px; cursor:pointer; text-align:center; background:#fff; transition:border-color .15s ease, transform .1s ease; }
 .design-card:hover{ transform:translateY(-2px); }
 .design-card.selected{ border-color:var(--ember); }
@@ -3871,7 +3880,8 @@ async function loadPublic(slug){
   const MENU_DESIGNS = [
     { id:'classic', nameAr:'كلاسيكي', nameEn:'Classic', bodyClass:'', bg:'#F6F1E4', card:'#ffffff', accent:'#B8390E', line:'#E4DCC7', layout:'list' },
     { id:'grid', nameAr:'شبكة عصرية', nameEn:'Modern Grid', bodyClass:'pub-design-grid', bg:'#F6F1E4', card:'#ffffff', accent:'#1858C9', line:'#E4DCC7', layout:'grid' },
-    { id:'dark', nameAr:'داكن أنيق', nameEn:'Elegant Dark', bodyClass:'pub-design-dark', bg:'#1C1A17', card:'#2A2825', accent:'#D9A441', line:'#3A352D', layout:'list' }
+    { id:'dark', nameAr:'داكن أنيق', nameEn:'Elegant Dark', bodyClass:'pub-design-dark', bg:'#1C1A17', card:'#2A2825', accent:'#D9A441', line:'#3A352D', layout:'list' },
+    { id:'luxury', nameAr:'أنيق فاخر', nameEn:'Luxury', bodyClass:'pub-design-luxury', bg:'#F6F1E4', card:'#ffffff', accent:'#7A2048', line:'#E4DCC7', layout:'list' }
   ];
   function getMenuDesignId(){
     try{ return localStorage.getItem(DESIGN_KEY) || 'classic'; }catch(e){ return 'classic'; }
