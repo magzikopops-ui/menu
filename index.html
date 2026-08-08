@@ -342,6 +342,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .receipt-item-note{ font-size:10.5px; color:#333; margin-inline-start:4px; }
 .receipt-total-row{ display:flex; justify-content:space-between; font-weight:800; font-size:13.5px; margin-top:4px; }
 .receipt-footer{ text-align:center; font-size:11px; margin-top:8px; }
+.receipt-demo-note{ text-align:center; font-size:10px; margin-top:6px; padding-top:6px; border-top:1px dashed #999; color:#555; line-height:1.5; }
 @media print{
   body > *:not(#receiptPrintArea){ display:none !important; }
   #receiptPrintArea{ display:block !important; margin:0; padding:0; }
@@ -379,6 +380,16 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .zone-add-row input#newZoneFee{width:100px; direction:ltr; font-family:var(--mono);}
 
 .overlay{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px; }
+.trial-overlay{ position:fixed; inset:0; background:rgba(10,12,15,.92); display:flex; align-items:center; justify-content:center; z-index:99999; padding:20px; }
+.trial-box{ position:relative; max-width:460px; width:100%; background:linear-gradient(160deg,#1c2129,#12151a); border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:34px 26px 28px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); cursor:pointer; }
+.trial-icon{ font-size:44px; margin-bottom:14px; }
+.trial-title-ar{ font-size:19px; font-weight:800; color:#fff; margin-bottom:6px; line-height:1.5; }
+.trial-title-en{ font-size:13px; font-weight:600; color:#9aa4b2; margin-bottom:18px; }
+.trial-msg-ar{ font-size:14.5px; color:#dfe3e8; line-height:1.9; margin-bottom:10px; }
+.trial-msg-en{ font-size:12.5px; color:#9aa4b2; line-height:1.8; margin-bottom:22px; }
+.trial-cta{ display:inline-flex; align-items:center; gap:8px; background:#25D366; color:#0a0c0f; font-weight:800; font-size:14px; padding:12px 22px; border-radius:999px; }
+.trial-close-btn{ position:absolute; top:10px; left:10px; width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,.08); color:#fff; border:none; font-size:16px; cursor:pointer; display:none; align-items:center; justify-content:center; }
+.trial-close-btn.show{ display:flex; }
 .modal{ background:#fff; width:min(420px,92vw); border-radius:14px; padding:22px; max-height:88vh; overflow-y:auto; }
 .modal h3{ font-family:var(--display); font-size:20px; margin:0 0 16px; color:var(--ink); }
 .img-drop{ border:2px dashed var(--stone-light); border-radius:10px; padding:16px; text-align:center; cursor:pointer; color:var(--stone); font-size:13px; }
@@ -1163,6 +1174,39 @@ async function openDashboard(){
   subscribeToNewOrders();
   refreshNewOrdersCount();
   show('dashboardScreen');
+  showTrialExpiredBanner();
+}
+
+function showTrialExpiredBanner(){
+  const overlay = document.createElement('div');
+  overlay.className = 'trial-overlay';
+  const waLink = 'https://wa.me/201154361888?text=' + encodeURIComponent('مرحبًا، أرغب في تجديد اشتراك النسخة التجريبية المنتهية لـ منيو m@g');
+  overlay.innerHTML = `
+    <div class="trial-box" id="trialBox">
+      <button type="button" class="trial-close-btn" id="trialCloseBtn" aria-label="إغلاق">✕</button>
+      <div class="trial-icon">⏳</div>
+      <div class="trial-title-ar">انتهت فترة النسخة التجريبية (15 يومًا)</div>
+      <div class="trial-title-en">Your 15-Day Trial Period Has Ended</div>
+      <div class="trial-msg-ar">لتجديد الاشتراك ومواصلة استخدام لوحة التحكم دون انقطاع، يرجى التواصل مع فريق منيو m@g.</div>
+      <div class="trial-msg-en">To renew your subscription and continue using the dashboard without interruption, please contact the Menu m@g team.</div>
+      <div class="trial-cta">📲 تواصل معنا عبر واتساب &nbsp;|&nbsp; Contact us on WhatsApp</div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const box = overlay.querySelector('#trialBox');
+  const closeBtn = overlay.querySelector('#trialCloseBtn');
+
+  box.addEventListener('click', (e)=>{
+    if(e.target === closeBtn) return;
+    window.open(waLink, '_blank');
+  });
+
+  closeBtn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    overlay.remove();
+  });
+
+  setTimeout(()=>{ closeBtn.classList.add('show'); }, 50000);
 }
 
 async function refreshData(){
@@ -1830,6 +1874,7 @@ function buildReceiptHtml(order, lines, widthMm){
       ${totalRow}
       ${notesHtml}
       <div class="receipt-footer">شكرًا لطلبكم${restaurant.name ? ' من ' + escapeHtml(restaurant.name) : ''}</div>
+      <div class="receipt-demo-note">⚠️ هذا ${biz(restaurant.business_type,'entityIndef')} يستخدم نسخة تجريبية (Demo) من النظام<br>This ${biz(restaurant.business_type,'entityEn').toLowerCase()} is using a demo version of the system</div>
     </div>`;
 }
 
@@ -1870,7 +1915,38 @@ function openReceiptPreviewModal(order, lines){
   overlay.querySelector('#receiptCloseBtn').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
 
-  overlay.querySelector('#receiptPrintBtn').addEventListener('click', ()=>{
+  overlay.querySelector('#receiptPrintBtn').addEventListener('click', async ()=>{
+    // لما يطبع الطلب وهو لسه قيد الانتظار، نحول حالته تلقائيًا لـ "تم التسليم"
+    if((order.status || 'pending') === 'pending'){
+      const { error: updErr } = await sb.from('orders').update({ status:'delivered' }).eq('id', order.id);
+      if(!updErr){
+        order.status = 'delivered';
+        // نحدّث نفس الصف في شاشة الطلبات لو لسه موجود في الخلفية
+        const row = document.querySelector(`.order-row[data-order-id="${order.id}"]`);
+        if(row){
+          const badge = row.querySelector('.status-badge');
+          if(badge){ badge.className = 'status-badge delivered'; badge.textContent = 'تم التسليم'; }
+          const select = row.querySelector('[data-action="statusSelect"]');
+          if(select){
+            select.value = 'delivered';
+            select.disabled = true;
+            select.title = 'لا يمكن تغيير حالة الطلب بعد أن أصبح نهائيًا';
+            const note = document.createElement('div');
+            note.className = 'o-time';
+            note.style.cssText = 'margin-top:2px; font-size:11px;';
+            note.textContent = 'لا يمكن تغيير الحالة بعد أن أصبحت نهائية';
+            select.insertAdjacentElement('afterend', note);
+          }
+          row.classList.remove('is-new');
+          const existingTag = row.querySelector('.o-tag.new');
+          if(existingTag) existingTag.remove();
+        }
+        if(typeof refreshNewOrdersCount === 'function') refreshNewOrdersCount();
+        // نحدّث الفاتورة المعروضة عشان تظهر الحالة الجديدة "تم التسليم" في الطباعة نفسها
+        renderPreview();
+      }
+    }
+
     let printArea = document.getElementById('receiptPrintArea');
     if(!printArea){
       printArea = document.createElement('div');
