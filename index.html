@@ -2117,6 +2117,7 @@ async function openAdminPanel(){
   function rowHtml(r){
     const created = new Date(r.created_at).toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
     const ownerEmail = emailByOwner[r.owner_id] || '—';
+    const isMainAdminAccount = ownerEmail.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
     return `
       <div class="admin-restaurant-row" data-id="${r.id}">
         <div>
@@ -2137,10 +2138,11 @@ async function openAdminPanel(){
           <input type="number" min="0" class="admin-max-input" data-field="demo_days" value="${r.demo_days ?? ''}" placeholder="بدون حد" style="width:70px;">
           ${demoStatusHtml(r)}
         </label>
+        ${isMainAdminAccount ? '' : `
         <label class="admin-toggle-group" style="background:rgba(166,57,43,.12); padding:6px 8px; border-radius:6px; border:1px solid rgba(166,57,43,.3);">
           <span class="admin-switch"><input type="checkbox" data-field="account_suspended" ${r.account_suspended ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
           🚫 تعليق الحساب بالكامل
-        </label>
+        </label>`}
         <label class="admin-toggle-group">
           <span class="admin-switch"><input type="checkbox" data-field="restriction_banner_enabled" ${r.restriction_banner_enabled ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
           البانر الحاجب
