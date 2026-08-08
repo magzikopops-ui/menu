@@ -1225,6 +1225,7 @@ async function openDashboard(){
   refreshNewOrdersCount();
   show('dashboardScreen');
   document.getElementById('adminPanelBtn').classList.toggle('hidden', !isSuperAdmin);
+  if(restaurant.account_suspended){ showAccountSuspendedBlock(); return; }
   await checkDemoExpiry();
   if(restaurant.restriction_banner_enabled) showTrialExpiredBanner();
   applyExcelRestrictionUI();
@@ -1243,6 +1244,42 @@ function applyExcelRestrictionUI(){
     btn.title = disabled ? 'هذه الميزة غير متاحة في نسختك الحالية' : '';
   });
 }
+
+function showAccountSuspendedBlock(){
+  const overlay = document.createElement('div');
+  overlay.className = 'trial-overlay';
+  overlay.id = 'suspendOverlay';
+  const waLink = 'https://wa.me/201154361888?text=' + encodeURIComponent('مرحبًا، حسابي في منيو m@g معلّق وأرغب في تجديد الاشتراك لاستعادة الخدمة.');
+  overlay.innerHTML = `
+    <div class="trial-box" id="suspendBox">
+      <div class="trial-icon">🔒</div>
+      <div class="trial-title-ar">تم تعليق هذا الحساب</div>
+      <div class="trial-title-en">This Account Has Been Suspended</div>
+      <div class="trial-msg-ar">تم إيقاف الوصول إلى لوحة التحكم مؤقتًا نظرًا لعدم تفعيل الاشتراك. يرجى التواصل مع فريق منيو m@g لاستكمال إجراءات التجديد واستعادة الخدمة فورًا.</div>
+      <div class="trial-msg-en">Access to the dashboard has been temporarily suspended due to an inactive subscription. Please contact the Menu m@g team to complete the renewal and restore service immediately.</div>
+      <div class="trial-cta">📲 تواصل معنا لتجديد الاشتراك &nbsp;|&nbsp; Contact us to renew</div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#suspendBox').addEventListener('click', ()=> window.open(waLink, '_blank'));
+}
+
+function showAccountSuspendedPublicScreen(rest){
+  document.getElementById('pubLogoWrap').innerHTML = '';
+  document.getElementById('pubTabsWrap').classList.add('hidden');
+  document.getElementById('pubFooter').classList.add('hidden');
+  document.getElementById('pubOrderBtn').classList.add('hidden');
+  const waLink = 'https://wa.me/201154361888?text=' + encodeURIComponent(`مرحبًا، أرغب في الاستفسار عن اشتراك منيو m@g الخاص بـ ${rest.name}.`);
+  document.getElementById('pubBody').innerHTML = `
+    <div style="max-width:420px; margin:60px auto; text-align:center; padding:0 20px;">
+      <div style="font-size:44px; margin-bottom:14px;">⏸️</div>
+      <div style="font-family:var(--display); font-size:22px; margin-bottom:8px;">هذه القائمة غير متاحة حاليًا</div>
+      <div style="font-size:13px; color:var(--stone); margin-bottom:18px; direction:ltr;">This menu is currently unavailable</div>
+      <div style="font-size:14.5px; line-height:1.9; color:var(--ink); margin-bottom:8px;">الاشتراك الخاص بحساب "${escapeHtml(rest.name)}" في خدمة منيو m@g غير مُفعّل حاليًا. للاستفسار أو تجديد الاشتراك، يرجى التواصل مع فريق منيو m@g مباشرة.</div>
+      <div style="font-size:12.5px; line-height:1.8; color:var(--stone); margin-bottom:22px;">The subscription for this Menu m@g account is not currently active. Please contact the Menu m@g team to inquire or renew.</div>
+      <a href="${waLink}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:8px; background:#25D366; color:#0a0c0f; font-weight:800; font-size:14px; padding:12px 22px; border-radius:999px; text-decoration:none;">📲 تواصل معنا عبر واتساب</a>
+    </div>`;
+}
+
 
 function showTrialExpiredBanner(){
   const overlay = document.createElement('div');
@@ -2100,6 +2137,10 @@ async function openAdminPanel(){
           <input type="number" min="0" class="admin-max-input" data-field="demo_days" value="${r.demo_days ?? ''}" placeholder="بدون حد" style="width:70px;">
           ${demoStatusHtml(r)}
         </label>
+        <label class="admin-toggle-group" style="background:rgba(166,57,43,.12); padding:6px 8px; border-radius:6px; border:1px solid rgba(166,57,43,.3);">
+          <span class="admin-switch"><input type="checkbox" data-field="account_suspended" ${r.account_suspended ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+          🚫 تعليق الحساب بالكامل
+        </label>
         <label class="admin-toggle-group">
           <span class="admin-switch"><input type="checkbox" data-field="restriction_banner_enabled" ${r.restriction_banner_enabled ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
           البانر الحاجب
@@ -2143,6 +2184,12 @@ async function openAdminPanel(){
     row.querySelectorAll('input[type="checkbox"][data-field]').forEach(cb=>{
       cb.addEventListener('change', async ()=>{
         const field = cb.dataset.field;
+        if(field === 'account_suspended' && cb.checked){
+          if(!confirm('هيتم إيقاف المنيو العام ولوحة التحكم بالكامل لهذا العميل فورًا. متأكد؟')){
+            cb.checked = false;
+            return;
+          }
+        }
         const { error: updErr } = await sb.from('restaurants').update({ [field]: cb.checked }).eq('id', rId);
         if(updErr){ toast('تعذر الحفظ'); cb.checked = !cb.checked; return; }
         toast('تم الحفظ');
@@ -4176,6 +4223,11 @@ async function loadPublic(slug){
     document.getElementById('pubLogoWrap').innerHTML = `<div class="name-fallback">الصفحة غير موجودة</div>`;
     document.getElementById('pubTabs').innerHTML = '';
     document.getElementById('pubBody').innerHTML = `<div class="pub-empty">هذا الرابط غير صحيح.</div>`;
+    return;
+  }
+  if(rest.account_suspended){
+    show('publicScreen');
+    showAccountSuspendedPublicScreen(rest);
     return;
   }
   try{ await sb.rpc('track_menu_visit', { p_restaurant_id: rest.id }); }catch(e){}
