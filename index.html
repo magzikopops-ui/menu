@@ -266,6 +266,9 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 }
 body.pub-watermark-on #publicScreen{ padding-top:29px; }
 body.pub-watermark-on .pub-tabs-wrap{ top:29px; }
+body.pub-menu-only .pub-order-btn,
+body.pub-menu-only #pubRepeatOrderBtn,
+body.pub-menu-only .add-to-cart-btn{ display:none !important; }
 @media (max-width:480px){
   .pub-footer.pub-footer-float{ font-size:9.5px; padding:5px 10px; }
 }
@@ -1194,6 +1197,24 @@ function refreshAllBizLabels(){
   document.getElementById('addItemBtn').textContent = `+ إضافة ${biz(restaurant.business_type,'itemIndef')} جديد`;
 }
 
+async function checkDemoExpiry(){
+  if(!restaurant.demo_days || restaurant.restriction_banner_enabled) return;
+  const end = new Date(restaurant.created_at);
+  end.setDate(end.getDate() + Number(restaurant.demo_days));
+  if(Date.now() > end.getTime()){
+    const { error } = await sb.from('restaurants').update({ restriction_banner_enabled: true }).eq('id', restaurant.id);
+    if(!error) restaurant.restriction_banner_enabled = true;
+  }
+}
+
+function applyFeaturePlanUI(){
+  const menuOnly = restaurant.feature_plan === 'menu_only';
+  ['viewOrdersBtn','deliveryZonesBtn','customersBtn'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle('hidden', menuOnly);
+  });
+}
+
 async function openDashboard(){
   show('loadingScreen');
   document.getElementById('dashRestaurantName').textContent = restaurant.name;
@@ -1204,8 +1225,10 @@ async function openDashboard(){
   refreshNewOrdersCount();
   show('dashboardScreen');
   document.getElementById('adminPanelBtn').classList.toggle('hidden', !isSuperAdmin);
+  await checkDemoExpiry();
   if(restaurant.restriction_banner_enabled) showTrialExpiredBanner();
   applyExcelRestrictionUI();
+  applyFeaturePlanUI();
 }
 
 function applyExcelRestrictionUI(){
@@ -2045,6 +2068,15 @@ async function openAdminPanel(){
     (emailRows || []).forEach(row=>{ emailByOwner[row.owner_id] = row.email; });
   }catch(e){}
 
+  function demoStatusHtml(r){
+    if(!r.demo_days){ return ''; }
+    const end = new Date(r.created_at);
+    end.setDate(end.getDate() + Number(r.demo_days));
+    const endStr = end.toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
+    const expired = Date.now() > end.getTime();
+    return `<div style="font-size:11px; margin-top:3px; color:${expired ? '#e08a78' : 'var(--stone-light)'};">${expired ? '⚠️ منتهية منذ' : 'تنتهي في'} ${endStr}</div>`;
+  }
+
   function rowHtml(r){
     const created = new Date(r.created_at).toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
     const ownerEmail = emailByOwner[r.owner_id] || '—';
@@ -2056,6 +2088,18 @@ async function openAdminPanel(){
           <div class="admin-r-meta" style="direction:ltr; text-align:right; margin-top:2px;">✉️ ${escapeHtml(ownerEmail)}</div>
           ${ownerEmail !== '—' ? `<button type="button" class="link-btn admin-reset-pw-btn" data-email="${escapeHtml(ownerEmail)}" style="font-size:11px; padding:3px 8px; margin-top:4px;">🔑 إرسال رابط تغيير كلمة المرور</button>` : ''}
         </div>
+        <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:4px; width:100%;">
+          <span style="font-weight:700;">نوع الباقة</span>
+          <select class="admin-plan-select" data-field="feature_plan" style="width:100%; padding:5px 8px; border-radius:6px; border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.05); color:#fff; font-size:12.5px; font-family:var(--body);">
+            <option value="full" ${(!r.feature_plan || r.feature_plan==='full') ? 'selected' : ''}>منيو + استلام الطلبات</option>
+            <option value="menu_only" ${r.feature_plan==='menu_only' ? 'selected' : ''}>منيو فقط (بدون طلبات)</option>
+          </select>
+        </label>
+        <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:4px;">
+          <span style="font-weight:700;">مدة الـ Demo (أيام)</span>
+          <input type="number" min="0" class="admin-max-input" data-field="demo_days" value="${r.demo_days ?? ''}" placeholder="بدون حد" style="width:70px;">
+          ${demoStatusHtml(r)}
+        </label>
         <label class="admin-toggle-group">
           <span class="admin-switch"><input type="checkbox" data-field="restriction_banner_enabled" ${r.restriction_banner_enabled ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
           البانر الحاجب
@@ -2104,17 +2148,28 @@ async function openAdminPanel(){
         toast('تم الحفظ');
       });
     });
-    const numInput = row.querySelector('input[type="number"][data-field]');
-    if(numInput){
-      numInput.addEventListener('change', async ()=>{
-        let val = parseInt(numInput.value, 10);
-        if(isNaN(val) || val < 1) val = 1;
-        numInput.value = val;
-        const { error: updErr } = await sb.from('restaurants').update({ restriction_max_items_value: val }).eq('id', rId);
+    const planSelect = row.querySelector('select[data-field="feature_plan"]');
+    if(planSelect){
+      planSelect.addEventListener('change', async ()=>{
+        const { error: updErr } = await sb.from('restaurants').update({ feature_plan: planSelect.value }).eq('id', rId);
         if(updErr){ toast('تعذر الحفظ'); return; }
         toast('تم الحفظ');
       });
     }
+    row.querySelectorAll('input[type="number"][data-field]').forEach(numInput=>{
+      numInput.addEventListener('change', async ()=>{
+        const field = numInput.dataset.field;
+        const isDemoDays = field === 'demo_days';
+        let val = parseInt(numInput.value, 10);
+        if(isNaN(val) || val < (isDemoDays ? 0 : 1)){
+          val = isDemoDays ? null : 1;
+        }
+        numInput.value = val ?? '';
+        const { error: updErr } = await sb.from('restaurants').update({ [field]: val }).eq('id', rId);
+        if(updErr){ toast('تعذر الحفظ'); return; }
+        toast('تم الحفظ');
+      });
+    });
   });
 }
 
@@ -4129,6 +4184,7 @@ async function loadPublic(slug){
     const watermarkOn = !!rest.restriction_watermark_enabled;
     pubFooterEl.classList.toggle('pub-footer-float', watermarkOn);
     document.body.classList.toggle('pub-watermark-on', watermarkOn);
+    document.body.classList.toggle('pub-menu-only', rest.feature_plan === 'menu_only');
     pubFooterEl.innerHTML = rest.restriction_watermark_enabled
       ? 'POWERED BY منيو m@g &nbsp;·&nbsp; ⚠️ نسخة تجريبية (Demo) — لم يتم تفعيل الاشتراك بعد'
       : 'POWERED BY منيو m@g';
