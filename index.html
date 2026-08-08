@@ -418,7 +418,7 @@ body.pub-menu-only .add-to-cart-btn{ display:none !important; }
 .admin-switch-slider:before{ content:""; position:absolute; width:15px; height:15px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; }
 .admin-switch input:checked + .admin-switch-slider{ background:#8a4fd1; }
 .admin-switch input:checked + .admin-switch-slider:before{ transform:translateX(17px); }
-.admin-max-input{ width:52px; padding:3px 6px; border-radius:6px; border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.05); color:#fff; font-size:12px; text-align:center; }
+.admin-max-input{ width:52px; padding:3px 6px; border-radius:6px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-size:12px; text-align:center; }
 .modal{ background:#fff; width:min(420px,92vw); border-radius:14px; padding:22px; max-height:88vh; overflow-y:auto; }
 .modal h3{ font-family:var(--display); font-size:20px; margin:0 0 16px; color:var(--ink); }
 .img-drop{ border:2px dashed var(--stone-light); border-radius:10px; padding:16px; text-align:center; cursor:pointer; color:var(--stone); font-size:13px; }
@@ -2129,7 +2129,7 @@ async function openAdminPanel(){
         </div>
         <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:4px; width:100%;">
           <span style="font-weight:700;">نوع الباقة</span>
-          <select class="admin-plan-select" data-field="feature_plan" style="width:100%; padding:5px 8px; border-radius:6px; border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.05); color:#fff; font-size:12.5px; font-family:var(--body);">
+          <select class="admin-plan-select" data-field="feature_plan" style="width:100%; padding:5px 8px; border-radius:6px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-size:12.5px; font-family:var(--body);">
             <option value="full" ${(!r.feature_plan || r.feature_plan==='full') ? 'selected' : ''}>منيو + استلام الطلبات</option>
             <option value="menu_only" ${r.feature_plan==='menu_only' ? 'selected' : ''}>منيو فقط (بدون طلبات)</option>
           </select>
