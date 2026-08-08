@@ -1208,6 +1208,15 @@ async function checkDemoExpiry(){
   }
 }
 
+async function checkSubscriptionExpiry(){
+  if(!restaurant.subscription_end_date || restaurant.account_suspended) return;
+  const end = new Date(restaurant.subscription_end_date + 'T23:59:59');
+  if(Date.now() > end.getTime()){
+    const { error } = await sb.from('restaurants').update({ account_suspended: true }).eq('id', restaurant.id);
+    if(!error) restaurant.account_suspended = true;
+  }
+}
+
 function applyFeaturePlanUI(){
   const menuOnly = restaurant.feature_plan === 'menu_only';
   ['viewOrdersBtn','deliveryZonesBtn','customersBtn'].forEach(id=>{
@@ -1226,6 +1235,7 @@ async function openDashboard(){
   refreshNewOrdersCount();
   show('dashboardScreen');
   document.getElementById('adminPanelBtn').classList.toggle('hidden', !isSuperAdmin);
+  await checkSubscriptionExpiry();
   if(restaurant.account_suspended){ showAccountSuspendedBlock(); return; }
   await checkDemoExpiry();
   if(restaurant.restriction_banner_enabled) showTrialExpiredBanner();
@@ -2100,6 +2110,18 @@ async function openAdminPanel(){
   if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل بيانات العملاء (تأكد من صلاحية الأدمن في Supabase)</div>`; return; }
   if(!allRestaurants || allRestaurants.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا يوجد عملاء بعد</div>`; return; }
 
+  // تعليق تلقائي لأي حساب انتهى تاريخ اشتراكه ولم يُعلَّق بعد
+  const expiredNotSuspended = allRestaurants.filter(r=>
+    r.subscription_end_date && !r.account_suspended &&
+    new Date(r.subscription_end_date + 'T23:59:59').getTime() < Date.now()
+  );
+  if(expiredNotSuspended.length){
+    await Promise.all(expiredNotSuspended.map(async r=>{
+      const { error: autoErr } = await sb.from('restaurants').update({ account_suspended: true }).eq('id', r.id);
+      if(!autoErr) r.account_suspended = true;
+    }));
+  }
+
   let emailByOwner = {};
   try{
     const { data: emailRows } = await sb.rpc('admin_list_owner_emails');
@@ -2113,6 +2135,14 @@ async function openAdminPanel(){
     const endStr = end.toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
     const expired = Date.now() > end.getTime();
     return `<div style="font-size:11px; margin-top:3px; color:${expired ? '#e08a78' : 'var(--stone-light)'};">${expired ? '⚠️ منتهية منذ' : 'تنتهي في'} ${endStr}</div>`;
+  }
+
+  function subExpiryStatusHtml(r){
+    if(!r.subscription_end_date){ return ''; }
+    const end = new Date(r.subscription_end_date + 'T23:59:59');
+    const endStr = end.toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
+    const expired = Date.now() > end.getTime();
+    return `<div style="font-size:11px; margin-top:3px; color:${expired ? '#e08a78' : 'var(--stone-light)'};">${expired ? '⚠️ الاشتراك منتهي منذ' : 'الاشتراك ينتهي في'} ${endStr}</div>`;
   }
 
   function rowHtml(r){
@@ -2140,6 +2170,12 @@ async function openAdminPanel(){
           ${demoStatusHtml(r)}
         </label>
         ${isMainAdminAccount ? '' : `
+        <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:4px; background:rgba(24,88,201,.1); padding:6px 8px; border-radius:6px; border:1px solid rgba(24,88,201,.3);">
+          <span style="font-weight:700;">📅 تاريخ انتهاء الاشتراك</span>
+          <input type="date" class="admin-max-input" data-field="subscription_end_date" value="${r.subscription_end_date || ''}" style="width:150px; direction:ltr; text-align:center;">
+          <small style="opacity:.75;">عند انتهاء التاريخ يتم تعليق الحساب بالكامل تلقائيًا</small>
+          ${subExpiryStatusHtml(r)}
+        </label>
         <label class="admin-toggle-group" style="background:rgba(166,57,43,.12); padding:6px 8px; border-radius:6px; border:1px solid rgba(166,57,43,.3);">
           <span class="admin-switch"><input type="checkbox" data-field="account_suspended" ${r.account_suspended ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
           🚫 تعليق الحساب بالكامل
@@ -2196,6 +2232,22 @@ async function openAdminPanel(){
         const { error: updErr } = await sb.from('restaurants').update({ [field]: cb.checked }).eq('id', rId);
         if(updErr){ toast('تعذر الحفظ'); cb.checked = !cb.checked; return; }
         toast('تم الحفظ');
+      });
+    });
+    row.querySelectorAll('input[type="date"][data-field]').forEach(dateInput=>{
+      dateInput.addEventListener('change', async ()=>{
+        const field = dateInput.dataset.field;
+        const val = dateInput.value || null;
+        const { error: updErr } = await sb.from('restaurants').update({ [field]: val }).eq('id', rId);
+        if(updErr){ toast('تعذر الحفظ'); return; }
+        toast('تم الحفظ');
+        if(field === 'subscription_end_date' && val && new Date(val + 'T23:59:59').getTime() < Date.now()){
+          const suspendCb = row.querySelector('input[type="checkbox"][data-field="account_suspended"]');
+          if(suspendCb && !suspendCb.checked){
+            const { error: suspErr } = await sb.from('restaurants').update({ account_suspended: true }).eq('id', rId);
+            if(!suspErr){ suspendCb.checked = true; toast('تاريخ منتهي بالفعل — تم تعليق الحساب تلقائيًا'); }
+          }
+        }
       });
     });
     const planSelect = row.querySelector('select[data-field="feature_plan"]');
