@@ -411,7 +411,9 @@ body.pub-menu-only .add-to-cart-btn{ display:none !important; }
 .trial-close-btn{ position:absolute; top:10px; left:10px; width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,.08); color:#fff; border:none; font-size:16px; cursor:pointer; display:none; align-items:center; justify-content:center; }
 .trial-close-btn.show{ display:flex; }
 .admin-table-wrap{ max-height:65vh; overflow:auto; }
-.admin-restaurant-row{ display:flex; flex-wrap:wrap; align-items:center; gap:14px; padding:14px; border:1px solid rgba(255,255,255,.08); border-radius:12px; margin-bottom:10px; background:rgba(255,255,255,.02); }
+.admin-restaurant-row{ display:flex; flex-wrap:wrap; align-items:center; gap:14px; padding:14px 14px 14px 18px; border:1px solid rgba(255,255,255,.14); border-right:4px solid var(--ember); border-radius:12px; margin-bottom:16px; background:rgba(255,255,255,.02); }
+.admin-restaurant-row:nth-child(even){ background:rgba(255,255,255,.055); }
+.admin-restaurant-row + .admin-restaurant-row{ margin-top:2px; }
 .admin-r-name{ font-weight:800; font-size:15px; min-width:160px; }
 .admin-r-meta{ font-size:12px; color:var(--stone); min-width:110px; }
 .admin-toggle-group{ display:flex; align-items:center; gap:6px; font-size:12.5px; }
@@ -2312,6 +2314,7 @@ async function openAdminPanel(){
           <div class="admin-r-meta">/${escapeHtml(r.slug)} · انضم ${created}</div>
           <div class="admin-r-meta" style="direction:ltr; text-align:right; margin-top:2px;">✉️ ${escapeHtml(ownerEmail)}</div>
           ${ownerEmail !== '—' ? `<button type="button" class="link-btn admin-reset-pw-btn" data-email="${escapeHtml(ownerEmail)}" style="font-size:11px; padding:3px 8px; margin-top:4px;">🔑 إرسال رابط تغيير كلمة المرور</button>` : ''}
+          <a href="${location.origin}${location.pathname}?r=${encodeURIComponent(r.slug)}" target="_blank" rel="noopener" class="link-btn admin-menu-link-btn" style="display:inline-block; font-size:11px; padding:3px 8px; margin-top:4px; text-decoration:none;">🔗 فتح المنيو</a>
         </div>
         <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:4px; width:100%;">
           <span style="font-weight:700;">نوع الباقة</span>
