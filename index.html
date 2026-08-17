@@ -1513,16 +1513,18 @@ function showDesktopOrderNotification(orderRow){
 function playNewOrderSound(){
   try{
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [0, 0.18].forEach(delay=>{
+    // صفارة إنذار من نغمتين متبادلين، صوت أعلى ونوع موجة "square" أقرب لصوت جرس/إنذار مزعج
+    [0, 0.15, 0.3, 0.45].forEach((delay, i)=>{
       const o = ctx.createOscillator();
       const g = ctx.createGain();
       o.connect(g); g.connect(ctx.destination);
-      o.frequency.value = 880;
+      o.type = 'square';
+      o.frequency.value = i % 2 === 0 ? 1050 : 700;
       g.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
-      g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + delay + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + 0.35);
+      g.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime + delay + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + 0.14);
       o.start(ctx.currentTime + delay);
-      o.stop(ctx.currentTime + delay + 0.4);
+      o.stop(ctx.currentTime + delay + 0.15);
     });
   }catch(e){}
 }
@@ -1530,7 +1532,7 @@ function playNewOrderSound(){
 function startOrderAlertLoop(){
   if(orderAlertLoopId) return; // شغالة بالفعل، ملحقاش نبدأ لوب تاني
   playNewOrderSound();
-  orderAlertLoopId = setInterval(playNewOrderSound, 6000);
+  orderAlertLoopId = setInterval(playNewOrderSound, 2000);
 }
 
 function stopOrderAlertLoop(){
