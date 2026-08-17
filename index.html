@@ -91,6 +91,10 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .topbar-actions{display:flex; gap:10px; flex-wrap:wrap;}
 .link-btn{ background:#2A2825; color:var(--paper); border:1px solid #454138; font-family:var(--body); font-weight:700; font-size:13px; padding:9px 16px; border-radius:6px; cursor:pointer; }
 .link-btn:hover{border-color:var(--stone);}
+#notifPermBtn.notif-granted{ background:#1f4d2e; border-color:#3a8f5a; color:#c8f0d6; }
+#notifPermBtn.notif-denied{ background:#4d1f1f; border-color:var(--danger); color:#f0c8c8; }
+#notifPermBtn.notif-default{ background:var(--ember); border-color:var(--ember-dark); color:var(--paper); animation:notifPulse 1.6s ease-in-out infinite; }
+@keyframes notifPulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.6; } }
 .link-btn-split{ display:inline-flex; }
 .link-btn-split .split-copy{ border-radius:6px 0 0 6px; border-left:none; }
 .link-btn-split .split-open{ border-radius:0 6px 6px 0; padding:9px 12px; }
@@ -1376,17 +1380,22 @@ async function refreshNewOrdersCount(){
 function updateNotifPermBtn(){
   const btn = document.getElementById('notifPermBtn');
   if(!btn) return;
+  btn.classList.remove('notif-granted', 'notif-denied', 'notif-default');
   if(!('Notification' in window)){
     btn.textContent = '🔕 المتصفح لا يدعم التنبيهات';
     btn.disabled = true;
+    btn.classList.add('notif-denied');
     return;
   }
   if(Notification.permission === 'granted'){
-    btn.textContent = '🔔 تنبيهات المتصفح مفعّلة';
+    btn.textContent = '✅ تنبيهات المتصفح مفعّلة (اضغط للتجربة)';
+    btn.classList.add('notif-granted');
   } else if(Notification.permission === 'denied'){
-    btn.textContent = '🔕 التنبيهات محظورة (فعّلها من إعدادات المتصفح)';
+    btn.textContent = '⛔ التنبيهات محظورة — فعّلها من إعدادات المتصفح';
+    btn.classList.add('notif-denied');
   } else {
-    btn.textContent = '🔔 تفعيل تنبيهات المتصفح';
+    btn.textContent = '🔔 اضغط هنا لتفعيل تنبيهات المتصفح';
+    btn.classList.add('notif-default');
   }
 }
 
@@ -1402,16 +1411,12 @@ function setupNotificationPermission(){
   }
   if(btn.dataset.bound) return;
   btn.dataset.bound = '1';
-  btn.addEventListener('click', async ()=>{
+  btn.addEventListener('click', ()=>{
     if(!('Notification' in window)) return;
     if(Notification.permission === 'default'){
-      await Notification.requestPermission();
-      updateNotifPermBtn();
-      if(Notification.permission === 'granted'){
-        new Notification('تم تفعيل التنبيهات ✅', { body: 'هتوصلك رسالة سطح مكتب مع كل أوردر جديد طول ما المتصفح شغال.' });
-      }
+      showNotifPermModal('ask');
     } else if(Notification.permission === 'denied'){
-      toast('التنبيهات محظورة من إعدادات المتصفح — لازم تفعّلها يدويًا من هناك ثم تعيد تحميل الصفحة');
+      showNotifPermModal('blocked');
     } else {
       // مفعّلة بالفعل — نبعت إشعار تجريبي عشان يتأكد إنها شغالة فعليًا على جهازه
       updateNotifPermBtn();
@@ -1420,6 +1425,56 @@ function setupNotificationPermission(){
       }catch(e){ console.error('Notification test failed:', e); toast('في مشكلة بعرض الإشعار — راجع Console (F12)'); }
     }
   });
+}
+
+function showNotifPermModal(mode){
+  const existing = document.getElementById('notifPermModalOverlay');
+  if(existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.id = 'notifPermModalOverlay';
+
+  if(mode === 'ask'){
+    overlay.innerHTML = `
+      <div class="modal" style="text-align:center; max-width:380px;">
+        <h3>🔔 فعّل تنبيهات الطلبات</h3>
+        <div class="orders-empty" style="padding:0 0 16px;">هيوصلك إشعار على سطح المكتب مع كل أوردر جديد أول ما يوصل، حتى لو التاب مش في الفوكس. المتصفح هيسألك للإذن بعد شوية — اضغط "سماح / Allow".</div>
+        <div class="modal-actions">
+          <button class="btn-cancel" id="notifModalCancelBtn">إلغاء</button>
+          <button class="btn-confirm" id="notifModalAskBtn">تفعيل الإشعارات الآن</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+    overlay.querySelector('#notifModalCancelBtn').addEventListener('click', ()=> overlay.remove());
+    overlay.querySelector('#notifModalAskBtn').addEventListener('click', async ()=>{
+      overlay.remove();
+      await Notification.requestPermission();
+      updateNotifPermBtn();
+      if(Notification.permission === 'granted'){
+        new Notification('تم تفعيل التنبيهات ✅', { body: 'هتوصلك رسالة سطح مكتب مع كل أوردر جديد طول ما المتصفح شغال.' });
+      } else if(Notification.permission === 'denied'){
+        toast('تم رفض الإذن — تقدر تفعّله لاحقًا من إعدادات المتصفح');
+      }
+    });
+  } else {
+    overlay.innerHTML = `
+      <div class="modal" style="text-align:center; max-width:420px;">
+        <h3>⛔ الإشعارات محظورة</h3>
+        <div class="orders-empty" style="padding:0 0 12px;">المتصفح ما بيسمحش بإعادة السؤال تلقائيًا بعد الحظر، لازم تفعّلها يدويًا بخطوات بسيطة:</div>
+        <div class="orders-empty" style="text-align:right; padding:0 0 16px; line-height:1.9;">
+          1️⃣ اضغط على أيقونة القفل 🔒 (أو ⓘ) بجانب رابط الموقع فوق في المتصفح<br>
+          2️⃣ دوّر على "Notifications" وحوّلها لـ "Allow"<br>
+          3️⃣ ارجع للصفحة واعمل تحديث (Reload)
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" id="notifModalCloseBtn">تمام</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+    overlay.querySelector('#notifModalCloseBtn').addEventListener('click', ()=> overlay.remove());
+  }
 }
 
 function showDesktopOrderNotification(orderRow){
