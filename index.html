@@ -1491,7 +1491,7 @@ function showNotifPermModal(mode){
     try{
       new Notification('تجربة الإشعار 🔔', { body: 'لو شفت الرسالة دي، التنبيهات شغالة تمام.' });
     }catch(e){ console.error('Notification test failed:', e); }
-    playNewOrderSound();
+    startOrderAlertLoop();
   }
 }
 
