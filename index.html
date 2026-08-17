@@ -760,6 +760,7 @@ let previewCategoryId = null;
 let pendingImage = null;
 let newOrdersCount = 0;
 let ordersChannel = null;
+let orderAlertLoopId = null;
 
 /* ================= PWA install (save menu to home screen) ================= */
 let deferredInstallPrompt = null;
@@ -1133,6 +1134,7 @@ document.getElementById('forgotPasswordLink').addEventListener('click', async ()
 });
 
 document.getElementById('signOutLink').addEventListener('click', async ()=>{
+  stopOrderAlertLoop();
   await sb.auth.signOut();
   currentUser = null; restaurant = null;
   document.getElementById('authEmail').value='';
@@ -1525,6 +1527,19 @@ function playNewOrderSound(){
   }catch(e){}
 }
 
+function startOrderAlertLoop(){
+  if(orderAlertLoopId) return; // شغالة بالفعل، ملحقاش نبدأ لوب تاني
+  playNewOrderSound();
+  orderAlertLoopId = setInterval(playNewOrderSound, 6000);
+}
+
+function stopOrderAlertLoop(){
+  if(orderAlertLoopId){
+    clearInterval(orderAlertLoopId);
+    orderAlertLoopId = null;
+  }
+}
+
 function subscribeToNewOrders(){
   if(ordersChannel) return;
   ordersChannel = sb.channel(`orders-${restaurant.id}`)
@@ -1536,7 +1551,7 @@ function subscribeToNewOrders(){
     }, (payload)=>{
       newOrdersCount++;
       updateNewOrdersBadge();
-      playNewOrderSound();
+      startOrderAlertLoop();
       showDesktopOrderNotification(payload.new);
       toast(`طلب جديد من ${payload.new && payload.new.customer_name ? payload.new.customer_name : 'عميل'}! 🔔`);
     })
@@ -1852,6 +1867,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
+  stopOrderAlertLoop();
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
