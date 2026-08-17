@@ -1394,6 +1394,12 @@ function setupNotificationPermission(){
   const btn = document.getElementById('notifPermBtn');
   if(!btn) return;
   updateNotifPermBtn();
+  // لو المستخدم غيّر الإذن من إعدادات المتصفح مباشرة (مش من الزرار)، نحدّث شكل الزرار تلقائيًا
+  if('permissions' in navigator && navigator.permissions.query){
+    navigator.permissions.query({ name: 'notifications' }).then(status=>{
+      status.onchange = updateNotifPermBtn;
+    }).catch(()=>{});
+  }
   if(btn.dataset.bound) return;
   btn.dataset.bound = '1';
   btn.addEventListener('click', async ()=>{
@@ -1405,9 +1411,13 @@ function setupNotificationPermission(){
         new Notification('تم تفعيل التنبيهات ✅', { body: 'هتوصلك رسالة سطح مكتب مع كل أوردر جديد طول ما المتصفح شغال.' });
       }
     } else if(Notification.permission === 'denied'){
-      toast('التنبيهات محظورة من إعدادات المتصفح — لازم تفعّلها يدويًا من هناك');
+      toast('التنبيهات محظورة من إعدادات المتصفح — لازم تفعّلها يدويًا من هناك ثم تعيد تحميل الصفحة');
     } else {
+      // مفعّلة بالفعل — نبعت إشعار تجريبي عشان يتأكد إنها شغالة فعليًا على جهازه
       updateNotifPermBtn();
+      try{
+        new Notification('تجربة الإشعار 🔔', { body: 'لو شفت الرسالة دي، التنبيهات شغالة تمام.' });
+      }catch(e){ console.error('Notification test failed:', e); toast('في مشكلة بعرض الإشعار — راجع Console (F12)'); }
     }
   });
 }
@@ -1424,7 +1434,7 @@ function showDesktopOrderNotification(orderRow){
       renotify: true
     });
     n.onclick = ()=>{ window.focus(); n.close(); };
-  }catch(e){}
+  }catch(e){ console.error('showDesktopOrderNotification failed:', e); }
 }
 
 function playNewOrderSound(){
