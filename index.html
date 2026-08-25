@@ -748,7 +748,7 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
 <script>
 /* ================= Supabase config ================= */
 const SUPABASE_URL = 'https://vinpjtrxwqlmwppggbqy.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpbnBqdHJ4d3FsbXdwcGdnYnF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNjkxMjksImV4cCI6MjA5OTk0NTEyOX0._NSrcUwhZQKOp_DTZkVJdz-Rjo-0QkhCyeAjR-XXB9w';
+const SUPABASE_ANON_KEY = 'sb_publishable_V9nPBwlDN28N3ImfS4NnGg_M4VbvJa4';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
@@ -1235,6 +1235,24 @@ function applyFeaturePlanUI(){
   });
 }
 
+/* صلاحيات دقيقة يتحكم فيها الأدمن لكل عميل على حدة (لوحة تحكم m@g) */
+function applyGranularRestrictionsUI(){
+  const restrictions = {
+    viewOrdersBtn: restaurant.restriction_orders_disabled,
+    viewStatsBtn: restaurant.restriction_stats_disabled,
+    publicLinkSplitBtn: restaurant.restriction_share_disabled,
+    showQrBtn: restaurant.restriction_share_disabled,
+    shareMenuBtn: restaurant.restriction_share_disabled,
+    deliveryZonesBtn: restaurant.restriction_delivery_zones_disabled,
+    customersBtn: restaurant.restriction_customers_disabled,
+  };
+  Object.entries(restrictions).forEach(([id, restricted])=>{
+    if(!restricted) return; // بنخفي بس، مبنظهرش عشان منتعارضش مع applyFeaturePlanUI
+    const el = document.getElementById(id);
+    if(el) el.classList.add('hidden');
+  });
+}
+
 async function openDashboard(){
   show('loadingScreen');
   document.getElementById('dashRestaurantName').textContent = restaurant.name;
@@ -1252,6 +1270,7 @@ async function openDashboard(){
   if(restaurant.restriction_banner_enabled) showTrialExpiredBanner();
   applyExcelRestrictionUI();
   applyFeaturePlanUI();
+  applyGranularRestrictionsUI();
 }
 
 function applyExcelRestrictionUI(){
@@ -1974,7 +1993,7 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
         <div class="o-contact-row">
           <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}
           <button type="button" class="o-wa-btn" data-action="sendMenuWa" data-phone="${escapeHtml(o.customer_phone)}" data-name="${escapeHtml(o.customer_name)}" title="إرسال رابط المنيو للعميل عبر واتساب">📲 إرسال المنيو</button>
-          <button type="button" class="o-print-btn" data-action="printReceipt" data-order-id="${o.id}" title="طباعة الطلب / Print Order">🖨️ طباعة الطلب <span style="opacity:.75;">| Print Order</span></button>
+          ${restaurant.restriction_print_disabled ? '' : `<button type="button" class="o-print-btn" data-action="printReceipt" data-order-id="${o.id}" title="طباعة الطلب / Print Order">🖨️ طباعة الطلب <span style="opacity:.75;">| Print Order</span></button>`}
         </div>
         <div class="o-time">📍 ${escapeHtml(o.city || '')}${o.area ? ' — ' + escapeHtml(o.area) : ''}${o.delivery_fee != null ? ` <span class="o-fee">(رسوم التوصيل: ${Number(o.delivery_fee).toFixed(2)} EGP)</span>` : ''}</div>
         ${o.address ? `<div class="o-time">${escapeHtml(o.address)}</div>` : ''}
@@ -2153,6 +2172,7 @@ function buildReceiptHtml(order, lines, widthMm){
 }
 
 function openReceiptPreviewModal(order, lines){
+  if(restaurant.restriction_print_disabled){ toast('طباعة الطلبات غير متاحة في نسختك الحالية'); return; }
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   let widthMm = getSavedReceiptWidth();
@@ -2366,6 +2386,39 @@ async function openAdminPanel(){
           <span class="admin-switch"><input type="checkbox" data-field="restriction_max_items_enabled" ${r.restriction_max_items_enabled ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
           حد أقصى للأصناف
           <input type="number" min="1" class="admin-max-input" data-field="restriction_max_items_value" value="${r.restriction_max_items_value ?? 10}">
+        </label>
+        <div style="width:100%; font-weight:800; font-size:12.5px; margin:4px 0 -2px; opacity:.7;">🔐 صلاحيات لوحة تحكم العميل</div>
+        <label class="admin-toggle-group">
+          <span class="admin-switch"><input type="checkbox" data-field="restriction_prices_disabled" ${r.restriction_prices_disabled ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+          منع تعديل الأسعار
+        </label>
+        <label class="admin-toggle-group">
+          <span class="admin-switch"><input type="checkbox" data-field="restriction_images_disabled" ${r.restriction_images_disabled ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+          منع تغيير صور الأصناف
+        </label>
+        <label class="admin-toggle-group">
+          <span class="admin-switch"><input type="checkbox" data-field="restriction_orders_disabled" ${r.restriction_orders_disabled ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+          منع فتح شاشة الطلبات
+        </label>
+        <label class="admin-toggle-group">
+          <span class="admin-switch"><input type="checkbox" data-field="restriction_print_disabled" ${r.restriction_print_disabled ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+          منع الطباعة
+        </label>
+        <label class="admin-toggle-group">
+          <span class="admin-switch"><input type="checkbox" data-field="restriction_stats_disabled" ${r.restriction_stats_disabled ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+          منع الاطلاع على الإحصائيات
+        </label>
+        <label class="admin-toggle-group">
+          <span class="admin-switch"><input type="checkbox" data-field="restriction_share_disabled" ${r.restriction_share_disabled ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+          منع نسخ الرابط / QR / مشاركة القائمة
+        </label>
+        <label class="admin-toggle-group">
+          <span class="admin-switch"><input type="checkbox" data-field="restriction_delivery_zones_disabled" ${r.restriction_delivery_zones_disabled ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+          منع الوصول لمناطق التوصيل
+        </label>
+        <label class="admin-toggle-group">
+          <span class="admin-switch"><input type="checkbox" data-field="restriction_customers_disabled" ${r.restriction_customers_disabled ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+          منع الوصول لشاشة العملاء
         </label>
       </div>`;
   }
@@ -4288,13 +4341,15 @@ function openItemModal(existing){
   const pricingTypeSelect = overlay.querySelector('#itemPricingType');
   const sizesRowsWrap = overlay.querySelector('#sizesRowsWrap');
 
+  const pricesLocked = !!restaurant.restriction_prices_disabled;
+
   function addSizeRow(sizeName, sizeNameEn, price){
     const row = document.createElement('div');
     row.className = 'zone-add-row';
     row.style.marginTop = '8px';
     row.innerHTML = `
       <input type="text" class="size-name-input" placeholder="اسم الحجم (مثال: وسط)" value="${sizeName ? escapeHtml(sizeName) : ''}" style="flex:1;">
-      <input type="number" class="size-price-input" placeholder="السعر" step="0.01" value="${price != null ? price : ''}" style="width:100px;">
+      <input type="number" class="size-price-input" placeholder="السعر" step="0.01" value="${price != null ? price : ''}" style="width:100px;" ${pricesLocked ? 'disabled title="تعديل الأسعار غير متاح في نسختك الحالية"' : ''}>
       <button type="button" data-action="removeSize" style="background:none; border:1px solid var(--line); border-radius:6px; padding:9px 12px; cursor:pointer; color:var(--stone);">حذف</button>
     `;
     row.querySelector('[data-action="removeSize"]').addEventListener('click', ()=> row.remove());
@@ -4327,10 +4382,29 @@ function openItemModal(existing){
   overlay.querySelector('#addSizeRowBtn').addEventListener('click', ()=> addSizeRow('', '', null));
   updatePricingTypeUI();
 
+  if(pricesLocked){
+    const itemPriceEl = overlay.querySelector('#itemPrice');
+    const itemOldPriceEl = overlay.querySelector('#itemOldPrice');
+    [itemPriceEl, itemOldPriceEl].forEach(inp=>{
+      if(!inp) return;
+      inp.disabled = true;
+      inp.title = 'تعديل الأسعار غير متاح في نسختك الحالية';
+    });
+  }
+
+  const imagesLocked = !!restaurant.restriction_images_disabled;
   const imgDrop = overlay.querySelector('#imgDrop');
   const imgInput = overlay.querySelector('#imgInput');
   const removeImgBtn = overlay.querySelector('#removeImgBtn');
-  imgDrop.addEventListener('click', ()=> imgInput.click());
+  if(imagesLocked){
+    imgDrop.style.cursor = 'not-allowed';
+    imgDrop.style.opacity = '.6';
+    removeImgBtn.style.display = 'none';
+  }
+  imgDrop.addEventListener('click', ()=>{
+    if(imagesLocked){ toast('تغيير صور الأصناف غير متاح في نسختك الحالية'); return; }
+    imgInput.click();
+  });
   imgInput.addEventListener('change', async ()=>{
     const file = imgInput.files[0];
     if(!file) return;
