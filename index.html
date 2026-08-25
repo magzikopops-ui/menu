@@ -416,7 +416,13 @@ body.pub-menu-only .add-to-cart-btn{ display:none !important; }
 .admin-r-num{ font-weight:800; font-size:13px; color:var(--ember); background:rgba(184,57,14,.15); border-radius:999px; padding:3px 10px; align-self:flex-start; flex-shrink:0; }
 .admin-r-name{ font-weight:800; font-size:15px; }
 .admin-r-meta{ font-size:12px; color:var(--stone); }
-.admin-card-header{ display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:14px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,.1); }
+.admin-card-header{ display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:14px; }
+.admin-restaurant-row:not(.collapsed) .admin-card-header{ padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,.1); }
+.admin-card-body{ display:flex; flex-direction:column; gap:12px; }
+.admin-restaurant-row.collapsed .admin-card-body{ display:none; }
+.admin-collapse-arrow{ display:inline-block; transition:transform .15s; opacity:.6; font-size:11px; }
+.admin-restaurant-row.collapsed .admin-collapse-arrow{ transform:rotate(-90deg); }
+.admin-section-title-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
 .admin-card-id{ display:flex; align-items:flex-start; gap:10px; }
 .admin-card-actions{ display:flex; flex-wrap:wrap; gap:6px; align-self:flex-start; }
 .admin-section{ border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:12px 14px; background:rgba(255,255,255,.015); }
@@ -1255,6 +1261,7 @@ function applyGranularRestrictionsUI(){
     shareMenuBtn: restaurant.restriction_share_disabled,
     deliveryZonesBtn: restaurant.restriction_delivery_zones_disabled,
     customersBtn: restaurant.restriction_customers_disabled,
+    restaurantSettingsBtn: restaurant.restriction_settings_disabled,
   };
   Object.entries(restrictions).forEach(([id, restricted])=>{
     if(!restricted) return; // بنخفي بس، مبنظهرش عشان منتعارضش مع applyFeaturePlanUI
@@ -2353,12 +2360,12 @@ async function openAdminPanel(){
           <span class="admin-switch"><input type="checkbox" data-field="${field}" ${r[field] ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
         </label>`;
     return `
-      <div class="admin-restaurant-row" data-id="${r.id}">
-        <div class="admin-card-header">
+      <div class="admin-restaurant-row collapsed" data-id="${r.id}">
+        <div class="admin-card-header" data-action="toggleCollapse" style="cursor:pointer;">
           <div class="admin-card-id">
             <div class="admin-r-num">#${idx + 1}</div>
             <div>
-              <div class="admin-r-name">${escapeHtml(r.name)} <span style="opacity:.5; font-size:11px;">(${r.business_type === 'store' ? 'متجر' : 'مطعم'})</span></div>
+              <div class="admin-r-name">${escapeHtml(r.name)} <span style="opacity:.5; font-size:11px;">(${r.business_type === 'store' ? 'متجر' : 'مطعم'})</span> <span class="admin-collapse-arrow">▾</span></div>
               <div class="admin-r-meta">/${escapeHtml(r.slug)} · انضم ${created}</div>
               <div class="admin-r-meta" style="direction:ltr; text-align:right; margin-top:2px;">✉️ ${escapeHtml(ownerEmail)}</div>
             </div>
@@ -2369,6 +2376,7 @@ async function openAdminPanel(){
           </div>
         </div>
 
+        <div class="admin-card-body">
         <div class="admin-section">
           <div class="admin-section-title">📦 الباقة والاشتراك</div>
           <div class="admin-plan-row">
@@ -2415,7 +2423,13 @@ async function openAdminPanel(){
         </div>
 
         <div class="admin-section">
-          <div class="admin-section-title">🔐 صلاحيات لوحة تحكم العميل</div>
+          <div class="admin-section-title-row">
+            <div class="admin-section-title" style="margin-bottom:0;">🔐 صلاحيات لوحة تحكم العميل</div>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="link-btn admin-lock-all-btn" style="font-size:11px; padding:3px 8px;">🔒 تقييد الكل</button>
+              <button type="button" class="link-btn admin-unlock-all-btn" style="font-size:11px; padding:3px 8px;">🔓 فتح الكل</button>
+            </div>
+          </div>
           <div class="admin-perm-grid">
             ${perm('restriction_prices_disabled', '💰', 'منع تعديل الأسعار')}
             ${perm('restriction_images_disabled', '🖼️', 'منع تغيير صور الأصناف')}
@@ -2425,7 +2439,11 @@ async function openAdminPanel(){
             ${perm('restriction_share_disabled', '🔗', 'منع نسخ الرابط / QR / المشاركة')}
             ${perm('restriction_delivery_zones_disabled', '🚚', 'منع مناطق التوصيل')}
             ${perm('restriction_customers_disabled', '👥', 'منع شاشة العملاء')}
+            ${perm('restriction_settings_disabled', '⚙️', 'منع الوصول لإعدادات المطعم بالكامل')}
+            ${perm('restriction_notif_settings_disabled', '📵', 'منع تعديل رقم واتساب التنبيهات')}
+            ${perm('restriction_delete_disabled', '🗑️', 'منع حذف الأصناف أو الفئات')}
           </div>
+        </div>
         </div>
       </div>`;
   }
@@ -2434,7 +2452,8 @@ async function openAdminPanel(){
 
   function bindRowEvents(){
   wrap.querySelectorAll('.admin-reset-pw-btn').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
+    btn.addEventListener('click', async (e)=>{
+      e.stopPropagation();
       const email = btn.dataset.email;
       if(!confirm(`إرسال رابط إعادة تعيين كلمة المرور إلى ${email}؟`)) return;
       btn.disabled = true;
@@ -2446,6 +2465,36 @@ async function openAdminPanel(){
       btn.textContent = originalText;
       if(rpErr){ toast('تعذر إرسال الرابط'); return; }
       toast('تم إرسال رابط تغيير كلمة المرور إلى بريد العميل');
+    });
+  });
+
+  wrap.querySelectorAll('.admin-menu-link-btn').forEach(a=>{
+    a.addEventListener('click', (e)=> e.stopPropagation());
+  });
+
+  wrap.querySelectorAll('[data-action="toggleCollapse"]').forEach(header=>{
+    header.addEventListener('click', ()=>{
+      header.closest('.admin-restaurant-row').classList.toggle('collapsed');
+    });
+  });
+
+  const CLIENT_PERM_FIELDS = ['restriction_prices_disabled','restriction_images_disabled','restriction_orders_disabled','restriction_print_disabled','restriction_stats_disabled','restriction_share_disabled','restriction_delivery_zones_disabled','restriction_customers_disabled','restriction_settings_disabled','restriction_notif_settings_disabled','restriction_delete_disabled'];
+
+  wrap.querySelectorAll('.admin-lock-all-btn, .admin-unlock-all-btn').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      const row = btn.closest('.admin-restaurant-row');
+      const rId = row.dataset.id;
+      const lock = btn.classList.contains('admin-lock-all-btn');
+      const updatePayload = {};
+      CLIENT_PERM_FIELDS.forEach(f=> updatePayload[f] = lock);
+      const { error: updErr } = await sb.from('restaurants').update(updatePayload).eq('id', rId);
+      if(updErr){ toast('تعذر الحفظ'); return; }
+      CLIENT_PERM_FIELDS.forEach(f=>{
+        const cb = row.querySelector(`input[type="checkbox"][data-field="${f}"]`);
+        if(cb) cb.checked = lock;
+      });
+      toast(lock ? 'تم تقييد كل الصلاحيات' : 'تم فتح كل الصلاحيات');
     });
   });
 
@@ -3039,6 +3088,7 @@ document.getElementById('changePasswordLink').addEventListener('click', ()=>{
 });
 
 document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
+  if(restaurant.restriction_settings_disabled){ toast('إعدادات المطعم غير متاحة في نسختك الحالية'); return; }
   let pendingLogo = restaurant.logo_url || null;
   const originalLogoUrl = restaurant.logo_url || null;
   let pendingBizType = restaurant.business_type === 'store' ? 'store' : 'restaurant';
@@ -3101,8 +3151,9 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
       <div class="field">
         <label>إشعار واتساب بالطلبات الجديدة (اختياري)</label>
         <small>لتفعيل الإشعار: احفظ رقم <span dir="ltr" style="font-family:var(--mono);">+34 684 74 26 79</span> في هاتفك، وابعتله على واتساب رسالة نصها بالإنجليزية بالظبط: <span dir="ltr" style="font-family:var(--mono);">I allow callmebot to send me messages</span>، وهيردلك برسالة فيها الرمز الخاص بيك (apikey). اكتب رقمك ورمزك تحت.</small>
-        <input type="text" id="notifPhoneInput" value="${restaurant.notification_phone ? escapeHtml(restaurant.notification_phone) : ''}" placeholder="رقم واتساب بصيغة دولية: 201154361888" style="margin-top:8px; direction:ltr;">
-        <input type="text" id="notifApikeyInput" value="${restaurant.notification_apikey ? escapeHtml(restaurant.notification_apikey) : ''}" placeholder="الرمز (apikey) اللي وصلك من البوت" style="margin-top:8px; direction:ltr;">
+        <input type="text" id="notifPhoneInput" value="${restaurant.notification_phone ? escapeHtml(restaurant.notification_phone) : ''}" placeholder="رقم واتساب بصيغة دولية: 201154361888" style="margin-top:8px; direction:ltr;" ${restaurant.restriction_notif_settings_disabled ? 'disabled title="تعديل رقم التنبيهات غير متاح في نسختك الحالية"' : ''}>
+        <input type="text" id="notifApikeyInput" value="${restaurant.notification_apikey ? escapeHtml(restaurant.notification_apikey) : ''}" placeholder="الرمز (apikey) اللي وصلك من البوت" style="margin-top:8px; direction:ltr;" ${restaurant.restriction_notif_settings_disabled ? 'disabled title="تعديل رقم التنبيهات غير متاح في نسختك الحالية"' : ''}>
+        ${restaurant.restriction_notif_settings_disabled ? `<small style="color:var(--stone); margin-top:4px; display:block;">🔒 رقم استلام إشعارات الطلبات مقفول من الإدارة.</small>` : ''}
       </div>
       <div class="field">
         <label>الصيانة</label>
@@ -3793,7 +3844,7 @@ function renderCategories(){
         <span class="count">${count}</span>
         <span style="display:flex;">
           <button class="icon-btn" data-action="rename" title="تعديل الاسم">✎</button>
-          <button class="icon-btn danger" data-action="delete" title="حذف">🗑</button>
+          ${restaurant.restriction_delete_disabled ? '' : `<button class="icon-btn danger" data-action="delete" title="حذف">🗑</button>`}
         </span>
       </span>`;
     div.addEventListener('click', (e)=>{
@@ -3802,7 +3853,8 @@ function renderCategories(){
       renderDashboard();
     });
     div.querySelector('[data-action="rename"]').addEventListener('click', (e)=>{ e.stopPropagation(); openCategoryModal(cat); });
-    div.querySelector('[data-action="delete"]').addEventListener('click', (e)=>{ e.stopPropagation(); deleteCategory(cat.id); });
+    const catDeleteBtn = div.querySelector('[data-action="delete"]');
+    if(catDeleteBtn) catDeleteBtn.addEventListener('click', (e)=>{ e.stopPropagation(); deleteCategory(cat.id); });
     wrap.appendChild(div);
   });
   initCategorySortable();
@@ -3922,11 +3974,12 @@ function buildItemCard(item){
       <div class="item-tools">
         <button data-action="edit">تعديل</button>
         <button data-action="toggleAvailability">${isAvailable ? 'إخفاء مؤقتًا (نفذت الكمية)' : 'إظهار مرة أخرى'}</button>
-        <button data-action="delete" class="danger">حذف</button>
+        ${restaurant.restriction_delete_disabled ? '' : `<button data-action="delete" class="danger">حذف</button>`}
       </div>
     </div>`;
   div.querySelector('[data-action="edit"]').addEventListener('click', ()=> openItemModal(item));
-  div.querySelector('[data-action="delete"]').addEventListener('click', ()=> deleteItem(item.id));
+  const itemDeleteBtn = div.querySelector('[data-action="delete"]');
+  if(itemDeleteBtn) itemDeleteBtn.addEventListener('click', ()=> deleteItem(item.id));
   div.querySelector('[data-action="toggleAvailability"]').addEventListener('click', ()=> toggleItemAvailability(item, !isAvailable));
   return div;
 }
@@ -3997,6 +4050,7 @@ function renderTicket(){
 
 /* ================= category CRUD ================= */
 async function deleteCategory(id){
+  if(restaurant.restriction_delete_disabled){ toast('حذف الفئات غير متاح في نسختك الحالية'); return; }
   const cat = categories.find(c=>c.id===id);
   if(!confirm(`حذف فئة "${cat.name}" وكل ${biz(restaurant.business_type,'itemsDef')} بداخلها؟`)) return;
   const catItemImages = items.filter(i=>i.category_id===id && i.image_url).map(i=>i.image_url);
@@ -4249,6 +4303,7 @@ async function migrateLegacyImages(){
 }
 
 async function deleteItem(id){
+  if(restaurant.restriction_delete_disabled){ toast('حذف الأصناف غير متاح في نسختك الحالية'); return; }
   if(!confirm(`حذف هذا ${biz(restaurant.business_type,'itemDef')}؟`)) return;
   const item = items.find(i=>i.id===id);
   const { error } = await sb.from('items').delete().eq('id', id);
