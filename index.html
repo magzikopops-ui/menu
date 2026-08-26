@@ -763,6 +763,7 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
     <div id="trackStatusWrap"></div>
     <div id="trackItemsWrap" style="text-align:right; margin-top:22px;"></div>
     <div id="trackTotalWrap" style="margin-top:12px; font-weight:700; color:var(--ink); text-align:left;"></div>
+    <div id="trackContactWrap" style="margin-top:16px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;"></div>
     <div style="margin-top:18px; font-size:11px; color:var(--stone);">آخر تحديث: <span id="trackUpdatedAt"></span></div>
   </div>
 </div>
@@ -3323,12 +3324,18 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
       <div class="field">
         <label>يوزر ${t().entityDef} على ماسنجر (اختياري — لإرسال الطلب عبر ماسنجر)</label>
         <small>يوزرنيم صفحة الفيسبوك، من غير رابط كامل. مثال: لو رابط صفحتك facebook.com/mypage اكتب mypage بس.</small>
-        <input type="text" id="restMessengerInput" value="${restaurant.messenger_username ? escapeHtml(restaurant.messenger_username) : ''}" placeholder="مثال: mypage" style="margin-top:8px; direction:ltr;">
+        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+          <input type="text" id="restMessengerInput" value="${restaurant.messenger_username ? escapeHtml(restaurant.messenger_username) : ''}" placeholder="مثال: mypage" style="flex:1; min-width:0; direction:ltr;">
+          <button type="button" id="testMessengerBtn" style="width:auto; flex:none; margin:0; white-space:nowrap; padding:10px 16px; background:transparent; border:1.5px dashed var(--stone); color:var(--stone-light); font-family:var(--body); font-weight:700; font-size:14px; border-radius:8px; cursor:pointer;">تجربة</button>
+        </div>
       </div>
       <div class="field">
         <label>يوزر ${t().entityDef} على تليجرام (اختياري — لإرسال الطلب عبر تليجرام)</label>
         <small>يوزرنيم حسابك أو قناتك في تليجرام من غير @. مثال: mystore</small>
-        <input type="text" id="restTelegramInput" value="${restaurant.telegram_username ? escapeHtml(restaurant.telegram_username) : ''}" placeholder="مثال: mystore" style="margin-top:8px; direction:ltr;">
+        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+          <input type="text" id="restTelegramInput" value="${restaurant.telegram_username ? escapeHtml(restaurant.telegram_username) : ''}" placeholder="مثال: mystore" style="flex:1; min-width:0; direction:ltr;">
+          <button type="button" id="testTelegramBtn" style="width:auto; flex:none; margin:0; white-space:nowrap; padding:10px 16px; background:transparent; border:1.5px dashed var(--stone); color:var(--stone-light); font-family:var(--body); font-weight:700; font-size:14px; border-radius:8px; cursor:pointer;">تجربة</button>
+        </div>
       </div>
       <div class="field">
         <label id="rsAddressLabel">عنوان ${t().entityDef} (اختياري)</label>
@@ -3426,6 +3433,18 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     pendingLogo = null;
     logoDrop.innerHTML = `<span id="logoDropText">انقر لرفع الشعار</span><br><span id="logoSizeNote"></span>`;
     removeLogoBtn.style.display = 'none';
+  });
+  overlay.querySelector('#testMessengerBtn').addEventListener('click', ()=>{
+    const raw = overlay.querySelector('#restMessengerInput').value.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.|m\.)?(facebook\.com|fb\.com|m\.me)\//i, '').replace(/\/+$/, '');
+    if(!raw){ toast('اكتب اليوزرنيم الأول'); return; }
+    const text = encodeURIComponent(`رسالة تجربة من ${overlay.querySelector('#restNameInput').value.trim() || t().entityDef} — للتأكد من صحة يوزر الماسنجر ✅`);
+    window.open(`https://m.me/${raw}?text=${text}`, '_blank');
+  });
+  overlay.querySelector('#testTelegramBtn').addEventListener('click', ()=>{
+    const raw = overlay.querySelector('#restTelegramInput').value.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?t\.me\//i, '').replace(/\/+$/, '');
+    if(!raw){ toast('اكتب اليوزرنيم الأول'); return; }
+    const text = encodeURIComponent(`رسالة تجربة من ${overlay.querySelector('#restNameInput').value.trim() || t().entityDef} — للتأكد من صحة يوزر التليجرام ✅`);
+    window.open(`https://t.me/${raw}?text=${text}`, '_blank');
   });
   overlay.querySelector('#rsCancel').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
@@ -4799,6 +4818,7 @@ async function refreshTrackingData(orderId){
     document.getElementById('trackStatusWrap').innerHTML = '';
     document.getElementById('trackItemsWrap').innerHTML = '';
     document.getElementById('trackTotalWrap').innerHTML = '';
+    document.getElementById('trackContactWrap').innerHTML = '';
     if(trackingInterval){ clearInterval(trackingInterval); trackingInterval = null; }
     return;
   }
@@ -4813,7 +4833,53 @@ async function refreshTrackingData(orderId){
       <span>× ${it.quantity}</span>
     </div>`).join('');
   document.getElementById('trackTotalWrap').textContent = row.total != null ? `الإجمالي: ${Number(row.total).toFixed(2)} EGP` : '';
+  document.getElementById('trackContactWrap').innerHTML = renderTrackingContactButtons(row);
   document.getElementById('trackUpdatedAt').textContent = new Date().toLocaleTimeString('ar-EG');
+}
+
+// بيبني نص الطلب كامل (زي رسالة الطلب الأصلية) عشان يتبعت من شاشة التتبع لو العميل حاب يتواصل بخصوص طلبه
+function buildTrackingOrderMessage(row){
+  const typeLabel = row.order_type === 'delivery' ? 'توصيل' : 'استلام';
+  const dateTimeStr = new Date(row.created_at).toLocaleString('ar-EG', {
+    timeZone: 'Africa/Cairo', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true
+  });
+  const items = row.items || [];
+  const lines = items.map(it=>{
+    const name = it.item_name + (it.variant_label ? ` (${it.variant_label})` : '');
+    return `- ${name} × ${it.quantity}`;
+  }).join('\n');
+  let msg = `طلب جديد — ${row.restaurant_name || ''}\nالتاريخ والوقت: ${dateTimeStr}\n\n${lines}`;
+  if(row.subtotal != null) msg += `\n\nالمجموع الفرعي: ${Number(row.subtotal).toFixed(2)} جنيه`;
+  if(row.order_type === 'delivery' && row.delivery_fee != null) msg += `\nرسوم التوصيل${row.area ? ' ('+row.area+')' : ''}: ${Number(row.delivery_fee).toFixed(2)} جنيه`;
+  if(row.total != null) msg += `\nالإجمالي: ${Number(row.total).toFixed(2)} جنيه`;
+  msg += `\n\nنوع الطلب: ${typeLabel}`;
+  if(row.customer_name) msg += `\nالاسم: ${row.customer_name}`;
+  if(row.customer_phone) msg += `\nالتليفون: ${row.customer_phone}`;
+  if(row.secondary_phone) msg += `\nتليفون إضافي: ${row.secondary_phone}`;
+  if(row.order_type === 'delivery'){
+    if(row.city) msg += `\nالمدينة: ${row.city}`;
+    if(row.address) msg += `\nالعنوان: ${row.address}`;
+  }
+  if(row.notes) msg += `\nملاحظات: ${row.notes}`;
+  return msg;
+}
+
+// أزرار تواصل اختيارية في شاشة تتبع الطلب — بتظهر بس للوسائل اللي المطعم فعّلها
+function renderTrackingContactButtons(row){
+  const msg = encodeURIComponent(buildTrackingOrderMessage(row));
+  const btns = [];
+  if(row.restaurant_phone){
+    const digits = String(row.restaurant_phone).replace(/[^\d]/g,'');
+    btns.push(`<a href="https://wa.me/${digits}?text=${msg}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; background:#25D366; color:#fff; font-weight:700; font-size:12px; padding:8px 14px; border-radius:999px; text-decoration:none;">📲 واتساب</a>`);
+  }
+  if(row.restaurant_messenger_username){
+    btns.push(`<a href="https://m.me/${row.restaurant_messenger_username}?text=${msg}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; background:#0084FF; color:#fff; font-weight:700; font-size:12px; padding:8px 14px; border-radius:999px; text-decoration:none;">💬 ماسنجر</a>`);
+  }
+  if(row.restaurant_telegram_username){
+    btns.push(`<a href="https://t.me/${row.restaurant_telegram_username}?text=${msg}" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; background:#26A5E4; color:#fff; font-weight:700; font-size:12px; padding:8px 14px; border-radius:999px; text-decoration:none;">✈️ تليجرام</a>`);
+  }
+  return btns.join('');
 }
 
 function renderTrackingStatus(status){
