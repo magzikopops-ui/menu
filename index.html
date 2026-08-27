@@ -679,6 +679,7 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
     <div class="topbar-actions">
       <button class="link-btn" id="viewOrdersBtn">الطلبات <span id="newOrdersBadge" class="new-orders-badge hidden">0</span></button>
       <button class="link-btn" id="viewStatsBtn">الإحصائيات</button>
+      <button class="link-btn" id="reportsBtn">التقارير</button>
       <span class="link-btn-split" id="publicLinkSplitBtn">
         <button class="link-btn split-copy" id="copyPublicLinkBtn">نسخ رابط القائمة العام</button><button class="link-btn split-open" id="openPublicLinkBtn" title="فتح المنيو مباشرة">🔗</button>
       </span>
@@ -1284,6 +1285,7 @@ function applyGranularRestrictionsUI(){
   const restrictions = {
     viewOrdersBtn: restaurant.restriction_orders_disabled,
     viewStatsBtn: restaurant.restriction_stats_disabled,
+    reportsBtn: restaurant.restriction_stats_disabled,
     publicLinkSplitBtn: restaurant.restriction_share_disabled,
     showQrBtn: restaurant.restriction_share_disabled,
     shareMenuBtn: restaurant.restriction_share_disabled,
@@ -2965,10 +2967,7 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
   overlay.className = 'overlay';
   overlay.innerHTML = `
     <div class="modal">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px;">
-        <h3 style="margin:0;">إحصائيات الطلبات</h3>
-        <button type="button" class="btn-export-sm" id="statsExportPdfBtn">📄 تصدير تقرير شهري</button>
-      </div>
+      <h3>إحصائيات الطلبات</h3>
       <div id="statsSummaryWrap"><div class="orders-empty">جارِ التحميل...</div></div>
       <div class="modal-actions">
         <button class="btn-cancel" id="statsCloseBtn">إغلاق</button>
@@ -3027,14 +3026,6 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
     <div class="orders-empty" style="text-align:right; padding:10px 0 0; font-size:12px;">
       هذه الأرقام تشمل الطلبات المحذوفة أيضًا ولا تتأثر بحذف الطلبات القديمة.
     </div>
-    <h3 style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
-      <span>اتجاه المبيعات</span>
-      <span style="display:flex; gap:6px;">
-        <button type="button" class="chip-btn active" data-metric="total">المبيعات</button>
-        <button type="button" class="chip-btn" data-metric="count">عدد الطلبات</button>
-      </span>
-    </h3>
-    <div id="salesTrendWrap"></div>
     <h3 style="margin-top:20px;">عدد زيارات المنيو</h3>
     <div class="orders-list">
       ${visitCard('اليوم', todayVisits)}
@@ -3042,6 +3033,43 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
       ${visitCard('آخر 30 يوم', monthVisits)}
       ${visitCard('الإجمالي منذ البداية', allTimeVisits)}
     </div>
+    <div class="orders-empty" style="text-align:right; padding:10px 0 0; font-size:12px;">
+      عايز تحليل أعمق (اتجاه المبيعات، أكتر الأصناف، أوقات الذروة، العملاء، المناطق، وتصدير تقرير)؟ جرّب "التقارير" من شريط الأدوات.
+    </div>`;
+});
+
+document.getElementById('reportsBtn').addEventListener('click', async ()=>{
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px;">
+        <h3 style="margin:0;">التقارير والتحليلات</h3>
+        <button type="button" class="btn-export-sm" id="statsExportPdfBtn">📄 تصدير تقرير شهري</button>
+      </div>
+      <div id="statsSummaryWrap"><div class="orders-empty">جارِ التحميل...</div></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="statsCloseBtn">إغلاق</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#statsCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+
+  const wrap = overlay.querySelector('#statsSummaryWrap');
+  const { data: rows, error } = await sb.from('order_stats_daily').select('*').eq('restaurant_id', restaurant.id).order('day', { ascending:false });
+  if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل التقارير</div>`; return; }
+  if(!rows || rows.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا توجد بيانات كافية بعد</div>`; return; }
+
+  wrap.innerHTML = `
+    <h3 style="margin-top:0; display:flex; justify-content:space-between; align-items:center;">
+      <span>اتجاه المبيعات</span>
+      <span style="display:flex; gap:6px;">
+        <button type="button" class="chip-btn active" data-metric="total">المبيعات</button>
+        <button type="button" class="chip-btn" data-metric="count">عدد الطلبات</button>
+      </span>
+    </h3>
+    <div id="salesTrendWrap"></div>
     <h3 style="margin-top:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
       <span>${biz(restaurant.business_type,'itemsDef')} الأكثر طلبًا</span>
       <span style="display:flex; gap:6px; flex-wrap:wrap;">
