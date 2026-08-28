@@ -23,12 +23,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" id="appleWebAppTitle" content="منيو m@g">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://vinpjtrxwqlmwppggbqy.supabase.co">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
-
 :root{
   --ink:#201F1D; --paper:#F6F1E4; --paper-dim:#EDE6D2;
   --ember:#B8390E; --ember-dark:#8F2C0B;
@@ -7406,7 +7409,7 @@ async function loadPublic(slug){
       return `${headerHtml}
       <div class="pub-item" data-id="${i.id}">
         <span class="chevron" data-action="toggle">${i.description ? '▾' : ''}</span>
-        ${i.image_url ? `<img src="${i.image_url}">` : `<div class="no-img">${biz(rest.business_type,'placeholderIcon')}</div>`}
+        ${i.image_url ? `<img src="${i.image_url}" loading="lazy" decoding="async">` : `<div class="no-img">${biz(rest.business_type,'placeholderIcon')}</div>`}
         <div class="info">
           <div class="name-primary">${escapeHtml(tName(i.name, i.name_en))}${topItemIds.has(i.id) ? ` <span title="${lang==='en' ? 'Bestseller' : 'الأكثر طلبًا'}">🔥</span>` : ''}</div>
           ${secondaryName(i.name, i.name_en) ? `<div class="name-secondary">${escapeHtml(secondaryName(i.name, i.name_en))}</div>` : ''}
