@@ -436,6 +436,46 @@ body.pub-menu-only .add-to-cart-btn{ display:none !important; }
 .trial-cta{ display:inline-flex; align-items:center; gap:8px; background:#25D366; color:#0a0c0f; font-weight:800; font-size:14px; padding:12px 22px; border-radius:999px; }
 .trial-close-btn{ position:absolute; top:10px; left:10px; width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,.08); color:#fff; border:none; font-size:16px; cursor:pointer; display:none; align-items:center; justify-content:center; }
 .trial-close-btn.show{ display:flex; }
+
+.renew-overlay{ position:fixed; inset:0; background:rgba(10,12,15,.92); display:flex; align-items:center; justify-content:center; z-index:100000; padding:20px; }
+.renew-box{ position:relative; max-width:520px; width:100%; max-height:90vh; overflow-y:auto; background:linear-gradient(160deg,#1c2129,#12151a); border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:30px 24px 26px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+.renew-close-btn{ position:absolute; top:10px; left:10px; width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,.08); color:#fff; border:none; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:2; }
+.renew-head{ text-align:center; margin-bottom:22px; }
+.renew-head .renew-icon{ font-size:38px; margin-bottom:10px; }
+.renew-head .renew-title-ar{ font-size:18px; font-weight:800; color:#fff; margin-bottom:4px; }
+.renew-head .renew-title-en{ font-size:12.5px; font-weight:600; color:#9aa4b2; }
+.plan-grid{ display:flex; flex-direction:column; gap:12px; margin-bottom:18px; }
+.plan-card{ position:relative; display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(255,255,255,.03); border:1.5px solid rgba(255,255,255,.1); border-radius:14px; padding:16px 18px; cursor:pointer; transition:border-color .15s ease, background .15s ease; }
+.plan-card:hover{ border-color:rgba(184,57,14,.5); }
+.plan-card.selected{ border-color:var(--ember); background:rgba(184,57,14,.12); }
+.plan-card .plan-info{ display:flex; flex-direction:column; gap:3px; }
+.plan-card .plan-name{ font-weight:800; font-size:15px; color:#fff; }
+.plan-card .plan-permonth{ font-size:11.5px; color:#9aa4b2; }
+.plan-card .plan-price-wrap{ text-align:left; direction:ltr; flex-shrink:0; }
+.plan-card .plan-price{ font-family:var(--mono); font-weight:700; font-size:17px; color:#fff; white-space:nowrap; }
+.plan-card .plan-discount{ display:inline-block; margin-top:4px; font-size:10.5px; font-weight:800; color:#c8f0d6; background:rgba(63,98,71,.35); border:1px solid rgba(63,98,71,.6); border-radius:999px; padding:2px 9px; }
+.plan-card .plan-badge{ position:absolute; top:-9px; right:14px; background:var(--ember); color:#fff; font-size:10.5px; font-weight:800; padding:2px 10px; border-radius:999px; }
+.renew-next-btn{ width:100%; background:var(--basil); color:#fff; border:none; padding:13px; border-radius:10px; font-family:var(--body); font-weight:800; font-size:14.5px; cursor:pointer; }
+.renew-next-btn:hover{ background:var(--basil-dark); }
+.renew-next-btn:disabled{ opacity:.45; cursor:default; }
+.renew-back-btn{ background:none; border:none; color:#9aa4b2; font-family:var(--body); font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:5px; margin-bottom:16px; padding:0; }
+.renew-back-btn:hover{ color:#fff; }
+.pay-summary{ background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:14px 16px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; }
+.pay-summary .pay-summary-label{ font-size:12.5px; color:#9aa4b2; }
+.pay-summary .pay-summary-plan{ font-size:14px; font-weight:800; color:#fff; margin-top:2px; }
+.pay-summary .pay-summary-amount{ font-family:var(--mono); font-size:19px; font-weight:800; color:var(--paper); direction:ltr; }
+.pay-method-card{ background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.1); border-radius:14px; padding:16px 18px; margin-bottom:14px; }
+.pay-method-title{ display:flex; align-items:center; gap:8px; font-weight:800; font-size:13.5px; color:#fff; margin-bottom:10px; }
+.pay-method-title .pay-icon{ font-size:18px; }
+.pay-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(255,255,255,.04); border-radius:8px; padding:10px 12px; }
+.pay-row .pay-val{ font-family:var(--mono); direction:ltr; font-size:14px; font-weight:700; color:#fff; word-break:break-all; }
+.pay-copy-btn{ flex-shrink:0; background:rgba(184,57,14,.18); border:1px solid rgba(184,57,14,.5); color:#ffd9c4; font-family:var(--body); font-weight:700; font-size:11.5px; padding:7px 12px; border-radius:8px; cursor:pointer; white-space:nowrap; }
+.pay-copy-btn:hover{ background:rgba(184,57,14,.3); }
+.pay-open-link{ display:block; text-align:center; background:var(--ember); color:#fff; font-weight:800; font-size:13.5px; padding:10px; border-radius:8px; text-decoration:none; margin-top:10px; }
+.pay-open-link:hover{ background:var(--ember-dark); }
+.pay-note{ font-size:11.5px; color:#9aa4b2; line-height:1.8; margin:14px 0 18px; text-align:center; }
+.pay-confirm-btn{ width:100%; display:flex; align-items:center; justify-content:center; gap:8px; background:#25D366; color:#0a0c0f; border:none; padding:13px; border-radius:10px; font-family:var(--body); font-weight:800; font-size:14.5px; cursor:pointer; }
+.pay-confirm-btn:hover{ filter:brightness(.95); }
 .admin-table-wrap{ max-height:70vh; overflow:auto; }
 .admin-restaurant-row{ display:flex; flex-direction:column; gap:12px; padding:16px 20px; border:1px solid rgba(255,255,255,.14); border-right:4px solid var(--ember); border-radius:14px; margin-bottom:18px; background:rgba(255,255,255,.02); }
 .admin-restaurant-row:nth-child(even){ background:rgba(255,255,255,.045); }
@@ -1360,6 +1400,126 @@ function applyExcelRestrictionUI(){
   });
 }
 
+/* ============ باقات الاشتراك وشاشة الدفع ============ */
+const RENEW_PLANS = [
+  { key:'monthly',   name_ar:'شهري',      name_en:'Monthly',   price:700,  perMonth:700, discount:0,  suffix_ar:'شهريًا',    suffix_en:'/month' },
+  { key:'quarterly', name_ar:'ربع سنوي',  name_en:'Quarterly', price:1800, perMonth:600, discount:14, suffix_ar:'كل 3 شهور', suffix_en:'/3 months' },
+  { key:'yearly',    name_ar:'سنوي',      name_en:'Yearly',    price:6000, perMonth:500, discount:29, suffix_ar:'سنويًا',    suffix_en:'/year', badge_ar:'أفضل قيمة', badge_en:'Best value' },
+];
+const RENEW_PAY_LINK = 'https://ipn.eg/S/magziko/instapay/1gd02V';
+const RENEW_VODAFONE_CASH = '01002707501';
+const RENEW_WA_NUMBER = '201154361888';
+
+function copyToClipboard(text, successMsg){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=> toast(successMsg)).catch(()=> toast(text));
+  } else { toast(text); }
+}
+
+function openRenewFlow(restName){
+  const overlay = document.createElement('div');
+  overlay.className = 'renew-overlay';
+  document.body.appendChild(overlay);
+
+  function closeFlow(){ overlay.remove(); }
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeFlow(); });
+
+  function renderPlanStep(){
+    overlay.innerHTML = `
+      <div class="renew-box">
+        <button type="button" class="renew-close-btn" id="renewCloseBtn1" aria-label="إغلاق">✕</button>
+        <div class="renew-head">
+          <div class="renew-icon">💳</div>
+          <div class="renew-title-ar">اختر باقة الاشتراك</div>
+          <div class="renew-title-en">Choose your subscription plan</div>
+        </div>
+        <div class="plan-grid" id="planGrid">
+          ${RENEW_PLANS.map(p=>`
+            <div class="plan-card" data-plan="${p.key}">
+              ${p.badge_ar ? `<div class="plan-badge">⭐ ${p.badge_ar}</div>` : ''}
+              <div class="plan-info">
+                <div class="plan-name">${p.name_ar} <span style="color:#9aa4b2; font-weight:600; font-size:12px;">(${p.name_en})</span></div>
+                <div class="plan-permonth">${p.perMonth} ج / شهر تقريبًا</div>
+              </div>
+              <div class="plan-price-wrap">
+                <div class="plan-price">${p.price} EGP</div>
+                ${p.discount > 0 ? `<span class="plan-discount">خصم ~${p.discount}%</span>` : ''}
+              </div>
+            </div>`).join('')}
+        </div>
+        <button type="button" class="renew-next-btn" id="renewNextBtn" disabled>${'تابع'} — Continue</button>
+      </div>`;
+    overlay.querySelector('#renewCloseBtn1').addEventListener('click', closeFlow);
+    let selectedKey = null;
+    const nextBtn = overlay.querySelector('#renewNextBtn');
+    overlay.querySelectorAll('.plan-card').forEach(card=>{
+      card.addEventListener('click', ()=>{
+        overlay.querySelectorAll('.plan-card').forEach(c=> c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedKey = card.dataset.plan;
+        nextBtn.disabled = false;
+      });
+    });
+    nextBtn.addEventListener('click', ()=>{
+      if(!selectedKey) return;
+      const plan = RENEW_PLANS.find(p=> p.key === selectedKey);
+      renderPaymentStep(plan);
+    });
+  }
+
+  function renderPaymentStep(plan){
+    overlay.innerHTML = `
+      <div class="renew-box">
+        <button type="button" class="renew-close-btn" id="renewCloseBtn2" aria-label="إغلاق">✕</button>
+        <button type="button" class="renew-back-btn" id="renewBackBtn">→ رجوع لاختيار الباقة</button>
+        <div class="renew-head" style="margin-bottom:16px;">
+          <div class="renew-icon">🧾</div>
+          <div class="renew-title-ar">إتمام الدفع</div>
+          <div class="renew-title-en">Complete your payment</div>
+        </div>
+        <div class="pay-summary">
+          <div>
+            <div class="pay-summary-label">الباقة المختارة</div>
+            <div class="pay-summary-plan">${plan.name_ar} (${plan.name_en})</div>
+          </div>
+          <div class="pay-summary-amount">${plan.price} EGP</div>
+        </div>
+
+        <div class="pay-method-card">
+          <div class="pay-method-title"><span class="pay-icon">🔵</span> الدفع عبر InstaPay</div>
+          <div class="pay-row">
+            <span class="pay-val" id="payLinkVal">${RENEW_PAY_LINK}</span>
+            <button type="button" class="pay-copy-btn" id="copyLinkBtn">نسخ الرابط</button>
+          </div>
+          <a class="pay-open-link" href="${RENEW_PAY_LINK}" target="_blank" rel="noopener">فتح رابط الدفع (magziko@instapay)</a>
+        </div>
+
+        <div class="pay-method-card">
+          <div class="pay-method-title"><span class="pay-icon">📱</span> أو الدفع عبر فودافون كاش</div>
+          <div class="pay-row">
+            <span class="pay-val" id="payVfVal">${RENEW_VODAFONE_CASH}</span>
+            <button type="button" class="pay-copy-btn" id="copyVfBtn">نسخ الرقم</button>
+          </div>
+        </div>
+
+        <div class="pay-note">
+          بعد إتمام التحويل بمبلغ <b>${plan.price} EGP</b>، اضغط الزر بالأسفل لإرسال إثبات الدفع عبر واتساب وسيتم تفعيل باقتك خلال وقت قصير.
+        </div>
+        <button type="button" class="pay-confirm-btn" id="payConfirmBtn">✅ تم الدفع، تأكيد عبر واتساب</button>
+      </div>`;
+    overlay.querySelector('#renewCloseBtn2').addEventListener('click', closeFlow);
+    overlay.querySelector('#renewBackBtn').addEventListener('click', renderPlanStep);
+    overlay.querySelector('#copyLinkBtn').addEventListener('click', ()=> copyToClipboard(RENEW_PAY_LINK, 'تم نسخ رابط الدفع'));
+    overlay.querySelector('#copyVfBtn').addEventListener('click', ()=> copyToClipboard(RENEW_VODAFONE_CASH, 'تم نسخ رقم فودافون كاش'));
+    overlay.querySelector('#payConfirmBtn').addEventListener('click', ()=>{
+      const msg = `مرحبًا، قمت بدفع اشتراك منيو m@g الخاص بـ "${restName}" — الباقة: ${plan.name_ar} (${plan.price} ج). برجاء تفعيل الاشتراك وإرسال إثبات الدفع في حال الحاجة.`;
+      window.open('https://wa.me/' + RENEW_WA_NUMBER + '?text=' + encodeURIComponent(msg), '_blank');
+    });
+  }
+
+  renderPlanStep();
+}
+
 function showAccountSuspendedBlock(){
   const overlay = document.createElement('div');
   overlay.className = 'trial-overlay';
@@ -1370,12 +1530,12 @@ function showAccountSuspendedBlock(){
       <div class="trial-icon">🔒</div>
       <div class="trial-title-ar">تم تعليق هذا الحساب</div>
       <div class="trial-title-en">This Account Has Been Suspended</div>
-      <div class="trial-msg-ar">تم إيقاف الوصول إلى لوحة التحكم مؤقتًا نظرًا لعدم تفعيل الاشتراك. يرجى التواصل مع فريق منيو m@g لاستكمال إجراءات التجديد واستعادة الخدمة فورًا.</div>
-      <div class="trial-msg-en">Access to the dashboard has been temporarily suspended due to an inactive subscription. Please contact the Menu m@g team to complete the renewal and restore service immediately.</div>
-      <div class="trial-cta">📲 تواصل معنا لتجديد الاشتراك &nbsp;|&nbsp; Contact us to renew</div>
+      <div class="trial-msg-ar">تم إيقاف الوصول إلى لوحة التحكم مؤقتًا نظرًا لعدم تفعيل الاشتراك. يمكنك تجديد الاشتراك الآن واختيار الباقة المناسبة لك.</div>
+      <div class="trial-msg-en">Access to the dashboard has been temporarily suspended due to an inactive subscription. You can renew now and choose the plan that suits you.</div>
+      <div class="trial-cta">💳 تجديد الاشتراك الآن &nbsp;|&nbsp; Renew subscription now</div>
     </div>`;
   document.body.appendChild(overlay);
-  overlay.querySelector('#suspendBox').addEventListener('click', ()=> window.open(waLink, '_blank'));
+  overlay.querySelector('#suspendBox').addEventListener('click', ()=> openRenewFlow(restaurant.name));
 }
 
 function showAccountSuspendedPublicScreen(rest){
@@ -1406,9 +1566,9 @@ function showTrialExpiredBanner(){
       <div class="trial-icon">⏳</div>
       <div class="trial-title-ar">انتهت فترة النسخة التجريبية (15 يومًا)</div>
       <div class="trial-title-en">Your 15-Day Trial Period Has Ended</div>
-      <div class="trial-msg-ar">لتجديد الاشتراك ومواصلة استخدام لوحة التحكم دون انقطاع، يرجى التواصل مع فريق منيو m@g.</div>
-      <div class="trial-msg-en">To renew your subscription and continue using the dashboard without interruption, please contact the Menu m@g team.</div>
-      <div class="trial-cta">📲 تواصل معنا عبر واتساب &nbsp;|&nbsp; Contact us on WhatsApp</div>
+      <div class="trial-msg-ar">لتجديد الاشتراك ومواصلة استخدام لوحة التحكم دون انقطاع، اختر الباقة المناسبة لك وأكمل الدفع.</div>
+      <div class="trial-msg-en">To renew your subscription and continue using the dashboard without interruption, choose your plan and complete payment.</div>
+      <div class="trial-cta">💳 تجديد الاشتراك الآن &nbsp;|&nbsp; Renew subscription now</div>
     </div>`;
   document.body.appendChild(overlay);
 
@@ -1417,7 +1577,7 @@ function showTrialExpiredBanner(){
 
   box.addEventListener('click', (e)=>{
     if(e.target === closeBtn) return;
-    window.open(waLink, '_blank');
+    openRenewFlow(restaurant.name);
   });
 
   closeBtn.addEventListener('click', (e)=>{
