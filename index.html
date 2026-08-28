@@ -1432,6 +1432,7 @@ async function openDashboard(){
   applyExcelRestrictionUI();
   applyFeaturePlanUI();
   applyGranularRestrictionsUI();
+  migrateLegacyImages().catch(()=>{});
 }
 
 function applyExcelRestrictionUI(){
@@ -5521,10 +5522,20 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     const default_prep_minutes = (prepRaw && prepRaw > 0) ? Math.round(prepRaw) : 20;
     const btn = overlay.querySelector('#rsConfirm');
     btn.disabled = true;
-    const { data, error } = await sb.from('restaurants').update({ logo_url: pendingLogo, name, name_en, phone, messenger_username, telegram_username, address, opening_time, closing_time, min_delivery_order, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes }).eq('id', restaurant.id).select().single();
+    let finalLogoUrl = pendingLogo;
+    if(pendingLogo && pendingLogo.startsWith('data:')){
+      try{
+        finalLogoUrl = await uploadImageToStorage(pendingLogo, `logos/${restaurant.id}`);
+      }catch(e){
+        toast('تعذر رفع الشعار، حاول مرة أخرى');
+        btn.disabled = false;
+        return;
+      }
+    }
+    const { data, error } = await sb.from('restaurants').update({ logo_url: finalLogoUrl, name, name_en, phone, messenger_username, telegram_username, address, opening_time, closing_time, min_delivery_order, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes }).eq('id', restaurant.id).select().single();
     if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     restaurant = data;
-    if(originalLogoUrl && originalLogoUrl !== pendingLogo){
+    if(originalLogoUrl && originalLogoUrl !== finalLogoUrl){
       await deleteStorageFileFromUrl(originalLogoUrl); // امسح الشعار القديم من التخزين بعد نجاح الحفظ فقط
     }
     document.getElementById('dashRestaurantName').textContent = restaurant.name;
@@ -6828,16 +6839,26 @@ function openItemModal(existing){
 
     const btn = overlay.querySelector('#itemConfirm');
     btn.disabled = true;
+    let finalImageUrl = pendingImage;
+    if(pendingImage && pendingImage.startsWith('data:')){
+      try{
+        finalImageUrl = await uploadImageToStorage(pendingImage, `items/${restaurant.id}`);
+      }catch(e){
+        toast('تعذر رفع الصورة، حاول مرة أخرى');
+        btn.disabled = false;
+        return;
+      }
+    }
     let itemId = existing ? existing.id : null;
     if(existing){
-      const { error } = await sb.from('items').update({ name, name_en, price, old_price, description, image_url: pendingImage, pricing_type, weight_sale_mode, min_weight_grams }).eq('id', existing.id);
+      const { error } = await sb.from('items').update({ name, name_en, price, old_price, description, image_url: finalImageUrl, pricing_type, weight_sale_mode, min_weight_grams }).eq('id', existing.id);
       if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
-      if(originalItemImageUrl && originalItemImageUrl !== pendingImage){
+      if(originalItemImageUrl && originalItemImageUrl !== finalImageUrl){
         await deleteStorageFileFromUrl(originalItemImageUrl); // امسح الصورة القديمة بعد نجاح الحفظ فقط
       }
     } else {
       const newPos = items.filter(i=>i.category_id===selectedCategoryId).length;
-      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, old_price, description, image_url: pendingImage, pricing_type, weight_sale_mode, min_weight_grams, position: newPos }).select().single();
+      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, old_price, description, image_url: finalImageUrl, pricing_type, weight_sale_mode, min_weight_grams, position: newPos }).select().single();
       if(error){ toast('تعذر الإضافة'); btn.disabled=false; return; }
       itemId = data.id;
     }
