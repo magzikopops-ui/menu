@@ -8318,10 +8318,17 @@ async function loadPublic(slug){
       renderPublicBody();
       overlay.remove();
 
-      // الطلب اتحفظ فعليًا في قاعدة البيانات وهيظهر في شاشة الطلبات — لو وسيلة تواصل واحدة بس مفعّلة نفتحها أوتوماتيك،
-      // لو أكتر من وسيلة، نسيب العميل يختار من شاشة نجاح الطلب (عشان المتصفح ممكن يمنع فتح أكتر من تاب في نفس الوقت)
-      if(orderChannels.length === 1 && orderMsgText){
-        openOrderChannel(orderChannels[0].id, orderMsgText);
+      // الطلب اتحفظ فعليًا في قاعدة البيانات وهيظهر في شاشة الطلبات دايمًا وبشكل أوتوماتيكي.
+      // واتساب — لو مفعّل — بيتفتح أوتوماتيك زي ما كان، وفي نفس الوقت بتفضل أزرار ماسنجر/تليجرام
+      // (لو مفعّلين) ظاهرة في شاشة نجاح الطلب كخيار إضافي للعميل يبعت بيهم كمان لو حب.
+      // لو مفيش واتساب لكن فيه وسيلة واحدة بس تانية مفعّلة، نفتحها هي أوتوماتيك بدل واتساب.
+      if(orderMsgText){
+        const waChannel = orderChannels.find(c=> c.id === 'whatsapp');
+        if(waChannel){
+          openOrderChannel('whatsapp', orderMsgText);
+        } else if(orderChannels.length === 1){
+          openOrderChannel(orderChannels[0].id, orderMsgText);
+        }
       }
       showOrderSuccessModal(orderRow, orderChannels, orderMsgText, isOnlinePayment);
     });
@@ -8333,9 +8340,14 @@ async function loadPublic(slug){
       ? `<div class="orders-empty" style="padding:0 0 10px; font-size:20px; font-weight:800; color:var(--ember); font-family:var(--mono); direction:ltr;">#${orderRow.order_number}</div>`
       : '';
     const trackLink = `${location.origin}${location.pathname}?t=${orderId}`;
+    const waChannel = channels.find(c=> c.id === 'whatsapp');
     let statusMsg;
     if(channels.length === 0){
       statusMsg = lang==='en' ? `Order saved (${biz(rest.business_type,'entityEn').toLowerCase()} has no contact channel set).` : `تم حفظ طلبك (لم يضف ${biz(rest.business_type,'entityDef')} وسيلة تواصل).`;
+    } else if(waChannel){
+      statusMsg = channels.length === 1
+        ? (lang==='en' ? `Your order was sent to the ${biz(rest.business_type,'entityEn').toLowerCase()} via WhatsApp.` : `تم إرسال طلبك لـ${biz(rest.business_type,'entityDef')} عبر واتساب.`)
+        : (lang==='en' ? `Your order was sent via WhatsApp. You can also send it via other channels below.` : `تم إرسال طلبك عبر واتساب. يمكنك كمان إرساله عبر وسائل تانية تحت لو حبيت.`);
     } else if(channels.length === 1){
       statusMsg = lang==='en' ? `Your order was sent to the ${biz(rest.business_type,'entityEn').toLowerCase()} via ${channels[0].label}.` : `تم إرسال طلبك لـ${biz(rest.business_type,'entityDef')} عبر ${channels[0].label}.`;
     } else {
