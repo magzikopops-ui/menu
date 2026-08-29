@@ -3098,6 +3098,14 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
     const rowClasses = ['order-row', fresh ? 'is-new' : '', today ? 'is-today' : ''].filter(Boolean).join(' ');
     const tagsHtml = `${fresh ? '<span class="o-tag new">جديد</span>' : ''}${today ? '<span class="o-tag today">اليوم</span>' : ''}`;
     const numberHtml = o.order_number != null ? `<span class="o-number">#${o.order_number}</span>` : '';
+    const isOnlinePay = o.payment_method === 'wallet' || o.payment_method === 'instapay';
+    const payMethodLabel = o.payment_method === 'wallet' ? (restaurant.wallet_label || 'محفظة') : (o.payment_method === 'instapay' ? 'إنستاباي' : null);
+    const payBadgeHtml = isOnlinePay
+      ? `<span class="status-badge" style="background:${o.payment_status==='paid' ? '#1f4d2e' : '#4d3a1f'}; color:${o.payment_status==='paid' ? '#c8f0d6' : '#f0dcb0'};">💳 ${escapeHtml(payMethodLabel)} — ${o.payment_status==='paid' ? 'تم الدفع' : 'في انتظار التأكيد'}</span>`
+      : '';
+    const markPaidHtml = (isOnlinePay && o.payment_status !== 'paid')
+      ? `<button type="button" class="btn-export-sm" data-action="markPaid" data-order-id="${o.id}" style="margin-top:6px;">✅ تأكيد استلام الدفع</button>`
+      : '';
     const isActive = status === 'pending' || status === 'preparing';
     let prepHtml = '';
     if(isActive && o.estimated_ready_at){
@@ -3119,13 +3127,14 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
       <div class="${rowClasses}" data-order-id="${o.id}">
         <div class="o-card-top">
           <div class="o-name">${numberHtml}${escapeHtml(o.customer_name)} <span class="o-type-badge">${typeLabel}</span></div>
-          <div class="o-badges"><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${tagsHtml}</div>
+          <div class="o-badges"><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${payBadgeHtml}${tagsHtml}</div>
         </div>
         <div class="o-contact-row">
           <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}
           <button type="button" class="o-wa-btn" data-action="sendMenuWa" data-phone="${escapeHtml(o.customer_phone)}" data-name="${escapeHtml(o.customer_name)}" title="إرسال رابط المنيو للعميل عبر واتساب">📲 إرسال المنيو</button>
           ${restaurant.restriction_print_disabled ? '' : `<button type="button" class="o-print-btn" data-action="printReceipt" data-order-id="${o.id}" title="طباعة الطلب / Print Order">🖨️ طباعة الطلب <span style="opacity:.75;">| Print Order</span></button>`}
         </div>
+        ${markPaidHtml}
         <div class="o-time">📍 ${escapeHtml(o.city || '')}${o.area ? ' — ' + escapeHtml(o.area) : ''}${o.delivery_fee != null ? ` <span class="o-fee">(رسوم التوصيل: ${Number(o.delivery_fee).toFixed(2)} EGP)</span>` : ''}</div>
         ${o.address ? `<div class="o-time">${escapeHtml(o.address)}</div>` : ''}
         ${itemsListHtml}
@@ -3163,6 +3172,20 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
         printBtn.addEventListener('click', ()=>{
           const orderObj = orders.find(o=> o.id === printBtn.dataset.orderId);
           if(orderObj) openReceiptPreviewModal(orderObj, itemsByOrder[orderObj.id] || []);
+        });
+      }
+      const markPaidBtn = row.querySelector('[data-action="markPaid"]');
+      if(markPaidBtn){
+        markPaidBtn.addEventListener('click', async ()=>{
+          markPaidBtn.disabled = true;
+          const { error: payErr } = await sb.from('orders').update({ payment_status: 'paid' }).eq('id', orderId);
+          if(payErr){ toast('تعذر تأكيد الدفع'); markPaidBtn.disabled = false; return; }
+          const orderObj = orders.find(o=> o.id === orderId);
+          if(orderObj) orderObj.payment_status = 'paid';
+          toast('تم تأكيد استلام الدفع');
+          markPaidBtn.remove();
+          const payBadge = row.querySelector('.o-badges .status-badge[style*="4d3a1f"]');
+          if(payBadge){ payBadge.style.background = '#1f4d2e'; payBadge.style.color = '#c8f0d6'; payBadge.textContent = payBadge.textContent.replace('في انتظار التأكيد', 'تم الدفع'); }
         });
       }
       const select = row.querySelector('[data-action="statusSelect"]');
@@ -3349,6 +3372,7 @@ function buildReceiptHtml(order, lines, widthMm){
       <div class="receipt-sub">${dateStr}</div>
       <div class="receipt-sub">نوع الطلب: ${typeLabel}</div>
       <div class="receipt-sub">الحالة: ${RECEIPT_STATUS_LABELS[order.status || 'pending'] || order.status}</div>
+      ${(order.payment_method === 'wallet' || order.payment_method === 'instapay') ? `<div class="receipt-sub">الدفع: ${order.payment_method === 'wallet' ? escapeHtml(restaurant.wallet_label || 'محفظة') : 'إنستاباي'} — ${order.payment_status === 'paid' ? 'تم الدفع' : 'في انتظار التأكيد'}</div>` : ''}
       <hr>
       <div class="receipt-row"><span class="lbl receipt-highlight">العميل: ${escapeHtml(order.customer_name || '')}</span></div>
       <div class="receipt-row"><span class="lbl val receipt-highlight" style="text-align:right; direction:ltr;">${escapeHtml(order.customer_phone || '')}</span></div>
@@ -5497,6 +5521,30 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         <label>حد أدنى لقيمة الطلب في التوصيل (اختياري — اتركه فاضيًا لعدم وجود حد أدنى)</label>
         <input type="number" id="restMinOrderInput" value="${restaurant.min_delivery_order != null ? restaurant.min_delivery_order : ''}" placeholder="مثال: 100" min="0" step="0.01">
       </div>
+      <div class="field" id="rsOnlinePaymentField">
+        <label style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <span>💳 قبول الدفع أونلاين</span>
+          <span class="admin-switch"><input type="checkbox" id="rsOnlinePayEnabled" ${restaurant.accept_online_payment ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+        </label>
+        <small>لما تفعّلها، العميل هيقدر يختار إنه يدفع أونلاين وقت تأكيد الطلب، وهيشوف بيانات الدفع اللي تكتبها هنا (رقم محفظة و/أو حساب إنستاباي).</small>
+        <div id="rsOnlinePayWrap" style="margin-top:10px; ${restaurant.accept_online_payment ? '' : 'display:none;'}">
+          <div class="field-row">
+            <div class="field" style="margin-bottom:10px;">
+              <label>اسم المحفظة</label>
+              <input type="text" id="rsWalletLabelInput" value="${restaurant.wallet_label ? escapeHtml(restaurant.wallet_label) : 'فودافون كاش'}" placeholder="مثال: فودافون كاش / اتصالات كاش / أورنج كاش">
+            </div>
+            <div class="field" style="margin-bottom:10px;">
+              <label>رقم المحفظة</label>
+              <input type="text" id="rsWalletNumberInput" value="${restaurant.wallet_number ? escapeHtml(restaurant.wallet_number) : ''}" placeholder="01xxxxxxxxx" style="direction:ltr;">
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>حساب إنستاباي (اختياري)</label>
+            <small>اليوزرنيم بتاعك على إنستاباي (زي ‎@mystore) أو رابط الدفع الكامل لو عندك واحد.</small>
+            <input type="text" id="rsInstapayInput" value="${restaurant.instapay_account ? escapeHtml(restaurant.instapay_account) : ''}" placeholder="مثال: mystore@instapay أو رابط الدفع" style="margin-top:8px; direction:ltr;">
+          </div>
+        </div>
+      </div>
       <div class="field">
         <label>إشعار واتساب بالطلبات الجديدة (اختياري)</label>
         <small>لتفعيل الإشعار: احفظ رقم <span dir="ltr" style="font-family:var(--mono);">+34 684 74 26 79</span> في هاتفك، وابعتله على واتساب رسالة نصها بالإنجليزية بالظبط: <span dir="ltr" style="font-family:var(--mono);">I allow callmebot to send me messages</span>، وهيردلك برسالة فيها الرمز الخاص بيك (apikey). اكتب رقمك ورمزك تحت.</small>
@@ -5519,6 +5567,9 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     </div>`;
   document.body.appendChild(overlay);
   wireEnterToConfirm(overlay, overlay.querySelector('#rsConfirm'));
+  overlay.querySelector('#rsOnlinePayEnabled').addEventListener('change', (e)=>{
+    overlay.querySelector('#rsOnlinePayWrap').style.display = e.target.checked ? '' : 'none';
+  });
   overlay.querySelector('#rsCleanupOrdersBtn').addEventListener('click', ()=>{
     overlay.remove();
     openCleanupOrdersModal();
@@ -5603,6 +5654,14 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     const notification_apikey = overlay.querySelector('#notifApikeyInput').value.trim() || null;
     const prepRaw = Number(overlay.querySelector('#restPrepMinutesInput').value);
     const default_prep_minutes = (prepRaw && prepRaw > 0) ? Math.round(prepRaw) : 20;
+    const accept_online_payment = overlay.querySelector('#rsOnlinePayEnabled').checked;
+    const wallet_label = overlay.querySelector('#rsWalletLabelInput').value.trim() || null;
+    const wallet_number = overlay.querySelector('#rsWalletNumberInput').value.trim() || null;
+    const instapay_account = overlay.querySelector('#rsInstapayInput').value.trim() || null;
+    if(accept_online_payment && !wallet_number && !instapay_account){
+      toast('لازم تكتب رقم محفظة أو حساب إنستاباي عشان تفعّل الدفع أونلاين');
+      return;
+    }
     const btn = overlay.querySelector('#rsConfirm');
     btn.disabled = true;
     let finalLogoUrl = pendingLogo;
@@ -5615,7 +5674,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         return;
       }
     }
-    const { data, error } = await sb.from('restaurants').update({ logo_url: finalLogoUrl, name, name_en, phone, messenger_username, telegram_username, address, opening_time, closing_time, min_delivery_order, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes }).eq('id', restaurant.id).select().single();
+    const { data, error } = await sb.from('restaurants').update({ logo_url: finalLogoUrl, name, name_en, phone, messenger_username, telegram_username, address, opening_time, closing_time, min_delivery_order, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes, accept_online_payment, wallet_label, wallet_number, instapay_account }).eq('id', restaurant.id).select().single();
     if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     restaurant = data;
     if(originalLogoUrl && originalLogoUrl !== finalLogoUrl){
@@ -7843,6 +7902,9 @@ async function loadPublic(slug){
 
   function openOrderDetailsModal(){
     let orderType = 'delivery';
+    const canPayOnline = !!(rest.accept_online_payment && (rest.wallet_number || rest.instapay_account));
+    let paymentMethod = 'cash';
+    let onlinePayOption = rest.wallet_number ? 'wallet' : 'instapay';
     const subtotal = cartSubtotal();
     const overlay = document.createElement('div');
     overlay.className = 'overlay';
@@ -7858,6 +7920,15 @@ async function loadPublic(slug){
             <div class="ord-type-btn" id="ordTypePickup">${lang==='en' ? 'Pickup' : 'استلام'}</div>
           </div>
         </div>
+        ${canPayOnline ? `
+        <div class="field" id="ordPayField">
+          <label>${lang==='en' ? 'Payment method' : 'طريقة الدفع'} *</label>
+          <div class="ord-type-toggle">
+            <div class="ord-type-btn active" id="ordPayCash">${lang==='en' ? 'Cash' : 'الدفع عند الاستلام'}</div>
+            <div class="ord-type-btn" id="ordPayOnline">${lang==='en' ? 'Pay online' : 'الدفع أونلاين'}</div>
+          </div>
+          <div id="ordPayOnlineWrap" style="display:none; margin-top:10px;"></div>
+        </div>` : ''}
         <div class="field-row">
           <div class="field">
             <label>${lang==='en' ? 'Full name' : 'الاسم الكامل'} *</label>
@@ -7998,6 +8069,69 @@ async function loadPublic(slug){
     const zoneSelect = overlay.querySelector('#ordZoneSelect');
     if(zoneSelect) zoneSelect.addEventListener('change', renderSummary);
 
+    if(canPayOnline){
+      const payCashBtn = overlay.querySelector('#ordPayCash');
+      const payOnlineBtn = overlay.querySelector('#ordPayOnline');
+      const payOnlineWrap = overlay.querySelector('#ordPayOnlineWrap');
+      function renderOnlinePayOptions(){
+        const options = [];
+        if(rest.wallet_number) options.push('wallet');
+        if(rest.instapay_account) options.push('instapay');
+        if(!options.includes(onlinePayOption)) onlinePayOption = options[0];
+        const walletLabel = rest.wallet_label || 'فودافون كاش';
+        const tabsHtml = options.length > 1 ? `
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <button type="button" class="chip-btn ${onlinePayOption==='wallet' ? 'active' : ''}" id="ordPayTabWallet" style="flex:1;">${escapeHtml(walletLabel)}</button>
+            <button type="button" class="chip-btn ${onlinePayOption==='instapay' ? 'active' : ''}" id="ordPayTabInstapay" style="flex:1;">InstaPay</button>
+          </div>` : '';
+        let detailHtml = '';
+        if(onlinePayOption === 'wallet' && rest.wallet_number){
+          detailHtml = `
+            <div class="orders-empty" style="text-align:${lang==='en' ? 'left' : 'right'}; padding:10px 0;">
+              ${lang==='en' ? `Transfer the total amount to the ${escapeHtml(walletLabel)} number below, then confirm your order.` : `حوّل قيمة الطلب على رقم ${escapeHtml(walletLabel)} التالي، وبعد كده أكد الطلب.`}
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; background:var(--paper-dim); border:1px solid var(--line); border-radius:8px; padding:10px 12px;">
+              <span style="direction:ltr; font-family:var(--mono); font-weight:800; flex:1;">${escapeHtml(rest.wallet_number)}</span>
+              <button type="button" class="btn-export-sm" id="ordCopyWalletBtn" style="width:auto; padding:6px 12px;">${lang==='en' ? 'Copy' : 'نسخ'}</button>
+            </div>`;
+        } else if(onlinePayOption === 'instapay' && rest.instapay_account){
+          const isLink = /^https?:\/\//i.test(rest.instapay_account);
+          detailHtml = `
+            <div class="orders-empty" style="text-align:${lang==='en' ? 'left' : 'right'}; padding:10px 0;">
+              ${lang==='en' ? 'Pay the total amount via InstaPay to the account below, then confirm your order.' : 'ادفع قيمة الطلب عبر إنستاباي على الحساب التالي، وبعد كده أكد الطلب.'}
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; background:var(--paper-dim); border:1px solid var(--line); border-radius:8px; padding:10px 12px;">
+              <span style="direction:ltr; font-family:var(--mono); font-weight:800; flex:1; word-break:break-all;">${escapeHtml(rest.instapay_account)}</span>
+              ${isLink
+                ? `<a href="${escapeHtml(rest.instapay_account)}" target="_blank" rel="noopener" class="btn-export-sm" style="width:auto; padding:6px 12px; text-decoration:none;">${lang==='en' ? 'Open' : 'فتح'}</a>`
+                : `<button type="button" class="btn-export-sm" id="ordCopyInstapayBtn" style="width:auto; padding:6px 12px;">${lang==='en' ? 'Copy' : 'نسخ'}</button>`}
+            </div>`;
+        }
+        payOnlineWrap.innerHTML = tabsHtml + detailHtml;
+        const tabWallet = payOnlineWrap.querySelector('#ordPayTabWallet');
+        const tabInstapay = payOnlineWrap.querySelector('#ordPayTabInstapay');
+        if(tabWallet) tabWallet.addEventListener('click', ()=>{ onlinePayOption = 'wallet'; renderOnlinePayOptions(); });
+        if(tabInstapay) tabInstapay.addEventListener('click', ()=>{ onlinePayOption = 'instapay'; renderOnlinePayOptions(); });
+        const copyWalletBtn = payOnlineWrap.querySelector('#ordCopyWalletBtn');
+        if(copyWalletBtn) copyWalletBtn.addEventListener('click', ()=> copyToClipboard(rest.wallet_number, lang==='en' ? 'Number copied' : 'تم نسخ الرقم'));
+        const copyInstapayBtn = payOnlineWrap.querySelector('#ordCopyInstapayBtn');
+        if(copyInstapayBtn) copyInstapayBtn.addEventListener('click', ()=> copyToClipboard(rest.instapay_account, lang==='en' ? 'Account copied' : 'تم نسخ الحساب'));
+      }
+      payCashBtn.addEventListener('click', ()=>{
+        paymentMethod = 'cash';
+        payCashBtn.classList.add('active');
+        payOnlineBtn.classList.remove('active');
+        payOnlineWrap.style.display = 'none';
+      });
+      payOnlineBtn.addEventListener('click', ()=>{
+        paymentMethod = 'online';
+        payOnlineBtn.classList.add('active');
+        payCashBtn.classList.remove('active');
+        payOnlineWrap.style.display = '';
+        renderOnlinePayOptions();
+      });
+    }
+
     // بيرجع قائمة وسائل التواصل المفعّلة عند المطعم/المتجر لإرسال رسالة الطلب عليها
     function getOrderChannels(){
       const channels = [];
@@ -8019,6 +8153,16 @@ async function loadPublic(slug){
       }
     }
 
+    function paymentMethodLabel(){
+      if(paymentMethod !== 'online') return null;
+      if(onlinePayOption === 'wallet' && rest.wallet_number){
+        return lang==='en' ? `Online payment via ${rest.wallet_label || 'wallet'} (${rest.wallet_number}) — please confirm the transfer` : `دفع أونلاين عبر ${rest.wallet_label || 'محفظة'} (${rest.wallet_number}) — برجاء تأكيد التحويل`;
+      }
+      if(onlinePayOption === 'instapay' && rest.instapay_account){
+        return lang==='en' ? `Online payment via InstaPay (${rest.instapay_account}) — please confirm the transfer` : `دفع أونلاين عبر إنستاباي (${rest.instapay_account}) — برجاء تأكيد التحويل`;
+      }
+      return null;
+    }
     function buildOrderMessage({customer_name, customer_phone, secondary_phone, orderType, city, area, address, notes, fee, total}){
       const typeLabel = orderType==='delivery' ? (lang==='en' ? 'Delivery' : 'توصيل') : (lang==='en' ? 'Pickup' : 'استلام');
       const now = new Date();
@@ -8043,6 +8187,8 @@ async function loadPublic(slug){
         if(secondary_phone) msg += `\nAlt. phone: ${secondary_phone}`;
         if(orderType==='delivery'){ if(city) msg += `\nCity: ${city}`; if(address) msg += `\nAddress: ${address}`; }
         if(notes) msg += `\nNotes: ${notes}`;
+        const payLabel = paymentMethodLabel();
+        if(payLabel) msg += `\nPayment: ${payLabel}`;
         return msg;
       }
       let msg = `طلب جديد — ${restName}\nالتاريخ والوقت: ${dateTimeStr}\n\n${lines}\n\nالمجموع الفرعي: ${subtotal.toFixed(2)} جنيه`;
@@ -8052,6 +8198,8 @@ async function loadPublic(slug){
       if(secondary_phone) msg += `\nتليفون إضافي: ${secondary_phone}`;
       if(orderType==='delivery'){ if(city) msg += `\nالمدينة: ${city}`; if(address) msg += `\nالعنوان: ${address}`; }
       if(notes) msg += `\nملاحظات: ${notes}`;
+      const payLabel = paymentMethodLabel();
+      if(payLabel) msg += `\nالدفع: ${payLabel}`;
       return msg;
     }
 
@@ -8099,6 +8247,11 @@ async function loadPublic(slug){
       const fee = delivery_fee != null ? Number(delivery_fee) : 0;
       const total = subtotal + fee;
 
+      if(canPayOnline && paymentMethod === 'online' && !((onlinePayOption==='wallet' && rest.wallet_number) || (onlinePayOption==='instapay' && rest.instapay_account))){
+        toast(lang==='en' ? 'Please choose a payment option' : 'يرجى اختيار وسيلة الدفع');
+        return;
+      }
+
       const btn = overlay.querySelector('#ordConfirm');
       btn.disabled = true;
 
@@ -8107,11 +8260,14 @@ async function loadPublic(slug){
       const newOrderId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
         const r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8); return v.toString(16);
       }));
+      const isOnlinePayment = canPayOnline && paymentMethod === 'online';
       const orderPayload = {
         id: newOrderId,
         restaurant_id: rest.id, customer_name, customer_phone, secondary_phone,
         order_type: orderType, city, area, address, notes, zone_id, delivery_fee,
-        subtotal, total
+        subtotal, total,
+        payment_method: isOnlinePayment ? (onlinePayOption === 'wallet' ? 'wallet' : 'instapay') : 'cash',
+        payment_status: isOnlinePayment ? 'unpaid' : null
       };
       const { error } = await sb.from('orders').insert(orderPayload);
       if(error){
@@ -8167,11 +8323,11 @@ async function loadPublic(slug){
       if(orderChannels.length === 1 && orderMsgText){
         openOrderChannel(orderChannels[0].id, orderMsgText);
       }
-      showOrderSuccessModal(orderRow, orderChannels, orderMsgText);
+      showOrderSuccessModal(orderRow, orderChannels, orderMsgText, isOnlinePayment);
     });
   }
 
-  function showOrderSuccessModal(orderRow, channels, orderMsgText){
+  function showOrderSuccessModal(orderRow, channels, orderMsgText, isOnlinePayment){
     const orderId = orderRow.id;
     const orderNumberHtml = orderRow.order_number != null
       ? `<div class="orders-empty" style="padding:0 0 10px; font-size:20px; font-weight:800; color:var(--ember); font-family:var(--mono); direction:ltr;">#${orderRow.order_number}</div>`
@@ -8196,6 +8352,10 @@ async function loadPublic(slug){
         <h3>${lang==='en' ? 'Order sent! ✅' : 'تم إرسال طلبك بنجاح! ✅'}</h3>
         ${orderNumberHtml}
         <div class="orders-empty" style="padding:0 0 14px;">${statusMsg}</div>
+        ${isOnlinePayment ? `<div class="insight-card warning" style="text-align:${lang==='en' ? 'left' : 'right'};">
+          <span class="insight-icon">💳</span>
+          <span>${lang==='en' ? 'Please complete the transfer if you haven\'t already. Your order will be confirmed once the payment is verified.' : 'برجاء إتمام التحويل إن لم يكن قد تم بعد. سيتم تأكيد طلبك بعد التحقق من الدفع.'}</span>
+        </div>` : ''}
         ${channelsHtml}
         <div class="orders-empty" style="padding:14px 0 8px; font-weight:700; color:var(--ink);">${lang==='en' ? 'Track your order status here:' : 'تابع حالة طلبك من هنا:'}</div>
         <div class="orders-empty" style="padding:0 0 14px; font-size:12px; word-break:break-all;">${escapeHtml(trackLink)}</div>
