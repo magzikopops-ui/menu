@@ -31,6 +31,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 :root{
   --ink:#201F1D; --paper:#F6F1E4; --paper-dim:#EDE6D2;
@@ -5536,8 +5537,12 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
           </div>
           <div class="field" style="margin-bottom:0;">
             <label>حساب إنستاباي (اختياري)</label>
-            <small>اليوزرنيم بتاعك على إنستاباي (زي ‎@mystore) أو رابط الدفع الكامل لو عندك واحد.</small>
-            <input type="text" id="rsInstapayInput" value="${restaurant.instapay_account ? escapeHtml(restaurant.instapay_account) : ''}" placeholder="مثال: mystore@instapay أو رابط الدفع" style="margin-top:8px; direction:ltr;">
+            <small>اليوزرنيم بتاعك على إنستاباي (زي ‎@mystore) أو رابط الدفع الكامل لو عندك واحد — لو حطيت رابط، هيتفتح تلقائي للعميل بدل ما يدور عليك يدوي.</small>
+            <div style="display:flex; gap:8px; align-items:flex-start; margin-top:8px;">
+              <input type="text" id="rsInstapayInput" value="${restaurant.instapay_account ? escapeHtml(restaurant.instapay_account) : ''}" placeholder="مثال: mystore@instapay أو رابط الدفع" style="direction:ltr; flex:1;">
+              <button type="button" id="rsInstapayTestBtn" title="اختبار الرابط" style="background:#fff; border:1.5px solid var(--line); border-radius:8px; cursor:pointer; padding:9px 12px; flex-shrink:0; white-space:nowrap;">🔗 اختبار</button>
+            </div>
+            <small id="rsInstapayKindHint" style="display:block; margin-top:4px;"></small>
           </div>
         </div>
       </div>
@@ -5566,27 +5571,74 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
 
   // إدارة قائمة المحافظ الإلكترونية (أكتر من محفظة لكل متجر)
   let pendingWallets = (Array.isArray(restaurant.wallets) && restaurant.wallets.length)
-    ? restaurant.wallets.map(w => ({ label: w && w.label || '', number: w && w.number || '' }))
-    : (restaurant.wallet_number ? [{ label: restaurant.wallet_label || 'فودافون كاش', number: restaurant.wallet_number }] : [{ label: 'فودافون كاش', number: '' }]);
+    ? restaurant.wallets.map(w => ({ label: w && w.label || '', number: w && w.number || '', ussd: w && w.ussd || '' }))
+    : (restaurant.wallet_number ? [{ label: restaurant.wallet_label || 'فودافون كاش', number: restaurant.wallet_number, ussd: '' }] : [{ label: 'فودافون كاش', number: '', ussd: '' }]);
   const walletsListWrap = overlay.querySelector('#rsWalletsListWrap');
   function renderWalletsList(){
     walletsListWrap.innerHTML = pendingWallets.map((w, i) => `
-      <div class="field-row" data-wallet-row="${i}" style="align-items:flex-end;">
+      <div class="field-row" data-wallet-row="${i}" style="align-items:flex-end; flex-wrap:wrap;">
         <div class="field" style="margin-bottom:0;">
           <label>اسم المحفظة</label>
           <input type="text" class="rs-wallet-label" data-idx="${i}" value="${escapeHtml(w.label)}" placeholder="مثال: فودافون كاش">
         </div>
         <div class="field" style="margin-bottom:0;">
           <label>رقم المحفظة</label>
-          <input type="text" class="rs-wallet-number" data-idx="${i}" value="${escapeHtml(w.number)}" placeholder="01xxxxxxxxx" style="direction:ltr;">
+          <small>اكتب رقم عادي لو العميل هيحوّل بنفسه، أو الصق رابط دفع مباشر (لو بنكك/محفظتك بتوفره) عشان يتفتح تلقائي للعميل.</small>
+          <input type="text" class="rs-wallet-number" data-idx="${i}" value="${escapeHtml(w.number)}" placeholder="01xxxxxxxxx أو رابط دفع مباشر" style="direction:ltr; margin-top:6px;">
+          <small class="rs-wallet-kind-hint" data-idx="${i}" style="display:block; margin-top:4px;"></small>
         </div>
+        <button type="button" class="rs-wallet-test" data-idx="${i}" title="اختبار الرابط" style="background:#fff; border:1.5px solid var(--line); border-radius:8px; cursor:pointer; padding:9px 12px; flex-shrink:0; white-space:nowrap;">🔗 اختبار</button>
         <button type="button" class="rs-wallet-remove" data-idx="${i}" title="حذف المحفظة" style="background:#fff; border:1.5px solid var(--line); color:var(--danger); border-radius:8px; cursor:pointer; padding:9px 12px; flex-shrink:0;">🗑</button>
+        <div class="field" style="margin-bottom:0; flex-basis:100%;">
+          <label>كود الاتصال السريع (USSD) — اختياري</label>
+          <small>لو عندك كود تحويل سريع لبنك/محفظة الموبايل بتاعتك، اكتبه هنا واستخدم <span style="font-family:var(--mono);">{amount}</span> مكان المبلغ (مثال: <span dir="ltr" style="font-family:var(--mono);">*9*7*01xxxxxxxxx*{amount}#</span>). العميل هيقدر يدوس زرار واحد يفتحله شاشة الاتصال جاهزة، من غير ما يكتب حاجة بنفسه.</small>
+          <div style="display:flex; gap:8px; align-items:flex-start; margin-top:6px;">
+            <input type="text" class="rs-wallet-ussd" data-idx="${i}" value="${escapeHtml(w.ussd || '')}" placeholder="مثال: *9*7*01xxxxxxxxx*{amount}#" style="direction:ltr; flex:1;">
+            <button type="button" class="rs-wallet-test-ussd" data-idx="${i}" title="اختبار كود الاتصال" style="background:#fff; border:1.5px solid var(--line); border-radius:8px; cursor:pointer; padding:9px 12px; flex-shrink:0; white-space:nowrap;">📞 اختبار</button>
+          </div>
+        </div>
       </div>`).join('');
+    function updateWalletKindHint(idx){
+      const hintEl = walletsListWrap.querySelector(`.rs-wallet-kind-hint[data-idx="${idx}"]`);
+      if(!hintEl) return;
+      const val = (pendingWallets[idx].number || '').trim();
+      if(!val){ hintEl.textContent = ''; return; }
+      if(/^https?:\/\//i.test(val)){
+        hintEl.textContent = '✅ ده رابط دفع مباشر — هيتفتح تلقائي للعميل وهيظهر معاه QR للمسح.';
+        hintEl.style.color = '#1f7a3f';
+      } else {
+        hintEl.textContent = 'ℹ️ ده رقم عادي — هيظهر للعميل كرقم للتحويل عليه يدويًا.';
+        hintEl.style.color = 'var(--stone)';
+      }
+    }
+    walletsListWrap.querySelectorAll('.rs-wallet-kind-hint').forEach(el=> updateWalletKindHint(Number(el.dataset.idx)));
     walletsListWrap.querySelectorAll('.rs-wallet-label').forEach(inp=>{
       inp.addEventListener('input', ()=>{ pendingWallets[Number(inp.dataset.idx)].label = inp.value; });
     });
     walletsListWrap.querySelectorAll('.rs-wallet-number').forEach(inp=>{
-      inp.addEventListener('input', ()=>{ pendingWallets[Number(inp.dataset.idx)].number = inp.value; });
+      inp.addEventListener('input', ()=>{
+        const idx = Number(inp.dataset.idx);
+        pendingWallets[idx].number = inp.value;
+        updateWalletKindHint(idx);
+      });
+    });
+    walletsListWrap.querySelectorAll('.rs-wallet-ussd').forEach(inp=>{
+      inp.addEventListener('input', ()=>{ pendingWallets[Number(inp.dataset.idx)].ussd = inp.value; });
+    });
+    walletsListWrap.querySelectorAll('.rs-wallet-test').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const val = (pendingWallets[Number(btn.dataset.idx)].number || '').trim();
+        if(!val){ toast('اكتب رقم المحفظة أو الرابط الأول'); return; }
+        if(/^https?:\/\//i.test(val)) window.open(val, '_blank', 'noopener');
+        else toast('ده رقم عادي مش رابط — مفيش حاجة تتفتح، هيظهر للعميل كرقم للتحويل عليه بس');
+      });
+    });
+    walletsListWrap.querySelectorAll('.rs-wallet-test-ussd').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const val = (pendingWallets[Number(btn.dataset.idx)].ussd || '').trim();
+        if(!val){ toast('اكتب كود الاتصال الأول'); return; }
+        window.location.href = buildUssdTelLink(val, 100);
+      });
     });
     walletsListWrap.querySelectorAll('.rs-wallet-remove').forEach(btn=>{
       btn.addEventListener('click', ()=>{
@@ -5597,8 +5649,30 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
   }
   renderWalletsList();
   overlay.querySelector('#rsAddWalletBtn').addEventListener('click', ()=>{
-    pendingWallets.push({ label: '', number: '' });
+    pendingWallets.push({ label: '', number: '', ussd: '' });
     renderWalletsList();
+  });
+
+  const instapayInput = overlay.querySelector('#rsInstapayInput');
+  const instapayHint = overlay.querySelector('#rsInstapayKindHint');
+  function updateInstapayHint(){
+    const val = instapayInput.value.trim();
+    if(!val){ instapayHint.textContent = ''; return; }
+    if(/^https?:\/\//i.test(val)){
+      instapayHint.textContent = '✅ ده رابط دفع مباشر — هيتفتح تلقائي للعميل وهيظهر معاه QR للمسح.';
+      instapayHint.style.color = '#1f7a3f';
+    } else {
+      instapayHint.textContent = 'ℹ️ ده يوزرنيم/رقم عادي — هيظهر للعميل عشان يدور عليك بنفسه في تطبيق إنستاباي.';
+      instapayHint.style.color = 'var(--stone)';
+    }
+  }
+  updateInstapayHint();
+  instapayInput.addEventListener('input', updateInstapayHint);
+  overlay.querySelector('#rsInstapayTestBtn').addEventListener('click', ()=>{
+    const val = instapayInput.value.trim();
+    if(!val){ toast('اكتب حساب إنستاباي الأول'); return; }
+    if(/^https?:\/\//i.test(val)) window.open(val, '_blank', 'noopener');
+    else toast('ده يوزرنيم مش رابط — مفيش حاجة تتفتح، هيظهر للعميل كنص بس');
   });
 
   overlay.querySelector('#rsOnlinePayEnabled').addEventListener('change', (e)=>{
@@ -5690,7 +5764,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     const default_prep_minutes = (prepRaw && prepRaw > 0) ? Math.round(prepRaw) : 20;
     const accept_online_payment = overlay.querySelector('#rsOnlinePayEnabled').checked;
     const wallets = pendingWallets
-      .map(w => ({ label: (w.label || '').trim() || 'محفظة', number: (w.number || '').trim() }))
+      .map(w => ({ label: (w.label || '').trim() || 'محفظة', number: (w.number || '').trim(), ussd: (w.ussd || '').trim() || undefined }))
       .filter(w => w.number);
     const instapay_account = overlay.querySelector('#rsInstapayInput').value.trim() || null;
     if(accept_online_payment && !wallets.length && !instapay_account){
@@ -7172,6 +7246,12 @@ function getRestaurantOpenStatus(rest){
   return { isOpen, openLabel: rest.opening_time.slice(0,5), closeLabel: rest.closing_time.slice(0,5) };
 }
 
+// بيحول كود الـUSSD (زي *9*7*01xxxxxxxxx*{amount}#) لرابط tel: بعد ما يحط المبلغ الفعلي مكان {amount} — مستخدمة في شاشة الطلب ولوحة تحكم المطعم
+function buildUssdTelLink(ussdTemplate, amount){
+  const code = String(ussdTemplate).trim().replace(/\{amount\}/gi, String(Math.round(amount)));
+  return 'tel:' + encodeURIComponent(code);
+}
+
 async function loadPublic(slug){
   show('loadingScreen');
   const cachedLogoUrl = slug ? localStorage.getItem(`pubLogo_${slug}`) : null;
@@ -7968,6 +8048,16 @@ async function loadPublic(slug){
     const canPayOnline = !!(rest.accept_online_payment && (getWalletsList().length || rest.instapay_account));
     let paymentMethod = 'cash';
     let onlinePayOption = getWalletsList().length ? 0 : 'instapay';
+    let lastPayPref = null;
+    if(canPayOnline){
+      try{ lastPayPref = JSON.parse(localStorage.getItem(`menuLastPay_${rest.id}`)); }catch(e){ lastPayPref = null; }
+      if(lastPayPref && lastPayPref.method === 'online'){
+        const walletsList = getWalletsList();
+        const validOption = (typeof lastPayPref.onlinePayOption === 'number' && walletsList[lastPayPref.onlinePayOption])
+          || (lastPayPref.onlinePayOption === 'instapay' && rest.instapay_account);
+        if(validOption){ paymentMethod = 'online'; onlinePayOption = lastPayPref.onlinePayOption; }
+      }
+    }
     const subtotal = cartSubtotal();
     const overlay = document.createElement('div');
     overlay.className = 'overlay';
@@ -7987,10 +8077,10 @@ async function loadPublic(slug){
         <div class="field" id="ordPayField">
           <label>${lang==='en' ? 'Payment method' : 'طريقة الدفع'} *</label>
           <div class="ord-type-toggle">
-            <div class="ord-type-btn active" id="ordPayCash">${lang==='en' ? 'Cash' : 'الدفع عند الاستلام'}</div>
-            <div class="ord-type-btn" id="ordPayOnline">${lang==='en' ? 'Pay online' : 'الدفع أونلاين'}</div>
+            <div class="ord-type-btn ${paymentMethod==='cash' ? 'active' : ''}" id="ordPayCash">${lang==='en' ? 'Cash' : 'الدفع عند الاستلام'}</div>
+            <div class="ord-type-btn ${paymentMethod==='online' ? 'active' : ''}" id="ordPayOnline">${lang==='en' ? 'Pay online' : 'الدفع أونلاين'}</div>
           </div>
-          <div id="ordPayOnlineWrap" style="display:none; margin-top:10px;"></div>
+          <div id="ordPayOnlineWrap" style="${paymentMethod==='online' ? '' : 'display:none;'} margin-top:10px;"></div>
         </div>` : ''}
         <div class="field-row">
           <div class="field">
@@ -8148,33 +8238,60 @@ async function loadPublic(slug){
         let detailHtml = '';
         if(typeof onlinePayOption === 'number' && walletsList[onlinePayOption]){
           const w = walletsList[onlinePayOption];
+          const wIsLink = /^https?:\/\//i.test(w.number || '');
+          const total = subtotal + currentDeliveryFee();
+          const ussdTel = w.ussd ? buildUssdTelLink(w.ussd, total) : null;
           detailHtml = `
             <div class="orders-empty" style="text-align:${lang==='en' ? 'left' : 'right'}; padding:10px 0;">
-              ${lang==='en' ? `Transfer the total amount to the ${escapeHtml(w.label)} number below, then confirm your order.` : `حوّل قيمة الطلب على رقم ${escapeHtml(w.label)} التالي، وبعد كده أكد الطلب.`}
+              ${wIsLink
+                ? (lang==='en' ? `We opened ${escapeHtml(w.label)} for you to pay — if it didn't open, tap "Open" below.` : `فتحنا لك ${escapeHtml(w.label)} عشان تدفع — لو ما اتفتحش، دوس "فتح" تحت.`)
+                : (lang==='en' ? `Transfer the total amount to the ${escapeHtml(w.label)} number below, then confirm your order.` : `حوّل قيمة الطلب على رقم ${escapeHtml(w.label)} التالي، وبعد كده أكد الطلب.`)}
             </div>
-            <div style="display:flex; align-items:center; gap:8px; background:var(--paper-dim); border:1px solid var(--line); border-radius:8px; padding:10px 12px;">
-              <span style="direction:ltr; font-family:var(--mono); font-weight:800; flex:1;">${escapeHtml(w.number)}</span>
+            <div style="display:flex; align-items:center; gap:8px; background:var(--paper-dim); border:1px solid var(--line); border-radius:8px; padding:10px 12px; flex-wrap:wrap;">
+              <span style="direction:ltr; font-family:var(--mono); font-weight:800; flex:1; word-break:break-all;">${escapeHtml(w.number)}</span>
+              ${wIsLink ? `<a href="${escapeHtml(w.number)}" target="_blank" rel="noopener" class="btn-export-sm" style="width:auto; padding:6px 12px; text-decoration:none;">${lang==='en' ? 'Open' : 'فتح'}</a>` : ''}
               <button type="button" class="btn-export-sm" id="ordCopyWalletBtn" style="width:auto; padding:6px 12px;">${lang==='en' ? 'Copy' : 'نسخ'}</button>
-            </div>`;
+            </div>
+            ${wIsLink ? `
+            <div style="text-align:center; margin-top:10px;">
+              <canvas id="ordPayQr"></canvas>
+              <div class="orders-empty" style="padding-top:4px;">${lang==='en' ? 'Or scan with another phone' : 'أو امسح الكود من موبايل تاني'}</div>
+            </div>` : ''}
+            ${ussdTel ? `
+            <a href="${escapeHtml(ussdTel)}" class="btn-export-sm" style="display:block; text-align:center; margin-top:8px; padding:9px 12px; text-decoration:none;">
+              ${lang==='en' ? '📞 Quick dial (fills the code for you)' : '📞 اتصال سريع (هيفتحلك شاشة الاتصال بالكود جاهز)'}
+            </a>` : ''}`;
         } else if(onlinePayOption === 'instapay' && rest.instapay_account){
           const isLink = /^https?:\/\//i.test(rest.instapay_account);
           detailHtml = `
             <div class="orders-empty" style="text-align:${lang==='en' ? 'left' : 'right'}; padding:10px 0;">
-              ${lang==='en' ? 'Pay the total amount via InstaPay to the account below, then confirm your order.' : 'ادفع قيمة الطلب عبر إنستاباي على الحساب التالي، وبعد كده أكد الطلب.'}
+              ${isLink
+                ? (lang==='en' ? 'We opened InstaPay for you to pay — if it didn\'t open, tap "Open" below.' : 'فتحنا لك إنستاباي عشان تدفع — لو ما اتفتحش، دوس "فتح" تحت.')
+                : (lang==='en' ? 'Pay the total amount via InstaPay to the account below, then confirm your order.' : 'ادفع قيمة الطلب عبر إنستاباي على الحساب التالي، وبعد كده أكد الطلب.')}
             </div>
             <div style="display:flex; align-items:center; gap:8px; background:var(--paper-dim); border:1px solid var(--line); border-radius:8px; padding:10px 12px;">
               <span style="direction:ltr; font-family:var(--mono); font-weight:800; flex:1; word-break:break-all;">${escapeHtml(rest.instapay_account)}</span>
-              ${isLink
-                ? `<a href="${escapeHtml(rest.instapay_account)}" target="_blank" rel="noopener" class="btn-export-sm" style="width:auto; padding:6px 12px; text-decoration:none;">${lang==='en' ? 'Open' : 'فتح'}</a>`
-                : `<button type="button" class="btn-export-sm" id="ordCopyInstapayBtn" style="width:auto; padding:6px 12px;">${lang==='en' ? 'Copy' : 'نسخ'}</button>`}
-            </div>`;
+              ${isLink ? `<a href="${escapeHtml(rest.instapay_account)}" target="_blank" rel="noopener" class="btn-export-sm" style="width:auto; padding:6px 12px; text-decoration:none;">${lang==='en' ? 'Open' : 'فتح'}</a>` : ''}
+              <button type="button" class="btn-export-sm" id="ordCopyInstapayBtn" style="width:auto; padding:6px 12px;">${lang==='en' ? 'Copy' : 'نسخ'}</button>
+            </div>
+            ${isLink ? `
+            <div style="text-align:center; margin-top:10px;">
+              <canvas id="ordPayQr"></canvas>
+              <div class="orders-empty" style="padding-top:4px;">${lang==='en' ? 'Or scan with another phone' : 'أو امسح الكود من موبايل تاني'}</div>
+            </div>` : ''}`;
         }
         payOnlineWrap.innerHTML = tabsHtml + detailHtml;
+        const qrCanvas = payOnlineWrap.querySelector('#ordPayQr');
+        if(qrCanvas && window.QRCode){
+          const linkVal = getCurrentPayLinkValue();
+          if(linkVal) QRCode.toCanvas(qrCanvas, linkVal, { width: 140, margin: 1 }, ()=>{});
+        }
         payOnlineWrap.querySelectorAll('[data-pay-tab]').forEach(btn=>{
           btn.addEventListener('click', ()=>{
             const v = btn.dataset.payTab;
             onlinePayOption = v === 'instapay' ? 'instapay' : Number(v);
             renderOnlinePayOptions();
+            openCurrentPayLink();
           });
         });
         const copyWalletBtn = payOnlineWrap.querySelector('#ordCopyWalletBtn');
@@ -8183,6 +8300,21 @@ async function loadPublic(slug){
         }
         const copyInstapayBtn = payOnlineWrap.querySelector('#ordCopyInstapayBtn');
         if(copyInstapayBtn) copyInstapayBtn.addEventListener('click', ()=> copyToClipboard(rest.instapay_account, lang==='en' ? 'Account copied' : 'تم نسخ الحساب'));
+      }
+      // بيرجع رابط وسيلة الدفع المختارة حاليًا (لو كانت رابط)، من غير ما يفتحه
+      function getCurrentPayLinkValue(){
+        let val = null;
+        if(onlinePayOption === 'instapay') val = rest.instapay_account;
+        else if(typeof onlinePayOption === 'number'){
+          const w = getWalletsList()[onlinePayOption];
+          val = w ? w.number : null;
+        }
+        return (val && /^https?:\/\//i.test(val)) ? val : null;
+      }
+      // بيفتح رابط وسيلة الدفع المختارة تلقائي (يفتح التطبيق لو موجود على الموبايل، أو الموقع لو من الكمبيوتر)
+      function openCurrentPayLink(){
+        const val = getCurrentPayLinkValue();
+        if(val) window.open(val, '_blank', 'noopener');
       }
       payCashBtn.addEventListener('click', ()=>{
         paymentMethod = 'cash';
@@ -8196,7 +8328,9 @@ async function loadPublic(slug){
         payCashBtn.classList.remove('active');
         payOnlineWrap.style.display = '';
         renderOnlinePayOptions();
+        openCurrentPayLink();
       });
+      if(paymentMethod === 'online') renderOnlinePayOptions();
     }
 
     // بيرجع قائمة وسائل التواصل المفعّلة عند المطعم/المتجر لإرسال رسالة الطلب عليها
@@ -8355,6 +8489,9 @@ async function loadPublic(slug){
         zoneId: zone_id || '',
         address: address || ''
       });
+      if(canPayOnline){
+        try{ localStorage.setItem(`menuLastPay_${rest.id}`, JSON.stringify({ method: paymentMethod, onlinePayOption })); }catch(e){}
+      }
       try{
         const lastOrderSnapshot = Object.values(cart).map(c=>({
           itemId: c.item.id, variantLabel: c.variantLabel || null, unitPrice: c.unitPrice, qty: c.qty
