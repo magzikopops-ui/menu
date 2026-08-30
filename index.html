@@ -709,7 +709,7 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
 <div id="onboardScreen" class="hidden">
   <div class="onboard-box">
     <h3 id="obHeading">أنشئ حسابك</h3>
-    <p id="obIntro">لم يُربط بهذا الحساب أي نشاط بعد. اختار نوع نشاطك أولًا، ثم اسمه والرابط العام اللي هيظهر لعملائك.</p>
+    <p id="obIntro">لم يُربط بهذا الحساب أي نشاط بعد. اختر نوع نشاطك أولًا، ثم اسمه والرابط العام الذي سيظهر لعملائك.</p>
     <div class="field">
       <label>نوع النشاط</label>
       <div class="ord-type-toggle">
@@ -853,9 +853,11 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
     <div id="trackLogoWrap" style="margin-bottom:10px;"></div>
     <h2 id="trackRestName" style="font-family:var(--display); margin:0 0 20px; color:var(--ink); font-size:22px;"></h2>
     <div id="trackStatusWrap"></div>
+    <div id="trackPaymentReminderWrap"></div>
     <div id="trackItemsWrap" style="text-align:right; margin-top:22px;"></div>
     <div id="trackTotalWrap" style="margin-top:12px; font-weight:700; color:var(--ink); text-align:left;"></div>
     <div id="trackContactWrap" style="margin-top:16px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;"></div>
+    <div id="trackRatingWrap" style="margin-top:16px;"></div>
     <div style="margin-top:18px; font-size:11px; color:var(--stone);">آخر تحديث: <span id="trackUpdatedAt"></span></div>
   </div>
 </div>
@@ -974,7 +976,7 @@ function showInstallInstructionsModal(){
   overlay.innerHTML = `
     <div class="modal info-modal">
       <h3>📲 احفظ المنيو على شاشتك الرئيسية</h3>
-      <p style="margin:0 0 12px; color:var(--stone); font-size:13.5px; line-height:1.7;">بعد الحفظ، هتلاقي أيقونة المنيو زي أي تطبيق عادي على شاشتك، وتقدر تفتحها بضغطة واحدة في أي وقت.</p>
+      <p style="margin:0 0 12px; color:var(--stone); font-size:13.5px; line-height:1.7;">بعد الحفظ، ستجد أيقونة المنيو مثل أي تطبيق عادي على شاشتك، ويمكنك فتحها بضغطة واحدة في أي وقت.</p>
       ${steps.map((s,i)=>`<div class="field-row"><span class="icon">${i+1}️⃣</span><span class="txt">${escapeHtml(s)}</span></div>`).join('')}
       <div class="modal-actions">
         <button class="btn-confirm" id="installInstructionsCloseBtn">تمام، فهمت</button>
@@ -1119,20 +1121,20 @@ function toEgyptWaDigits(phone){
 // نصوص متنوعة لرسالة "شارك المنيو" — التنويع بيقلل احتمالية إن واتساب يعتبر الرسائل المتكررة سبام
 // وبعضها من غير اسم العميل، لأن الاسم المسجل ممكن يكون غلط
 const MENU_WA_TEMPLATES = [
-  { withName:true,  text:(name,link,rest)=> `أهلًا بيك ${name} 🌟\nيسعدنا نرحّب بيك في ${rest}! تقدر تتصفح المنيو وتطلب أونلاين مباشرة من هنا:\n${link}` },
-  { withName:false, text:(name,link,rest)=> `أهلاً بيك 👋\n${rest} دلوقتي أونلاين! تقدر تشوف المنيو وتطلب من هنا:\n${link}` },
-  { withName:true,  text:(name,link,rest)=> `يا هلا ${name} ✨\nمنيو ${rest} بقى متاح أونلاين، تقدر تطلب براحتك من الرابط ده:\n${link}` },
-  { withName:false, text:(name,link,rest)=> `تحية طيبة 🙏\nندعوك تتصفح منيو ${rest} وتطلب أونلاين من خلال الرابط:\n${link}` },
-  { withName:true,  text:(name,link,rest)=> `إزيك ${name}؟ 😊\n${rest} عندها منيو أونلاين دلوقتي، جرّب تطلب من هنا:\n${link}` },
-  { withName:false, text:(name,link,rest)=> `منيو ${rest} أونلاين 🍽️\nاطلب دلوقتي من هنا:\n${link}` },
-  { withName:true,  text:(name,link,rest)=> `يا أهلا ${name} 🎉\nاستمتع بعروضنا وخصوماتنا لما تطلب أونلاين من منيو ${rest}:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `أهلًا بك ${name} 🌟\nيسعدنا أن نرحب بك في ${rest}! يمكنك تصفح المنيو والطلب أونلاين مباشرة من هنا:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `أهلًا بك 👋\n${rest} متاح الآن أونلاين! يمكنك تصفح المنيو والطلب من هنا:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `أهلًا بك ${name} ✨\nأصبح منيو ${rest} متاحًا أونلاين، ويمكنك الطلب براحتك من الرابط التالي:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `تحية طيبة 🙏\nندعوك لتصفح منيو ${rest} والطلب أونلاين من خلال الرابط التالي:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `كيف حالك ${name}؟ 😊\nأصبح لدى ${rest} منيو أونلاين الآن، جرّب الطلب من هنا:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `منيو ${rest} متاح أونلاين 🍽️\nاطلب الآن من هنا:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `أهلًا بك ${name} 🎉\nاستمتع بعروضنا وخصوماتنا عند الطلب أونلاين من منيو ${rest}:\n${link}` },
   { withName:false, text:(name,link,rest)=> `عروض وخصومات تنتظرك 🎁\nاطلب أونلاين من منيو ${rest} واستمتع بأفضل العروض:\n${link}` },
-  { withName:true,  text:(name,link,rest)=> `أخبار حلوة يا ${name} 🔥\nعندنا عروض وخصومات خاصة لو طلبت أونلاين من ${rest}، جرّب المنيو من هنا:\n${link}` },
-  { withName:false, text:(name,link,rest)=> `خصومات مميزة بانتظارك 💥\n${rest} متاح أونلاين دلوقتي، اطلب من المنيو واستفيد بالعروض:\n${link}` },
-  { withName:true,  text:(name,link,rest)=> `${name}، متفوتش الفرصة 😋\nعروض وخصومات على طلبات الأونلاين من ${rest}، شوف المنيو من هنا:\n${link}` },
-  { withName:false, text:(name,link,rest)=> `فرصتك دلوقتي 🛍️\nاطلب أونلاين من منيو ${rest} وخد خصمك على طلبك:\n${link}` },
-  { withName:true,  text:(name,link,rest)=> `طال غيابك يا ${name} 💛\nمنيو ${rest} فيه عروض جديدة تستاهل تجربها، اطلب أونلاين من هنا:\n${link}` },
-  { withName:false, text:(name,link,rest)=> `طال الغياب! 💛\n${rest} عندها عروض جديدة تستاهل تجربها، اطلب أونلاين من هنا:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `أخبار سارة يا ${name} 🔥\nلدينا عروض وخصومات خاصة عند الطلب أونلاين من ${rest}، جرّب المنيو من هنا:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `خصومات مميزة بانتظارك 💥\n${rest} متاح أونلاين الآن، اطلب من المنيو واستفد من العروض:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `${name}، لا تفوّت الفرصة 😋\nعروض وخصومات على الطلبات أونلاين من ${rest}، شاهد المنيو من هنا:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `فرصتك الآن 🛍️\nاطلب أونلاين من منيو ${rest} واحصل على خصمك على طلبك:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `لقد طال غيابك يا ${name} 💛\nيضم منيو ${rest} عروضًا جديدة تستحق التجربة، اطلب أونلاين من هنا:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `لقد طال الغياب! 💛\nلدى ${rest} عروض جديدة تستحق التجربة، اطلب أونلاين من هنا:\n${link}` },
 ];
 
 function openWaTemplatePicker(templates, name, link, digits){
@@ -1141,7 +1143,7 @@ function openWaTemplatePicker(templates, name, link, digits){
   overlay.innerHTML = `
     <div class="modal">
       <h3>اختر نص الرسالة</h3>
-      <div class="orders-empty" style="padding:0 0 10px; font-size:12px;">تنويع النص كل مرة بيقلل احتمال حظر واتساب للأرقام اللي بترسلها كتير</div>
+      <div class="orders-empty" style="padding:0 0 10px; font-size:12px;">تنويع النص في كل مرة يقلل احتمال حظر واتساب للأرقام التي تُرسَل إليها كثيرًا</div>
       <div class="wa-template-list" id="waTemplateList"></div>
       <div class="modal-actions">
         <button class="btn-cancel" id="waTemplateCancel">إلغاء</button>
@@ -1902,7 +1904,7 @@ function showNotifPermModal(mode){
     overlay.innerHTML = `
       <div class="modal" style="text-align:center; max-width:380px;">
         <h3>🔔 فعّل تنبيهات الطلبات</h3>
-        <div class="orders-empty" style="padding:0 0 16px;">هيوصلك إشعار على سطح المكتب مع كل أوردر جديد أول ما يوصل، حتى لو التاب مش في الفوكس. المتصفح هيسألك للإذن بعد شوية — اضغط "سماح / Allow".</div>
+        <div class="orders-empty" style="padding:0 0 16px;">سيصلك إشعار على سطح المكتب مع كل طلب جديد فور وصوله، حتى لو لم تكن نافذة المتصفح في المقدمة. سيطلب منك المتصفح الإذن بعد قليل — اضغط "سماح / Allow".</div>
         <div class="modal-actions">
           <button class="btn-cancel" id="notifModalCancelBtn">إلغاء</button>
           <button class="btn-confirm" id="notifModalAskBtn">تفعيل الإشعارات الآن</button>
@@ -1918,7 +1920,7 @@ function showNotifPermModal(mode){
       if(Notification.permission === 'granted'){
         new Notification('تم تفعيل التنبيهات ✅', { body: 'هتوصلك رسالة سطح مكتب مع كل أوردر جديد طول ما المتصفح شغال.' });
       } else if(Notification.permission === 'denied'){
-        toast('تم رفض الإذن — تقدر تفعّله لاحقًا من إعدادات المتصفح');
+        toast('تم رفض الإذن — يمكنك تفعيله لاحقًا من إعدادات المتصفح');
       }
     });
   } else if(mode === 'blocked'){
@@ -1943,9 +1945,9 @@ function showNotifPermModal(mode){
       <div class="modal" style="text-align:center; max-width:420px;">
         <h3>✅ التنبيهات مفعّلة بالفعل</h3>
         <div class="orders-empty" style="text-align:right; padding:0 0 16px; line-height:1.9;">
-          🔸 تأكد إن وضع "Focus Assist / التركيز" في Windows مقفول<br>
-          🔸 من Windows Settings ← System ← Notifications، تأكد إن Chrome مسموحله يبعت إشعارات<br>
-          🔸 جرّب تصغّر نافذة Chrome بدل ما تقفلها
+          🔸 تأكد أن وضع "Focus Assist / التركيز" في Windows مغلق<br>
+          🔸 من Windows Settings ← System ← Notifications، تأكد أن Chrome مسموح له بإرسال الإشعارات<br>
+          🔸 جرّب تصغير نافذة Chrome بدلًا من إغلاقها
         </div>
         <div class="modal-actions">
           <button class="btn-cancel" id="notifModalCloseBtn">تمام</button>
@@ -1955,7 +1957,7 @@ function showNotifPermModal(mode){
     overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
     overlay.querySelector('#notifModalCloseBtn').addEventListener('click', ()=> overlay.remove());
     try{
-      new Notification('تجربة الإشعار 🔔', { body: 'لو شفت الرسالة دي، التنبيهات شغالة تمام.' });
+      new Notification('تجربة الإشعار 🔔', { body: 'إذا شاهدت هذه الرسالة، فإن التنبيهات تعمل بشكل سليم.' });
     }catch(e){ console.error('Notification test failed:', e); }
     startOrderAlertLoop();
   }
@@ -2277,7 +2279,7 @@ document.getElementById('driversBtn').addEventListener('click', async ()=>{
     const wrap = overlay.querySelector('#driversListWrap');
     const { data: drivers, error } = await sb.from('drivers').select('*').eq('restaurant_id', restaurant.id).order('is_active', { ascending:false }).order('created_at', { ascending:false });
     if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل السائقين — تأكد من إضافة جدول drivers في قاعدة البيانات</div>`; return; }
-    if(!drivers || drivers.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا يوجد سائقين مضافين بعد</div>`; return; }
+    if(!drivers || drivers.length === 0){ wrap.innerHTML = `<div class="orders-empty">لم تتم إضافة أي سائقين بعد</div>`; return; }
 
     // عدد الطلبات النشطة (قيد الانتظار أو التجهيز) المعيّنة لكل سائق دلوقتي
     const { data: activeAssigned } = await sb.from('orders').select('driver_id').eq('restaurant_id', restaurant.id).in('status', ['pending','preparing']).not('driver_id', 'is', null);
@@ -2288,7 +2290,7 @@ document.getElementById('driversBtn').addEventListener('click', async ()=>{
       <div class="zone-row" data-id="${d.id}" data-name="${escapeHtml(d.name)}" data-phone="${escapeHtml(d.phone)}" style="${d.is_active ? '' : 'opacity:.55;'}">
         <div style="flex:1; min-width:120px;">
           <span class="zone-name" style="display:block;">${escapeHtml(d.name)} ${!d.is_active ? `<span style="font-size:10px; color:var(--stone); font-weight:400;">(غير نشط)</span>` : ''}</span>
-          ${activeCounts[d.id] ? `<span style="display:block; font-size:11.5px; color:var(--ember); margin-top:2px;">🚴 ${activeCounts[d.id]} طلب معلّق عليه دلوقتي</span>` : ''}
+          ${activeCounts[d.id] ? `<span style="display:block; font-size:11.5px; color:var(--ember); margin-top:2px;">🚴 ${activeCounts[d.id]} طلب معلّق عليه الآن</span>` : ''}
         </div>
         <span class="zone-fee" style="direction:ltr;">${escapeHtml(d.phone)}</span>
         <button type="button" data-action="toggleActive">${d.is_active ? 'إيقاف' : 'تفعيل'}</button>
@@ -2310,7 +2312,7 @@ document.getElementById('driversBtn').addEventListener('click', async ()=>{
       btn.addEventListener('click', async ()=>{
         const row = btn.closest('.zone-row');
         const id = row.dataset.id;
-        if(!confirm('حذف هذا السائق؟ الطلبات اللي كانت معيّنة له هتفضل مسجّلة بس من غير سائق.')) return;
+        if(!confirm('هل تريد حذف هذا السائق؟ ستبقى الطلبات التي كانت معيّنة له مسجّلة، لكن من دون سائق.')) return;
         const { error: delErr } = await sb.from('drivers').delete().eq('id', id);
         if(delErr){ toast('تعذر الحذف'); return; }
         await renderDrivers();
@@ -2542,7 +2544,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
       <div class="modal">
         <h3>أرقام تليفون ${escapeHtml(customerName || 'العميل')}</h3>
         <div class="orders-empty" style="text-align:right; padding:0 0 10px; font-size:12px;">
-          الرقم "الافتراضي" هو اللي بيتربط بيه واتساب والطلبات الجديدة. باقي الأرقام للتواصل بس.
+          الرقم "الافتراضي" هو الذي يرتبط به واتساب والطلبات الجديدة، أما باقي الأرقام فهي للتواصل فقط.
         </div>
         <div id="custPhoneListWrap"><div class="orders-empty">جارِ التحميل...</div></div>
         <div class="zone-add-row" style="flex-wrap:wrap; margin-top:12px;">
@@ -2591,7 +2593,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
           const row = phones.find(p=> p.id === id);
           btn.disabled = true;
           if(await isPhoneTakenByAnotherCustomer(row.phone)){
-            toast('الرقم ده مسجل بالفعل كرقم أساسي لعميل تاني');
+            toast('هذا الرقم مسجل بالفعل كرقم أساسي لعميل آخر');
             btn.disabled = false;
             return;
           }
@@ -2608,7 +2610,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
           const row = btn.closest('.zone-row');
           const id = row.dataset.id;
           const target = phones.find(p=> p.id === id);
-          if(target.is_default){ toast('مينفعش تحذف الرقم الافتراضي — عيّن رقم تاني افتراضي الأول'); return; }
+          if(target.is_default){ toast('لا يمكن حذف الرقم الافتراضي — عيّن رقمًا آخر افتراضيًا أولًا'); return; }
           btn.disabled = true;
           const { error: delErr } = await sb.from('customer_phones').delete().eq('id', id);
           if(delErr){ toast('تعذر حذف الرقم'); return; }
@@ -2627,7 +2629,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
       const btn = phOverlay.querySelector('#phoneAddBtn');
       btn.disabled = true;
       if(await isPhoneTakenByAnotherCustomer(phone)){
-        toast('الرقم ده مسجل بالفعل لعميل تاني');
+        toast('هذا الرقم مسجل بالفعل لعميل آخر');
         btn.disabled = false;
         return;
       }
@@ -2635,7 +2637,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
       const isFirst = !count || count === 0;
       const { error: insErr } = await sb.from('customer_phones').insert({ customer_id: customerId, label: label || null, phone, is_default: isFirst });
       btn.disabled = false;
-      if(insErr){ toast('تعذر إضافة الرقم — تأكد أنه مش مكرر لنفس العميل'); return; }
+      if(insErr){ toast('تعذر إضافة الرقم — تأكد أنه غير مكرر لنفس العميل'); return; }
       if(isFirst){ await sb.from('customers').update({ phone }).eq('id', customerId); }
       labelInput.value = ''; phoneInput.value = '';
       toast('تمت إضافة الرقم');
@@ -2645,7 +2647,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
 
   // دمج عميلين لهما نفس الهوية الفعلية في سجل واحد — الأرقام والعناوين تتوحّد تلقائيًا
   function openMergeCustomersModal(){
-    if(allCustomers.length < 2){ toast('محتاج عميلين على الأقل عشان تدمج'); return; }
+    if(allCustomers.length < 2){ toast('يلزم وجود عميلين على الأقل لإجراء الدمج'); return; }
     const mergeOverlay = document.createElement('div');
     mergeOverlay.className = 'overlay';
     const optionsHtml = allCustomers.map(c=> `<option value="${c.id}">${escapeHtml(c.name)} — ${escapeHtml(c.phone)}</option>`).join('');
@@ -2653,18 +2655,18 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
       <div class="modal">
         <h3>دمج عملاء مكررين</h3>
         <div class="orders-empty" style="text-align:right; padding:0 0 12px; font-size:12px;">
-          اختار العميلين اللي هما فعليًا نفس الشخص. كل أرقامه وعناوينه هتتجمع في سجل واحد، والعميل التاني هيتحذف نهائيًا.
+          اختر العميلين اللذين هما فعليًا نفس الشخص. ستُجمع جميع أرقامه وعناوينه في سجل واحد، وسيُحذف العميل الآخر نهائيًا.
         </div>
         <div style="display:flex; flex-direction:column; gap:3px; margin-bottom:10px;">
-          <label style="font-size:12px; color:var(--stone);">العميل اللي هيفضل (الأساسي)</label>
+          <label style="font-size:12px; color:var(--stone);">العميل الذي سيبقى (الأساسي)</label>
           <select id="mergeKeepSelect" style="padding:8px; border-radius:8px; border:1px solid var(--line); background:var(--paper-dim); color:var(--ink);">${optionsHtml}</select>
         </div>
         <div style="display:flex; flex-direction:column; gap:3px; margin-bottom:6px;">
-          <label style="font-size:12px; color:var(--stone);">العميل اللي هيتم دمجه وحذفه</label>
+          <label style="font-size:12px; color:var(--stone);">العميل الذي سيتم دمجه وحذفه</label>
           <select id="mergeAwaySelect" style="padding:8px; border-radius:8px; border:1px solid var(--line); background:var(--paper-dim); color:var(--ink);">${optionsHtml}</select>
         </div>
         <div class="orders-empty" style="text-align:right; padding:8px 0 0; font-size:11.5px;">
-          ⚠️ ملحوظة: إحصائيات المبيعات والطلبات القديمة بتتبع رقم التليفون اللي اتسجل بيه الطلب فعليًا، فمش هتندمج رجعيًا مع بعض — الدمج ده بيوحّد بيانات التواصل بس (الاسم/الأرقام/العناوين).
+          ⚠️ ملحوظة: تتبع إحصائيات المبيعات والطلبات القديمة رقم الهاتف الذي سُجّل به الطلب فعليًا، لذا لن تُدمج رجعيًا مع بعضها — هذا الدمج يوحّد بيانات التواصل فقط (الاسم/الأرقام/العناوين).
         </div>
         <div class="modal-actions">
           <button class="btn-cancel" id="mergeCancelBtn">إلغاء</button>
@@ -2681,7 +2683,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
       if(keepId === awayId){ toast('اختار عميلين مختلفين'); return; }
       const keepC = allCustomers.find(c=> c.id === keepId);
       const awayC = allCustomers.find(c=> c.id === awayId);
-      if(!confirm(`هيتم دمج "${awayC.name} — ${awayC.phone}" جوّا "${keepC.name} — ${keepC.phone}" وحذفه نهائيًا. متابعة؟`)) return;
+      if(!confirm(`سيتم دمج "${awayC.name} — ${awayC.phone}" داخل "${keepC.name} — ${keepC.phone}" وحذفه نهائيًا. هل تريد المتابعة؟`)) return;
       const btn = mergeOverlay.querySelector('#mergeConfirmBtn');
       btn.disabled = true;
       const { error } = await sb.rpc('merge_customers', { p_keep_id: keepId, p_merge_id: awayId });
@@ -3020,7 +3022,7 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
     autoPrintBtn.textContent = on ? '🖨️ الطباعة التلقائية: مفعّلة' : '🖨️ الطباعة التلقائية: متوقفة';
     autoPrintBtn.classList.toggle('active', on);
     autoPrintNote.style.display = on ? 'block' : 'none';
-    autoPrintNote.innerHTML = `تفعيل الطباعة التلقائية هنا خاص بهذا الجهاز/المتصفح بس (مثلًا شاشة المطبخ). المتصفح هيفتح نافذة الطباعة تلقائيًا مع كل طلب جديد، وهتحتاج تضغط "طباعة" فيها إلا لو ظبطت المتصفح على وضع "kiosk printing" اللي بيطبع مباشرة من غير نافذة — اسأل الدعم الفني لو محتاج تظبيط الجهاز بالطريقة دي.`;
+    autoPrintNote.innerHTML = `تفعيل الطباعة التلقائية هنا خاص بهذا الجهاز/المتصفح فقط (مثلًا شاشة المطبخ). سيفتح المتصفح نافذة الطباعة تلقائيًا مع كل طلب جديد، وستحتاج إلى الضغط على "طباعة" فيها، إلا إذا ضبطت المتصفح على وضع "kiosk printing" الذي يطبع مباشرة من دون نافذة — استشر الدعم الفني إذا احتجت إلى ضبط الجهاز بهذه الطريقة.`;
   };
   refreshAutoPrintUI();
   autoPrintBtn.addEventListener('click', ()=>{
@@ -3107,6 +3109,9 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
     const markPaidHtml = (isOnlinePay && o.payment_status !== 'paid')
       ? `<button type="button" class="btn-export-sm" data-action="markPaid" data-order-id="${o.id}" style="margin-top:6px;">✅ تأكيد استلام الدفع</button>`
       : '';
+    const ratingBadgeHtml = o.rating_stars
+      ? `<span class="status-badge" style="background:#4a3a10; color:#f5d98a;" title="${o.rating_comment ? escapeHtml(o.rating_comment) : ''}">${'★'.repeat(o.rating_stars)}${'☆'.repeat(5-o.rating_stars)}</span>`
+      : '';
     const isActive = status === 'pending' || status === 'preparing';
     let prepHtml = '';
     if(isActive && o.estimated_ready_at){
@@ -3128,7 +3133,7 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
       <div class="${rowClasses}" data-order-id="${o.id}">
         <div class="o-card-top">
           <div class="o-name">${numberHtml}${escapeHtml(o.customer_name)} <span class="o-type-badge">${typeLabel}</span></div>
-          <div class="o-badges"><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${payBadgeHtml}${tagsHtml}</div>
+          <div class="o-badges"><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${payBadgeHtml}${ratingBadgeHtml}${tagsHtml}</div>
         </div>
         <div class="o-contact-row">
           <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}
@@ -3816,7 +3821,7 @@ async function openAdminPanel(){
       cb.addEventListener('change', async ()=>{
         const field = cb.dataset.field;
         if(field === 'account_suspended' && cb.checked){
-          if(!confirm('هيتم إيقاف المنيو العام ولوحة التحكم بالكامل لهذا العميل فورًا. متأكد؟')){
+          if(!confirm('سيتم إيقاف المنيو العام ولوحة التحكم بالكامل لهذا العميل فورًا. هل أنت متأكد؟')){
             cb.checked = false;
             return;
           }
@@ -4102,7 +4107,7 @@ async function openAdminPanel(){
       wrap.querySelectorAll('.admin-disc-delete-btn').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
           const id = btn.dataset.id;
-          if(!confirm('حذف كود الخصم ده نهائيًا؟')) return;
+          if(!confirm('هل تريد حذف كود الخصم هذا نهائيًا؟')) return;
           const { error: delErr } = await sb.from('discount_codes').delete().eq('id', id);
           if(delErr){ toast('تعذر الحذف'); return; }
           toast('تم الحذف');
@@ -4302,7 +4307,7 @@ function buildSalesTrendSVG(rows, numDays, metric){
       ${showLabel ? `<text x="${(x + barW/2).toFixed(1)}" y="${h - 8}" font-size="9" fill="var(--stone)" text-anchor="middle">${dLabel}</text>` : ''}`;
   }).join('');
   const totalVal = days.reduce((s,d)=> s + d.value, 0);
-  const emptyNote = totalVal === 0 ? `<div class="orders-empty" style="text-align:center; padding:8px 0 0; font-size:12px;">لا توجد بيانات كافية في الفترة دي بعد</div>` : '';
+  const emptyNote = totalVal === 0 ? `<div class="orders-empty" style="text-align:center; padding:8px 0 0; font-size:12px;">لا توجد بيانات كافية في هذه الفترة بعد</div>` : '';
   return `<svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto; display:block;">${bars}</svg>${emptyNote}`;
 }
 
@@ -4409,16 +4414,16 @@ function buildInsights({ rows, itemStatsRows, hourlyRows, custRows }){
   if(prev7Sales > 0){
     const delta = ((last7Sales - prev7Sales) / prev7Sales) * 100;
     if(delta >= 15){
-      cards.push({ type:'positive', icon:'📈', text:`مبيعاتك في آخر 7 أيام زادت ${delta.toFixed(0)}% عن الأسبوع اللي قبله (${last7Sales.toFixed(0)} مقابل ${prev7Sales.toFixed(0)} جنيه).` });
+      cards.push({ type:'positive', icon:'📈', text:`ارتفعت مبيعاتك في آخر 7 أيام بنسبة ${delta.toFixed(0)}% مقارنةً بالأسبوع السابق (${last7Sales.toFixed(0)} مقابل ${prev7Sales.toFixed(0)} جنيه).` });
     } else if(delta <= -15){
-      cards.push({ type:'warning', icon:'📉', text:`مبيعاتك في آخر 7 أيام قلّت ${Math.abs(delta).toFixed(0)}% عن الأسبوع اللي قبله (${last7Sales.toFixed(0)} مقابل ${prev7Sales.toFixed(0)} جنيه).` });
+      cards.push({ type:'warning', icon:'📉', text:`انخفضت مبيعاتك في آخر 7 أيام بنسبة ${Math.abs(delta).toFixed(0)}% مقارنةً بالأسبوع السابق (${last7Sales.toFixed(0)} مقابل ${prev7Sales.toFixed(0)} جنيه).` });
     }
   }
 
   // 2) عدم وجود طلبات في آخر 3 أيام
   const last3Count = sumRange(rows, 'orders_count', 2, 0);
   if(last3Count === 0 && rows.length > 3){
-    cards.push({ type:'warning', icon:'⚠️', text:`مفيش أي طلبات مسجّلة في آخر 3 أيام — يستاهل تتأكد إن المنيو والدفع شغالين تمام.` });
+    cards.push({ type:'warning', icon:'⚠️', text:`لا توجد أي طلبات مسجّلة في آخر 3 أيام — يُستحسن أن تتأكد من أن المنيو وطرق الدفع تعمل بشكل سليم.` });
   }
 
   // 3) تركّز الطلبات في وقت معيّن
@@ -4475,12 +4480,12 @@ function buildInsights({ rows, itemStatsRows, hourlyRows, custRows }){
     const repeat = custRows.filter(c=> c.orders_count > 1).length;
     const pct = Math.round(repeat / custRows.length * 100);
     if(pct < 20){
-      cards.push({ type:'info', icon:'👥', text:`بس ${pct}% من عملاءك طلبوا أكتر من مرة — ممكن تفكر في عرض أو رسالة متابعة للعملاء اللي طلبوا مرة واحدة بس.` });
+      cards.push({ type:'info', icon:'👥', text:`${pct}% فقط من عملائك طلبوا أكثر من مرة — يمكنك التفكير في عرض أو رسالة متابعة للعملاء الذين طلبوا مرة واحدة فقط.` });
     }
   }
 
   if(cards.length === 0){
-    return `<div class="insight-card info"><span class="insight-icon">💡</span><span>لسه مفيش بيانات كفاية لرؤى تلقائية — هتظهر أول ما يتراكم عندك تاريخ طلبات أكتر.</span></div>`;
+    return `<div class="insight-card info"><span class="insight-icon">💡</span><span>لا توجد حتى الآن بيانات كافية لعرض رؤى تلقائية — ستظهر بمجرد تراكم عدد أكبر من الطلبات.</span></div>`;
   }
   return cards.slice(0,5).map(c=> `<div class="insight-card ${c.type}"><span class="insight-icon">${c.icon}</span><span>${escapeHtml(c.text)}</span></div>`).join('');
 }
@@ -4557,7 +4562,7 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
       ${visitCard('الإجمالي منذ البداية', allTimeVisits)}
     </div>
     <div class="orders-empty" style="text-align:right; padding:10px 0 0; font-size:12px;">
-      عايز تحليل أعمق (اتجاه المبيعات، أكتر الأصناف، أوقات الذروة، العملاء، المناطق، وتصدير تقرير)؟ جرّب "التقارير" من شريط الأدوات.
+      هل ترغب في تحليل أعمق (اتجاه المبيعات، أكثر الأصناف مبيعًا، أوقات الذروة، العملاء، المناطق، وتصدير تقرير)؟ جرّب "التقارير" من شريط الأدوات.
     </div>`;
 });
 
@@ -4637,11 +4642,11 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
       </select>
     </h3>
     <div id="customerSummaryWrap" class="orders-empty">جارِ التحميل...</div>
-    <div class="orders-empty" style="text-align:right; padding:10px 0 4px; font-size:12px; font-weight:700; color:var(--ink);">أكتر العملاء طلبًا</div>
+    <div class="orders-empty" style="text-align:right; padding:10px 0 4px; font-size:12px; font-weight:700; color:var(--ink);">أكثر العملاء طلبًا</div>
     <div id="topCustomersWrap"><div class="orders-empty">جارِ التحميل...</div></div>
     <h3 style="margin-top:20px;">تقرير المناطق والتوصيل</h3>
     <div id="deliverySummaryWrap" class="orders-empty">جارِ التحميل...</div>
-    <div class="orders-empty" style="text-align:right; padding:10px 0 4px; font-size:12px; font-weight:700; color:var(--ink);">أكتر المناطق طلبًا</div>
+    <div class="orders-empty" style="text-align:right; padding:10px 0 4px; font-size:12px; font-weight:700; color:var(--ink);">أكثر المناطق طلبًا</div>
     <div id="topAreasWrap"><div class="orders-empty">جارِ التحميل...</div></div>`;
 
   const trendWrap = overlay.querySelector('#salesTrendWrap');
@@ -4816,11 +4821,11 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
     peakSummaryWrap.innerHTML = `
       <div class="orders-list">
         <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
-          <span class="o-name" style="font-weight:700;">أكتر ساعة زحمة</span>
+          <span class="o-name" style="font-weight:700;">أكثر ساعة ازدحامًا</span>
           <span class="o-time" style="text-align:left; margin:0;">من ${String(peakHour.hour).padStart(2,'0')}:00 لـ ${String((peakHour.hour+1)%24).padStart(2,'0')}:00 (${peakHour.count} طلب)</span>
         </div>
         <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
-          <span class="o-name" style="font-weight:700;">أكتر يوم في الأسبوع</span>
+          <span class="o-name" style="font-weight:700;">أكثر يوم ازدحامًا في الأسبوع</span>
           <span class="o-time" style="text-align:left; margin:0;">${DOW_LABELS[peakDowIdx]} (${byDow[peakDowIdx]} طلب إجمالًا)</span>
         </div>
         <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
@@ -4854,7 +4859,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
           <span class="o-time" style="text-align:left; margin:0;">${totalCustomers} عميل</span>
         </div>
         <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
-          <span class="o-name" style="font-weight:700;">عملاء طلبوا أكتر من مرة</span>
+          <span class="o-name" style="font-weight:700;">عملاء طلبوا أكثر من مرة</span>
           <span class="o-time" style="text-align:left; margin:0;">${repeatCustomers} عميل (${totalCustomers ? Math.round(repeatCustomers/totalCustomers*100) : 0}%)</span>
         </div>
         <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
@@ -4946,7 +4951,7 @@ function buildMonthlyReportHtml({ restaurant, dailyRows, itemStatsRows, custRows
   };
   const salesDelta = pctDelta(curSales, prevSales);
   const ordersDelta = pctDelta(curOrders, prevOrders);
-  const deltaHtml = (d)=> d === null ? `<span class="kpi-delta">بيانات غير كافية للمقارنة</span>` : `<span class="kpi-delta ${d>=0?'up':'down'}">${d>=0?'▲':'▼'} ${Math.abs(d).toFixed(0)}% عن نفس الفترة الشهر اللي فات</span>`;
+  const deltaHtml = (d)=> d === null ? `<span class="kpi-delta">بيانات غير كافية للمقارنة</span>` : `<span class="kpi-delta ${d>=0?'up':'down'}">${d>=0?'▲':'▼'} ${Math.abs(d).toFixed(0)}% عن نفس الفترة من الشهر الماضي</span>`;
   const avgOrderValue = curOrders ? (curSales/curOrders) : 0;
 
   const itemAgg = {};
@@ -4996,7 +5001,7 @@ function buildMonthlyReportHtml({ restaurant, dailyRows, itemStatsRows, custRows
         ${topItems.length ? topItems.map(([name,v])=> `<tr><td>${escapeHtml(name)}</td><td class="num">${v.quantity}</td><td class="num">${v.revenue.toFixed(2)} EGP</td></tr>`).join('') : `<tr><td colspan="3">لا توجد بيانات كافية</td></tr>`}
       </table>
 
-      <h2>أكتر العملاء طلبًا (كل الوقت)</h2>
+      <h2>أكثر العملاء طلبًا (طوال الوقت)</h2>
       <table>
         <tr><th>العميل</th><th>عدد الطلبات</th><th>إجمالي الإنفاق</th></tr>
         ${topCustomers.length ? topCustomers.map(c=> `<tr><td>${escapeHtml(c.customer_name||'بدون اسم')} — ${escapeHtml(c.customer_phone)}</td><td class="num">${c.orders_count}</td><td class="num">${Number(c.orders_total).toFixed(2)} EGP</td></tr>`).join('') : `<tr><td colspan="3">لا توجد بيانات كافية</td></tr>`}
@@ -5009,7 +5014,7 @@ function buildMonthlyReportHtml({ restaurant, dailyRows, itemStatsRows, custRows
         <tr><td>استلام من المحل</td><td class="num">${pickup.orders_count} (${100-deliveryPct}%)</td><td class="num">${Number(pickup.orders_total).toFixed(2)} EGP</td></tr>
       </table>
 
-      <h2>أكتر المناطق طلبًا (كل الوقت)</h2>
+      <h2>أكثر المناطق طلبًا (طوال الوقت)</h2>
       <table>
         <tr><th>المنطقة</th><th>عدد الطلبات</th><th>القيمة</th></tr>
         ${topAreas.length ? topAreas.map(a=> `<tr><td>${escapeHtml(a.area)}</td><td class="num">${a.orders_count}</td><td class="num">${Number(a.orders_total).toFixed(2)} EGP</td></tr>`).join('') : `<tr><td colspan="3">لا توجد بيانات كافية</td></tr>`}
@@ -5094,7 +5099,7 @@ function openCleanupOrdersModal(){
         <input type="number" id="cleanupOrderNumber" min="1" placeholder="مثال: 128">
       </div>
       <div class="orders-empty" style="text-align:right; padding:6px 0 0;" id="cleanupNote">
-        هيتم حذف الطلبات وتفاصيلها نهائيًا، لكن إحصائيات عدد الطلبات وقيمتها هتفضل محفوظة حتى بعد الحذف.
+        سيتم حذف الطلبات وتفاصيلها نهائيًا، لكن ستبقى إحصائيات عدد الطلبات وقيمتها محفوظة حتى بعد الحذف.
       </div>
       <div class="field" style="margin-top:10px; display:flex; flex-direction:row; align-items:center; gap:8px;">
         <input type="checkbox" id="cleanupExportFirst" checked style="width:auto; margin:0;">
@@ -5132,11 +5137,11 @@ function openCleanupOrdersModal(){
     customWrap.classList.toggle('hidden', !(scope === 'old' && periodSelect.value === 'custom'));
     singleWrap.classList.toggle('hidden', scope !== 'single');
     if(scope === 'today'){
-      noteEl.textContent = 'هيتم حذف كل طلبات النهاردة نهائيًا. هذا الإجراء لا يمكن التراجع عنه.';
+      noteEl.textContent = 'سيتم حذف جميع طلبات اليوم نهائيًا. هذا الإجراء لا يمكن التراجع عنه.';
     } else if(scope === 'single'){
-      noteEl.textContent = 'هيتم حذف الطلب المحدد برقمه نهائيًا. هذا الإجراء لا يمكن التراجع عنه.';
+      noteEl.textContent = 'سيتم حذف الطلب المحدد برقمه نهائيًا. هذا الإجراء لا يمكن التراجع عنه.';
     } else {
-      noteEl.textContent = 'هيتم حذف الطلبات وتفاصيلها نهائيًا، لكن إحصائيات عدد الطلبات وقيمتها هتفضل محفوظة حتى بعد الحذف.';
+      noteEl.textContent = 'سيتم حذف الطلبات وتفاصيلها نهائيًا، لكن ستبقى إحصائيات عدد الطلبات وقيمتها محفوظة حتى بعد الحذف.';
     }
   }
   scopeSelect.addEventListener('change', syncScopeUI);
@@ -5279,10 +5284,10 @@ function openCleanupImagesModal(){
     <div class="modal">
       <h3>تنظيف وتحسين الصور</h3>
       <div class="orders-empty" style="text-align:right; padding:6px 0 0;">
-        هيتم فحص كل صور الشعار والأصناف الخاصة بيك، وهيحصل الآتي:
-        <br>• أي ملف صورة مش مرتبط بصنف أو شعار حاليًا (تبقى من صور اتحذفت قبل كده) هيتمسح نهائيًا لتوفير المساحة.
-        <br>• أي صورة لسه بالنظام القديم (غير مضغوطة بأحدث طريقة) هيُعاد ضغطها تلقائيًا وتقليل حجمها.
-        <br><br>العملية دي آمنة على الصور الظاهرة حاليًا في المنيو، وممكن تاخد شوية وقت حسب عدد الأصناف.
+        سيتم فحص جميع صور الشعار والأصناف الخاصة بك، وسيحدث ما يلي:
+        <br>• أي ملف صورة غير مرتبط بصنف أو شعار حاليًا (بقي من صور محذوفة سابقًا) سيُحذف نهائيًا لتوفير المساحة.
+        <br>• أي صورة لا تزال بالنظام القديم (غير مضغوطة بأحدث طريقة) سيُعاد ضغطها تلقائيًا وتقليل حجمها.
+        <br><br>هذه العملية آمنة على الصور الظاهرة حاليًا في المنيو، وقد تستغرق بعض الوقت حسب عدد الأصناف.
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" id="ciCancelBtn">إلغاء</button>
@@ -5315,7 +5320,7 @@ function openCleanupImagesModal(){
       <h3>تم الانتهاء ✅</h3>
       <div class="orders-empty" style="text-align:right; padding:6px 0 0;">
         ${report.scanFailed ? '⚠️ تعذر فحص ملفات التخزين (مشكلة صلاحيات محتملة)، لكن تم فحص الصور المحفوظة في قاعدة البيانات بنجاح.<br>' : ''}
-        🗑️ ملفات غير مستخدمة اتمسحت: <b>${report.orphansDeleted}</b> (${freedKB > 0 ? `~${freedKB}KB اتوفرت` : 'مفيش مساحة إضافية'})
+        🗑️ ملفات غير مستخدمة تم حذفها: <b>${report.orphansDeleted}</b> (${freedKB > 0 ? `~${freedKB}KB تم توفيرها` : 'لا توجد مساحة إضافية'})
         <br>🗜️ صور اتضغطت وحُسّنت: <b>${report.imagesOptimized}</b> ${savedKB > 0 ? `(اتوفر منها ~${savedKB}KB)` : ''}
         ${report.errors > 0 ? `<br>⚠️ حصل خطأ في ${report.errors} عملية، ممكن تعيد المحاولة تاني.` : ''}
       </div>
@@ -5482,7 +5487,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
       </div>
       <div class="field">
         <label>متوسط وقت تجهيز الطلب (بالدقايق)</label>
-        <small>بيتحسب تلقائيًا وقت الجاهزية المتوقع لكل طلب جديد بناءً على الرقم ده، وتقدر تعدّله لكل طلب لوحده من شاشة الطلبات.</small>
+        <small>يُحسب وقت الجاهزية المتوقع تلقائيًا لكل طلب جديد بناءً على هذا الرقم، ويمكنك تعديله لكل طلب على حدة من شاشة الطلبات.</small>
         <input type="number" id="restPrepMinutesInput" min="1" max="180" value="${restaurant.default_prep_minutes || 20}" style="direction:ltr; margin-top:8px;">
       </div>
       <div class="field">
@@ -5522,22 +5527,27 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         <label>حد أدنى لقيمة الطلب في التوصيل (اختياري — اتركه فاضيًا لعدم وجود حد أدنى)</label>
         <input type="number" id="restMinOrderInput" value="${restaurant.min_delivery_order != null ? restaurant.min_delivery_order : ''}" placeholder="مثال: 100" min="0" step="0.01">
       </div>
+      <div class="field">
+        <label>حد أدنى مختلف في حال الدفع أونلاين (اختياري — اترك الحقل فارغًا لاستخدام نفس الحد المذكور أعلاه)</label>
+        <small>مفيد إذا أردت تقليل الحد الأدنى تشجيعًا للدفع أونلاين، أو زيادته لتقليل التحويلات الصغيرة.</small>
+        <input type="number" id="restMinOrderOnlineInput" value="${restaurant.min_delivery_order_online != null ? restaurant.min_delivery_order_online : ''}" placeholder="مثال: 50" min="0" step="0.01" style="margin-top:6px;">
+      </div>
       <div class="field" id="rsOnlinePaymentField">
         <label style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
           <span>💳 قبول الدفع أونلاين</span>
           <span class="admin-switch"><input type="checkbox" id="rsOnlinePayEnabled" ${restaurant.accept_online_payment ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
         </label>
-        <small>لما تفعّلها، العميل هيقدر يختار إنه يدفع أونلاين وقت تأكيد الطلب، وهيشوف بيانات الدفع اللي تكتبها هنا (محفظة إلكترونية واحدة أو أكتر و/أو حساب إنستاباي).</small>
+        <small>عند تفعيلها، سيتمكن العميل من اختيار الدفع أونلاين وقت تأكيد الطلب، وسيرى بيانات الدفع التي تكتبها هنا (محفظة إلكترونية واحدة أو أكثر و/أو حساب إنستاباي).</small>
         <div id="rsOnlinePayWrap" style="margin-top:10px; ${restaurant.accept_online_payment ? '' : 'display:none;'}">
           <div class="field" style="margin-bottom:14px;">
             <label>المحافظ الإلكترونية</label>
-            <small>ممكن تضيف أكتر من محفظة (فودافون كاش، اتصالات كاش، أورنج كاش...) والعميل هيختار منهم وقت الدفع.</small>
+            <small>يمكنك إضافة أكثر من محفظة (فودافون كاش، اتصالات كاش، أورنج كاش...) وسيختار العميل منها وقت الدفع.</small>
             <div id="rsWalletsListWrap" style="margin-top:8px; display:flex; flex-direction:column; gap:8px;"></div>
             <button type="button" class="add-btn" id="rsAddWalletBtn" style="margin-top:8px;">+ إضافة محفظة</button>
           </div>
           <div class="field" style="margin-bottom:0;">
             <label>حساب إنستاباي (اختياري)</label>
-            <small>اليوزرنيم بتاعك على إنستاباي (زي ‎@mystore) أو رابط الدفع الكامل لو عندك واحد — لو حطيت رابط، هيتفتح تلقائي للعميل بدل ما يدور عليك يدوي.</small>
+            <small>اسم المستخدم الخاص بك على إنستاباي (مثل ‎@mystore) أو رابط الدفع الكامل إن وُجد — في حال إدخال رابط، سيُفتح تلقائيًا للعميل بدلًا من أن يبحث عنك يدويًا.</small>
             <div style="display:flex; gap:8px; align-items:flex-start; margin-top:8px;">
               <input type="text" id="rsInstapayInput" value="${restaurant.instapay_account ? escapeHtml(restaurant.instapay_account) : ''}" placeholder="مثال: mystore@instapay أو رابط الدفع" style="direction:ltr; flex:1;">
               <button type="button" id="rsInstapayTestBtn" title="اختبار الرابط" style="background:#fff; border:1.5px solid var(--line); border-radius:8px; cursor:pointer; padding:9px 12px; flex-shrink:0; white-space:nowrap;">🔗 اختبار</button>
@@ -5550,12 +5560,12 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         <label>إشعار واتساب بالطلبات الجديدة (اختياري)</label>
         <small>لتفعيل الإشعار: احفظ رقم <span dir="ltr" style="font-family:var(--mono);">+34 684 74 26 79</span> في هاتفك، وابعتله على واتساب رسالة نصها بالإنجليزية بالظبط: <span dir="ltr" style="font-family:var(--mono);">I allow callmebot to send me messages</span>، وهيردلك برسالة فيها الرمز الخاص بيك (apikey). اكتب رقمك ورمزك تحت.</small>
         <input type="text" id="notifPhoneInput" value="${restaurant.notification_phone ? escapeHtml(restaurant.notification_phone) : ''}" placeholder="رقم واتساب بصيغة دولية: 201154361888" style="margin-top:8px; direction:ltr;" ${restaurant.restriction_notif_settings_disabled ? 'disabled title="تعديل رقم التنبيهات غير متاح في نسختك الحالية"' : ''}>
-        <input type="text" id="notifApikeyInput" value="${restaurant.notification_apikey ? escapeHtml(restaurant.notification_apikey) : ''}" placeholder="الرمز (apikey) اللي وصلك من البوت" style="margin-top:8px; direction:ltr;" ${restaurant.restriction_notif_settings_disabled ? 'disabled title="تعديل رقم التنبيهات غير متاح في نسختك الحالية"' : ''}>
+        <input type="text" id="notifApikeyInput" value="${restaurant.notification_apikey ? escapeHtml(restaurant.notification_apikey) : ''}" placeholder="الرمز (apikey) الذي وصلك من البوت" style="margin-top:8px; direction:ltr;" ${restaurant.restriction_notif_settings_disabled ? 'disabled title="تعديل رقم التنبيهات غير متاح في نسختك الحالية"' : ''}>
         ${restaurant.restriction_notif_settings_disabled ? `<small style="color:var(--stone); margin-top:4px; display:block;">🔒 رقم استلام إشعارات الطلبات مقفول من الإدارة.</small>` : ''}
       </div>
       <div class="field">
         <label>الصيانة</label>
-        <small>أدوات صيانة دورية، مش لازم تستخدمها كتير</small>
+        <small>أدوات صيانة دورية، لا حاجة لاستخدامها كثيرًا</small>
         <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
           <button type="button" class="add-btn" id="rsCleanupOrdersBtn" style="margin:0; flex:1;">حذف الطلبات</button>
           <button type="button" class="add-btn" id="rsCleanupImagesBtn" style="margin:0; flex:1;">تنظيف وتحسين الصور</button>
@@ -5583,7 +5593,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         </div>
         <div class="field" style="margin-bottom:0;">
           <label>رقم المحفظة</label>
-          <small>اكتب رقم عادي لو العميل هيحوّل بنفسه، أو الصق رابط دفع مباشر (لو بنكك/محفظتك بتوفره) عشان يتفتح تلقائي للعميل.</small>
+          <small>اكتب رقمًا عاديًا إذا كان العميل سيحوّل بنفسه، أو الصق رابط دفع مباشر (إذا كان بنكك/محفظتك يوفره) ليُفتح تلقائيًا للعميل.</small>
           <input type="text" class="rs-wallet-number" data-idx="${i}" value="${escapeHtml(w.number)}" placeholder="01xxxxxxxxx أو رابط دفع مباشر" style="direction:ltr; margin-top:6px;">
           <small class="rs-wallet-kind-hint" data-idx="${i}" style="display:block; margin-top:4px;"></small>
         </div>
@@ -5591,7 +5601,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         <button type="button" class="rs-wallet-remove" data-idx="${i}" title="حذف المحفظة" style="background:#fff; border:1.5px solid var(--line); color:var(--danger); border-radius:8px; cursor:pointer; padding:9px 12px; flex-shrink:0;">🗑</button>
         <div class="field" style="margin-bottom:0; flex-basis:100%;">
           <label>كود الاتصال السريع (USSD) — اختياري</label>
-          <small>لو عندك كود تحويل سريع لبنك/محفظة الموبايل بتاعتك، اكتبه هنا واستخدم <span style="font-family:var(--mono);">{amount}</span> مكان المبلغ (مثال: <span dir="ltr" style="font-family:var(--mono);">*9*7*01xxxxxxxxx*{amount}#</span>). العميل هيقدر يدوس زرار واحد يفتحله شاشة الاتصال جاهزة، من غير ما يكتب حاجة بنفسه.</small>
+          <small>إذا كان لديك كود تحويل سريع لبنك/محفظة الموبايل الخاصة بك، اكتبه هنا واستخدم <span style="font-family:var(--mono);">{amount}</span> مكان المبلغ (مثال: <span dir="ltr" style="font-family:var(--mono);">*9*7*01xxxxxxxxx*{amount}#</span>). سيتمكن العميل من الضغط على زر واحد لفتح شاشة الاتصال جاهزة، من دون كتابة أي شيء بنفسه.</small>
           <div style="display:flex; gap:8px; align-items:flex-start; margin-top:6px;">
             <input type="text" class="rs-wallet-ussd" data-idx="${i}" value="${escapeHtml(w.ussd || '')}" placeholder="مثال: *9*7*01xxxxxxxxx*{amount}#" style="direction:ltr; flex:1;">
             <button type="button" class="rs-wallet-test-ussd" data-idx="${i}" title="اختبار كود الاتصال" style="background:#fff; border:1.5px solid var(--line); border-radius:8px; cursor:pointer; padding:9px 12px; flex-shrink:0; white-space:nowrap;">📞 اختبار</button>
@@ -5604,10 +5614,10 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
       const val = (pendingWallets[idx].number || '').trim();
       if(!val){ hintEl.textContent = ''; return; }
       if(/^https?:\/\//i.test(val)){
-        hintEl.textContent = '✅ ده رابط دفع مباشر — هيتفتح تلقائي للعميل وهيظهر معاه QR للمسح.';
+        hintEl.textContent = '✅ هذا رابط دفع مباشر — سيُفتح تلقائيًا للعميل وسيظهر معه رمز QR للمسح.';
         hintEl.style.color = '#1f7a3f';
       } else {
-        hintEl.textContent = 'ℹ️ ده رقم عادي — هيظهر للعميل كرقم للتحويل عليه يدويًا.';
+        hintEl.textContent = 'ℹ️ هذا رقم عادي — سيظهر للعميل كرقم يمكن التحويل إليه يدويًا.';
         hintEl.style.color = 'var(--stone)';
       }
     }
@@ -5630,7 +5640,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         const val = (pendingWallets[Number(btn.dataset.idx)].number || '').trim();
         if(!val){ toast('اكتب رقم المحفظة أو الرابط الأول'); return; }
         if(/^https?:\/\//i.test(val)) window.open(val, '_blank', 'noopener');
-        else toast('ده رقم عادي مش رابط — مفيش حاجة تتفتح، هيظهر للعميل كرقم للتحويل عليه بس');
+        else toast('هذا رقم عادي وليس رابطًا — لن يُفتح شيء، وسيظهر للعميل كرقم للتحويل إليه فقط');
       });
     });
     walletsListWrap.querySelectorAll('.rs-wallet-test-ussd').forEach(btn=>{
@@ -5659,10 +5669,10 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     const val = instapayInput.value.trim();
     if(!val){ instapayHint.textContent = ''; return; }
     if(/^https?:\/\//i.test(val)){
-      instapayHint.textContent = '✅ ده رابط دفع مباشر — هيتفتح تلقائي للعميل وهيظهر معاه QR للمسح.';
+      instapayHint.textContent = '✅ هذا رابط دفع مباشر — سيُفتح تلقائيًا للعميل وسيظهر معه رمز QR للمسح.';
       instapayHint.style.color = '#1f7a3f';
     } else {
-      instapayHint.textContent = 'ℹ️ ده يوزرنيم/رقم عادي — هيظهر للعميل عشان يدور عليك بنفسه في تطبيق إنستاباي.';
+      instapayHint.textContent = 'ℹ️ هذا اسم مستخدم/رقم عادي — سيظهر للعميل ليبحث عنك بنفسه في تطبيق إنستاباي.';
       instapayHint.style.color = 'var(--stone)';
     }
   }
@@ -5672,7 +5682,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     const val = instapayInput.value.trim();
     if(!val){ toast('اكتب حساب إنستاباي الأول'); return; }
     if(/^https?:\/\//i.test(val)) window.open(val, '_blank', 'noopener');
-    else toast('ده يوزرنيم مش رابط — مفيش حاجة تتفتح، هيظهر للعميل كنص بس');
+    else toast('هذا اسم مستخدم وليس رابطًا — لن يُفتح شيء، وسيظهر للعميل كنص فقط');
   });
 
   overlay.querySelector('#rsOnlinePayEnabled').addEventListener('change', (e)=>{
@@ -5758,6 +5768,8 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     const closing_time = overlay.querySelector('#restCloseTimeInput').value || null;
     const minOrderRaw = overlay.querySelector('#restMinOrderInput').value.trim();
     const min_delivery_order = minOrderRaw ? Number(minOrderRaw) : null;
+    const minOrderOnlineRaw = overlay.querySelector('#restMinOrderOnlineInput').value.trim();
+    const min_delivery_order_online = minOrderOnlineRaw ? Number(minOrderOnlineRaw) : null;
     const notification_phone = overlay.querySelector('#notifPhoneInput').value.trim() || null;
     const notification_apikey = overlay.querySelector('#notifApikeyInput').value.trim() || null;
     const prepRaw = Number(overlay.querySelector('#restPrepMinutesInput').value);
@@ -5768,7 +5780,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
       .filter(w => w.number);
     const instapay_account = overlay.querySelector('#rsInstapayInput').value.trim() || null;
     if(accept_online_payment && !wallets.length && !instapay_account){
-      toast('لازم تضيف محفظة إلكترونية واحدة على الأقل أو حساب إنستاباي عشان تفعّل الدفع أونلاين');
+      toast('يجب إضافة محفظة إلكترونية واحدة على الأقل أو حساب إنستاباي لتفعيل الدفع أونلاين');
       return;
     }
     const btn = overlay.querySelector('#rsConfirm');
@@ -5783,7 +5795,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         return;
       }
     }
-    const { data, error } = await sb.from('restaurants').update({ logo_url: finalLogoUrl, name, name_en, phone, messenger_username, telegram_username, address, opening_time, closing_time, min_delivery_order, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes, accept_online_payment, wallets, wallet_label: wallets[0] ? wallets[0].label : null, wallet_number: wallets[0] ? wallets[0].number : null, instapay_account }).eq('id', restaurant.id).select().single();
+    const { data, error } = await sb.from('restaurants').update({ logo_url: finalLogoUrl, name, name_en, phone, messenger_username, telegram_username, address, opening_time, closing_time, min_delivery_order, min_delivery_order_online, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes, accept_online_payment, wallets, wallet_label: wallets[0] ? wallets[0].label : null, wallet_number: wallets[0] ? wallets[0].number : null, instapay_account }).eq('id', restaurant.id).select().single();
     if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     restaurant = data;
     if(originalLogoUrl && originalLogoUrl !== finalLogoUrl){
@@ -5842,7 +5854,7 @@ document.getElementById('showQrBtn').addEventListener('click', ()=>{
       setTimeout(()=> URL.revokeObjectURL(objUrl), 3000);
     }catch(e){
       window.open(qrImgUrl, '_blank');
-      toast('افتحنا الصورة في تاب جديد، اضغط عليها بزرار الفأرة اليمين واحفظها');
+      toast('فتحنا الصورة في نافذة جديدة، اضغط عليها بزر الفأرة الأيمن واحفظها');
     }
   });
 });
@@ -5943,7 +5955,7 @@ async function buildShareStoryBlob(){
 
   ctx.font = "500 40px 'Tajawal',sans-serif";
   ctx.fillStyle = '#D8D2C0';
-  ctx.fillText(`${biz(restaurant.business_type,'itemsDef')} أونلاين — اطلب دلوقتي`, W/2, 520 + (nameLines>1 ? 100 : 60));
+  ctx.fillText(`${biz(restaurant.business_type,'itemsDef')} أونلاين — اطلب الآن`, W/2, 520 + (nameLines>1 ? 100 : 60));
 
   const qrSize = 520, qrX = W/2 - qrSize/2, qrY = 760, pad = 40;
   canvasRoundRect(ctx, qrX - pad, qrY - pad, qrSize + pad*2, qrSize + pad*2, 32);
@@ -5958,7 +5970,7 @@ async function buildShareStoryBlob(){
 
   ctx.font = "700 44px 'Tajawal',sans-serif";
   ctx.fillStyle = '#F6F1E4';
-  ctx.fillText('امسح الكود واطلب دلوقتي 📲', W/2, qrY + qrSize + pad + 74);
+  ctx.fillText('امسح الرمز واطلب الآن 📲', W/2, qrY + qrSize + pad + 74);
 
   ctx.font = "600 30px 'Tajawal',sans-serif";
   ctx.fillStyle = '#8A8577';
@@ -6179,7 +6191,7 @@ function openImportPreviewModal(parsed, uniqueCats, isDetailedFormat){
       <h3>استيراد ${biz(restaurant.business_type,'itemsIndef')} من إكسيل</h3>
       <div class="orders-empty" style="text-align:right; padding:6px 0 14px;">
         تم العثور على <b>${parsed.length}</b> ${biz(restaurant.business_type,'itemIndef')} ضمن <b>${uniqueCats.length}</b> فئة.
-        سيتم إنشاء أي فئة غير موجودة تلقائيًا. ${isDetailedFormat ? `أي ${biz(restaurant.business_type,'itemIndef')} موجود بنفس الاسم داخل نفس الفئة هيتم تحديث بياناته بالكامل، وأي صنف جديد هيتضاف بكل تفاصيله.` : `سيتم إضافة ${biz(restaurant.business_type,'itemsDef')} كأسعار ثابتة، وتحديث السعر لو الصنف موجود بالفعل بنفس الاسم.`}
+        سيتم إنشاء أي فئة غير موجودة تلقائيًا. ${isDetailedFormat ? `أي ${biz(restaurant.business_type,'itemIndef')} موجود بنفس الاسم داخل نفس الفئة سيتم تحديث بياناته بالكامل، وسيُضاف أي صنف جديد بكل تفاصيله.` : `سيتم إضافة ${biz(restaurant.business_type,'itemsDef')} كأسعار ثابتة، وتحديث السعر إذا كان الصنف موجودًا بالفعل بالاسم نفسه.`}
       </div>
       <div id="importPreviewWrap">${previewRows}${parsed.length > 8 ? `<div class="orders-empty">و ${parsed.length - 8} ${biz(restaurant.business_type,'itemIndef')} آخر...</div>` : ''}</div>
       <div class="modal-actions">
@@ -7132,11 +7144,22 @@ document.getElementById('addItemBtn').addEventListener('click', ()=> openItemMod
 
 /* ================= public menu (no auth) ================= */
 let trackingInterval = null;
+let trackingChannel = null;
 async function loadOrderTracking(orderId){
   show('trackingScreen');
   await refreshTrackingData(orderId);
   if(trackingInterval) clearInterval(trackingInterval);
-  trackingInterval = setInterval(()=> refreshTrackingData(orderId), 15000);
+  // بولّينج كل 30 ثانية كخط رجوع احتياطي، مع اشتراك Realtime للتحديث الفوري لحظة ما حالة الطلب تتغيّر
+  trackingInterval = setInterval(()=> refreshTrackingData(orderId), 30000);
+  if(trackingChannel){ sb.removeChannel(trackingChannel); trackingChannel = null; }
+  trackingChannel = sb.channel(`track-${orderId}`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'orders',
+      filter: `id=eq.${orderId}`
+    }, ()=> refreshTrackingData(orderId))
+    .subscribe();
 }
 
 async function refreshTrackingData(orderId){
@@ -7145,16 +7168,26 @@ async function refreshTrackingData(orderId){
   if(error || !row){
     document.getElementById('trackRestName').textContent = 'لم يتم العثور على هذا الطلب';
     document.getElementById('trackStatusWrap').innerHTML = '';
+    document.getElementById('trackPaymentReminderWrap').innerHTML = '';
     document.getElementById('trackItemsWrap').innerHTML = '';
     document.getElementById('trackTotalWrap').innerHTML = '';
     document.getElementById('trackContactWrap').innerHTML = '';
+    document.getElementById('trackRatingWrap').innerHTML = '';
     if(trackingInterval){ clearInterval(trackingInterval); trackingInterval = null; }
+    if(trackingChannel){ sb.removeChannel(trackingChannel); trackingChannel = null; }
     return;
   }
   document.getElementById('trackLogoWrap').innerHTML = row.restaurant_logo
     ? `<img src="${row.restaurant_logo}" style="max-height:56px; max-width:200px; object-fit:contain;">` : '';
   document.getElementById('trackRestName').textContent = row.restaurant_name || '';
   document.getElementById('trackStatusWrap').innerHTML = renderTrackingStatus(row.order_status);
+  const isOnlinePay = row.payment_method === 'wallet' || row.payment_method === 'instapay';
+  document.getElementById('trackPaymentReminderWrap').innerHTML = (isOnlinePay && row.payment_status !== 'paid' && row.order_status !== 'cancelled')
+    ? `<div class="insight-card warning" style="text-align:right; margin-top:10px;">
+        <span class="insight-icon">⏳</span>
+        <span>ألم تدفع قيمة الطلب بعد؟ يرجى إتمام التحويل حتى يتم تجهيز طلبك، وسيُؤكَّد الطلب تلقائيًا بعد التحقق من الدفع.</span>
+      </div>`
+    : '';
   const items = row.items || [];
   document.getElementById('trackItemsWrap').innerHTML = items.map(it=>`
     <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--line); font-size:13px; color:var(--ink);">
@@ -7163,7 +7196,63 @@ async function refreshTrackingData(orderId){
     </div>`).join('');
   document.getElementById('trackTotalWrap').textContent = row.total != null ? `الإجمالي: ${Number(row.total).toFixed(2)} EGP` : '';
   document.getElementById('trackContactWrap').innerHTML = renderTrackingContactButtons(row);
+  renderRatingWidget(orderId, row);
   document.getElementById('trackUpdatedAt').textContent = new Date().toLocaleTimeString('ar-EG');
+}
+
+// بيعرض ويجت التقييم بعد ما الطلب يتسلم، أو النجوم اللي اتقيّمت بيها لو العميل قيّمه قبل كده
+function renderRatingWidget(orderId, row){
+  const wrap = document.getElementById('trackRatingWrap');
+  if(row.order_status !== 'delivered'){ wrap.innerHTML = ''; return; }
+  if(row.rating_stars){
+    const starsHtml = [1,2,3,4,5].map(n=> `<span style="font-size:22px; color:${n <= row.rating_stars ? '#f5a623' : '#ddd'};">★</span>`).join('');
+    wrap.innerHTML = `
+      <div class="orders-empty" style="padding:0 0 6px; font-weight:700; color:var(--ink);">تقييمك للطلب</div>
+      <div>${starsHtml}</div>
+      ${row.rating_comment ? `<div class="orders-empty" style="padding-top:6px; font-size:12.5px;">${escapeHtml(row.rating_comment)}</div>` : ''}
+      <div class="orders-empty" style="padding-top:6px; color:var(--stone); font-size:12px;">شكرًا لتقييمك 🙏</div>`;
+    return;
+  }
+  let selectedStars = 0;
+  wrap.innerHTML = `
+    <div class="orders-empty" style="padding:0 0 8px; font-weight:700; color:var(--ink);">قيّم طلبك</div>
+    <div id="trackRatingStars" style="font-size:28px; letter-spacing:4px; cursor:pointer;">
+      ${[1,2,3,4,5].map(n=> `<span data-star="${n}" style="color:#ddd;">★</span>`).join('')}
+    </div>
+    <textarea id="trackRatingComment" placeholder="تعليق (اختياري)" style="width:100%; margin-top:8px; padding:8px; border:1px solid var(--line); border-radius:8px; font-family:var(--body); font-size:13px; resize:vertical; min-height:50px;"></textarea>
+    <button type="button" class="btn-confirm" id="trackRatingSubmitBtn" style="width:100%; margin-top:8px;" disabled>إرسال التقييم</button>
+  `;
+  const starsWrap = wrap.querySelector('#trackRatingStars');
+  const submitBtn = wrap.querySelector('#trackRatingSubmitBtn');
+  function paintStars(n){
+    starsWrap.querySelectorAll('[data-star]').forEach(el=>{
+      el.style.color = Number(el.dataset.star) <= n ? '#f5a623' : '#ddd';
+    });
+  }
+  starsWrap.querySelectorAll('[data-star]').forEach(el=>{
+    el.addEventListener('mouseenter', ()=> paintStars(Number(el.dataset.star)));
+    el.addEventListener('click', ()=>{
+      selectedStars = Number(el.dataset.star);
+      paintStars(selectedStars);
+      submitBtn.disabled = false;
+    });
+  });
+  starsWrap.addEventListener('mouseleave', ()=> paintStars(selectedStars));
+  submitBtn.addEventListener('click', async ()=>{
+    if(!selectedStars) return;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'جاري الإرسال...';
+    const comment = wrap.querySelector('#trackRatingComment').value.trim();
+    const { data: ok, error } = await sb.rpc('submit_order_rating', { p_order_id: orderId, p_stars: selectedStars, p_comment: comment });
+    if(error || !ok){
+      toast('تعذر إرسال التقييم، حاول تاني');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'إرسال التقييم';
+      return;
+    }
+    toast('شكرًا لتقييمك! 🙏');
+    refreshTrackingData(orderId);
+  });
 }
 
 // بيبني نص الطلب كامل (زي رسالة الطلب الأصلية) عشان يتبعت من شاشة التتبع لو العميل حاب يتواصل بخصوص طلبه
@@ -7540,7 +7629,7 @@ async function loadPublic(slug){
         </p>
         <div class="modal-actions">
           <button class="btn-cancel" id="aboutCloseBtn">${lang==='en' ? 'Close' : 'إغلاق'}</button>
-          <button class="btn-confirm" id="aboutSignupBtn" type="button">${lang==='en' ? 'Create your account now' : 'أنشئ حسابك دلوقتي'}</button>
+          <button class="btn-confirm" id="aboutSignupBtn" type="button">${lang==='en' ? 'Create your account now' : 'أنشئ حسابك الآن'}</button>
           <a class="btn-confirm" style="display:flex; align-items:center; justify-content:center; text-decoration:none;" href="${waLink}" target="_blank" rel="noopener">${lang==='en' ? 'Ask us on WhatsApp' : 'اسألنا عبر واتساب'}</a>
         </div>
       </div>`;
@@ -7948,7 +8037,7 @@ async function loadPublic(slug){
     overlay.innerHTML = `
       <div class="modal">
         <h3>${lang==='en' ? 'Choose menu design' : 'اختر شكل المنيو'}</h3>
-        <p style="margin:0 0 14px; color:var(--stone); font-size:13px;">${lang==='en' ? 'Pick the look you like best while browsing.' : 'اختر الشكل اللي يعجبك وانت بتختار طلبك.'}</p>
+        <p style="margin:0 0 14px; color:var(--stone); font-size:13px;">${lang==='en' ? 'Pick the look you like best while browsing.' : 'اختر الشكل الذي يعجبك أثناء اختيار طلبك.'}</p>
         <div class="design-picker-grid" id="designPickerGrid">
           ${MENU_DESIGNS.map(d=>{
             let previewInner, previewCls = '';
@@ -8058,6 +8147,7 @@ async function loadPublic(slug){
         if(validOption){ paymentMethod = 'online'; onlinePayOption = lastPayPref.onlinePayOption; }
       }
     }
+    let paymentProofFile = null;
     const subtotal = cartSubtotal();
     const overlay = document.createElement('div');
     overlay.className = 'overlay';
@@ -8081,6 +8171,11 @@ async function loadPublic(slug){
             <div class="ord-type-btn ${paymentMethod==='online' ? 'active' : ''}" id="ordPayOnline">${lang==='en' ? 'Pay online' : 'الدفع أونلاين'}</div>
           </div>
           <div id="ordPayOnlineWrap" style="${paymentMethod==='online' ? '' : 'display:none;'} margin-top:10px;"></div>
+          <div id="ordPayProofWrap" style="${paymentMethod==='online' ? '' : 'display:none;'} margin-top:10px;">
+            <label style="font-size:13px; font-weight:700;">${lang==='en' ? 'Payment screenshot (optional)' : 'صورة إثبات التحويل (اختياري)'}</label>
+            <small>${lang==='en' ? "After confirming, you'll get a one-tap button to send this picture on WhatsApp too." : 'بعد تأكيد الطلب، سيظهر لك زر لإرسال هذه الصورة عبر واتساب أيضًا بضغطة واحدة.'}</small>
+            <input type="file" accept="image/*" id="ordPaymentProofInput" style="margin-top:6px;">
+          </div>
         </div>` : ''}
         <div class="field-row">
           <div class="field">
@@ -8145,10 +8240,16 @@ async function loadPublic(slug){
       }
       return 0;
     }
+    // بيرجع الحد الأدنى المناسب لقيمة الطلب حسب طريقة الدفع المختارة (لو فيه حد مختلف للدفع أونلاين)
+    function currentMinOrder(){
+      if(paymentMethod === 'online' && rest.min_delivery_order_online != null) return Number(rest.min_delivery_order_online);
+      return rest.min_delivery_order != null ? Number(rest.min_delivery_order) : null;
+    }
     function renderSummary(){
       const fee = currentDeliveryFee();
       const total = subtotal + fee;
-      const showMinOrderNote = orderType === 'delivery' && rest.min_delivery_order != null && subtotal < Number(rest.min_delivery_order);
+      const minOrder = currentMinOrder();
+      const showMinOrderNote = orderType === 'delivery' && minOrder != null && subtotal < minOrder;
       overlay.querySelector('#ordSummaryWrap').innerHTML = `
         ${Object.entries(cart).map(([key,c])=>`
           <div class="cart-row">
@@ -8160,8 +8261,8 @@ async function loadPublic(slug){
         <div class="cart-summary-row"><span>${lang==='en' ? 'Delivery fee' : 'رسوم التوصيل'}</span><span>${fee.toFixed(2)} EGP</span></div>
         <div class="cart-summary-row total"><span>${lang==='en' ? 'Total' : 'الإجمالي'}</span><span>${total.toFixed(2)} EGP</span></div>
         ${showMinOrderNote ? `<div class="orders-empty" style="color:#a33; font-weight:700; padding-top:6px;">${lang==='en'
-          ? `Minimum delivery order is ${rest.min_delivery_order} EGP — add ${(Number(rest.min_delivery_order) - subtotal).toFixed(2)} EGP more`
-          : `أقل قيمة طلب للتوصيل ${rest.min_delivery_order} جنيه — أضف ${(Number(rest.min_delivery_order) - subtotal).toFixed(2)} جنيه لإتمام الطلب`}</div>` : ''}
+          ? `Minimum delivery order is ${minOrder} EGP — add ${(minOrder - subtotal).toFixed(2)} EGP more`
+          : `أقل قيمة طلب للتوصيل ${minOrder} جنيه — أضف ${(minOrder - subtotal).toFixed(2)} جنيه لإتمام الطلب`}</div>` : ''}
       `;
       overlay.querySelectorAll('.cart-item-note').forEach(inp=>{
         inp.addEventListener('input', ()=>{
@@ -8244,8 +8345,8 @@ async function loadPublic(slug){
           detailHtml = `
             <div class="orders-empty" style="text-align:${lang==='en' ? 'left' : 'right'}; padding:10px 0;">
               ${wIsLink
-                ? (lang==='en' ? `We opened ${escapeHtml(w.label)} for you to pay — if it didn't open, tap "Open" below.` : `فتحنا لك ${escapeHtml(w.label)} عشان تدفع — لو ما اتفتحش، دوس "فتح" تحت.`)
-                : (lang==='en' ? `Transfer the total amount to the ${escapeHtml(w.label)} number below, then confirm your order.` : `حوّل قيمة الطلب على رقم ${escapeHtml(w.label)} التالي، وبعد كده أكد الطلب.`)}
+                ? (lang==='en' ? `We opened ${escapeHtml(w.label)} for you to pay — if it didn't open, tap "Open" below.` : `فتحنا لك ${escapeHtml(w.label)} لتدفع — إذا لم يُفتح، اضغط "فتح" أدناه.`)
+                : (lang==='en' ? `Transfer the total amount to the ${escapeHtml(w.label)} number below, then confirm your order.` : `حوّل قيمة الطلب إلى رقم ${escapeHtml(w.label)} التالي، ثم أكّد الطلب.`)}
             </div>
             <div style="display:flex; align-items:center; gap:8px; background:var(--paper-dim); border:1px solid var(--line); border-radius:8px; padding:10px 12px; flex-wrap:wrap;">
               <span style="direction:ltr; font-family:var(--mono); font-weight:800; flex:1; word-break:break-all;">${escapeHtml(w.number)}</span>
@@ -8255,19 +8356,19 @@ async function loadPublic(slug){
             ${wIsLink ? `
             <div style="text-align:center; margin-top:10px;">
               <canvas id="ordPayQr"></canvas>
-              <div class="orders-empty" style="padding-top:4px;">${lang==='en' ? 'Or scan with another phone' : 'أو امسح الكود من موبايل تاني'}</div>
+              <div class="orders-empty" style="padding-top:4px;">${lang==='en' ? 'Or scan with another phone' : 'أو امسح الرمز من هاتف آخر'}</div>
             </div>` : ''}
             ${ussdTel ? `
             <a href="${escapeHtml(ussdTel)}" class="btn-export-sm" style="display:block; text-align:center; margin-top:8px; padding:9px 12px; text-decoration:none;">
-              ${lang==='en' ? '📞 Quick dial (fills the code for you)' : '📞 اتصال سريع (هيفتحلك شاشة الاتصال بالكود جاهز)'}
+              ${lang==='en' ? '📞 Quick dial (fills the code for you)' : '📞 اتصال سريع (سيفتح لك شاشة الاتصال بالكود جاهزًا)'}
             </a>` : ''}`;
         } else if(onlinePayOption === 'instapay' && rest.instapay_account){
           const isLink = /^https?:\/\//i.test(rest.instapay_account);
           detailHtml = `
             <div class="orders-empty" style="text-align:${lang==='en' ? 'left' : 'right'}; padding:10px 0;">
               ${isLink
-                ? (lang==='en' ? 'We opened InstaPay for you to pay — if it didn\'t open, tap "Open" below.' : 'فتحنا لك إنستاباي عشان تدفع — لو ما اتفتحش، دوس "فتح" تحت.')
-                : (lang==='en' ? 'Pay the total amount via InstaPay to the account below, then confirm your order.' : 'ادفع قيمة الطلب عبر إنستاباي على الحساب التالي، وبعد كده أكد الطلب.')}
+                ? (lang==='en' ? 'We opened InstaPay for you to pay — if it didn\'t open, tap "Open" below.' : 'فتحنا لك إنستاباي لتدفع — إذا لم يُفتح، اضغط "فتح" أدناه.')
+                : (lang==='en' ? 'Pay the total amount via InstaPay to the account below, then confirm your order.' : 'ادفع قيمة الطلب عبر إنستاباي إلى الحساب التالي، ثم أكّد الطلب.')}
             </div>
             <div style="display:flex; align-items:center; gap:8px; background:var(--paper-dim); border:1px solid var(--line); border-radius:8px; padding:10px 12px;">
               <span style="direction:ltr; font-family:var(--mono); font-weight:800; flex:1; word-break:break-all;">${escapeHtml(rest.instapay_account)}</span>
@@ -8277,7 +8378,7 @@ async function loadPublic(slug){
             ${isLink ? `
             <div style="text-align:center; margin-top:10px;">
               <canvas id="ordPayQr"></canvas>
-              <div class="orders-empty" style="padding-top:4px;">${lang==='en' ? 'Or scan with another phone' : 'أو امسح الكود من موبايل تاني'}</div>
+              <div class="orders-empty" style="padding-top:4px;">${lang==='en' ? 'Or scan with another phone' : 'أو امسح الرمز من هاتف آخر'}</div>
             </div>` : ''}`;
         }
         payOnlineWrap.innerHTML = tabsHtml + detailHtml;
@@ -8316,19 +8417,30 @@ async function loadPublic(slug){
         const val = getCurrentPayLinkValue();
         if(val) window.open(val, '_blank', 'noopener');
       }
+      const payProofWrap = overlay.querySelector('#ordPayProofWrap');
+      const paymentProofInput = overlay.querySelector('#ordPaymentProofInput');
+      if(paymentProofInput){
+        paymentProofInput.addEventListener('change', ()=>{
+          paymentProofFile = paymentProofInput.files && paymentProofInput.files[0] ? paymentProofInput.files[0] : null;
+        });
+      }
       payCashBtn.addEventListener('click', ()=>{
         paymentMethod = 'cash';
         payCashBtn.classList.add('active');
         payOnlineBtn.classList.remove('active');
         payOnlineWrap.style.display = 'none';
+        if(payProofWrap) payProofWrap.style.display = 'none';
+        renderSummary();
       });
       payOnlineBtn.addEventListener('click', ()=>{
         paymentMethod = 'online';
         payOnlineBtn.classList.add('active');
         payCashBtn.classList.remove('active');
         payOnlineWrap.style.display = '';
+        if(payProofWrap) payProofWrap.style.display = '';
         renderOnlinePayOptions();
         openCurrentPayLink();
+        renderSummary();
       });
       if(paymentMethod === 'online') renderOnlinePayOptions();
     }
@@ -8423,11 +8535,12 @@ async function loadPublic(slug){
         toast(lang==='en' ? 'Please fill in all required fields' : 'يرجى إدخال جميع الحقول المطلوبة');
         return;
       }
-      if(orderType === 'delivery' && rest.min_delivery_order != null && subtotal < Number(rest.min_delivery_order)){
-        const remaining = (Number(rest.min_delivery_order) - subtotal).toFixed(2);
+      if(orderType === 'delivery' && currentMinOrder() != null && subtotal < currentMinOrder()){
+        const minOrder = currentMinOrder();
+        const remaining = (minOrder - subtotal).toFixed(2);
         toast(lang==='en'
-          ? `Minimum delivery order is ${rest.min_delivery_order} EGP. Add ${remaining} EGP more`
-          : `أقل قيمة طلب للتوصيل ${rest.min_delivery_order} جنيه — أضف ${remaining} جنيه لإتمام الطلب`);
+          ? `Minimum delivery order is ${minOrder} EGP. Add ${remaining} EGP more`
+          : `أقل قيمة طلب للتوصيل ${minOrder} جنيه — أضف ${remaining} جنيه لإتمام الطلب`);
         return;
       }
       const fee = delivery_fee != null ? Number(delivery_fee) : 0;
@@ -8531,11 +8644,11 @@ async function loadPublic(slug){
           openOrderChannel(orderChannels[0].id, orderMsgText);
         }
       }
-      showOrderSuccessModal(orderRow, orderChannels, orderMsgText, isOnlinePayment);
+      showOrderSuccessModal(orderRow, orderChannels, orderMsgText, isOnlinePayment, paymentProofFile);
     });
   }
 
-  function showOrderSuccessModal(orderRow, channels, orderMsgText, isOnlinePayment){
+  function showOrderSuccessModal(orderRow, channels, orderMsgText, isOnlinePayment, paymentProofFile){
     const orderId = orderRow.id;
     const orderNumberHtml = orderRow.order_number != null
       ? `<div class="orders-empty" style="padding:0 0 10px; font-size:20px; font-weight:800; color:var(--ember); font-family:var(--mono); direction:ltr;">#${orderRow.order_number}</div>`
@@ -8548,7 +8661,7 @@ async function loadPublic(slug){
     } else if(waChannel){
       statusMsg = channels.length === 1
         ? (lang==='en' ? `Your order was sent to the ${biz(rest.business_type,'entityEn').toLowerCase()} via WhatsApp.` : `تم إرسال طلبك لـ${biz(rest.business_type,'entityDef')} عبر واتساب.`)
-        : (lang==='en' ? `Your order was sent via WhatsApp. You can also send it via other channels below.` : `تم إرسال طلبك عبر واتساب. يمكنك كمان إرساله عبر وسائل تانية تحت لو حبيت.`);
+        : (lang==='en' ? `Your order was sent via WhatsApp. You can also send it via other channels below.` : `تم إرسال طلبك عبر واتساب. يمكنك أيضًا إرساله عبر وسائل أخرى أدناه إن أردت.`);
     } else if(channels.length === 1){
       statusMsg = lang==='en' ? `Your order was sent to the ${biz(rest.business_type,'entityEn').toLowerCase()} via ${channels[0].label}.` : `تم إرسال طلبك لـ${biz(rest.business_type,'entityDef')} عبر ${channels[0].label}.`;
     } else {
@@ -8558,6 +8671,10 @@ async function loadPublic(slug){
         <div class="modal-actions" style="flex-wrap:wrap;" id="successChannelsWrap">
           ${channels.map(c=>`<button type="button" class="btn-confirm" data-channel="${c.id}" style="flex:1; min-width:110px;">${c.icon} ${escapeHtml(c.label)}</button>`).join('')}
         </div>` : '';
+    const proofHtml = (isOnlinePayment && paymentProofFile) ? `
+        <button type="button" class="btn-confirm" id="successSendProofBtn" style="width:100%; margin-top:10px;">
+          📎 ${lang==='en' ? 'Send payment screenshot on WhatsApp' : 'أرسل صورة إثبات الدفع عبر واتساب'}
+        </button>` : '';
     const successOverlay = document.createElement('div');
     successOverlay.className = 'overlay';
     successOverlay.innerHTML = `
@@ -8569,6 +8686,7 @@ async function loadPublic(slug){
           <span class="insight-icon">💳</span>
           <span>${lang==='en' ? 'Please complete the transfer if you haven\'t already. Your order will be confirmed once the payment is verified.' : 'برجاء إتمام التحويل إن لم يكن قد تم بعد. سيتم تأكيد طلبك بعد التحقق من الدفع.'}</span>
         </div>` : ''}
+        ${proofHtml}
         ${channelsHtml}
         <div class="orders-empty" style="padding:14px 0 8px; font-weight:700; color:var(--ink);">${lang==='en' ? 'Track your order status here:' : 'تابع حالة طلبك من هنا:'}</div>
         <div class="orders-empty" style="padding:0 0 14px; font-size:12px; word-break:break-all;">${escapeHtml(trackLink)}</div>
@@ -8589,6 +8707,27 @@ async function loadPublic(slug){
     successOverlay.querySelector('#successTrackBtn').addEventListener('click', ()=>{
       window.open(trackLink, '_blank');
     });
+    const sendProofBtn = successOverlay.querySelector('#successSendProofBtn');
+    if(sendProofBtn){
+      sendProofBtn.addEventListener('click', async ()=>{
+        const caption = lang==='en'
+          ? `Payment proof — order #${orderRow.order_number != null ? orderRow.order_number : ''} — ${tName(rest.name, rest.name_en)}`
+          : `إثبات دفع — طلب رقم ${orderRow.order_number != null ? orderRow.order_number : ''} — ${tName(rest.name, rest.name_en)}`;
+        // بيحاول يستخدم شاشة المشاركة بتاعة الجهاز عشان يبعت الصورة نفسها لواتساب بضغطة واحدة (متاحة غالبًا على الموبايل)
+        if(navigator.canShare && navigator.canShare({ files: [paymentProofFile] })){
+          try{
+            await navigator.share({ files: [paymentProofFile], text: caption });
+            return;
+          }catch(e){ /* المستخدم لغى المشاركة أو فشلت — هنكمل بالطريقة التانية تحت */ }
+        }
+        // لو المشاركة المباشرة مش متاحة (زي أغلب متصفحات الكمبيوتر)، بنفتح شاشة واتساب مع رسالة، والصورة المستخدم يرفقها بنفسه لأن روابط واتساب مش بتدعم إرفاق صور تلقائي
+        if(rest.phone){
+          const digits = rest.phone.replace(/[^\d]/g,'');
+          window.open(`https://wa.me/${digits}?text=${encodeURIComponent(caption)}`, '_blank');
+        }
+        toast(lang==='en' ? 'Please attach the photo manually in the WhatsApp chat that opened' : 'يرجى إرفاق الصورة يدويًا في شاشة واتساب التي فُتحت');
+      });
+    }
     if(orderMsgText){
       successOverlay.querySelectorAll('[data-channel]').forEach(btn=>{
         btn.addEventListener('click', ()=> openOrderChannel(btn.dataset.channel, orderMsgText));
