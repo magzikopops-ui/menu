@@ -1393,14 +1393,17 @@ document.getElementById('forgotPasswordLink').addEventListener('click', async ()
   errEl.textContent = 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني';
 });
 
-document.getElementById('signOutLink').addEventListener('click', async ()=>{
+// تسجيل خروج موحّد يُستخدم من رابط "تسجيل الخروج" العادي ومن شاشات الحساب المعلّق/التجربة المنتهية
+async function signOutApp(){
   stopOrderAlertLoop();
   await sb.auth.signOut();
   currentUser = null; restaurant = null;
   document.getElementById('authEmail').value='';
   document.getElementById('authPassword').value='';
   show('authScreen');
-});
+}
+
+document.getElementById('signOutLink').addEventListener('click', signOutApp);
 
 /* ================= onboarding (create restaurant) ================= */
 async function afterLogin(){
@@ -1798,9 +1801,18 @@ function showAccountSuspendedBlock(){
       <div class="trial-msg-ar">تم إيقاف الوصول إلى لوحة التحكم مؤقتًا نظرًا لعدم تفعيل الاشتراك. يمكنك تجديد الاشتراك الآن واختيار الباقة المناسبة لك.</div>
       <div class="trial-msg-en">Access to the dashboard has been temporarily suspended due to an inactive subscription. You can renew now and choose the plan that suits you.</div>
       <div class="trial-cta">💳 تجديد الاشتراك الآن &nbsp;|&nbsp; Renew subscription now</div>
+      <button type="button" id="suspendLogoutBtn" style="margin-top:16px; background:none; border:none; color:#9aa4b2; font-family:var(--body); font-size:12.5px; text-decoration:underline; cursor:pointer;">تسجيل الخروج</button>
     </div>`;
   document.body.appendChild(overlay);
-  overlay.querySelector('#suspendBox').addEventListener('click', ()=> openRenewFlow(restaurant));
+  overlay.querySelector('#suspendBox').addEventListener('click', (e)=>{
+    if(e.target.id === 'suspendLogoutBtn') return;
+    openRenewFlow(restaurant);
+  });
+  overlay.querySelector('#suspendLogoutBtn').addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    overlay.remove();
+    await signOutApp();
+  });
 }
 
 function showAccountSuspendedPublicScreen(rest){
@@ -1834,20 +1846,28 @@ function showTrialExpiredBanner(){
       <div class="trial-msg-ar">لتجديد الاشتراك ومواصلة استخدام لوحة التحكم دون انقطاع، اختر الباقة المناسبة لك وأكمل الدفع.</div>
       <div class="trial-msg-en">To renew your subscription and continue using the dashboard without interruption, choose your plan and complete payment.</div>
       <div class="trial-cta">💳 تجديد الاشتراك الآن &nbsp;|&nbsp; Renew subscription now</div>
+      <button type="button" id="trialLogoutBtn" style="margin-top:16px; background:none; border:none; color:#9aa4b2; font-family:var(--body); font-size:12.5px; text-decoration:underline; cursor:pointer;">تسجيل الخروج</button>
     </div>`;
   document.body.appendChild(overlay);
 
   const box = overlay.querySelector('#trialBox');
   const closeBtn = overlay.querySelector('#trialCloseBtn');
+  const logoutBtn = overlay.querySelector('#trialLogoutBtn');
 
   box.addEventListener('click', (e)=>{
-    if(e.target === closeBtn) return;
+    if(e.target === closeBtn || e.target === logoutBtn) return;
     openRenewFlow(restaurant);
   });
 
   closeBtn.addEventListener('click', (e)=>{
     e.stopPropagation();
     overlay.remove();
+  });
+
+  logoutBtn.addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    overlay.remove();
+    await signOutApp();
   });
 
   setTimeout(()=>{ closeBtn.classList.add('show'); }, 50000);
