@@ -4736,7 +4736,7 @@ function buildTopAreasList(areaRows, err){
 }
 
 // رؤى تلقائية بسيطة (rule-based) مبنية على البيانات الثابتة المتاحة بالفعل — من غير أي استعلامات إضافية
-function buildInsights({ rows, itemStatsRows, hourlyRows, custRows }){
+function buildInsights({ rows, itemStatsRows, hourlyRows, custRows, visitRows }){
   const cards = [];
   const dayKey = (d)=> d.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
   const sumRange = (list, field, startDaysAgo, endDaysAgo)=>{
@@ -4755,6 +4755,20 @@ function buildInsights({ rows, itemStatsRows, hourlyRows, custRows }){
       cards.push({ type:'positive', icon:'📈', text:`ارتفعت مبيعاتك في آخر 7 أيام بنسبة ${delta.toFixed(0)}% مقارنةً بالأسبوع السابق (${last7Sales.toFixed(0)} مقابل ${prev7Sales.toFixed(0)} جنيه).` });
     } else if(delta <= -15){
       cards.push({ type:'warning', icon:'📉', text:`انخفضت مبيعاتك في آخر 7 أيام بنسبة ${Math.abs(delta).toFixed(0)}% مقارنةً بالأسبوع السابق (${last7Sales.toFixed(0)} مقابل ${prev7Sales.toFixed(0)} جنيه).` });
+    }
+  }
+
+  // 1ب) اتجاه زيارات المنيو: آخر 7 أيام مقابل الـ7 اللي قبلهم
+  if(visitRows && visitRows.length > 0){
+    const last7Visits = sumRange(visitRows, 'visits_count', 6, 0);
+    const prev7Visits = sumRange(visitRows, 'visits_count', 13, 7);
+    if(prev7Visits > 0){
+      const visitDelta = ((last7Visits - prev7Visits) / prev7Visits) * 100;
+      if(visitDelta >= 15){
+        cards.push({ type:'positive', icon:'👁️', text:`ارتفعت زيارات المنيو في آخر 7 أيام بنسبة ${visitDelta.toFixed(0)}% مقارنةً بالأسبوع السابق (${last7Visits} مقابل ${prev7Visits} زيارة).` });
+      } else if(visitDelta <= -15){
+        cards.push({ type:'warning', icon:'👁️', text:`انخفضت زيارات المنيو في آخر 7 أيام بنسبة ${Math.abs(visitDelta).toFixed(0)}% مقارنةً بالأسبوع السابق (${last7Visits} مقابل ${prev7Visits} زيارة).` });
+      }
     }
   }
 
@@ -4933,6 +4947,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
 
   const wrap = overlay.querySelector('#statsSummaryWrap');
   const { data: rows, error } = await sb.from('order_stats_daily').select('*').eq('restaurant_id', restaurant.id).order('day', { ascending:false });
+  const { data: visitRows } = await sb.from('menu_visits_daily').select('*').eq('restaurant_id', restaurant.id).order('day', { ascending:false });
   if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل التقارير</div>`; return; }
   if(!rows || rows.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا توجد بيانات كافية بعد</div>`; return; }
 
@@ -5244,7 +5259,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
   overlay.querySelector('#topAreasWrap').innerHTML = buildTopAreasList(areaRows, areaErr);
 
   overlay.querySelector('#insightsWrap').innerHTML = buildInsights({
-    rows, itemStatsRows: itemStatsRows || [], hourlyRows: hourlyRows || [], custRows: custRows || []
+    rows, itemStatsRows: itemStatsRows || [], hourlyRows: hourlyRows || [], custRows: custRows || [], visitRows: visitRows || []
   });
 
   overlay.querySelector('#statsExportPdfBtn').addEventListener('click', ()=>{
