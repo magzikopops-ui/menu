@@ -485,6 +485,8 @@ body.pub-menu-only .add-to-cart-btn{ display:none !important; }
 .renew-soon-banner.hidden{ display:none; }
 .renew-soon-banner #renewSoonBannerBtn{ background:var(--ember); color:#fff; border:none; font-family:var(--body); font-weight:800; font-size:12.5px; padding:7px 14px; border-radius:8px; cursor:pointer; white-space:nowrap; }
 .renew-soon-banner #renewSoonBannerBtn:hover{ background:var(--ember-dark); }
+.renew-soon-banner #renewSoonBannerWaBtn{ background:#25D366; color:#0a0c0f; border:none; font-family:var(--body); font-weight:800; font-size:12.5px; padding:7px 14px; border-radius:8px; cursor:pointer; white-space:nowrap; }
+.renew-soon-banner #renewSoonBannerWaBtn:hover{ filter:brightness(.95); }
 .renew-soon-banner #renewSoonBannerCloseBtn{ background:none; border:none; color:#ffd9a8; opacity:.7; font-size:15px; cursor:pointer; padding:2px 4px; }
 .renew-soon-banner #renewSoonBannerCloseBtn:hover{ opacity:1; }
 .admin-table-wrap{ max-height:70vh; overflow:auto; }
@@ -764,6 +766,7 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
     <span id="renewSoonBannerText"></span>
     <div style="display:flex; gap:8px; align-items:center;">
       <button type="button" id="renewSoonBannerBtn">💳 تجديد الآن</button>
+      <button type="button" id="renewSoonBannerWaBtn">📲 تواصل معنا</button>
       <button type="button" id="renewSoonBannerCloseBtn" aria-label="إغلاق">✕</button>
     </div>
   </div>
@@ -1201,12 +1204,20 @@ function buildExpiryReminderMessage(r){
   return `مرحبًا ${bizName} 👋\nنود التواصل معك بخصوص حالة اشتراكك في منيو m@g.`;
 }
 
-// بيفتح واتساب على رقم المتجر برسالة تنبيه جاهزة بخصوص قرب/انتهاء الفترة التجريبية أو الاشتراك
-function sendExpiryReminderWhatsApp(r){
+// بيفتح واتساب على رقم المتجر برسالة تنبيه جاهزة، وبيسجّل وقت الإرسال وعدد المرات في قاعدة البيانات
+// بيرجع القيم الجديدة (last_reminder_sent_at, reminder_count) عشان يتحدّث بيها الواجهة، أو null لو فشل
+async function sendExpiryReminderWhatsApp(r){
   const digits = (r.phone || '').replace(/[^\d]/g, '');
-  if(!digits){ toast('لا يوجد رقم تليفون مسجل لهذا المتجر — أضِفه من إعدادات المتجر أولًا'); return; }
+  if(!digits){ toast('لا يوجد رقم تليفون مسجل لهذا المتجر — أضِفه من إعدادات المتجر أولًا'); return null; }
   const msg = buildExpiryReminderMessage(r);
   window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
+  const nowIso = new Date().toISOString();
+  const newCount = (r.reminder_count || 0) + 1;
+  const { error } = await sb.from('restaurants').update({ last_reminder_sent_at: nowIso, reminder_count: newCount }).eq('id', r.id);
+  if(error) return null;
+  r.last_reminder_sent_at = nowIso;
+  r.reminder_count = newCount;
+  return { last_reminder_sent_at: nowIso, reminder_count: newCount };
 }
 
 // بيبعت تفاصيل طلب توصيل للسائق المعيّن عبر واتساب (اسم العميل، العنوان، الأصناف، الإجمالي)
@@ -1481,6 +1492,11 @@ function daysLeftLabel(n){
   return `خلال ${n} أيام`;
 }
 
+// بيبني رابط واتساب لرقم دعم منيو m@g برسالة جاهزة (الرقم معرّف لاحقًا في RENEW_WA_NUMBER)
+function SUPPORT_WA_LINK(msg){
+  return `https://wa.me/${RENEW_WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+}
+
 function maybeShowRenewSoonBanner(){
   const banner = document.getElementById('renewSoonBanner');
   if(!banner) return;
@@ -1495,6 +1511,10 @@ function maybeShowRenewSoonBanner(){
   document.getElementById('renewSoonBannerText').textContent = `⏳ اشتراكك ينتهي ${daysLeftLabel(daysLeft)} — جدّد الآن لتفادي توقف الخدمة.`;
   banner.classList.remove('hidden');
   document.getElementById('renewSoonBannerBtn').onclick = ()=> openRenewFlow(restaurant);
+  document.getElementById('renewSoonBannerWaBtn').onclick = ()=>{
+    const waLink = SUPPORT_WA_LINK('مرحبًا، أرغب في تجديد اشتراك منيو m@g الخاص بـ "' + (restaurant.name || '') + '" (المتبقي: ' + daysLeftLabel(daysLeft) + ').');
+    window.open(waLink, '_blank');
+  };
   document.getElementById('renewSoonBannerCloseBtn').onclick = ()=>{
     localStorage.setItem(dismissKey, '1');
     banner.classList.add('hidden');
@@ -3538,6 +3558,7 @@ async function openAdminPanel(){
         <button type="button" class="admin-tab-btn" data-tab="discounts">🏷️ أكواد الخصم</button>
         <button type="button" class="admin-tab-btn" data-tab="codes">🎫 أكواد التسجيل</button>
         <button type="button" class="admin-tab-btn" data-tab="users">👥 المستخدمون</button>
+        <button type="button" class="admin-tab-btn" data-tab="reminders">⏳ تنبيهات الاشتراك</button>
       </div>
 
       <div id="adminPanelRestaurants" class="admin-tab-panel">
@@ -3618,6 +3639,18 @@ async function openAdminPanel(){
         <div class="admin-table-wrap" id="usersTableWrap"><div class="orders-empty">جارِ التحميل...</div></div>
       </div>
 
+      <div id="adminPanelReminders" class="admin-tab-panel hidden">
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; align-items:center;">
+          <select id="remindersWindowSelect" style="padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.04); color:inherit; font-family:var(--body); font-size:13px;">
+            <option value="7">خلال 7 أيام (ويشمل المنتهي)</option>
+            <option value="3">خلال 3 أيام (ويشمل المنتهي)</option>
+            <option value="0">المنتهي فقط</option>
+            <option value="30">خلال 30 يومًا (ويشمل المنتهي)</option>
+          </select>
+        </div>
+        <div class="admin-table-wrap" id="remindersTableWrap"><div class="orders-empty">جارِ التحميل...</div></div>
+      </div>
+
       <div class="modal-actions">
         <button class="btn-cancel" id="adminCloseBtn">إغلاق</button>
       </div>
@@ -3633,8 +3666,9 @@ async function openAdminPanel(){
     discounts: overlay.querySelector('#adminPanelDiscounts'),
     codes: overlay.querySelector('#adminPanelCodes'),
     users: overlay.querySelector('#adminPanelUsers'),
+    reminders: overlay.querySelector('#adminPanelReminders'),
   };
-  const tabLoaded = { restaurants:false, payments:false, discounts:false, codes:false, users:false };
+  const tabLoaded = { restaurants:false, payments:false, discounts:false, codes:false, users:false, reminders:false };
   function activateAdminTab(tab){
     overlay.querySelectorAll('.admin-tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
     Object.keys(tabPanels).forEach(k=> tabPanels[k].classList.toggle('hidden', k!==tab));
@@ -3645,6 +3679,7 @@ async function openAdminPanel(){
       if(tab==='discounts') loadDiscountsTab();
       if(tab==='codes') loadCodesTab();
       if(tab==='users') loadUsersTab();
+      if(tab==='reminders') loadRemindersTab();
     }
   }
   overlay.querySelectorAll('.admin-tab-btn').forEach(btn=>{
@@ -3693,6 +3728,15 @@ async function openAdminPanel(){
     return `<div style="font-size:11px; margin-top:3px; color:${expired ? '#e08a78' : 'var(--stone-light)'};">${expired ? '⚠️ الاشتراك منتهي منذ' : 'الاشتراك ينتهي في'} ${endStr}</div>`;
   }
 
+  // بيعرض تاريخ آخر تنبيه اتبعت للمتجر وعدد المرات، لو اتبعت قبل كده
+  function reminderStatusHtml(r){
+    if(!r.last_reminder_sent_at) return '';
+    const d = new Date(r.last_reminder_sent_at);
+    const dStr = d.toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
+    const tStr = d.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' });
+    return `<span style="opacity:.75;">📨 آخر تنبيه: ${dStr} ${tStr}${r.reminder_count > 1 ? ` (×${r.reminder_count})` : ''}</span>`;
+  }
+
   function rowHtml(r, idx){
     const created = new Date(r.created_at).toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
     const ownerEmail = emailByOwner[r.owner_id] || '—';
@@ -3716,6 +3760,7 @@ async function openAdminPanel(){
           <div class="admin-card-actions">
             ${ownerEmail !== '—' ? `<button type="button" class="link-btn admin-reset-pw-btn" data-email="${escapeHtml(ownerEmail)}" style="font-size:11px; padding:4px 9px;">🔑 تغيير كلمة المرور</button>` : ''}
             ${r.phone ? `<button type="button" class="link-btn admin-send-reminder-btn" data-id="${r.id}" style="font-size:11px; padding:4px 9px;">📲 تنبيه انتهاء</button>` : ''}
+            <span class="admin-reminder-status" data-id="${r.id}" style="font-size:10.5px;">${reminderStatusHtml(r)}</span>
             <a href="${location.origin}${location.pathname}?r=${encodeURIComponent(r.slug)}" target="_blank" rel="noopener" class="link-btn admin-menu-link-btn" style="display:inline-block; font-size:11px; padding:4px 9px; text-decoration:none;">🔗 فتح المنيو</a>
           </div>
         </div>
@@ -3824,10 +3869,17 @@ async function openAdminPanel(){
   });
 
   wrap.querySelectorAll('.admin-send-reminder-btn').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
+    btn.addEventListener('click', async (e)=>{
       e.stopPropagation();
       const r = allRestaurants.find(x=> x.id === btn.dataset.id);
-      if(r) sendExpiryReminderWhatsApp(r);
+      if(!r) return;
+      btn.disabled = true;
+      const result = await sendExpiryReminderWhatsApp(r);
+      btn.disabled = false;
+      if(result){
+        const statusEl = wrap.querySelector(`.admin-reminder-status[data-id="${r.id}"]`);
+        if(statusEl) statusEl.innerHTML = reminderStatusHtml(r);
+      }
     });
   });
 
@@ -4311,6 +4363,93 @@ async function openAdminPanel(){
         toast('تم تحديث الدور');
       });
     });
+  }
+
+  /* ================ تبويب تنبيهات الاشتراك (المتاجر القريبة من الانتهاء) ================ */
+  async function loadRemindersTab(){
+    const wrap = overlay.querySelector('#remindersTableWrap');
+    const windowSelect = overlay.querySelector('#remindersWindowSelect');
+
+    async function renderReminders(){
+      wrap.innerHTML = `<div class="orders-empty">جارِ التحميل...</div>`;
+      const { data: allRestaurants, error } = await sb.from('restaurants').select('*').order('created_at', { ascending:false });
+      if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل بيانات العملاء</div>`; return; }
+
+      const windowDays = parseInt(windowSelect.value, 10);
+
+      // بيحسب أقرب موعد انتهاء للمتجر (اشتراك فعلي، أو Demo لو مفيش اشتراك) وعدد الأيام المتبقية
+      function expiryInfo(r){
+        if(r.subscription_end_date){
+          const end = new Date(r.subscription_end_date + 'T23:59:59');
+          const daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
+          return { type:'subscription', end, daysLeft };
+        }
+        if(r.demo_days){
+          const end = new Date(r.created_at);
+          end.setDate(end.getDate() + Number(r.demo_days));
+          const daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
+          return { type:'demo', end, daysLeft };
+        }
+        return null;
+      }
+
+      const expiring = allRestaurants
+        .map(r=> ({ r, info: expiryInfo(r) }))
+        .filter(x=> x.info && x.info.daysLeft <= windowDays)
+        .sort((a,b)=> a.info.daysLeft - b.info.daysLeft);
+
+      if(!expiring.length){ wrap.innerHTML = `<div class="orders-empty">لا يوجد متاجر ضمن هذا النطاق 🎉</div>`; return; }
+
+      function reminderRowHtml(r, info){
+        const endStr = info.end.toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
+        const expired = info.daysLeft < 0;
+        const typeLabel = info.type === 'subscription' ? 'اشتراك' : 'فترة تجريبية';
+        const statusColor = expired ? 'var(--danger)' : (info.daysLeft <= 2 ? '#c99a2e' : 'var(--stone-light)');
+        const statusText = expired ? `⚠️ ${typeLabel} منتهي منذ ${endStr}` : `⏳ ${typeLabel} ينتهي ${daysLeftLabel(info.daysLeft)} (${endStr})`;
+        const lastReminder = r.last_reminder_sent_at
+          ? `<div class="admin-r-meta" style="margin-top:2px;">📨 آخر تنبيه: ${new Date(r.last_reminder_sent_at).toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' })} ${new Date(r.last_reminder_sent_at).toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' })}${r.reminder_count > 1 ? ` (×${r.reminder_count})` : ''}</div>`
+          : `<div class="admin-r-meta" style="margin-top:2px; opacity:.6;">لم يُرسل أي تنبيه بعد</div>`;
+        return `
+          <div class="admin-list-row" data-id="${r.id}" style="border-right-color:${statusColor}; flex-wrap:wrap;">
+            <div style="flex:1; min-width:200px;">
+              <div style="font-weight:800; font-size:14px;">${escapeHtml(r.name)} <span style="opacity:.5; font-size:11px;">(${r.business_type === 'store' ? 'متجر' : 'مطعم'})</span></div>
+              <div class="admin-r-meta" style="color:${statusColor};">${statusText}</div>
+              ${lastReminder}
+            </div>
+            ${r.phone
+              ? `<button type="button" class="link-btn reminders-send-btn" data-id="${r.id}" style="font-size:12px; padding:6px 12px; white-space:nowrap;">📲 إرسال تنبيه الآن</button>`
+              : `<span class="admin-r-meta" style="opacity:.6;">لا يوجد رقم تليفون مسجل</span>`}
+          </div>`;
+      }
+
+      wrap.innerHTML = expiring.map(x=> reminderRowHtml(x.r, x.info)).join('');
+
+      wrap.querySelectorAll('.reminders-send-btn').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const item = expiring.find(x=> x.r.id === btn.dataset.id);
+          if(!item) return;
+          btn.disabled = true;
+          const originalText = btn.textContent;
+          btn.textContent = 'جارِ الإرسال...';
+          const result = await sendExpiryReminderWhatsApp(item.r);
+          btn.disabled = false;
+          btn.textContent = originalText;
+          if(result){
+            const row = btn.closest('.admin-list-row');
+            const metaEls = row.querySelectorAll('.admin-r-meta');
+            const lastEl = metaEls[metaEls.length - 1];
+            if(lastEl){
+              const d = new Date(result.last_reminder_sent_at);
+              lastEl.style.opacity = '';
+              lastEl.textContent = `📨 آخر تنبيه: ${d.toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' })} ${d.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' })}${result.reminder_count > 1 ? ` (×${result.reminder_count})` : ''}`;
+            }
+          }
+        });
+      });
+    }
+
+    windowSelect.addEventListener('change', renderReminders);
+    renderReminders();
   }
 
   activateAdminTab('restaurants');
