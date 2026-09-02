@@ -4887,6 +4887,23 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
   const weekVisits = sumSince(vRows, 'visits_count', 7);
   const monthVisits = sumSince(vRows, 'visits_count', 30);
   const allTimeVisits = vRows.reduce((acc,r)=> acc + Number(r.visits_count || 0), 0);
+  // نسبة تغيّر زيارات آخر 7 أيام مقارنةً بالـ7 اللي قبلهم (زي مبيعات بالظبط)
+  const sumRangeVisits = (startDaysAgo, endDaysAgo)=>{
+    const start = new Date(); start.setDate(start.getDate() - startDaysAgo);
+    const end = new Date(); end.setDate(end.getDate() - endDaysAgo);
+    const startKey = start.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+    const endKey = end.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+    return vRows.filter(r=> r.day >= startKey && r.day <= endKey).reduce((s,r)=> s + Number(r.visits_count||0), 0);
+  };
+  const prevWeekVisits = sumRangeVisits(13, 7);
+  let visitsWeekDeltaHtml = '';
+  if(prevWeekVisits > 0){
+    const d = ((weekVisits - prevWeekVisits) / prevWeekVisits) * 100;
+    if(Math.abs(d) >= 1){
+      const up = d > 0;
+      visitsWeekDeltaHtml = ` <span style="font-size:11px; font-weight:800; color:${up ? '#1a7a3d' : '#a6392b'};">${up ? '▲' : '▼'} ${Math.abs(d).toFixed(0)}%</span>`;
+    }
+  }
 
   const card = (label, count, total)=> `
     <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
@@ -4913,7 +4930,10 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
     <div class="orders-list">
       ${visitCard('اليوم', todayVisits)}
       ${visitCard('أمس', yesterdayVisits)}
-      ${visitCard('آخر 7 أيام', weekVisits)}
+      <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="o-name" style="font-weight:700;">آخر 7 أيام</span>
+        <span class="o-time" style="text-align:left; margin:0;">${weekVisits} زيارة${visitsWeekDeltaHtml}</span>
+      </div>
       ${visitCard('آخر 30 يوم', monthVisits)}
       ${visitCard('الإجمالي منذ البداية', allTimeVisits)}
     </div>
