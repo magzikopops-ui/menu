@@ -3881,7 +3881,7 @@ async function openAdminPanel(){
               <div class="admin-r-name">${escapeHtml(r.name)} <span style="opacity:.5; font-size:11px;">(${r.business_type === 'store' ? 'متجر' : 'مطعم'})</span> ${r.account_suspended ? '<span class="admin-status-pill" style="background:rgba(166,57,43,.15); color:var(--danger);">معطّل</span>' : '<span class="admin-status-pill" style="background:rgba(63,98,71,.15); color:var(--basil);">نشط</span>'} <span class="admin-collapse-arrow">▾</span></div>
               <div class="admin-r-meta">/${escapeHtml(r.slug)} · انضم ${created}</div>
               <div class="admin-r-meta" style="direction:ltr; text-align:right; margin-top:2px;">✉️ ${escapeHtml(ownerEmail)}</div>
-              <div class="admin-r-meta" style="margin-top:2px;">👁️ زيارات اليوم: ${visits.today}${visits.today === 0 ? ` (أمس: ${visits.yesterday})` : ''} · آخر 7 أيام: ${visits.week}</div>
+              <div class="admin-r-meta" style="margin-top:2px;">👁️ زيارات اليوم: ${visits.today} · أمس: ${visits.yesterday} · آخر 7 أيام: ${visits.week}</div>
             </div>
           </div>
           <div class="admin-card-actions">
