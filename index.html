@@ -3846,17 +3846,20 @@ async function openAdminPanel(){
     return `<span style="opacity:.75;">📨 آخر تنبيه: ${dStr} ${tStr}${r.reminder_count > 1 ? ` (×${r.reminder_count})` : ''}</span>`;
   }
 
-  // بيحسب عدد زيارات المنيو اليوم/آخر 7 أيام/آخر 30 يوم لمطعم معيّن من الصفوف المجمّعة مسبقًا
+  // بيحسب عدد زيارات المنيو اليوم/أمس/آخر 7 أيام/آخر 30 يوم لمطعم معيّن من الصفوف المجمّعة مسبقًا
   function visitsSummaryFor(rId){
     const rows = visitsByRestaurant[rId] || [];
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+    const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterdayStr = yesterdayDate.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
     const sumSince = (daysAgo)=>{
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - daysAgo);
       const cutoffStr = cutoff.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
       return rows.filter(r=> r.day >= cutoffStr).reduce((acc,r)=> acc + Number(r.visits_count || 0), 0);
     };
     const today = (rows.find(r=> r.day === todayStr) || { visits_count:0 }).visits_count;
-    return { today: Number(today || 0), week: sumSince(7), month: sumSince(30), rows };
+    const yesterday = (rows.find(r=> r.day === yesterdayStr) || { visits_count:0 }).visits_count;
+    return { today: Number(today || 0), yesterday: Number(yesterday || 0), week: sumSince(7), month: sumSince(30), rows };
   }
 
   function rowHtml(r, idx){
@@ -3878,7 +3881,7 @@ async function openAdminPanel(){
               <div class="admin-r-name">${escapeHtml(r.name)} <span style="opacity:.5; font-size:11px;">(${r.business_type === 'store' ? 'متجر' : 'مطعم'})</span> ${r.account_suspended ? '<span class="admin-status-pill" style="background:rgba(166,57,43,.15); color:var(--danger);">معطّل</span>' : '<span class="admin-status-pill" style="background:rgba(63,98,71,.15); color:var(--basil);">نشط</span>'} <span class="admin-collapse-arrow">▾</span></div>
               <div class="admin-r-meta">/${escapeHtml(r.slug)} · انضم ${created}</div>
               <div class="admin-r-meta" style="direction:ltr; text-align:right; margin-top:2px;">✉️ ${escapeHtml(ownerEmail)}</div>
-              <div class="admin-r-meta" style="margin-top:2px;">👁️ زيارات اليوم: ${visits.today} · آخر 7 أيام: ${visits.week}</div>
+              <div class="admin-r-meta" style="margin-top:2px;">👁️ زيارات اليوم: ${visits.today}${visits.today === 0 ? ` (أمس: ${visits.yesterday})` : ''} · آخر 7 أيام: ${visits.week}</div>
             </div>
           </div>
           <div class="admin-card-actions">
