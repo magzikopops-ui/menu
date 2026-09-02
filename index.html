@@ -4550,7 +4550,9 @@ async function openAdminPanel(){
 }
 
 // رسم بياني SVG خفيف لاتجاه المبيعات (آخر N يوم) — من غير أي مكتبة خارجية
-function buildSalesTrendSVG(rows, numDays, metric){
+// رسم بياني SVG خفيف لاتجاه القيم اليومية (مبيعات/طلبات/زيارات...) — من غير أي مكتبة خارجية
+// valueFn(row) بترجع القيمة الرقمية للصف، labelFn(value) بترجع نص الـ tooltip
+function buildDailyTrendSVG(rows, numDays, valueFn, labelFn){
   const byDay = {};
   (rows || []).forEach(r=>{ byDay[r.day] = r; });
   const days = [];
@@ -4559,7 +4561,7 @@ function buildSalesTrendSVG(rows, numDays, metric){
     d.setDate(d.getDate() - i);
     const key = d.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
     const r = byDay[key];
-    const value = metric === 'count' ? (r ? Number(r.orders_count || 0) : 0) : (r ? Number(r.orders_total || 0) : 0);
+    const value = r ? valueFn(r) : 0;
     days.push({ key, value, dateObj: d });
   }
   const max = Math.max(1, ...days.map(d=> d.value));
@@ -4573,7 +4575,7 @@ function buildSalesTrendSVG(rows, numDays, metric){
     const barH = (d.value / max) * chartH;
     const y = padT + (chartH - barH);
     const dLabel = d.dateObj.toLocaleDateString('ar-EG', { day:'numeric', month:'short', timeZone:'Africa/Cairo' });
-    const valLabel = metric === 'count' ? `${d.value} طلب` : `${d.value.toFixed(2)} EGP`;
+    const valLabel = labelFn(d.value);
     const showLabel = (i % labelEvery === 0) || i === days.length - 1;
     return `
       <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(barH,0).toFixed(1)}" rx="2" fill="var(--ember)" opacity="${d.value > 0 ? 1 : 0.15}">
@@ -4584,6 +4586,15 @@ function buildSalesTrendSVG(rows, numDays, metric){
   const totalVal = days.reduce((s,d)=> s + d.value, 0);
   const emptyNote = totalVal === 0 ? `<div class="orders-empty" style="text-align:center; padding:8px 0 0; font-size:12px;">لا توجد بيانات كافية في هذه الفترة بعد</div>` : '';
   return `<svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto; display:block;">${bars}</svg>${emptyNote}`;
+}
+
+// نفس المنطق القديم (لتوافق أي استخدام سابق باسم buildSalesTrendSVG) — بيلف على buildDailyTrendSVG
+function buildSalesTrendSVG(rows, numDays, metric){
+  return buildDailyTrendSVG(
+    rows, numDays,
+    r=> metric === 'count' ? Number(r.orders_count || 0) : Number(r.orders_total || 0),
+    v=> metric === 'count' ? `${v} طلب` : `${v.toFixed(2)} EGP`
+  );
 }
 
 // رسم بياني لتوزيع الطلبات على مدار 24 ساعة
@@ -4836,6 +4847,10 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
       ${visitCard('آخر 30 يوم', monthVisits)}
       ${visitCard('الإجمالي منذ البداية', allTimeVisits)}
     </div>
+    <h3 style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
+      <span>زيارات المنيو يوميًا (آخر 30 يوم)</span>
+    </h3>
+    <div id="visitsTrendWrap">${buildDailyTrendSVG(vRows, 30, r=> Number(r.visits_count || 0), v=> `${v} زيارة`)}</div>
     <div class="orders-empty" style="text-align:right; padding:10px 0 0; font-size:12px;">
       هل ترغب في تحليل أعمق (اتجاه المبيعات، أكثر الأصناف مبيعًا، أوقات الذروة، العملاء، المناطق، وتصدير تقرير)؟ جرّب "التقارير" من شريط الأدوات.
     </div>`;
