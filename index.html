@@ -4866,7 +4866,10 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
   const allTime = rows.reduce((acc,r)=>({ count: acc.count + r.orders_count, total: acc.total + Number(r.orders_total) }), { count:0, total:0 });
 
   const vRows = visitRows || [];
+  const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterdayStr = yesterdayDate.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
   const todayVisits = (vRows.find(r=> r.day === todayStr) || { visits_count:0 }).visits_count;
+  const yesterdayVisits = (vRows.find(r=> r.day === yesterdayStr) || { visits_count:0 }).visits_count;
   const weekVisits = sumSince(vRows, 'visits_count', 7);
   const monthVisits = sumSince(vRows, 'visits_count', 30);
   const allTimeVisits = vRows.reduce((acc,r)=> acc + Number(r.visits_count || 0), 0);
@@ -4895,6 +4898,7 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
     <h3 style="margin-top:20px;">عدد زيارات المنيو</h3>
     <div class="orders-list">
       ${visitCard('اليوم', todayVisits)}
+      ${visitCard('أمس', yesterdayVisits)}
       ${visitCard('آخر 7 أيام', weekVisits)}
       ${visitCard('آخر 30 يوم', monthVisits)}
       ${visitCard('الإجمالي منذ البداية', allTimeVisits)}
@@ -7706,7 +7710,10 @@ async function loadPublic(slug){
     showAccountSuspendedPublicScreen(rest);
     return;
   }
-  sb.rpc('track_menu_visit', { p_restaurant_id: rest.id }).then(()=>{}, ()=>{});
+  sb.rpc('track_menu_visit', { p_restaurant_id: rest.id }).then(
+    (res)=>{ if(res && res.error) console.error('track_menu_visit failed:', res.error); },
+    (err)=>{ console.error('track_menu_visit failed:', err); }
+  );
   const pubFooterEl = document.getElementById('pubFooter');
   if(pubFooterEl){
     const watermarkOn = !!rest.restriction_watermark_enabled;
