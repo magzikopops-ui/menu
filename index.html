@@ -482,6 +482,11 @@ body.pub-menu-only .add-to-cart-btn{ display:none !important; }
 .pay-confirm-btn:hover{ filter:brightness(.95); }
 
 .renew-soon-banner{ grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:linear-gradient(90deg,#3a2410,#4a2e12); border-bottom:1px solid rgba(255,167,38,.35); color:#ffd9a8; padding:10px 20px; font-size:13px; font-weight:700; }
+.trial-days-badge{ display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:800; cursor:pointer; white-space:nowrap; }
+.trial-days-badge.normal{ background:rgba(255,255,255,.08); color:#c7cdd6; border:1px solid rgba(255,255,255,.14); }
+.trial-days-badge.warn{ background:rgba(255,167,38,.15); color:#ffb454; border:1px solid rgba(255,167,38,.35); }
+.trial-days-badge.danger{ background:rgba(166,57,43,.18); color:#e08a78; border:1px solid rgba(166,57,43,.4); }
+.trial-days-badge:hover{ filter:brightness(1.1); }
 .renew-soon-banner.hidden{ display:none; }
 .renew-soon-banner #renewSoonBannerBtn{ background:var(--ember); color:#fff; border:none; font-family:var(--body); font-weight:800; font-size:12.5px; padding:7px 14px; border-radius:8px; cursor:pointer; white-space:nowrap; }
 .renew-soon-banner #renewSoonBannerBtn:hover{ background:var(--ember-dark); }
@@ -737,6 +742,7 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
   <div class="topbar">
     <div class="brand-group">
       <div class="brand"><span class="dot"></span> <span id="dashRestaurantName">—</span></div>
+      <span class="trial-days-badge hidden" id="trialDaysBadge"></span>
       <span class="switch-link" id="changePasswordLink">تغيير كلمة المرور</span>
       <span class="switch-link" id="signOutLink">تسجيل الخروج</span>
     </div>
@@ -1571,10 +1577,46 @@ async function openDashboard(){
   await checkDemoExpiry();
   if(restaurant.restriction_banner_enabled) showTrialExpiredBanner();
   maybeShowRenewSoonBanner();
+  updateTrialDaysBadge();
   applyExcelRestrictionUI();
   applyFeaturePlanUI();
   applyGranularRestrictionsUI();
   migrateLegacyImages().catch(()=>{});
+}
+
+// شارة ثابتة بجانب اسم المطعم توضح باستمرار الأيام المتبقية من التجربة المجانية أو الاشتراك،
+// مش بس بانر تحذيري لما يقرب الموعد — عشان الموضوع يفضل حاضر في ذهن صاحب المتجر من بداية التجربة
+function updateTrialDaysBadge(){
+  const badge = document.getElementById('trialDaysBadge');
+  if(!badge) return;
+  badge.classList.add('hidden');
+  badge.onclick = null;
+  if(restaurant.account_suspended) return;
+
+  let daysLeft, label, isSubscription;
+  if(restaurant.subscription_end_date){
+    const end = new Date(restaurant.subscription_end_date + 'T23:59:59');
+    daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
+    isSubscription = true;
+  } else if(restaurant.demo_days){
+    const end = new Date(restaurant.created_at);
+    end.setDate(end.getDate() + Number(restaurant.demo_days));
+    daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
+    isSubscription = false;
+  } else {
+    return;
+  }
+
+  if(daysLeft < 0) return; // الحالة دي بيتغطاها البانر/الشاشة المخصصة للانتهاء أصلًا
+
+  label = isSubscription
+    ? `💳 اشتراكك: متبقي ${daysLeft === 0 ? 'اليوم الأخير' : daysLeft + ' يوم'}`
+    : `🎁 تجربتك المجانية: متبقي ${daysLeft === 0 ? 'اليوم الأخير' : daysLeft + ' يوم'}`;
+
+  badge.textContent = label;
+  badge.classList.remove('hidden', 'normal', 'warn', 'danger');
+  badge.classList.add(daysLeft <= 2 ? 'danger' : (daysLeft <= 5 ? 'warn' : 'normal'));
+  badge.onclick = ()=> openRenewFlow(restaurant);
 }
 
 function applyExcelRestrictionUI(){
