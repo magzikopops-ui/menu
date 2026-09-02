@@ -3805,6 +3805,21 @@ async function openAdminPanel(){
     (emailRows || []).forEach(row=>{ emailByOwner[row.owner_id] = row.email; });
   }catch(e){}
 
+  // بيجيب زيارات المنيو لكل المطاعم دفعة واحدة (آخر 30 يوم بس) ويجمّعها حسب المطعم
+  const visitsCutoff = new Date(); visitsCutoff.setDate(visitsCutoff.getDate() - 30);
+  const visitsCutoffStr = visitsCutoff.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+  const visitsByRestaurant = {};
+  try{
+    const { data: visitRows } = await sb.from('menu_visits_daily').select('*')
+      .in('restaurant_id', allRestaurants.map(r=> r.id))
+      .gte('day', visitsCutoffStr)
+      .order('day', { ascending:false });
+    (visitRows || []).forEach(v=>{
+      if(!visitsByRestaurant[v.restaurant_id]) visitsByRestaurant[v.restaurant_id] = [];
+      visitsByRestaurant[v.restaurant_id].push(v);
+    });
+  }catch(e){}
+
   function demoStatusHtml(r){
     if(!r.demo_days){ return ''; }
     const end = new Date(r.created_at);
@@ -3831,10 +3846,24 @@ async function openAdminPanel(){
     return `<span style="opacity:.75;">📨 آخر تنبيه: ${dStr} ${tStr}${r.reminder_count > 1 ? ` (×${r.reminder_count})` : ''}</span>`;
   }
 
+  // بيحسب عدد زيارات المنيو اليوم/آخر 7 أيام/آخر 30 يوم لمطعم معيّن من الصفوف المجمّعة مسبقًا
+  function visitsSummaryFor(rId){
+    const rows = visitsByRestaurant[rId] || [];
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+    const sumSince = (daysAgo)=>{
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - daysAgo);
+      const cutoffStr = cutoff.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+      return rows.filter(r=> r.day >= cutoffStr).reduce((acc,r)=> acc + Number(r.visits_count || 0), 0);
+    };
+    const today = (rows.find(r=> r.day === todayStr) || { visits_count:0 }).visits_count;
+    return { today: Number(today || 0), week: sumSince(7), month: sumSince(30), rows };
+  }
+
   function rowHtml(r, idx){
     const created = new Date(r.created_at).toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
     const ownerEmail = emailByOwner[r.owner_id] || '—';
     const isMainAdminAccount = ownerEmail.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+    const visits = visitsSummaryFor(r.id);
     const perm = (field, icon, label) => `
         <label class="admin-perm-item">
           <span class="lbl">${icon} ${label}</span>
@@ -3849,6 +3878,7 @@ async function openAdminPanel(){
               <div class="admin-r-name">${escapeHtml(r.name)} <span style="opacity:.5; font-size:11px;">(${r.business_type === 'store' ? 'متجر' : 'مطعم'})</span> ${r.account_suspended ? '<span class="admin-status-pill" style="background:rgba(166,57,43,.15); color:var(--danger);">معطّل</span>' : '<span class="admin-status-pill" style="background:rgba(63,98,71,.15); color:var(--basil);">نشط</span>'} <span class="admin-collapse-arrow">▾</span></div>
               <div class="admin-r-meta">/${escapeHtml(r.slug)} · انضم ${created}</div>
               <div class="admin-r-meta" style="direction:ltr; text-align:right; margin-top:2px;">✉️ ${escapeHtml(ownerEmail)}</div>
+              <div class="admin-r-meta" style="margin-top:2px;">👁️ زيارات اليوم: ${visits.today} · آخر 7 أيام: ${visits.week}</div>
             </div>
           </div>
           <div class="admin-card-actions">
@@ -3892,6 +3922,25 @@ async function openAdminPanel(){
               🚫 تعليق الحساب بالكامل
             </label>`}
           </div>
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-section-title">👁️ زيارات المنيو</div>
+          <div class="admin-plan-row" style="margin-bottom:10px;">
+            <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:2px;">
+              <span style="opacity:.7; font-size:11px;">اليوم</span>
+              <span style="font-weight:800; font-size:15px;">${visits.today}</span>
+            </label>
+            <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:2px;">
+              <span style="opacity:.7; font-size:11px;">آخر 7 أيام</span>
+              <span style="font-weight:800; font-size:15px;">${visits.week}</span>
+            </label>
+            <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:2px;">
+              <span style="opacity:.7; font-size:11px;">آخر 30 يوم</span>
+              <span style="font-weight:800; font-size:15px;">${visits.month}</span>
+            </label>
+          </div>
+          <div class="admin-visits-trend">${buildDailyTrendSVG(visits.rows, 30, row=> Number(row.visits_count || 0), v=> `${v} زيارة`)}</div>
         </div>
 
         <div class="admin-section">
