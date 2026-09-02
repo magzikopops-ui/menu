@@ -1176,6 +1176,39 @@ function sendMenuLinkWhatsApp(phone, name){
   openWaTemplatePicker(templates, cleanName, link, digits);
 }
 
+// بيبني رسالة تنبيه مناسبة لصاحب المتجر حسب حالته: فترة تجريبية قربت تخلص/خلصت، أو اشتراك قرب ينتهي/انتهى
+function buildExpiryReminderMessage(r){
+  const bizName = r.name || '';
+  if(r.subscription_end_date){
+    const end = new Date(r.subscription_end_date + 'T23:59:59');
+    const daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
+    const endStr = end.toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
+    if(daysLeft < 0){
+      return `مرحبًا ${bizName} 👋\nنود تنبيهك بأن اشتراكك في منيو m@g قد انتهى بتاريخ ${endStr}، وتم تعليق الوصول للوحة التحكم مؤقتًا.\nبرجاء تجديد الاشتراك في أقرب وقت لاستعادة الخدمة.`;
+    }
+    return `مرحبًا ${bizName} 👋\nنود تذكيرك بأن اشتراكك في منيو m@g سينتهي ${daysLeftLabel(daysLeft)} (بتاريخ ${endStr}).\nبرجاء تجديد الاشتراك لتفادي توقف الخدمة.`;
+  }
+  if(r.demo_days){
+    const end = new Date(r.created_at);
+    end.setDate(end.getDate() + Number(r.demo_days));
+    const daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
+    const endStr = end.toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
+    if(daysLeft < 0){
+      return `مرحبًا ${bizName} 👋\nنود تنبيهك بأن الفترة التجريبية لحسابك في منيو m@g قد انتهت بتاريخ ${endStr}.\nيسعدنا اشتراكك للاستمرار في استخدام النظام دون انقطاع.`;
+    }
+    return `مرحبًا ${bizName} 👋\nنود تذكيرك بأن الفترة التجريبية لحسابك في منيو m@g ستنتهي ${daysLeftLabel(daysLeft)} (بتاريخ ${endStr}).\nيسعدنا اشتراكك للاستمرار في استخدام النظام دون انقطاع.`;
+  }
+  return `مرحبًا ${bizName} 👋\nنود التواصل معك بخصوص حالة اشتراكك في منيو m@g.`;
+}
+
+// بيفتح واتساب على رقم المتجر برسالة تنبيه جاهزة بخصوص قرب/انتهاء الفترة التجريبية أو الاشتراك
+function sendExpiryReminderWhatsApp(r){
+  const digits = (r.phone || '').replace(/[^\d]/g, '');
+  if(!digits){ toast('لا يوجد رقم تليفون مسجل لهذا المتجر — أضِفه من إعدادات المتجر أولًا'); return; }
+  const msg = buildExpiryReminderMessage(r);
+  window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
 // بيبعت تفاصيل طلب توصيل للسائق المعيّن عبر واتساب (اسم العميل، العنوان، الأصناف، الإجمالي)
 function sendOrderToDriverWhatsApp(order, lines, driver){
   const digits = toEgyptWaDigits(driver.phone);
@@ -3682,6 +3715,7 @@ async function openAdminPanel(){
           </div>
           <div class="admin-card-actions">
             ${ownerEmail !== '—' ? `<button type="button" class="link-btn admin-reset-pw-btn" data-email="${escapeHtml(ownerEmail)}" style="font-size:11px; padding:4px 9px;">🔑 تغيير كلمة المرور</button>` : ''}
+            ${r.phone ? `<button type="button" class="link-btn admin-send-reminder-btn" data-id="${r.id}" style="font-size:11px; padding:4px 9px;">📲 تنبيه انتهاء</button>` : ''}
             <a href="${location.origin}${location.pathname}?r=${encodeURIComponent(r.slug)}" target="_blank" rel="noopener" class="link-btn admin-menu-link-btn" style="display:inline-block; font-size:11px; padding:4px 9px; text-decoration:none;">🔗 فتح المنيو</a>
           </div>
         </div>
@@ -3787,6 +3821,14 @@ async function openAdminPanel(){
 
   wrap.querySelectorAll('.admin-menu-link-btn').forEach(a=>{
     a.addEventListener('click', (e)=> e.stopPropagation());
+  });
+
+  wrap.querySelectorAll('.admin-send-reminder-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const r = allRestaurants.find(x=> x.id === btn.dataset.id);
+      if(r) sendExpiryReminderWhatsApp(r);
+    });
   });
 
   wrap.querySelectorAll('[data-action="toggleCollapse"]').forEach(header=>{
