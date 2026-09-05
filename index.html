@@ -1214,6 +1214,24 @@ function buildExpiryReminderMessage(r){
   return `مرحبًا ${bizName} 👋\nنود التواصل معك بخصوص حالة اشتراكك في منيو m@g.`;
 }
 
+// بيبني رسالة تشرح لصاحب المحل إزاي يدفع (إنستاباي) والباقات المتاحة وأسعارها
+function buildPaymentInstructionsMessage(r){
+  const bizName = r.name || '';
+  const plansLines = RENEW_PLANS.map(p=>{
+    const badge = p.badge_ar ? ` ⭐ ${p.badge_ar}` : '';
+    return `- ${p.name_ar}: ${p.price} جنيه (${p.suffix_ar})${badge}`;
+  }).join('\n');
+  return `مرحبًا ${bizName} 👋\nإليك طريقة دفع اشتراك منيو m@g:\n\n1️⃣ افتح رابط الدفع عبر إنستاباي التالي:\n${RENEW_PAY_LINK}\n(أو حوّل مباشرة على حساب إنستاباي: magziko@instapay)\n\n2️⃣ اختر الباقة المناسبة لك وادفع قيمتها:\n${plansLines}\n\n3️⃣ بعد الدفع، ابعتلنا صورة إثبات التحويل هنا على واتساب وسيتم تفعيل اشتراكك فورًا.\n\nولو حابب الدفع بطريقة تانية (فودافون كاش)، الرقم: ${RENEW_VODAFONE_CASH}`;
+}
+
+// بيفتح واتساب على رقم المتجر برسالة شرح طريقة الدفع (إنستاباي + الباقات)
+function sendPaymentInstructionsWhatsApp(r){
+  const digits = (r.phone || '').replace(/[^\d]/g, '');
+  if(!digits){ toast('لا يوجد رقم تليفون مسجل لهذا المتجر — أضِفه من إعدادات المتجر أولًا'); return; }
+  const msg = buildPaymentInstructionsMessage(r);
+  window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
 // بيفتح واتساب على رقم المتجر برسالة تنبيه جاهزة، وبيسجّل وقت الإرسال وعدد المرات في قاعدة البيانات
 // بيرجع القيم الجديدة (last_reminder_sent_at, reminder_count) عشان يتحدّث بيها الواجهة، أو null لو فشل
 async function sendExpiryReminderWhatsApp(r){
@@ -3955,6 +3973,7 @@ async function openAdminPanel(){
           <div class="admin-card-actions">
             ${ownerEmail !== '—' ? `<button type="button" class="link-btn admin-reset-pw-btn" data-email="${escapeHtml(ownerEmail)}" style="font-size:11px; padding:4px 9px;">🔑 تغيير كلمة المرور</button>` : ''}
             ${r.phone ? `<button type="button" class="link-btn admin-send-reminder-btn" data-id="${r.id}" style="font-size:11px; padding:4px 9px;">📲 تنبيه انتهاء</button>` : ''}
+            ${r.phone ? `<button type="button" class="link-btn admin-send-payment-btn" data-id="${r.id}" style="font-size:11px; padding:4px 9px;">💳 شرح الدفع</button>` : ''}
             <span class="admin-reminder-status" data-id="${r.id}" style="font-size:10.5px;">${reminderStatusHtml(r)}</span>
             <a href="${location.origin}${location.pathname}?r=${encodeURIComponent(r.slug)}" target="_blank" rel="noopener" class="link-btn admin-menu-link-btn" style="display:inline-block; font-size:11px; padding:4px 9px; text-decoration:none;">🔗 فتح المنيو</a>
           </div>
@@ -4126,6 +4145,15 @@ async function openAdminPanel(){
         const statusEl = wrap.querySelector(`.admin-reminder-status[data-id="${r.id}"]`);
         if(statusEl) statusEl.innerHTML = reminderStatusHtml(r);
       }
+    });
+  });
+
+  wrap.querySelectorAll('.admin-send-payment-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const r = allRestaurants.find(x=> x.id === btn.dataset.id);
+      if(!r) return;
+      sendPaymentInstructionsWhatsApp(r);
     });
   });
 
@@ -4663,7 +4691,10 @@ async function openAdminPanel(){
               ${lastReminder}
             </div>
             ${r.phone
-              ? `<button type="button" class="link-btn reminders-send-btn" data-id="${r.id}" style="font-size:12px; padding:6px 12px; white-space:nowrap;">📲 إرسال تنبيه الآن</button>`
+              ? `<div style="display:flex; gap:6px; flex-wrap:wrap;">
+                   <button type="button" class="link-btn reminders-send-btn" data-id="${r.id}" style="font-size:12px; padding:6px 12px; white-space:nowrap;">📲 إرسال تنبيه الآن</button>
+                   <button type="button" class="link-btn reminders-send-payment-btn" data-id="${r.id}" style="font-size:12px; padding:6px 12px; white-space:nowrap;">💳 شرح الدفع</button>
+                 </div>`
               : `<span class="admin-r-meta" style="opacity:.6;">لا يوجد رقم تليفون مسجل</span>`}
           </div>`;
       }
@@ -4690,6 +4721,14 @@ async function openAdminPanel(){
               lastEl.textContent = `📨 آخر تنبيه: ${d.toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' })} ${d.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' })}${result.reminder_count > 1 ? ` (×${result.reminder_count})` : ''}`;
             }
           }
+        });
+      });
+
+      wrap.querySelectorAll('.reminders-send-payment-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const item = expiring.find(x=> x.r.id === btn.dataset.id);
+          if(!item) return;
+          sendPaymentInstructionsWhatsApp(item.r);
         });
       });
     }
