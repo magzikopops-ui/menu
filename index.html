@@ -3852,14 +3852,17 @@ async function openAdminPanel(){
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
     const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
     const yesterdayStr = yesterdayDate.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
-    const sumSince = (daysAgo)=>{
+    const sumSince = (daysAgo, field)=>{
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - daysAgo);
       const cutoffStr = cutoff.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
-      return rows.filter(r=> r.day >= cutoffStr).reduce((acc,r)=> acc + Number(r.visits_count || 0), 0);
+      return rows.filter(r=> r.day >= cutoffStr).reduce((acc,r)=> acc + Number(r[field] || 0), 0);
     };
     const today = (rows.find(r=> r.day === todayStr) || { visits_count:0 }).visits_count;
     const yesterday = (rows.find(r=> r.day === yesterdayStr) || { visits_count:0 }).visits_count;
-    return { today: Number(today || 0), yesterday: Number(yesterday || 0), week: sumSince(7), month: sumSince(30), rows };
+    // زيارات وصلت لمنيو وقت ما كان الحساب معلّق — بتدل على عملاء حاولوا يطلبوا وارتدوا بسبب التعليق
+    const suspendedWeek = sumSince(7, 'suspended_visits_count');
+    const suspendedMonth = sumSince(30, 'suspended_visits_count');
+    return { today: Number(today || 0), yesterday: Number(yesterday || 0), week: sumSince(7, 'visits_count'), month: sumSince(30, 'visits_count'), suspendedWeek, suspendedMonth, rows };
   }
 
   function rowHtml(r, idx){
@@ -3882,6 +3885,7 @@ async function openAdminPanel(){
               <div class="admin-r-meta">/${escapeHtml(r.slug)} · انضم ${created}</div>
               <div class="admin-r-meta" style="direction:ltr; text-align:right; margin-top:2px;">✉️ ${escapeHtml(ownerEmail)}</div>
               <div class="admin-r-meta" style="margin-top:2px;">👁️ زيارات اليوم: ${visits.today} · أمس: ${visits.yesterday} · آخر 7 أيام: ${visits.week}</div>
+              ${visits.suspendedWeek > 0 ? `<div class="admin-r-meta" style="margin-top:2px; color:#e08a78;">⚠️ محاولات دخول على منيو معلّق (آخر 7 أيام): ${visits.suspendedWeek}</div>` : ''}
             </div>
           </div>
           <div class="admin-card-actions">
@@ -3944,6 +3948,11 @@ async function openAdminPanel(){
             </label>
           </div>
           <div class="admin-visits-trend">${buildDailyTrendSVG(visits.rows, 30, row=> Number(row.visits_count || 0), v=> `${v} زيارة`)}</div>
+          ${visits.suspendedMonth > 0 ? `
+          <div style="margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(224,138,120,.12); border:1px solid rgba(224,138,120,.35);">
+            <div style="font-size:12.5px; font-weight:800; color:#e08a78;">⚠️ محاولات دخول على المنيو أثناء تعليق الحساب</div>
+            <div style="font-size:12px; margin-top:4px; color:var(--stone);">آخر 7 أيام: ${visits.suspendedWeek} · آخر 30 يوم: ${visits.suspendedMonth} — عملاء فتحوا الرابط ولقوا شاشة "غير متاحة"، فرصة كويسة تستخدمها في التواصل عشان التجديد.</div>
+          </div>` : ''}
         </div>
 
         <div class="admin-section">
@@ -7739,16 +7748,17 @@ async function loadPublic(slug){
     try{ localStorage.setItem(`pubLogo_${slug}`, rest.logo_url); }catch(e){}
     if(rest.logo_url !== cachedLogoUrl) setLoadingLogo(rest.logo_url);
   }
+  // بيسجل الزيارة دايمًا (حتى لو الحساب معلّق) — الدالة نفسها بتفرّق بين زيارة عادية وزيارة لمنيو معلّق
+  sb.rpc('track_menu_visit', { p_restaurant_id: rest.id }).then(
+    (res)=>{ if(res && res.error) console.error('track_menu_visit failed:', res.error); },
+    (err)=>{ console.error('track_menu_visit failed:', err); }
+  );
   if(rest.account_suspended){
     resetLoadingLogo();
     show('publicScreen');
     showAccountSuspendedPublicScreen(rest);
     return;
   }
-  sb.rpc('track_menu_visit', { p_restaurant_id: rest.id }).then(
-    (res)=>{ if(res && res.error) console.error('track_menu_visit failed:', res.error); },
-    (err)=>{ console.error('track_menu_visit failed:', err); }
-  );
   const pubFooterEl = document.getElementById('pubFooter');
   if(pubFooterEl){
     const watermarkOn = !!rest.restriction_watermark_enabled;
