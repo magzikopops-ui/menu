@@ -3821,12 +3821,12 @@ async function openAdminPanel(){
   }catch(e){}
 
   // بيجيب طلبات كل المطاعم دفعة واحدة (آخر 30 يوم بس) ويجمّعها حسب المطعم
+  // ملحوظة: لازم يمر عبر RPC بصلاحية أدمن (admin_list_recent_orders) لأن جدول orders محمي بـ RLS
+  // بيسمح لصاحب المطعم بس يشوف طلباته — الاستعلام المباشر كان بيرجّع فاضي لغير حساب الأدمن نفسه
   const ordersCutoffDate = new Date(); ordersCutoffDate.setDate(ordersCutoffDate.getDate() - 30);
   const ordersByRestaurant = {};
   try{
-    const { data: orderRows } = await sb.from('orders').select('restaurant_id, created_at')
-      .in('restaurant_id', allRestaurants.map(r=> r.id))
-      .gte('created_at', ordersCutoffDate.toISOString());
+    const { data: orderRows } = await sb.rpc('admin_list_recent_orders', { p_since: ordersCutoffDate.toISOString() });
     (orderRows || []).forEach(o=>{
       if(!ordersByRestaurant[o.restaurant_id]) ordersByRestaurant[o.restaurant_id] = [];
       ordersByRestaurant[o.restaurant_id].push(o);
