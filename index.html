@@ -7636,19 +7636,35 @@ function openItemModal(existing){
     }
     if(pricing_type === 'sizes'){
       const rows = sizesRowsWrap.querySelectorAll('.zone-add-row');
+      const zeroPriceSizeNames = [];
       for(const row of rows){
         const sName = row.querySelector('.size-name-input').value.trim();
         const sPrice = parseFloat(row.querySelector('.size-price-input').value);
         if(!sName || isNaN(sPrice) || sPrice < 0) continue;
+        if(sPrice === 0) zeroPriceSizeNames.push(sName);
         sizesToSave.push({ size_name: sName, price: sPrice });
       }
       if(sizesToSave.length === 0){
         toast('يرجى إضافة حجم واحد على الأقل بسعره');
         return;
       }
+      // تأكيد صريح لو أي حجم هيتحفظ بسعر صفر — عشان منمنعش العروض المجانية المقصودة، بس نتأكد إنها مش غلطة كتابة
+      if(zeroPriceSizeNames.length > 0){
+        const sizesMsg = zeroPriceSizeNames.join('، ');
+        if(!confirm(`الحجم/الأحجام دي هتتحفظ بسعر صفر (${sizesMsg}) — يعني العميل هيقدر يطلبها مجانًا. متأكد إنك عايز كده؟`)){
+          return;
+        }
+      }
     } else {
       price = parseFloat(overlay.querySelector('#itemPrice').value);
       if(isNaN(price) || price < 0){ overlay.querySelector('#itemPrice').focus(); return; }
+      // تأكيد صريح لو السعر صفر — عشان منمنعش العروض المجانية المقصودة، بس نتأكد إنها مش غلطة كتابة
+      if(price === 0){
+        if(!confirm('السعر هيتحفظ صفر — يعني أي عميل هيقدر يطلب هذا الصنف مجانًا. متأكد إنك عايز كده؟')){
+          overlay.querySelector('#itemPrice').focus();
+          return;
+        }
+      }
       const oldPriceRaw = overlay.querySelector('#itemOldPrice').value.trim();
       if(oldPriceRaw !== ''){
         const parsedOld = parseFloat(oldPriceRaw);
