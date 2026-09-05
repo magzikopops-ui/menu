@@ -3820,6 +3820,19 @@ async function openAdminPanel(){
     });
   }catch(e){}
 
+  // بيجيب طلبات كل المطاعم دفعة واحدة (آخر 30 يوم بس) ويجمّعها حسب المطعم
+  const ordersCutoffDate = new Date(); ordersCutoffDate.setDate(ordersCutoffDate.getDate() - 30);
+  const ordersByRestaurant = {};
+  try{
+    const { data: orderRows } = await sb.from('orders').select('restaurant_id, created_at')
+      .in('restaurant_id', allRestaurants.map(r=> r.id))
+      .gte('created_at', ordersCutoffDate.toISOString());
+    (orderRows || []).forEach(o=>{
+      if(!ordersByRestaurant[o.restaurant_id]) ordersByRestaurant[o.restaurant_id] = [];
+      ordersByRestaurant[o.restaurant_id].push(o);
+    });
+  }catch(e){}
+
   function demoStatusHtml(r){
     if(!r.demo_days){ return ''; }
     const end = new Date(r.created_at);
@@ -3865,11 +3878,29 @@ async function openAdminPanel(){
     return { today: Number(today || 0), yesterday: Number(yesterday || 0), week: sumSince(7, 'visits_count'), month: sumSince(30, 'visits_count'), suspendedWeek, suspendedMonth, rows };
   }
 
+  // بيحسب عدد الطلبات اليوم/أمس/آخر 7 أيام/آخر 30 يوم لمطعم معيّن من الصفوف المجمّعة مسبقًا
+  function ordersSummaryFor(rId){
+    const rows = ordersByRestaurant[rId] || [];
+    const dayOf = (iso)=> new Date(iso).toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+    const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterdayStr = yesterdayDate.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+    const sumSince = (daysAgo)=>{
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - daysAgo);
+      const cutoffStr = cutoff.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+      return rows.filter(o=> dayOf(o.created_at) >= cutoffStr).length;
+    };
+    const today = rows.filter(o=> dayOf(o.created_at) === todayStr).length;
+    const yesterday = rows.filter(o=> dayOf(o.created_at) === yesterdayStr).length;
+    return { today, yesterday, week: sumSince(7), month: sumSince(30) };
+  }
+
   function rowHtml(r, idx){
     const created = new Date(r.created_at).toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
     const ownerEmail = emailByOwner[r.owner_id] || '—';
     const isMainAdminAccount = ownerEmail.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
     const visits = visitsSummaryFor(r.id);
+    const orders = ordersSummaryFor(r.id);
     const perm = (field, icon, label) => `
         <label class="admin-perm-item">
           <span class="lbl">${icon} ${label}</span>
@@ -3885,6 +3916,7 @@ async function openAdminPanel(){
               <div class="admin-r-meta">/${escapeHtml(r.slug)} · انضم ${created}</div>
               <div class="admin-r-meta" style="direction:ltr; text-align:right; margin-top:2px;">✉️ ${escapeHtml(ownerEmail)}</div>
               <div class="admin-r-meta" style="margin-top:2px;">👁️ زيارات اليوم: ${visits.today} · أمس: ${visits.yesterday} · آخر 7 أيام: ${visits.week}</div>
+              <div class="admin-r-meta" style="margin-top:2px;">🧾 طلبات اليوم: ${orders.today} · أمس: ${orders.yesterday} · آخر 7 أيام: ${orders.week}</div>
               ${visits.suspendedWeek > 0 ? `<div class="admin-r-meta" style="margin-top:2px; color:#e08a78;">⚠️ محاولات دخول على منيو معلّق (آخر 7 أيام): ${visits.suspendedWeek}</div>` : ''}
             </div>
           </div>
@@ -3953,6 +3985,28 @@ async function openAdminPanel(){
             <div style="font-size:12.5px; font-weight:800; color:#e08a78;">⚠️ محاولات دخول على المنيو أثناء تعليق الحساب</div>
             <div style="font-size:12px; margin-top:4px; color:var(--stone);">آخر 7 أيام: ${visits.suspendedWeek} · آخر 30 يوم: ${visits.suspendedMonth} — عملاء فتحوا الرابط ولقوا شاشة "غير متاحة"، فرصة كويسة تستخدمها في التواصل عشان التجديد.</div>
           </div>` : ''}
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-section-title">🧾 الطلبات</div>
+          <div class="admin-plan-row" style="margin-bottom:10px;">
+            <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:2px;">
+              <span style="opacity:.7; font-size:11px;">اليوم</span>
+              <span style="font-weight:800; font-size:15px;">${orders.today}</span>
+            </label>
+            <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:2px;">
+              <span style="opacity:.7; font-size:11px;">أمس</span>
+              <span style="font-weight:800; font-size:15px;">${orders.yesterday}</span>
+            </label>
+            <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:2px;">
+              <span style="opacity:.7; font-size:11px;">آخر 7 أيام</span>
+              <span style="font-weight:800; font-size:15px;">${orders.week}</span>
+            </label>
+            <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:2px;">
+              <span style="opacity:.7; font-size:11px;">آخر 30 يوم</span>
+              <span style="font-weight:800; font-size:15px;">${orders.month}</span>
+            </label>
+          </div>
         </div>
 
         <div class="admin-section">
