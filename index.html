@@ -2275,6 +2275,9 @@ async function autoPrintNewOrder(orderId){
     const restoreTitle = ()=>{ document.title = prevTitle; window.removeEventListener('afterprint', restoreTitle); };
     window.addEventListener('afterprint', restoreTitle);
     window.print();
+    if(!order.printed_at){
+      sb.from('orders').update({ printed_at: new Date().toISOString() }).eq('id', orderId).then(()=>{}, ()=>{});
+    }
   }catch(e){}
 }
 
@@ -3183,6 +3186,17 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
   if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل الطلبات</div>`; return; }
   if(!orders || orders.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا توجد طلبات بعد</div>`; return; }
 
+  // بنسجل مين كان "لسه ما اتشافش" قبل ما نفتح الشاشة دي، عشان نعرض شارة "جديد" ليها في العرض الحالي بس
+  // (لو مانعملناش كده، أي طلب هيتحط عليه seen_at فورًا مجرد ما تفتح الشاشة، فمش هنقدر نميّزه)
+  const unseenAtOpenIds = new Set(orders.filter(o=> !o.seen_at).map(o=> o.id));
+  if(unseenAtOpenIds.size){
+    const nowIso = new Date().toISOString();
+    sb.from('orders').update({ seen_at: nowIso }).in('id', [...unseenAtOpenIds]).then(
+      ()=>{ orders.forEach(o=>{ if(unseenAtOpenIds.has(o.id)) o.seen_at = nowIso; }); },
+      ()=>{}
+    );
+  }
+
   let itemsByOrder = {};
   const orderIds = orders.map(o=>o.id);
   if(orderIds.length){
@@ -3248,6 +3262,8 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
     const rowClasses = ['order-row', fresh ? 'is-new' : '', today ? 'is-today' : ''].filter(Boolean).join(' ');
     const tagsHtml = `${fresh ? '<span class="o-tag new">جديد</span>' : ''}${today ? '<span class="o-tag today">اليوم</span>' : ''}`;
     const numberHtml = o.order_number != null ? `<span class="o-number">#${o.order_number}</span>` : '';
+    const unseenBadgeHtml = unseenAtOpenIds.has(o.id) ? '<span class="o-tag" style="background:#4a3a10; color:#f5d98a;">👀 لم يُفتح بعد</span>' : '';
+    const printedBadgeHtml = o.printed_at ? '<span class="o-tag" style="background:#1f4d2e; color:#c8f0d6;">🖨️ تمت الطباعة</span>' : '';
     const isOnlinePay = o.payment_method === 'wallet' || o.payment_method === 'instapay';
     const payMethodLabel = o.payment_method === 'wallet' ? (o.payment_detail || restaurant.wallet_label || 'محفظة') : (o.payment_method === 'instapay' ? (o.payment_detail || 'إنستاباي') : null);
     const payBadgeHtml = isOnlinePay
@@ -3280,7 +3296,7 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
       <div class="${rowClasses}" data-order-id="${o.id}">
         <div class="o-card-top">
           <div class="o-name">${numberHtml}${escapeHtml(o.customer_name)} <span class="o-type-badge">${typeLabel}</span></div>
-          <div class="o-badges"><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${payBadgeHtml}${ratingBadgeHtml}${tagsHtml}</div>
+          <div class="o-badges"><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${payBadgeHtml}${ratingBadgeHtml}${tagsHtml}${unseenBadgeHtml}${printedBadgeHtml}</div>
         </div>
         <div class="o-contact-row">
           <span class="o-phone">${escapeHtml(o.customer_phone)}</span>${o.secondary_phone ? ` / <span class="o-phone">${escapeHtml(o.secondary_phone)}</span>` : ''}
@@ -3325,6 +3341,19 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
         printBtn.addEventListener('click', ()=>{
           const orderObj = orders.find(o=> o.id === printBtn.dataset.orderId);
           if(orderObj) openReceiptPreviewModal(orderObj, itemsByOrder[orderObj.id] || []);
+          if(orderObj && !orderObj.printed_at){
+            const nowIso = new Date().toISOString();
+            orderObj.printed_at = nowIso;
+            sb.from('orders').update({ printed_at: nowIso }).eq('id', orderObj.id).then(()=>{}, ()=>{});
+            const badgesWrap = row.querySelector('.o-badges');
+            if(badgesWrap){
+              const tag = document.createElement('span');
+              tag.className = 'o-tag';
+              tag.style.cssText = 'background:#1f4d2e; color:#c8f0d6;';
+              tag.textContent = '🖨️ تمت الطباعة';
+              badgesWrap.appendChild(tag);
+            }
+          }
         });
       }
       const markPaidBtn = row.querySelector('[data-action="markPaid"]');
@@ -3892,7 +3921,9 @@ async function openAdminPanel(){
     };
     const today = rows.filter(o=> dayOf(o.created_at) === todayStr).length;
     const yesterday = rows.filter(o=> dayOf(o.created_at) === yesterdayStr).length;
-    return { today, yesterday, week: sumSince(7), month: sumSince(30) };
+    // عدد الطلبات (آخر 30 يوم) اللي صاحب المحل لسه ما فتحش شاشة الطلبات عشان يشوفها
+    const unseen = rows.filter(o=> !o.seen_at).length;
+    return { today, yesterday, week: sumSince(7), month: sumSince(30), unseen };
   }
 
   function rowHtml(r, idx){
@@ -3917,6 +3948,7 @@ async function openAdminPanel(){
               <div class="admin-r-meta" style="direction:ltr; text-align:right; margin-top:2px;">✉️ ${escapeHtml(ownerEmail)}</div>
               <div class="admin-r-meta" style="margin-top:2px;">👁️ زيارات اليوم: ${visits.today} · أمس: ${visits.yesterday} · آخر 7 أيام: ${visits.week}</div>
               <div class="admin-r-meta" style="margin-top:2px;">🧾 طلبات اليوم: ${orders.today} · أمس: ${orders.yesterday} · آخر 7 أيام: ${orders.week}</div>
+              ${orders.unseen > 0 ? `<div class="admin-r-meta" style="margin-top:2px; color:#e08a78;">👀 طلبات لم يفتحها المحل بعد (آخر 30 يوم): ${orders.unseen}</div>` : ''}
               ${visits.suspendedWeek > 0 ? `<div class="admin-r-meta" style="margin-top:2px; color:#e08a78;">⚠️ محاولات دخول على منيو معلّق (آخر 7 أيام): ${visits.suspendedWeek}</div>` : ''}
             </div>
           </div>
@@ -4007,6 +4039,11 @@ async function openAdminPanel(){
               <span style="font-weight:800; font-size:15px;">${orders.month}</span>
             </label>
           </div>
+          ${orders.unseen > 0 ? `
+          <div style="margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(224,138,120,.12); border:1px solid rgba(224,138,120,.35);">
+            <div style="font-size:12.5px; font-weight:800; color:#e08a78;">👀 طلبات لم يفتحها المحل بعد</div>
+            <div style="font-size:12px; margin-top:4px; color:var(--stone);">${orders.unseen} طلب (آخر 30 يوم) لسه صاحب المحل ما فتحش شاشة "الطلبات الواردة" ليهم — مؤشر إن المحل مش بيتابع طلباته أول بأول.</div>
+          </div>` : ''}
         </div>
 
         <div class="admin-section">
