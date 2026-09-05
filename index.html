@@ -1134,20 +1134,20 @@ function toEgyptWaDigits(phone){
 // نصوص متنوعة لرسالة "شارك المنيو" — التنويع بيقلل احتمالية إن واتساب يعتبر الرسائل المتكررة سبام
 // وبعضها من غير اسم العميل، لأن الاسم المسجل ممكن يكون غلط
 const MENU_WA_TEMPLATES = [
-  { withName:true,  text:(name,link,rest)=> `أهلًا بك ${name} 🌟\nيسعدنا أن نرحب بك في ${rest}! يمكنك تصفح المنيو والطلب أونلاين مباشرة من هنا:\n${link}` },
-  { withName:false, text:(name,link,rest)=> `أهلًا بك 👋\n${rest} متاح الآن أونلاين! يمكنك تصفح المنيو والطلب من هنا:\n${link}` },
-  { withName:true,  text:(name,link,rest)=> `أهلًا بك ${name} ✨\nأصبح منيو ${rest} متاحًا أونلاين، ويمكنك الطلب براحتك من الرابط التالي:\n${link}` },
-  { withName:false, text:(name,link,rest)=> `تحية طيبة 🙏\nندعوك لتصفح منيو ${rest} والطلب أونلاين من خلال الرابط التالي:\n${link}` },
-  { withName:true,  text:(name,link,rest)=> `كيف حالك ${name}؟ 😊\nأصبح لدى ${rest} منيو أونلاين الآن، جرّب الطلب من هنا:\n${link}` },
-  { withName:false, text:(name,link,rest)=> `منيو ${rest} متاح أونلاين 🍽️\nاطلب الآن من هنا:\n${link}` },
-  { withName:true,  text:(name,link,rest)=> `أهلًا بك ${name} 🎉\nاستمتع بعروضنا وخصوماتنا عند الطلب أونلاين من منيو ${rest}:\n${link}` },
-  { withName:false, text:(name,link,rest)=> `عروض وخصومات تنتظرك 🎁\nاطلب أونلاين من منيو ${rest} واستمتع بأفضل العروض:\n${link}` },
-  { withName:true,  text:(name,link,rest)=> `أخبار سارة يا ${name} 🔥\nلدينا عروض وخصومات خاصة عند الطلب أونلاين من ${rest}، جرّب المنيو من هنا:\n${link}` },
-  { withName:false, text:(name,link,rest)=> `خصومات مميزة بانتظارك 💥\n${rest} متاح أونلاين الآن، اطلب من المنيو واستفد من العروض:\n${link}` },
-  { withName:true,  text:(name,link,rest)=> `${name}، لا تفوّت الفرصة 😋\nعروض وخصومات على الطلبات أونلاين من ${rest}، شاهد المنيو من هنا:\n${link}` },
-  { withName:false, text:(name,link,rest)=> `فرصتك الآن 🛍️\nاطلب أونلاين من منيو ${rest} واحصل على خصمك على طلبك:\n${link}` },
-  { withName:true,  text:(name,link,rest)=> `لقد طال غيابك يا ${name} 💛\nيضم منيو ${rest} عروضًا جديدة تستحق التجربة، اطلب أونلاين من هنا:\n${link}` },
-  { withName:false, text:(name,link,rest)=> `لقد طال الغياب! 💛\nلدى ${rest} عروض جديدة تستحق التجربة، اطلب أونلاين من هنا:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `أهلًا بك ${name}\nيسعدنا أن نرحب بك في ${rest}! يمكنك تصفح المنيو والطلب أونلاين مباشرة من هنا:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `أهلًا بك\n${rest} متاح الآن أونلاين! يمكنك تصفح المنيو والطلب من هنا:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `أهلًا بك ${name}\nأصبح منيو ${rest} متاحًا أونلاين، ويمكنك الطلب براحتك من الرابط التالي:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `تحية طيبة\nندعوك لتصفح منيو ${rest} والطلب أونلاين من خلال الرابط التالي:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `كيف حالك ${name}؟\nأصبح لدى ${rest} منيو أونلاين الآن، جرّب الطلب من هنا:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `منيو ${rest} متاح أونلاين\nاطلب الآن من هنا:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `أهلًا بك ${name}\nاستمتع بعروضنا وخصوماتنا عند الطلب أونلاين من منيو ${rest}:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `عروض وخصومات تنتظرك\nاطلب أونلاين من منيو ${rest} واستمتع بأفضل العروض:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `أخبار سارة يا ${name}\nلدينا عروض وخصومات خاصة عند الطلب أونلاين من ${rest}، جرّب المنيو من هنا:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `خصومات مميزة بانتظارك\n${rest} متاح أونلاين الآن، اطلب من المنيو واستفد من العروض:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `${name}، لا تفوّت الفرصة\nعروض وخصومات على الطلبات أونلاين من ${rest}، شاهد المنيو من هنا:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `فرصتك الآن\nاطلب أونلاين من منيو ${rest} واحصل على خصمك على طلبك:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `لقد طال غيابك يا ${name}\nيضم منيو ${rest} عروضًا جديدة تستحق التجربة، اطلب أونلاين من هنا:\n${link}` },
+  { withName:false, text:(name,link,rest)=> `لقد طال الغياب!\nلدى ${rest} عروض جديدة تستحق التجربة، اطلب أونلاين من هنا:\n${link}` },
 ];
 
 function openWaTemplatePicker(templates, name, link, digits){
@@ -1197,9 +1197,9 @@ function buildExpiryReminderMessage(r){
     const daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
     const endStr = end.toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
     if(daysLeft < 0){
-      return `مرحبًا ${bizName} 👋\nنود تنبيهك بأن اشتراكك في منيو m@g قد انتهى بتاريخ ${endStr}، وتم تعليق الوصول للوحة التحكم مؤقتًا.\nبرجاء تجديد الاشتراك في أقرب وقت لاستعادة الخدمة.`;
+      return `مرحبًا ${bizName}\nنود تنبيهك بأن اشتراكك في منيو m@g قد انتهى بتاريخ ${endStr}، وتم تعليق الوصول للوحة التحكم مؤقتًا.\nبرجاء تجديد الاشتراك في أقرب وقت لاستعادة الخدمة.`;
     }
-    return `مرحبًا ${bizName} 👋\nنود تذكيرك بأن اشتراكك في منيو m@g سينتهي ${daysLeftLabel(daysLeft)} (بتاريخ ${endStr}).\nبرجاء تجديد الاشتراك لتفادي توقف الخدمة.`;
+    return `مرحبًا ${bizName}\nنود تذكيرك بأن اشتراكك في منيو m@g سينتهي ${daysLeftLabel(daysLeft)} (بتاريخ ${endStr}).\nبرجاء تجديد الاشتراك لتفادي توقف الخدمة.`;
   }
   if(r.demo_days){
     const end = new Date(r.created_at);
@@ -1207,21 +1207,21 @@ function buildExpiryReminderMessage(r){
     const daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
     const endStr = end.toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
     if(daysLeft < 0){
-      return `مرحبًا ${bizName} 👋\nنود تنبيهك بأن الفترة التجريبية لحسابك في منيو m@g قد انتهت بتاريخ ${endStr}.\nيسعدنا اشتراكك للاستمرار في استخدام النظام دون انقطاع.`;
+      return `مرحبًا ${bizName}\nنود تنبيهك بأن الفترة التجريبية لحسابك في منيو m@g قد انتهت بتاريخ ${endStr}.\nيسعدنا اشتراكك للاستمرار في استخدام النظام دون انقطاع.`;
     }
-    return `مرحبًا ${bizName} 👋\nنود تذكيرك بأن الفترة التجريبية لحسابك في منيو m@g ستنتهي ${daysLeftLabel(daysLeft)} (بتاريخ ${endStr}).\nيسعدنا اشتراكك للاستمرار في استخدام النظام دون انقطاع.`;
+    return `مرحبًا ${bizName}\nنود تذكيرك بأن الفترة التجريبية لحسابك في منيو m@g ستنتهي ${daysLeftLabel(daysLeft)} (بتاريخ ${endStr}).\nيسعدنا اشتراكك للاستمرار في استخدام النظام دون انقطاع.`;
   }
-  return `مرحبًا ${bizName} 👋\nنود التواصل معك بخصوص حالة اشتراكك في منيو m@g.`;
+  return `مرحبًا ${bizName}\nنود التواصل معك بخصوص حالة اشتراكك في منيو m@g.`;
 }
 
 // بيبني رسالة تشرح لصاحب المحل إزاي يدفع (إنستاباي) والباقات المتاحة وأسعارها
 function buildPaymentInstructionsMessage(r){
   const bizName = r.name || '';
   const plansLines = RENEW_PLANS.map(p=>{
-    const badge = p.badge_ar ? ` ⭐ ${p.badge_ar}` : '';
+    const badge = p.badge_ar ? ` (${p.badge_ar})` : '';
     return `- ${p.name_ar}: ${p.price} جنيه (${p.suffix_ar})${badge}`;
   }).join('\n');
-  return `مرحبًا ${bizName} 👋\nإليك طريقة دفع اشتراك منيو m@g:\n\n1) افتح رابط الدفع عبر إنستاباي التالي:\n${RENEW_PAY_LINK}\n(أو حوّل مباشرة على حساب إنستاباي: magziko@instapay)\n\n2) اختر الباقة المناسبة لك وادفع قيمتها:\n${plansLines}\n\n3) بعد الدفع، ابعتلنا صورة إثبات التحويل هنا على واتساب وسيتم تفعيل اشتراكك فورًا.\n\nولو حابب الدفع بطريقة تانية (فودافون كاش)، الرقم: ${RENEW_VODAFONE_CASH}`;
+  return `مرحبًا ${bizName}\nإليك طريقة دفع اشتراك منيو m@g:\n\n1) افتح رابط الدفع عبر إنستاباي التالي:\n${RENEW_PAY_LINK}\n(أو حوّل مباشرة على حساب إنستاباي: magziko@instapay)\n\n2) اختر الباقة المناسبة لك وادفع قيمتها:\n${plansLines}\n\n3) بعد الدفع، ابعتلنا صورة إثبات التحويل هنا على واتساب وسيتم تفعيل اشتراكك فورًا.\n\nولو حابب الدفع بطريقة تانية (فودافون كاش)، الرقم: ${RENEW_VODAFONE_CASH}`;
 }
 
 // بيفتح واتساب على رقم المتجر برسالة شرح طريقة الدفع (إنستاباي + الباقات)
@@ -1253,7 +1253,7 @@ function sendOrderToDriverWhatsApp(order, lines, driver){
   const digits = toEgyptWaDigits(driver.phone);
   if(!digits){ toast('لا يوجد رقم تليفون صالح لهذا السائق'); return; }
   const itemsLines = (lines || []).map(l=> `- ${l.item_name} × ${l.quantity}`).join('\n');
-  let msg = `🚴 طلب توصيل جديد${order.order_number != null ? ` #${order.order_number}` : ''}\n\n`;
+  let msg = `طلب توصيل جديد${order.order_number != null ? ` #${order.order_number}` : ''}\n\n`;
   msg += `العميل: ${order.customer_name || ''}\n`;
   msg += `التليفون: ${order.customer_phone || ''}${order.secondary_phone ? ` / ${order.secondary_phone}` : ''}\n`;
   if(order.city || order.area) msg += `المنطقة: ${[order.city, order.area].filter(Boolean).join(' — ')}\n`;
