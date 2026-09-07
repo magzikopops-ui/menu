@@ -8267,6 +8267,15 @@ async function loadPublic(slug){
     });
   }
   const pubZones = zonesRes.data || [];
+  // لو فشل تحميل مناطق التوصيل (مشكلة شبكة مؤقتة)، نحاول مرة تانية بدل ما نفترض إن المطعم مالوش مناطق أصلاً
+  let zonesLoadFailed = !!zonesRes.error;
+  if(zonesLoadFailed){
+    const retryZones = await sb.from('delivery_zones').select('*').eq('restaurant_id', rest.id).order('area_name');
+    if(!retryZones.error){
+      pubZones.push(...(retryZones.data || []));
+      zonesLoadFailed = false;
+    }
+  }
   const topItemIds = new Set((topItemsRes.data || []).map(t=>t.item_id));
   setPageMeta({
 
@@ -8473,6 +8482,7 @@ async function loadPublic(slug){
       setHtml('pubAdPosTextMobile', `<strong>${posTitle}</strong>${posDesc ? ' — ' + posDesc : ''}`, `<strong>${posTitle}</strong>${posDesc ? ' — ' + posDesc : ''}`);
       setText('pubAdPosCtaMobile', posCta, posCta);
     } else {
+      const isStore = rest && rest.business_type === 'store';
       [['pubAdPosLink','pubAdPosIcon','🧾'], ['pubAdPosLink2','pubAdPosIcon2','📊']].forEach(([linkId, iconId, icon])=>{
         const link = document.getElementById(linkId);
         if(link){ link.href = 'https://magziko.github.io/Pos/index.html'; link.setAttribute('data-ad', 'pos'); }
@@ -8484,12 +8494,18 @@ async function loadPublic(slug){
       const mobileIcon = document.getElementById('pubAdPosIconMobile');
       if(mobileIcon) mobileIcon.textContent = '🧾';
       setText('pubAdPosTitle', 'نظام نقاط البيع', 'Point of Sale System');
-      setText('pubAdPosDesc', 'إدارة مبيعاتك ومخزونك وطلباتك من مكان واحد بسهولة تامة', 'Manage your sales, inventory and orders from one place');
+      setText('pubAdPosDesc',
+        isStore ? 'إدارة مبيعاتك ومخزونك وفروعك من مكان واحد بسهولة تامة' : 'إدارة أوردراتك ومطبخك ومخزونك من مكان واحد بسهولة تامة',
+        isStore ? 'Manage your sales, inventory and branches from one place' : 'Manage your orders, kitchen and inventory from one place');
       setText('pubAdPosCta', 'جرّب الآن ←', en ? 'Try now →' : 'جرّب الآن ←');
       setText('pubAdPosTitle2', 'نظام نقاط البيع', 'Point of Sale System');
-      setText('pubAdPosDesc2', 'تابع فروعك ومخزونك من الموبايل في أي وقت', 'Track your branches and stock from your phone, anytime');
+      setText('pubAdPosDesc2',
+        isStore ? 'تابع فروعك ومخزونك من الموبايل في أي وقت' : 'تابع أوردراتك وفروعك من الموبايل في أي وقت',
+        isStore ? 'Track your branches and stock from your phone, anytime' : 'Track your orders and branches from your phone, anytime');
       setText('pubAdPosCta2', en ? 'Discover more →' : 'اكتشف المزيد ←', en ? 'Discover more →' : 'اكتشف المزيد ←');
-      setHtml('pubAdPosTextMobile', '<strong>نظام نقاط البيع</strong> — إدارة مبيعاتك بسهولة', '<strong>Point of Sale System</strong> — manage your sales easily');
+      setHtml('pubAdPosTextMobile',
+        isStore ? '<strong>نظام نقاط البيع</strong> — إدارة مبيعاتك وفروعك بسهولة' : '<strong>نظام نقاط البيع</strong> — إدارة أوردراتك ومطبخك بسهولة',
+        isStore ? '<strong>Point of Sale System</strong> — manage your sales and branches easily' : '<strong>Point of Sale System</strong> — manage your orders and kitchen easily');
       setText('pubAdPosCtaMobile', en ? 'Try' : 'جرّب', en ? 'Try' : 'جرّب');
     }
 
@@ -9133,7 +9149,21 @@ async function loadPublic(slug){
             <select id="ordZoneSelect" style="width:100%; border:1.5px solid var(--line); border-radius:8px; padding:10px 12px; font-family:var(--body); font-size:14px; color:var(--ink); background:var(--paper);">
               <option value="">${lang==='en' ? 'Select your area' : 'اختر منطقتك'}</option>
               ${pubZones.map(z=>`<option value="${z.id}" data-fee="${z.fee}">${escapeHtml(z.area_name)} — ${Number(z.fee).toFixed(2)} EGP</option>`).join('')}
+              <option value="__other__">${lang==='en' ? "My area isn't listed" : 'منطقتي غير موجودة'}</option>
             </select>
+            <div id="ordOtherZoneNameWrap" class="hidden" style="margin-top:8px;">
+              <label style="font-size:13px; font-weight:700;">${lang==='en' ? 'Your area name' : 'اسم منطقتك'} *</label>
+              <input type="text" id="ordOtherZoneName" placeholder="${lang==='en' ? 'e.g. Nasr City' : 'مثال: مدينة نصر'}">
+            </div>
+            <div id="ordOtherZoneNote" class="hidden" style="margin-top:8px; background:rgba(166,57,43,.08); border:1.5px solid var(--ember); color:var(--ember); border-radius:8px; padding:9px 11px; font-size:12.5px; line-height:1.7;">
+              ${lang==='en'
+                ? 'This area isn\'t in our delivery list yet. Please also add full address details below — the restaurant will contact you to confirm the delivery cost.'
+                : 'هذه المنطقة غير مدرجة في قائمة التوصيل حاليًا. من فضلك أضف أيضًا تفاصيل عنوانك بالكامل في الأسفل، وسيتواصل معك المطعم لتحديد تكلفة التوصيل.'}
+            </div>
+          ` : zonesLoadFailed ? `
+            <div style="background:rgba(166,57,43,.1); border:1.5px solid var(--danger); color:var(--danger); border-radius:8px; padding:10px 12px; font-size:13px; line-height:1.6;">
+              ${lang==='en' ? 'Could not load delivery areas. Please reload the page and try again.' : 'تعذر تحميل مناطق التوصيل، من فضلك أعد تحميل الصفحة وحاول مرة أخرى.'}
+            </div>
           ` : `
             <input type="text" id="ordArea" placeholder="${lang==='en' ? 'e.g. Nasr City' : 'مثال: مدينة نصر'}">
           `}
@@ -9174,11 +9204,16 @@ async function loadPublic(slug){
       if(orderType !== 'delivery') return 0;
       if(pubZones.length > 0){
         const sel = overlay.querySelector('#ordZoneSelect');
-        if(!sel || !sel.value) return 0;
+        if(!sel || !sel.value || sel.value === '__other__') return 0;
         const z = pubZones.find(zz=>zz.id===sel.value);
         return z ? Number(z.fee) : 0;
       }
       return 0;
+    }
+    function isUnlistedZoneSelected(){
+      if(orderType !== 'delivery' || pubZones.length === 0) return false;
+      const sel = overlay.querySelector('#ordZoneSelect');
+      return !!sel && sel.value === '__other__';
     }
     // بيرجع الحد الأدنى المناسب لقيمة الطلب حسب طريقة الدفع المختارة (لو فيه حد مختلف للدفع أونلاين)
     function currentMinOrder(){
@@ -9198,8 +9233,8 @@ async function loadPublic(slug){
           </div>
           <input type="text" class="cart-item-note" data-cart-key="${key}" value="${escapeHtml(c.note || '')}" placeholder="${lang==='en' ? `Note for this ${biz(rest.business_type,'itemEn')} (optional)` : `ملاحظة على ${biz(rest.business_type,'itemDef')} (اختياري)`}" style="width:100%; margin:2px 0 10px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-family:var(--body); font-size:12px; background:#fff; color:var(--ink);">`).join('')}
         <div class="cart-summary-row"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${subtotal.toFixed(2)} EGP</span></div>
-        <div class="cart-summary-row"><span>${lang==='en' ? 'Delivery fee' : 'رسوم التوصيل'}</span><span>${fee.toFixed(2)} EGP</span></div>
-        <div class="cart-summary-row total"><span>${lang==='en' ? 'Total' : 'الإجمالي'}</span><span>${total.toFixed(2)} EGP</span></div>
+        <div class="cart-summary-row"><span>${lang==='en' ? 'Delivery fee' : 'رسوم التوصيل'}</span><span>${isUnlistedZoneSelected() ? (lang==='en' ? 'To be confirmed' : 'يحددها المطعم') : fee.toFixed(2) + ' EGP'}</span></div>
+        <div class="cart-summary-row total"><span>${lang==='en' ? 'Total' : 'الإجمالي'}</span><span>${total.toFixed(2)} EGP${isUnlistedZoneSelected() ? (lang==='en' ? ' + delivery' : ' + التوصيل') : ''}</span></div>
         ${showMinOrderNote ? `<div class="orders-empty" style="color:#a33; font-weight:700; padding-top:6px;">${lang==='en'
           ? `Minimum delivery order is ${minOrder} EGP — add ${(minOrder - subtotal).toFixed(2)} EGP more`
           : `أقل قيمة طلب للتوصيل ${minOrder} جنيه — أضف ${(minOrder - subtotal).toFixed(2)} جنيه لإتمام الطلب`}</div>` : ''}
@@ -9233,6 +9268,10 @@ async function loadPublic(slug){
       if(savedZoneSelect && saved.zoneId){
         const opt = Array.from(savedZoneSelect.options).find(o=>o.value===saved.zoneId);
         if(opt) savedZoneSelect.value = saved.zoneId;
+        if(saved.zoneId === '__other__' && saved.otherZoneName){
+          const otherNameInput = overlay.querySelector('#ordOtherZoneName');
+          if(otherNameInput) otherNameInput.value = saved.otherZoneName;
+        }
       } else if(saved.area){
         const areaInput = overlay.querySelector('#ordArea');
         if(areaInput) areaInput.value = saved.area;
@@ -9261,7 +9300,16 @@ async function loadPublic(slug){
       renderSummary();
     });
     const zoneSelect = overlay.querySelector('#ordZoneSelect');
-    if(zoneSelect) zoneSelect.addEventListener('change', renderSummary);
+    const otherZoneNote = overlay.querySelector('#ordOtherZoneNote');
+    const otherZoneNameWrap = overlay.querySelector('#ordOtherZoneNameWrap');
+    function syncOtherZoneNote(){
+      if(!zoneSelect) return;
+      const isOther = zoneSelect.value === '__other__';
+      if(otherZoneNote) otherZoneNote.classList.toggle('hidden', !isOther);
+      if(otherZoneNameWrap) otherZoneNameWrap.classList.toggle('hidden', !isOther);
+    }
+    syncOtherZoneNote();
+    if(zoneSelect) zoneSelect.addEventListener('change', ()=>{ syncOtherZoneNote(); renderSummary(); });
 
     if(canPayOnline){
       const payCashBtn = overlay.querySelector('#ordPayCash');
@@ -9451,6 +9499,10 @@ async function loadPublic(slug){
         toast(lang==='en' ? `Sorry, we are currently closed` : `عذرًا، ${biz(rest.business_type,'entityDef')} مغلق حاليًا ولا يمكن إتمام الطلب`);
         return;
       }
+      if(orderType === 'delivery' && pubZones.length === 0 && zonesLoadFailed){
+        toast(lang==='en' ? 'Could not load delivery areas. Please reload the page and try again.' : 'تعذر تحميل مناطق التوصيل، من فضلك أعد تحميل الصفحة وحاول مرة أخرى');
+        return;
+      }
       const customer_name = overlay.querySelector('#ordName').value.trim();
       const customer_phone = overlay.querySelector('#ordPhone').value.trim();
       const secondary_phone = overlay.querySelector('#ordPhone2').value.trim() || null;
@@ -9458,20 +9510,31 @@ async function loadPublic(slug){
       const address = orderType === 'delivery' ? overlay.querySelector('#ordAddress').value.trim() : null;
       const notes = overlay.querySelector('#ordNotes').value.trim() || null;
 
-      let area = null, zone_id = null, delivery_fee = null;
+      let area = null, zone_id = null, delivery_fee = null, otherZoneName = null;
+      const unlistedZone = isUnlistedZoneSelected();
       if(orderType === 'delivery'){
         if(pubZones.length > 0){
           const sel = overlay.querySelector('#ordZoneSelect');
           zone_id = sel.value || null;
-          const matchedZone = zone_id ? pubZones.find(z=>z.id===zone_id) : null;
-          area = matchedZone ? matchedZone.area_name : null;
-          delivery_fee = matchedZone ? matchedZone.fee : null;
+          if(unlistedZone){
+            zone_id = null;
+            otherZoneName = (overlay.querySelector('#ordOtherZoneName')?.value || '').trim();
+            area = otherZoneName
+              ? (lang==='en' ? `${otherZoneName} (not listed — contact customer to confirm fee)` : `${otherZoneName} (غير مدرجة — تواصل مع العميل لتحديد الرسوم)`)
+              : null;
+            delivery_fee = null;
+          } else {
+            const matchedZone = zone_id ? pubZones.find(z=>z.id===zone_id) : null;
+            area = matchedZone ? matchedZone.area_name : null;
+            delivery_fee = matchedZone ? matchedZone.fee : null;
+          }
         } else {
-          area = overlay.querySelector('#ordArea').value.trim();
+          const areaInput = overlay.querySelector('#ordArea');
+          area = areaInput ? areaInput.value.trim() : null;
         }
       }
 
-      if(!customer_name || !customer_phone || (orderType==='delivery' && (!area || !address))){
+      if(!customer_name || !customer_phone || (orderType==='delivery' && !area) || (orderType==='delivery' && !address)){
         toast(lang==='en' ? 'Please fill in all required fields' : 'يرجى إدخال جميع الحقول المطلوبة');
         return;
       }
@@ -9539,7 +9602,8 @@ async function loadPublic(slug){
         phone2: secondary_phone || '',
         city,
         area: (pubZones.length === 0 ? (area || '') : ''),
-        zoneId: zone_id || '',
+        zoneId: unlistedZone ? '__other__' : (zone_id || ''),
+        otherZoneName: otherZoneName || '',
         address: address || ''
       });
       if(canPayOnline){
