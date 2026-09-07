@@ -6299,8 +6299,12 @@ async function openSubscriptionModal(){
 
 document.getElementById('subscriptionBtn').addEventListener('click', openSubscriptionModal);
 
-document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
+document.getElementById('restaurantSettingsBtn').addEventListener('click', async ()=>{
   if(restaurant.restriction_settings_disabled){ toast('إعدادات المطعم غير متاحة في نسختك الحالية'); return; }
+  const { data: settingsZones } = await sb.from('delivery_zones').select('*').eq('restaurant_id', restaurant.id).order('area_name');
+  const pendingZonesList = settingsZones || [];
+  let pendingDefaultFeeMode = restaurant.default_delivery_fee_mode || 'none';
+  let pendingDefaultZoneId = restaurant.default_delivery_zone_id || '';
   let pendingLogo = restaurant.logo_url || null;
   const originalLogoUrl = restaurant.logo_url || null;
   let pendingBizType = restaurant.business_type === 'store' ? 'store' : 'restaurant';
@@ -6385,6 +6389,28 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         <label>حد أدنى مختلف في حال الدفع أونلاين (اختياري — اترك الحقل فارغًا لاستخدام نفس الحد المذكور أعلاه)</label>
         <small>مفيد إذا أردت تقليل الحد الأدنى تشجيعًا للدفع أونلاين، أو زيادته لتقليل التحويلات الصغيرة.</small>
         <input type="number" id="restMinOrderOnlineInput" value="${restaurant.min_delivery_order_online != null ? restaurant.min_delivery_order_online : ''}" placeholder="مثال: 50" min="0" step="0.01" style="margin-top:6px;">
+      </div>
+      <div class="field">
+        <label>رسوم توصيل افتراضية لمنطقة "غير مدرجة" (اختياري)</label>
+        <small>لما العميل يختار "منطقتي غير موجودة" وقت الطلب، ممكن تظهرله رسوم تقديرية بدل ما تفضل غير محددة، وتقدر تعدّلها بعد كده وقت تأكيد الطلب.</small>
+        <select id="restDefaultFeeModeInput" style="margin-top:8px; width:100%; border:1.5px solid var(--line); border-radius:8px; padding:10px 12px; font-family:var(--body); font-size:14px; color:var(--ink); background:var(--paper);">
+          <option value="none" ${pendingDefaultFeeMode==='none' ? 'selected' : ''}>بدون رسوم تقديرية (تتحدد لاحقًا بعد التواصل)</option>
+          <option value="manual" ${pendingDefaultFeeMode==='manual' ? 'selected' : ''}>رقم ثابت أحدده يدويًا</option>
+          <option value="max" ${pendingDefaultFeeMode==='max' ? 'selected' : ''}>أعلى سعر توصيل بين كل مناطقي (تلقائي)</option>
+          <option value="avg" ${pendingDefaultFeeMode==='avg' ? 'selected' : ''}>متوسط أسعار كل مناطقي (تلقائي)</option>
+          <option value="zone" ${pendingDefaultFeeMode==='zone' ? 'selected' : ''}>استخدام رسوم منطقة معينة من قائمتي</option>
+        </select>
+        <div id="restDefaultFeeManualWrap" style="margin-top:8px; ${pendingDefaultFeeMode==='manual' ? '' : 'display:none;'}">
+          <input type="number" id="restDefaultFeeManualInput" value="${restaurant.default_delivery_fee_amount != null ? restaurant.default_delivery_fee_amount : ''}" placeholder="مثال: 30" min="0" step="0.01">
+        </div>
+        <div id="restDefaultFeeZoneWrap" style="margin-top:8px; ${pendingDefaultFeeMode==='zone' ? '' : 'display:none;'}">
+          ${pendingZonesList.length > 0 ? `
+            <select id="restDefaultFeeZoneInput" style="width:100%; border:1.5px solid var(--line); border-radius:8px; padding:10px 12px; font-family:var(--body); font-size:14px; color:var(--ink); background:var(--paper);">
+              <option value="">اختر منطقة...</option>
+              ${pendingZonesList.map(z=>`<option value="${z.id}" ${pendingDefaultZoneId===z.id ? 'selected' : ''}>${escapeHtml(z.area_name)} — ${Number(z.fee).toFixed(2)} EGP</option>`).join('')}
+            </select>
+          ` : `<small style="color:var(--danger);">لا توجد مناطق مضافة بعد — أضف مناطق أولًا من "مناطق التوصيل" لاستخدام هذا الخيار.</small>`}
+        </div>
       </div>
       <div class="field" id="rsOnlinePaymentField">
         <label style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
@@ -6608,6 +6634,16 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     const text = encodeURIComponent(`رسالة تجربة من ${overlay.querySelector('#restNameInput').value.trim() || t().entityDef} — للتأكد من صحة يوزر التليجرام ✅`);
     window.open(`https://t.me/${raw}?text=${text}`, '_blank');
   });
+  const defaultFeeModeSelect = overlay.querySelector('#restDefaultFeeModeInput');
+  const defaultFeeManualWrap = overlay.querySelector('#restDefaultFeeManualWrap');
+  const defaultFeeZoneWrap = overlay.querySelector('#restDefaultFeeZoneWrap');
+  if(defaultFeeModeSelect){
+    defaultFeeModeSelect.addEventListener('change', ()=>{
+      pendingDefaultFeeMode = defaultFeeModeSelect.value;
+      defaultFeeManualWrap.style.display = pendingDefaultFeeMode === 'manual' ? '' : 'none';
+      defaultFeeZoneWrap.style.display = pendingDefaultFeeMode === 'zone' ? '' : 'none';
+    });
+  }
   overlay.querySelector('#rsCancel').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#rsConfirm').addEventListener('click', async ()=>{
@@ -6624,6 +6660,17 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
     const min_delivery_order = minOrderRaw ? Number(minOrderRaw) : null;
     const minOrderOnlineRaw = overlay.querySelector('#restMinOrderOnlineInput').value.trim();
     const min_delivery_order_online = minOrderOnlineRaw ? Number(minOrderOnlineRaw) : null;
+    const default_delivery_fee_mode = overlay.querySelector('#restDefaultFeeModeInput')?.value || 'none';
+    let default_delivery_fee_amount = null;
+    let default_delivery_zone_id = null;
+    if(default_delivery_fee_mode === 'manual'){
+      const manualRaw = overlay.querySelector('#restDefaultFeeManualInput')?.value.trim();
+      default_delivery_fee_amount = manualRaw ? Number(manualRaw) : null;
+      if(default_delivery_fee_amount == null){ toast('اكتب قيمة رسوم التوصيل الافتراضية'); return; }
+    } else if(default_delivery_fee_mode === 'zone'){
+      default_delivery_zone_id = overlay.querySelector('#restDefaultFeeZoneInput')?.value || null;
+      if(!default_delivery_zone_id){ toast('اختر منطقة لاستخدام رسومها كافتراضي'); return; }
+    }
     const notification_phone = overlay.querySelector('#notifPhoneInput').value.trim() || null;
     const notification_apikey = overlay.querySelector('#notifApikeyInput').value.trim() || null;
     const prepRaw = Number(overlay.querySelector('#restPrepMinutesInput').value);
@@ -6649,7 +6696,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', ()=>{
         return;
       }
     }
-    const { data, error } = await sb.from('restaurants').update({ logo_url: finalLogoUrl, name, name_en, phone, messenger_username, telegram_username, address, opening_time, closing_time, min_delivery_order, min_delivery_order_online, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes, accept_online_payment, wallets, wallet_label: wallets[0] ? wallets[0].label : null, wallet_number: wallets[0] ? wallets[0].number : null, instapay_account }).eq('id', restaurant.id).select().single();
+    const { data, error } = await sb.from('restaurants').update({ logo_url: finalLogoUrl, name, name_en, phone, messenger_username, telegram_username, address, opening_time, closing_time, min_delivery_order, min_delivery_order_online, default_delivery_fee_mode, default_delivery_fee_amount, default_delivery_zone_id, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes, accept_online_payment, wallets, wallet_label: wallets[0] ? wallets[0].label : null, wallet_number: wallets[0] ? wallets[0].number : null, instapay_account }).eq('id', restaurant.id).select().single();
     if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     restaurant = data;
     if(originalLogoUrl && originalLogoUrl !== finalLogoUrl){
@@ -9200,11 +9247,36 @@ async function loadPublic(slug){
       </div>`;
     document.body.appendChild(overlay);
 
+    // بيحسب رسوم توصيل تقديرية افتراضية للمنطقة غير المدرجة حسب إعداد المطعم (رقم ثابت / أعلى سعر / متوسط / منطقة معينة)
+    function computeDefaultUnlistedFee(){
+      const mode = rest.default_delivery_fee_mode;
+      if(!mode || mode === 'none') return null;
+      if(mode === 'manual'){
+        return rest.default_delivery_fee_amount != null ? Number(rest.default_delivery_fee_amount) : null;
+      }
+      if(!pubZones.length) return null;
+      if(mode === 'max'){
+        return Math.max(...pubZones.map(z=>Number(z.fee)));
+      }
+      if(mode === 'avg'){
+        const sum = pubZones.reduce((s,z)=>s+Number(z.fee), 0);
+        return Math.round((sum / pubZones.length) * 100) / 100;
+      }
+      if(mode === 'zone'){
+        const z = pubZones.find(zz=>zz.id === rest.default_delivery_zone_id);
+        return z ? Number(z.fee) : null;
+      }
+      return null;
+    }
     function currentDeliveryFee(){
       if(orderType !== 'delivery') return 0;
       if(pubZones.length > 0){
         const sel = overlay.querySelector('#ordZoneSelect');
-        if(!sel || !sel.value || sel.value === '__other__') return 0;
+        if(!sel || !sel.value) return 0;
+        if(sel.value === '__other__'){
+          const defFee = computeDefaultUnlistedFee();
+          return defFee != null ? defFee : 0;
+        }
         const z = pubZones.find(zz=>zz.id===sel.value);
         return z ? Number(z.fee) : 0;
       }
@@ -9233,8 +9305,8 @@ async function loadPublic(slug){
           </div>
           <input type="text" class="cart-item-note" data-cart-key="${key}" value="${escapeHtml(c.note || '')}" placeholder="${lang==='en' ? `Note for this ${biz(rest.business_type,'itemEn')} (optional)` : `ملاحظة على ${biz(rest.business_type,'itemDef')} (اختياري)`}" style="width:100%; margin:2px 0 10px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-family:var(--body); font-size:12px; background:#fff; color:var(--ink);">`).join('')}
         <div class="cart-summary-row"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${subtotal.toFixed(2)} EGP</span></div>
-        <div class="cart-summary-row"><span>${lang==='en' ? 'Delivery fee' : 'رسوم التوصيل'}</span><span>${isUnlistedZoneSelected() ? (lang==='en' ? 'To be confirmed' : 'يحددها المطعم') : fee.toFixed(2) + ' EGP'}</span></div>
-        <div class="cart-summary-row total"><span>${lang==='en' ? 'Total' : 'الإجمالي'}</span><span>${total.toFixed(2)} EGP${isUnlistedZoneSelected() ? (lang==='en' ? ' + delivery' : ' + التوصيل') : ''}</span></div>
+        <div class="cart-summary-row"><span>${lang==='en' ? 'Delivery fee' : 'رسوم التوصيل'}</span><span>${isUnlistedZoneSelected() ? (computeDefaultUnlistedFee() != null ? `${fee.toFixed(2)} EGP ${lang==='en' ? '(estimated)' : '(تقديرية)'}` : (lang==='en' ? 'To be confirmed' : 'يحددها المطعم')) : fee.toFixed(2) + ' EGP'}</span></div>
+        <div class="cart-summary-row total"><span>${lang==='en' ? 'Total' : 'الإجمالي'}</span><span>${total.toFixed(2)} EGP${isUnlistedZoneSelected() ? (lang==='en' ? (computeDefaultUnlistedFee() != null ? ' (est.)' : ' + delivery') : (computeDefaultUnlistedFee() != null ? ' (تقديري)' : ' + التوصيل')) : ''}</span></div>
         ${showMinOrderNote ? `<div class="orders-empty" style="color:#a33; font-weight:700; padding-top:6px;">${lang==='en'
           ? `Minimum delivery order is ${minOrder} EGP — add ${(minOrder - subtotal).toFixed(2)} EGP more`
           : `أقل قيمة طلب للتوصيل ${minOrder} جنيه — أضف ${(minOrder - subtotal).toFixed(2)} جنيه لإتمام الطلب`}</div>` : ''}
@@ -9522,7 +9594,7 @@ async function loadPublic(slug){
             area = otherZoneName
               ? (lang==='en' ? `${otherZoneName} (not listed — contact customer to confirm fee)` : `${otherZoneName} (غير مدرجة — تواصل مع العميل لتحديد الرسوم)`)
               : null;
-            delivery_fee = null;
+            delivery_fee = computeDefaultUnlistedFee();
           } else {
             const matchedZone = zone_id ? pubZones.find(z=>z.id===zone_id) : null;
             area = matchedZone ? matchedZone.area_name : null;
