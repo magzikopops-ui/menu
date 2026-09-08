@@ -571,6 +571,9 @@ body.pub-mobile-ad-open .pub-order-btn{ bottom:calc(22px + 58px); }
 .plan-card .plan-price{ font-family:var(--mono); font-weight:700; font-size:17px; color:#fff; white-space:nowrap; }
 .plan-card .plan-discount{ display:inline-block; margin-top:4px; font-size:10.5px; font-weight:800; color:#c8f0d6; background:rgba(63,98,71,.35); border:1px solid rgba(63,98,71,.6); border-radius:999px; padding:2px 9px; }
 .plan-card .plan-badge{ position:absolute; top:-9px; right:14px; background:var(--ember); color:#fff; font-size:10.5px; font-weight:800; padding:2px 10px; border-radius:999px; }
+.plan-card .plan-tier-tag{ display:inline-block; font-size:10px; font-weight:800; letter-spacing:.4px; padding:2px 8px; border-radius:6px; margin-bottom:4px; }
+.plan-card .plan-tier-tag.tier-starter{ background:rgba(154,164,178,.18); color:#c7ced6; }
+.plan-card .plan-tier-tag.tier-pro{ background:rgba(212,168,60,.2); color:#e9c766; }
 .renew-next-btn{ width:100%; background:var(--basil); color:#fff; border:none; padding:13px; border-radius:10px; font-family:var(--body); font-weight:800; font-size:14.5px; cursor:pointer; }
 .renew-next-btn:hover{ background:var(--basil-dark); }
 .renew-next-btn:disabled{ opacity:.45; cursor:default; }
@@ -1878,9 +1881,9 @@ function applyExcelRestrictionUI(){
 /* ============ باقات الاشتراك وشاشة الدفع ============ */
 // نسخة احتياطية تُستخدم فقط لو تعذّر تحميل الباقات من Supabase (مثلاً بسبب انقطاع الإنترنت)
 const RENEW_PLANS_FALLBACK = [
-  { key:'monthly',   name_ar:'شهري',      name_en:'Monthly',   months:1,  price_egp:700,  price_usd:15,  perMonth:700, discount:0,  suffix_ar:'شهريًا',    suffix_en:'/month' },
-  { key:'quarterly', name_ar:'ربع سنوي',  name_en:'Quarterly', months:3,  price_egp:1800, price_usd:40,  perMonth:600, discount:14, suffix_ar:'كل 3 شهور', suffix_en:'/3 months' },
-  { key:'yearly',    name_ar:'سنوي',      name_en:'Yearly',    months:12, price_egp:6000, price_usd:130, perMonth:500, discount:29, suffix_ar:'سنويًا',    suffix_en:'/year', badge_ar:'أفضل قيمة', badge_en:'Best value' },
+  { key:'monthly',   name_ar:'شهري',      name_en:'Monthly',   months:1,  price_egp:700,  price_usd:15,  perMonth:700, discount:0,  suffix_ar:'شهريًا',    suffix_en:'/month', tier_key:'starter' },
+  { key:'quarterly', name_ar:'ربع سنوي',  name_en:'Quarterly', months:3,  price_egp:1800, price_usd:40,  perMonth:600, discount:14, suffix_ar:'كل 3 شهور', suffix_en:'/3 months', tier_key:'starter' },
+  { key:'yearly',    name_ar:'سنوي',      name_en:'Yearly',    months:12, price_egp:6000, price_usd:130, perMonth:500, discount:29, suffix_ar:'سنويًا',    suffix_en:'/year', badge_ar:'أفضل قيمة', badge_en:'Best value', tier_key:'starter' },
 ];
 let RENEW_PLANS = RENEW_PLANS_FALLBACK; // تتحدث فورًا بعد أول تحميل ناجح من Supabase عبر fetchRenewPlans()
 let renewPlansLoadedOnce = false;
@@ -1895,6 +1898,7 @@ async function fetchRenewPlans(){
       key: p.plan_key,
       name_ar: p.name_ar,
       name_en: p.name_en,
+      tier_key: p.tier_key || 'starter',
       months: p.months,
       price_egp: Number(p.price_egp),
       price_usd: Number(p.price_usd),
@@ -2010,10 +2014,12 @@ function openRenewFlow(rest){
     const priceLabel = gccConv ? `${gccConv.value} ${gccConv.code}` : (isUsd ? `${p.price_usd} $` : `${p.price_egp} EGP`);
     const secondaryLabel = gccConv ? `≈ ${p.price_usd} $` : '';
     const perMonthLabel = isUsd ? `${p.perMonthUsd || (p.price_usd/1).toFixed(2)} $ / شهر تقريبًا` : `${p.perMonth} ج / شهر تقريبًا`;
+    const tierLabel = p.tier_key === 'pro' ? 'PRO ⭐' : 'STARTER';
     return `
       <div class="plan-card" data-plan="${p.key}">
         ${p.badge_ar ? `<div class="plan-badge">⭐ ${p.badge_ar}</div>` : ''}
         <div class="plan-info">
+          <div class="plan-tier-tag tier-${p.tier_key === 'pro' ? 'pro' : 'starter'}">${tierLabel}</div>
           <div class="plan-name">${p.name_ar} <span style="color:#9aa4b2; font-weight:600; font-size:12px;">(${p.name_en})</span></div>
           <div class="plan-permonth">${perMonthLabel}</div>
         </div>
@@ -4559,13 +4565,13 @@ async function openAdminPanel(){
             ${perm('restriction_banner_enabled', '🚧', 'البانر الحاجب')}
             ${perm('restriction_excel_disabled', '📄', 'تعطيل Excel')}
             ${perm('restriction_watermark_enabled', '💧', 'Watermark بالمنيو العام')}
-            <label class="admin-perm-item">
+            <div class="admin-perm-item">
               <span class="lbl">🔢 حد أقصى للأصناف</span>
               <span style="display:flex; align-items:center; gap:6px;">
                 <input type="number" min="1" class="admin-max-input" data-field="restriction_max_items_value" value="${r.restriction_max_items_value ?? 10}">
-                <span class="admin-switch"><input type="checkbox" data-field="restriction_max_items_enabled" ${r.restriction_max_items_enabled ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+                <label class="admin-switch"><input type="checkbox" data-field="restriction_max_items_enabled" ${r.restriction_max_items_enabled ? 'checked' : ''}><span class="admin-switch-slider"></span></label>
               </span>
-            </label>
+            </div>
           </div>
         </div>
 
@@ -5087,9 +5093,12 @@ async function openAdminPanel(){
     }
 
     function planRowHtml(p){
+      const tierLabel = p.tier_key === 'pro' ? 'PRO' : 'STARTER';
+      const tierColor = p.tier_key === 'pro' ? '#e9c766' : '#9aa4b2';
       return `
         <div class="admin-list-row" data-key="${p.plan_key}" style="border-right-color:${p.is_active ? 'var(--basil)' : 'var(--danger)'}; flex-wrap:wrap; align-items:flex-end;">
           <div style="flex:1; min-width:140px;">
+            <div style="font-size:10px; font-weight:800; letter-spacing:.4px; color:${tierColor}; margin-bottom:2px;">${tierLabel}</div>
             <div style="font-weight:800; font-size:14px;">${escapeHtml(p.name_ar)} <span style="opacity:.6; font-size:12px;">(${escapeHtml(p.name_en)})</span></div>
             <div class="admin-r-meta">مدة الباقة: ${p.months} شهر</div>
           </div>
