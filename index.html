@@ -5815,7 +5815,21 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
     <h3 style="margin-top:20px;">تقرير المناطق والتوصيل</h3>
     <div id="deliverySummaryWrap" class="orders-empty">جارِ التحميل...</div>
     <div class="orders-empty" style="text-align:right; padding:10px 0 4px; font-size:12px; font-weight:700; color:var(--ink);">أكثر المناطق طلبًا</div>
-    <div id="topAreasWrap"><div class="orders-empty">جارِ التحميل...</div></div>`;
+    <div id="topAreasWrap"><div class="orders-empty">جارِ التحميل...</div></div>
+    <h3 style="margin-top:20px;">تقرير الطلبات الملغية</h3>
+    <div style="display:flex; gap:8px; align-items:end; flex-wrap:wrap; margin-bottom:10px;">
+      <div style="display:flex; flex-direction:column; gap:3px;">
+        <label style="font-size:11px; color:var(--stone);">من تاريخ</label>
+        <input type="date" id="cancelledReportFrom" style="font-size:12px; padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--paper-dim); color:var(--ink);">
+      </div>
+      <div style="display:flex; flex-direction:column; gap:3px;">
+        <label style="font-size:11px; color:var(--stone);">إلى تاريخ</label>
+        <input type="date" id="cancelledReportTo" style="font-size:12px; padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--paper-dim); color:var(--ink);">
+      </div>
+      <button type="button" class="chip-btn active" id="cancelledReportGoBtn" style="padding:7px 14px;">عرض</button>
+      <button type="button" class="btn-export-sm" id="cancelledReportExportBtn" style="margin-right:auto;">⬇️ تصدير Excel</button>
+    </div>
+    <div id="cancelledReportWrap"><div class="orders-empty">اختار فترة واضغط "عرض"</div></div>`;
 
   const trendWrap = overlay.querySelector('#salesTrendWrap');
   const renderTrend = (metric)=>{ trendWrap.innerHTML = buildSalesTrendSVG(rows, 30, metric); };
@@ -6064,6 +6078,86 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
   ]);
   overlay.querySelector('#deliverySummaryWrap').innerHTML = buildDeliveryTypeSummary(typeRows, typeErr);
   overlay.querySelector('#topAreasWrap').innerHTML = buildTopAreasList(areaRows, areaErr);
+
+  // تقرير الطلبات الملغية — بيجيب الطلبات نفسها من جدول orders لأنها مستبعدة عمدًا من جداول الإحصائيات
+  const cancelledWrap = overlay.querySelector('#cancelledReportWrap');
+  const cFromInput = overlay.querySelector('#cancelledReportFrom');
+  const cToInput = overlay.querySelector('#cancelledReportTo');
+  const { data: cancelledOrdersRaw } = await sb.from('orders')
+    .select('order_number,created_at,customer_name,customer_phone,order_type,area,total')
+    .eq('restaurant_id', restaurant.id)
+    .eq('status', 'cancelled')
+    .order('created_at', { ascending:false });
+  const cancelledOrders = (cancelledOrdersRaw || []).map(o=> ({
+    ...o,
+    day: new Date(o.created_at).toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' })
+  }));
+  const cDefaultFrom = new Date(); cDefaultFrom.setDate(cDefaultFrom.getDate() - 29);
+  cFromInput.value = cDefaultFrom.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+  cToInput.value = todayKey;
+
+  let lastCancelledFiltered = null;
+  const runCancelledReport = ()=>{
+    const from = cFromInput.value, to = cToInput.value;
+    if(!from || !to || from > to){ toast('اختار فترة صحيحة (من قبل لحد)'); return; }
+    const filtered = cancelledOrders.filter(o=> o.day >= from && o.day <= to);
+    lastCancelledFiltered = filtered;
+    if(filtered.length === 0){
+      cancelledWrap.innerHTML = `<div class="orders-empty">لا توجد طلبات ملغية في الفترة دي 🎉</div>`;
+      return;
+    }
+    const totalCount = filtered.length;
+    const totalLost = filtered.reduce((s,o)=> s + Number(o.total||0), 0);
+    cancelledWrap.innerHTML = `
+      <div class="report-kpi-row" style="margin-bottom:10px;">
+        <div class="report-kpi"><div class="kpi-label">عدد الطلبات الملغية</div><div class="kpi-value" style="font-size:14px;">${totalCount}</div></div>
+        <div class="report-kpi"><div class="kpi-label">إجمالي القيمة المفقودة</div><div class="kpi-value" style="font-size:14px;">${totalLost.toFixed(2)} EGP</div></div>
+      </div>
+      <div style="max-height:320px; overflow-y:auto; border:1px solid var(--line); border-radius:8px;">
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead style="position:sticky; top:0; background:var(--paper-dim);">
+            <tr>
+              <th style="text-align:right; padding:6px 8px; border-bottom:1px solid var(--line);">التاريخ</th>
+              <th style="text-align:right; padding:6px 8px; border-bottom:1px solid var(--line);">رقم الطلب</th>
+              <th style="text-align:right; padding:6px 8px; border-bottom:1px solid var(--line);">العميل</th>
+              <th style="text-align:right; padding:6px 8px; border-bottom:1px solid var(--line);">النوع</th>
+              <th style="text-align:right; padding:6px 8px; border-bottom:1px solid var(--line);">القيمة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.map(o=>{
+              const dLabel = new Date(o.day + 'T12:00:00').toLocaleDateString('ar-EG', { weekday:'short', day:'numeric', month:'short' });
+              return `<tr>
+                <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${dLabel}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid var(--line); direction:ltr; text-align:right;">#${o.order_number ?? '—'}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${escapeHtml(o.customer_name || '—')}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${o.order_type === 'pickup' ? 'استلام' : 'توصيل'}${o.area ? ' — ' + escapeHtml(o.area) : ''}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid var(--line); direction:ltr; text-align:right;">${Number(o.total||0).toFixed(2)} EGP</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  };
+  runCancelledReport();
+  overlay.querySelector('#cancelledReportGoBtn').addEventListener('click', runCancelledReport);
+
+  overlay.querySelector('#cancelledReportExportBtn').addEventListener('click', ()=>{
+    if(!lastCancelledFiltered || lastCancelledFiltered.length === 0){ toast('لا توجد بيانات لتصديرها'); return; }
+    const header = ['التاريخ','رقم الطلب','العميل','رقم الهاتف','النوع','المنطقة','القيمة (EGP)'];
+    const aoa = [header];
+    lastCancelledFiltered.forEach(o=>{
+      aoa.push([o.day, o.order_number ?? '', o.customer_name || '', o.customer_phone || '', o.order_type === 'pickup' ? 'استلام' : 'توصيل', o.area || '', Number(o.total||0).toFixed(2)]);
+    });
+    const totalLost = lastCancelledFiltered.reduce((s,o)=> s + Number(o.total||0), 0);
+    aoa.push(['الإجمالي', '', '', '', '', '', totalLost.toFixed(2)]);
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{ wch:14 },{ wch:10 },{ wch:18 },{ wch:14 },{ wch:10 },{ wch:16 },{ wch:14 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'الطلبات الملغية');
+    XLSX.writeFile(wb, `${restaurant.slug || 'restaurant'}-طلبات-ملغية.xlsx`);
+    toast('تم تصدير التقرير بنجاح');
+  });
 
   overlay.querySelector('#insightsWrap').innerHTML = buildInsights({
     rows, itemStatsRows: itemStatsRows || [], hourlyRows: hourlyRows || [], custRows: custRows || [], visitRows: visitRows || []
