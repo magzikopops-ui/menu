@@ -97,6 +97,8 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .topbar-actions{display:flex; gap:10px; flex-wrap:wrap;}
 .link-btn{ background:#2A2825; color:var(--paper); border:1px solid #454138; font-family:var(--body); font-weight:700; font-size:13px; padding:9px 16px; border-radius:6px; cursor:pointer; }
 .link-btn:hover{border-color:var(--stone);}
+.link-btn.tier-locked{ background:#221F1C; border-style:dashed; }
+.link-btn.tier-locked .tier-lock-badge{ opacity:.85; }
 #notifPermBtn.notif-granted{ background:#1f4d2e; border-color:#3a8f5a; color:#c8f0d6; }
 #notifPermBtn.notif-denied{ background:#4d1f1f; border-color:var(--danger); color:#f0c8c8; }
 #notifPermBtn.notif-default{ background:var(--ember); border-color:var(--ember-dark); color:var(--paper); animation:notifPulse 1.6s ease-in-out infinite; }
@@ -1770,7 +1772,6 @@ function applyGranularRestrictionsUI(){
     showQrBtn: restaurant.restriction_share_disabled,
     shareMenuBtn: restaurant.restriction_share_disabled,
     deliveryZonesBtn: restaurant.restriction_delivery_zones_disabled,
-    driversBtn: restaurant.restriction_drivers_disabled,
     customersBtn: restaurant.restriction_customers_disabled,
     restaurantSettingsBtn: restaurant.restriction_settings_disabled,
   };
@@ -1779,6 +1780,31 @@ function applyGranularRestrictionsUI(){
     const el = document.getElementById(id);
     if(el) el.classList.add('hidden');
   });
+}
+
+// شاشات/أزرار خاصة بباقة PRO — تفضل ظاهرة دايمًا (حتى لو المتجر STARTER) مع علامة 🔒،
+// وعند الضغط عليها هيّ نفسها اللي بتوضح إن الميزة متاحة في PRO فقط (الكود جوّه الأزرار)
+function setFeatureLockBadge(btnId, locked, lockedTooltip){
+  const btn = document.getElementById(btnId);
+  if(!btn) return;
+  let badge = btn.querySelector('.tier-lock-badge');
+  if(locked){
+    btn.classList.add('tier-locked');
+    btn.title = lockedTooltip || '🔒 متاح في باقة PRO فقط';
+    if(!badge){
+      badge = document.createElement('span');
+      badge.className = 'tier-lock-badge';
+      badge.textContent = ' 🔒';
+      btn.appendChild(badge);
+    }
+  } else {
+    btn.classList.remove('tier-locked');
+    btn.removeAttribute('title');
+    if(badge) badge.remove();
+  }
+}
+function applyTierLockBadgesUI(){
+  setFeatureLockBadge('driversBtn', !!restaurant.restriction_drivers_disabled, '🔒 شاشة السائقين متاحة في باقة PRO فقط');
 }
 
 async function openDashboard(){
@@ -1803,6 +1829,7 @@ async function openDashboard(){
   applyExcelRestrictionUI();
   applyFeaturePlanUI();
   applyGranularRestrictionsUI();
+  applyTierLockBadgesUI();
   migrateLegacyImages().catch(()=>{});
 }
 
@@ -1843,26 +1870,85 @@ function updateTrialDaysBadge(){
 
 function applyExcelRestrictionUI(){
   const disabled = !!restaurant.restriction_excel_disabled;
-  const importBtn = document.getElementById('importExcelBtn');
-  const exportBtn = document.getElementById('exportExcelBtn');
-  [importBtn, exportBtn].forEach(btn=>{
-    if(!btn) return;
-    btn.disabled = disabled;
-    btn.style.opacity = disabled ? '.4' : '';
-    btn.style.cursor = disabled ? 'not-allowed' : '';
-    btn.title = disabled ? 'هذه الميزة غير متاحة في نسختك الحالية' : '';
-  });
+  ['importExcelBtn','exportExcelBtn'].forEach(id=> setFeatureLockBadge(id, disabled, '🔒 استيراد/تصدير Excel متاح في باقة PRO فقط'));
 }
 
 /* ============ باقات الاشتراك وشاشة الدفع ============ */
-const RENEW_PLANS = [
-  { key:'monthly',   name_ar:'شهري',      name_en:'Monthly',   price:700,  perMonth:700, discount:0,  suffix_ar:'شهريًا',    suffix_en:'/month' },
-  { key:'quarterly', name_ar:'ربع سنوي',  name_en:'Quarterly', price:1800, perMonth:600, discount:14, suffix_ar:'كل 3 شهور', suffix_en:'/3 months' },
-  { key:'yearly',    name_ar:'سنوي',      name_en:'Yearly',    price:6000, perMonth:500, discount:29, suffix_ar:'سنويًا',    suffix_en:'/year', badge_ar:'أفضل قيمة', badge_en:'Best value' },
+// نسخة احتياطية تُستخدم فقط لو تعذّر تحميل الباقات من Supabase (مثلاً بسبب انقطاع الإنترنت)
+const RENEW_PLANS_FALLBACK = [
+  { key:'monthly',   name_ar:'شهري',      name_en:'Monthly',   months:1,  price_egp:700,  price_usd:15,  perMonth:700, discount:0,  suffix_ar:'شهريًا',    suffix_en:'/month' },
+  { key:'quarterly', name_ar:'ربع سنوي',  name_en:'Quarterly', months:3,  price_egp:1800, price_usd:40,  perMonth:600, discount:14, suffix_ar:'كل 3 شهور', suffix_en:'/3 months' },
+  { key:'yearly',    name_ar:'سنوي',      name_en:'Yearly',    months:12, price_egp:6000, price_usd:130, perMonth:500, discount:29, suffix_ar:'سنويًا',    suffix_en:'/year', badge_ar:'أفضل قيمة', badge_en:'Best value' },
 ];
+let RENEW_PLANS = RENEW_PLANS_FALLBACK; // تتحدث فورًا بعد أول تحميل ناجح من Supabase عبر fetchRenewPlans()
+let renewPlansLoadedOnce = false;
+
+// بيجيب باقات الاشتراك (الأسعار بالجنيه والدولار) من جدول subscription_plans في Supabase
+// بدل ما تكون مكتوبة ثابتة في الكود، عشان تقدر تتغيّر من لوحة تحكم الأدمن مباشرة من غير تعديل كود أو عمل نشر جديد
+async function fetchRenewPlans(){
+  try{
+    const { data, error } = await sb.from('subscription_plans').select('*').eq('is_active', true).order('sort_order', { ascending:true });
+    if(error || !data || !data.length) return RENEW_PLANS;
+    RENEW_PLANS = data.map(p=> ({
+      key: p.plan_key,
+      name_ar: p.name_ar,
+      name_en: p.name_en,
+      months: p.months,
+      price_egp: Number(p.price_egp),
+      price_usd: Number(p.price_usd),
+      perMonth: Math.round(Number(p.price_egp) / p.months),
+      perMonthUsd: (Number(p.price_usd) / p.months).toFixed(2),
+      discount: Number(p.discount_percent) || 0,
+      suffix_ar: p.months === 1 ? 'شهريًا' : (p.months === 12 ? 'سنويًا' : `كل ${p.months} شهور`),
+      suffix_en: p.months === 1 ? '/month' : (p.months === 12 ? '/year' : `/${p.months} months`),
+      badge_ar: p.badge_ar || null,
+      badge_en: p.badge_en || null,
+    }));
+    renewPlansLoadedOnce = true;
+  }catch(err){ /* هنستخدم النسخة الاحتياطية RENEW_PLANS_FALLBACK لو فشل الاتصال */ }
+  return RENEW_PLANS;
+}
+
 const RENEW_PAY_LINK = 'https://ipn.eg/S/magziko/instapay/1gd02V';
 const RENEW_VODAFONE_CASH = '01002707501';
 const RENEW_WA_NUMBER = '201154361888';
+const RENEW_PAYPAL_LINK = 'https://paypal.me/magziko'; // غيّرها لرابط PayPal.me الخاص بيك (أو رابط Payoneer) لاستقبال الدفع من خارج مصر
+
+// تخمين مبدئي هل الزائر برا مصر ولا لأ، بناءً على المنطقة الزمنية للمتصفح — تخمين وليس تأكيدًا، والمستخدم يقدر يبدّل يدويًا
+function guessIsOutsideEgypt(){
+  try{ return Intl.DateTimeFormat().resolvedOptions().timeZone !== 'Africa/Cairo'; }
+  catch(err){ return false; }
+}
+
+// عملات دول الخليج مربوطة بسعر ثابت بالدولار (peg)، فالعرض التقريبي هنا مستقر ومش محتاج أي API لأسعار الصرف
+// ملحوظة: العرض ده للتوضيح فقط — الدفع الفعلي يفضل بالدولار عبر PayPal
+const GCC_CURRENCIES = {
+  none: { name_ar: 'بدون', flag: '🌍', code: '', rate: 0 },
+  SA:   { name_ar: 'السعودية',  flag: '🇸🇦', code: 'SAR', rate: 3.75 },
+  AE:   { name_ar: 'الإمارات',  flag: '🇦🇪', code: 'AED', rate: 3.67 },
+  QA:   { name_ar: 'قطر',       flag: '🇶🇦', code: 'QAR', rate: 3.64 },
+  KW:   { name_ar: 'الكويت',    flag: '🇰🇼', code: 'KWD', rate: 0.308 },
+  BH:   { name_ar: 'البحرين',   flag: '🇧🇭', code: 'BHD', rate: 0.376 },
+  OM:   { name_ar: 'عُمان',     flag: '🇴🇲', code: 'OMR', rate: 0.385 },
+};
+const GCC_TIMEZONE_MAP = {
+  'Asia/Riyadh': 'SA', 'Asia/Dubai': 'AE', 'Asia/Qatar': 'QA',
+  'Asia/Kuwait': 'KW', 'Asia/Bahrain': 'BH', 'Asia/Muscat': 'OM',
+};
+function guessGccCountry(){
+  try{ return GCC_TIMEZONE_MAP[Intl.DateTimeFormat().resolvedOptions().timeZone] || 'none'; }
+  catch(err){ return 'none'; }
+}
+function gccConvert(usdAmount, countryKey){
+  const c = GCC_CURRENCIES[countryKey];
+  if(!c || !c.rate) return null;
+  const decimals = c.rate < 1 ? 3 : 2; // الدينار الكويتي/البحريني والريال العُماني بيتكتبوا بـ3 خانات عشرية عادةً
+  return { value: (usdAmount * c.rate).toFixed(decimals), code: c.code };
+}
+function gccApproxLabel(usdAmount, countryKey){
+  const conv = gccConvert(usdAmount, countryKey);
+  return conv ? `≈ ${conv.value} ${conv.code}` : '';
+}
 
 function extendSubscriptionDate(currentEndDateStr, months){
   const now = new Date();
@@ -1913,6 +1999,30 @@ function openRenewFlow(rest){
       </div>`;
   }
 
+  let renewCurrency = guessIsOutsideEgypt() ? 'USD' : 'EGP'; // تخمين مبدئي، والمستخدم يقدر يبدّله يدويًا من المفتاح
+  let renewGccCountry = guessGccCountry();
+
+  function planCardHtml(p){
+    const isUsd = renewCurrency === 'USD';
+    const gccConv = isUsd ? gccConvert(p.price_usd, renewGccCountry) : null;
+    const priceLabel = gccConv ? `${gccConv.value} ${gccConv.code}` : (isUsd ? `${p.price_usd} $` : `${p.price_egp} EGP`);
+    const secondaryLabel = gccConv ? `≈ ${p.price_usd} $` : '';
+    const perMonthLabel = isUsd ? `${p.perMonthUsd || (p.price_usd/1).toFixed(2)} $ / شهر تقريبًا` : `${p.perMonth} ج / شهر تقريبًا`;
+    return `
+      <div class="plan-card" data-plan="${p.key}">
+        ${p.badge_ar ? `<div class="plan-badge">⭐ ${p.badge_ar}</div>` : ''}
+        <div class="plan-info">
+          <div class="plan-name">${p.name_ar} <span style="color:#9aa4b2; font-weight:600; font-size:12px;">(${p.name_en})</span></div>
+          <div class="plan-permonth">${perMonthLabel}</div>
+        </div>
+        <div class="plan-price-wrap">
+          <div class="plan-price">${priceLabel}</div>
+          ${secondaryLabel ? `<div style="font-size:11.5px; opacity:.65; margin-top:2px;">${secondaryLabel}</div>` : ''}
+          ${p.discount > 0 ? `<span class="plan-discount">خصم ~${p.discount}%</span>` : ''}
+        </div>
+      </div>`;
+  }
+
   function renderPlanStep(){
     overlay.innerHTML = `
       <div class="renew-box">
@@ -1922,20 +2032,21 @@ function openRenewFlow(rest){
           <div class="renew-title-ar">اختر باقة الاشتراك</div>
           <div class="renew-title-en">Choose your subscription plan</div>
         </div>
+        <div class="renew-currency-toggle" id="renewCurrencyToggle" style="display:flex; gap:8px; justify-content:center; margin-bottom:10px;">
+          <button type="button" class="admin-tab-btn currency-opt-btn ${renewCurrency==='EGP'?'active':''}" data-cur="EGP" style="flex:1; max-width:180px;">🇪🇬 جنيه مصري (EGP)</button>
+          <button type="button" class="admin-tab-btn currency-opt-btn ${renewCurrency==='USD'?'active':''}" data-cur="USD" style="flex:1; max-width:180px;">🌍 دولار أمريكي (USD)</button>
+        </div>
+        <div id="gccSelectSlot" style="text-align:center; margin-bottom:16px; ${renewCurrency==='USD' ? '' : 'display:none;'}">
+          <div style="font-size:12px; opacity:.75; margin-bottom:8px;">لعرض السعر التقريبي بعملة بلدك (اختياري):</div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center;">
+            ${Object.keys(GCC_CURRENCIES).filter(k=> k!=='none').map(k=> `
+              <button type="button" class="gcc-country-btn" data-country="${k}" style="padding:6px 12px; border-radius:20px; border:1.5px solid ${k===renewGccCountry ? 'var(--ember-dark)' : 'rgba(255,255,255,.18)'}; background:${k===renewGccCountry ? 'var(--ember)' : 'rgba(255,255,255,.06)'}; color:#fff; font-family:var(--body); font-weight:700; font-size:12.5px; cursor:pointer;">${GCC_CURRENCIES[k].flag} ${GCC_CURRENCIES[k].name_ar}</button>`).join('')}
+          </div>
+          <div style="font-size:11px; opacity:.55; margin-top:8px;">السعر التقريبي للتوضيح فقط — الدفع الفعلي بالدولار عبر PayPal</div>
+        </div>
         <div id="renewStatsSlot"></div>
         <div class="plan-grid" id="planGrid">
-          ${RENEW_PLANS.map(p=>`
-            <div class="plan-card" data-plan="${p.key}">
-              ${p.badge_ar ? `<div class="plan-badge">⭐ ${p.badge_ar}</div>` : ''}
-              <div class="plan-info">
-                <div class="plan-name">${p.name_ar} <span style="color:#9aa4b2; font-weight:600; font-size:12px;">(${p.name_en})</span></div>
-                <div class="plan-permonth">${p.perMonth} ج / شهر تقريبًا</div>
-              </div>
-              <div class="plan-price-wrap">
-                <div class="plan-price">${p.price} EGP</div>
-                ${p.discount > 0 ? `<span class="plan-discount">خصم ~${p.discount}%</span>` : ''}
-              </div>
-            </div>`).join('')}
+          ${RENEW_PLANS.map(planCardHtml).join('')}
         </div>
         <button type="button" class="renew-next-btn" id="renewNextBtn" disabled>${'تابع'} — Continue</button>
       </div>`;
@@ -1946,49 +2057,77 @@ function openRenewFlow(rest){
     });
     let selectedKey = null;
     const nextBtn = overlay.querySelector('#renewNextBtn');
-    overlay.querySelectorAll('.plan-card').forEach(card=>{
-      card.addEventListener('click', ()=>{
-        overlay.querySelectorAll('.plan-card').forEach(c=> c.classList.remove('selected'));
-        card.classList.add('selected');
-        selectedKey = card.dataset.plan;
-        nextBtn.disabled = false;
+    function bindPlanCards(){
+      overlay.querySelectorAll('.plan-card').forEach(card=>{
+        card.addEventListener('click', ()=>{
+          overlay.querySelectorAll('.plan-card').forEach(c=> c.classList.remove('selected'));
+          card.classList.add('selected');
+          selectedKey = card.dataset.plan;
+          nextBtn.disabled = false;
+        });
+      });
+    }
+    bindPlanCards();
+    function refreshPlanGrid(){
+      const grid = overlay.querySelector('#planGrid');
+      grid.innerHTML = RENEW_PLANS.map(planCardHtml).join('');
+      selectedKey = null;
+      nextBtn.disabled = true;
+      bindPlanCards();
+    }
+    overlay.querySelectorAll('.currency-opt-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        if(btn.dataset.cur === renewCurrency) return;
+        renewCurrency = btn.dataset.cur;
+        overlay.querySelectorAll('.currency-opt-btn').forEach(b=> b.classList.toggle('active', b.dataset.cur===renewCurrency));
+        overlay.querySelector('#gccSelectSlot').style.display = renewCurrency==='USD' ? '' : 'none';
+        refreshPlanGrid();
+      });
+    });
+    overlay.querySelectorAll('.gcc-country-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const key = btn.dataset.country;
+        renewGccCountry = (renewGccCountry === key) ? 'none' : key; // الضغط تاني على نفس الدولة يلغي الاختيار
+        overlay.querySelectorAll('.gcc-country-btn').forEach(b=>{
+          const active = b.dataset.country === renewGccCountry;
+          b.style.background = active ? 'var(--ember)' : 'rgba(255,255,255,.06)';
+          b.style.borderColor = active ? 'var(--ember-dark)' : 'rgba(255,255,255,.18)';
+        });
+        refreshPlanGrid();
       });
     });
     nextBtn.addEventListener('click', ()=>{
       if(!selectedKey) return;
       const plan = RENEW_PLANS.find(p=> p.key === selectedKey);
-      renderPaymentStep(plan);
+      renderPaymentStep(plan, renewCurrency, renewGccCountry);
     });
   }
 
-  function renderPaymentStep(plan){
+  function renderPaymentStep(plan, currency, gccCountry){
+    const isUsd = currency === 'USD';
+    const curSuffix = isUsd ? '$' : 'EGP';
+    const basePrice = isUsd ? plan.price_usd : plan.price_egp;
+    const gccConv = isUsd ? gccConvert(basePrice, gccCountry) : null;
     let appliedCode = null; // { code, finalAmount }
-    overlay.innerHTML = `
-      <div class="renew-box">
-        <button type="button" class="renew-close-btn" id="renewCloseBtn2" aria-label="إغلاق">✕</button>
-        <button type="button" class="renew-back-btn" id="renewBackBtn">→ رجوع لاختيار الباقة</button>
-        <div class="renew-head" style="margin-bottom:16px;">
-          <div class="renew-icon">🧾</div>
-          <div class="renew-title-ar">إتمام الدفع</div>
-          <div class="renew-title-en">Complete your payment</div>
-        </div>
-        <div class="pay-summary">
-          <div>
-            <div class="pay-summary-label">الباقة المختارة</div>
-            <div class="pay-summary-plan">${plan.name_ar} (${plan.name_en})</div>
-          </div>
-          <div class="pay-summary-amount" id="paySummaryAmount">${plan.price} EGP</div>
-        </div>
 
+    // بيرجع نص العرض الأساسي (بعملة الدولة لو مختارة، وإلا بالدولار/الجنيه) + نص فرعي بالدولار كمرجع للدفع الفعلي عبر PayPal
+    function amountLabels(amtUsd){
+      if(isUsd && gccCountry && gccCountry !== 'none'){
+        const conv = gccConvert(amtUsd, gccCountry);
+        if(conv) return { main: `${conv.value} ${conv.code}`, secondary: `≈ ${amtUsd} $ — يُحصَّل فعليًا بالدولار عبر PayPal` };
+      }
+      return { main: `${amtUsd} ${curSuffix}`, secondary: '' };
+    }
+
+    const payMethodsHtml = isUsd ? `
         <div class="pay-method-card">
-          <div class="pay-method-title"><span class="pay-icon">🏷️</span> عندك كود خصم؟</div>
+          <div class="pay-method-title"><span class="pay-icon">🔵</span> الدفع عبر PayPal</div>
           <div class="pay-row">
-            <input type="text" id="couponInput" placeholder="أدخل كود الخصم" style="flex:1; min-width:0; background:transparent; border:none; color:#fff; font-family:var(--mono); direction:ltr; font-size:14px; outline:none;">
-            <button type="button" class="pay-copy-btn" id="couponApplyBtn">تطبيق</button>
+            <span class="pay-val" id="payLinkVal">${RENEW_PAYPAL_LINK}</span>
+            <button type="button" class="pay-copy-btn" id="copyLinkBtn">نسخ الرابط</button>
           </div>
-          <div id="couponMsg" style="font-size:11.5px; margin-top:8px;"></div>
-        </div>
-
+          <a class="pay-open-link" href="${RENEW_PAYPAL_LINK}" target="_blank" rel="noopener">فتح رابط الدفع عبر PayPal</a>
+        </div>` : `
         <div class="pay-method-card">
           <div class="pay-method-title"><span class="pay-icon">🔵</span> الدفع عبر InstaPay</div>
           <div class="pay-row">
@@ -2004,29 +2143,64 @@ function openRenewFlow(rest){
             <span class="pay-val" id="payVfVal">${RENEW_VODAFONE_CASH}</span>
             <button type="button" class="pay-copy-btn" id="copyVfBtn">نسخ الرقم</button>
           </div>
+        </div>`;
+
+    const initLabels = amountLabels(basePrice);
+    overlay.innerHTML = `
+      <div class="renew-box">
+        <button type="button" class="renew-close-btn" id="renewCloseBtn2" aria-label="إغلاق">✕</button>
+        <button type="button" class="renew-back-btn" id="renewBackBtn">→ رجوع لاختيار الباقة</button>
+        <div class="renew-head" style="margin-bottom:16px;">
+          <div class="renew-icon">🧾</div>
+          <div class="renew-title-ar">إتمام الدفع</div>
+          <div class="renew-title-en">Complete your payment</div>
+        </div>
+        <div class="pay-summary">
+          <div>
+            <div class="pay-summary-label">الباقة المختارة</div>
+            <div class="pay-summary-plan">${plan.name_ar} (${plan.name_en})</div>
+          </div>
+          <div class="pay-summary-amount" id="paySummaryAmount">${initLabels.main}</div>
+        </div>
+        ${initLabels.secondary ? `<div id="paySummarySecondary" style="text-align:center; font-size:11.5px; opacity:.6; margin:-10px 0 14px;">${initLabels.secondary}</div>` : ''}
+
+        <div class="pay-method-card">
+          <div class="pay-method-title"><span class="pay-icon">🏷️</span> عندك كود خصم؟</div>
+          <div class="pay-row">
+            <input type="text" id="couponInput" placeholder="أدخل كود الخصم" style="flex:1; min-width:0; background:transparent; border:none; color:#fff; font-family:var(--mono); direction:ltr; font-size:14px; outline:none;">
+            <button type="button" class="pay-copy-btn" id="couponApplyBtn">تطبيق</button>
+          </div>
+          <div id="couponMsg" style="font-size:11.5px; margin-top:8px;"></div>
         </div>
 
+        ${payMethodsHtml}
+
         <div class="pay-note" id="payNote">
-          بعد إتمام التحويل بمبلغ <b id="payNoteAmount">${plan.price} EGP</b>، اضغط الزر بالأسفل لإرسال إثبات الدفع عبر واتساب وسيتم تفعيل باقتك خلال وقت قصير.
+          بعد إتمام التحويل بمبلغ <b id="payNoteAmount">${initLabels.main}</b>، اضغط الزر بالأسفل لإرسال إثبات الدفع عبر واتساب وسيتم تفعيل باقتك خلال وقت قصير.
         </div>
         <button type="button" class="pay-confirm-btn" id="payConfirmBtn">✅ تم الدفع، تأكيد عبر واتساب</button>
       </div>`;
     overlay.querySelector('#renewCloseBtn2').addEventListener('click', closeFlow);
     overlay.querySelector('#renewBackBtn').addEventListener('click', renderPlanStep);
-    overlay.querySelector('#copyLinkBtn').addEventListener('click', ()=> copyToClipboard(RENEW_PAY_LINK, 'تم نسخ رابط الدفع'));
-    overlay.querySelector('#copyVfBtn').addEventListener('click', ()=> copyToClipboard(RENEW_VODAFONE_CASH, 'تم نسخ رقم فودافون كاش'));
+    overlay.querySelector('#copyLinkBtn').addEventListener('click', ()=> copyToClipboard(isUsd ? RENEW_PAYPAL_LINK : RENEW_PAY_LINK, 'تم نسخ رابط الدفع'));
+    const copyVfBtn = overlay.querySelector('#copyVfBtn');
+    if(copyVfBtn) copyVfBtn.addEventListener('click', ()=> copyToClipboard(RENEW_VODAFONE_CASH, 'تم نسخ رقم فودافون كاش'));
 
-    function currentAmount(){ return appliedCode ? appliedCode.finalAmount : plan.price; }
+    function currentAmount(){ return appliedCode ? appliedCode.finalAmount : basePrice; }
     function refreshAmountUI(){
       const amt = currentAmount();
+      const labels = amountLabels(amt);
       const amountEl = overlay.querySelector('#paySummaryAmount');
       const noteAmountEl = overlay.querySelector('#payNoteAmount');
+      const secondaryEl = overlay.querySelector('#paySummarySecondary');
       if(appliedCode){
-        amountEl.innerHTML = `<span style="text-decoration:line-through; opacity:.5; font-size:14px;">${plan.price} EGP</span> <span style="color:#8fd19e;">${amt} EGP</span>`;
+        const baseLabels = amountLabels(basePrice);
+        amountEl.innerHTML = `<span style="text-decoration:line-through; opacity:.5; font-size:14px;">${baseLabels.main}</span> <span style="color:#8fd19e;">${labels.main}</span>`;
       } else {
-        amountEl.textContent = `${amt} EGP`;
+        amountEl.textContent = labels.main;
       }
-      noteAmountEl.textContent = `${amt} EGP`;
+      if(secondaryEl) secondaryEl.textContent = labels.secondary;
+      noteAmountEl.textContent = labels.main;
     }
 
     overlay.querySelector('#couponApplyBtn').addEventListener('click', async ()=>{
@@ -2036,7 +2210,7 @@ function openRenewFlow(rest){
       if(!code){ msgEl.textContent = 'من فضلك أدخل كودًا'; msgEl.style.color = '#e08a78'; return; }
       const applyBtn = overlay.querySelector('#couponApplyBtn');
       applyBtn.disabled = true; applyBtn.textContent = 'جارِ التحقق...';
-      const { data, error } = await sb.rpc('validate_discount_code', { p_code: code, p_plan_key: plan.key });
+      const { data, error } = await sb.rpc('validate_discount_code', { p_code: code, p_plan_key: plan.key, p_currency: currency });
       applyBtn.disabled = false; applyBtn.textContent = 'تطبيق';
       const result = Array.isArray(data) ? data[0] : data;
       if(error || !result){ msgEl.textContent = 'تعذر التحقق من الكود'; msgEl.style.color = '#e08a78'; return; }
@@ -2048,7 +2222,7 @@ function openRenewFlow(rest){
         return;
       }
       appliedCode = { code, finalAmount: result.final_amount };
-      msgEl.textContent = `✅ ${result.message} — وفّرت ${plan.price - result.final_amount} ج`;
+      msgEl.textContent = `✅ ${result.message} — وفّرت ${(basePrice - result.final_amount).toFixed(2)} ${curSuffix}`;
       msgEl.style.color = '#8fd19e';
       refreshAmountUI();
     });
@@ -2066,18 +2240,20 @@ function openRenewFlow(rest){
           plan_key: plan.key,
           plan_name_ar: plan.name_ar,
           amount: finalAmount,
-          original_amount: plan.price,
+          original_amount: basePrice,
+          currency: curSuffix,
           discount_code: appliedCode ? appliedCode.code : null,
           status: 'pending',
         });
       }catch(err){ /* حتى لو فشل التسجيل، نكمل عملية التواصل عبر واتساب */ }
-      const msg = `مرحبًا، قمت بدفع اشتراك منيو m@g الخاص بـ "${rest.name}" — الباقة: ${plan.name_ar} (${finalAmount} ج${appliedCode ? '، بعد كود خصم ' + appliedCode.code : ''}). برجاء تفعيل الاشتراك وإرسال إثبات الدفع في حال الحاجة.`;
+      const msg = `مرحبًا، قمت بدفع اشتراك منيو m@g الخاص بـ "${rest.name}" — الباقة: ${plan.name_ar} (${finalAmount} ${curSuffix}${appliedCode ? '، بعد كود خصم ' + appliedCode.code : ''}). برجاء تفعيل الاشتراك وإرسال إثبات الدفع في حال الحاجة.`;
       window.open('https://wa.me/' + RENEW_WA_NUMBER + '?text=' + encodeURIComponent(msg), '_blank');
       btn.textContent = '✅ تم الإرسال، بانتظار التفعيل';
     });
   }
 
-  renderPlanStep();
+  overlay.innerHTML = `<div class="renew-box"><div class="orders-empty">جارِ التحميل...</div></div>`;
+  fetchRenewPlans().then(()=> renderPlanStep());
 }
 
 function showAccountSuspendedBlock(){
@@ -2622,7 +2798,7 @@ document.getElementById('deliveryZonesBtn').addEventListener('click', async ()=>
 });
 
 document.getElementById('driversBtn').addEventListener('click', async ()=>{
-  if(restaurant.restriction_drivers_disabled){ toast('شاشة السائقين غير متاحة في نسختك الحالية'); return; }
+  if(restaurant.restriction_drivers_disabled){ toast('🔒 شاشة السائقين متاحة في باقة PRO فقط'); return; }
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
@@ -3901,6 +4077,7 @@ async function openAdminPanel(){
         <button type="button" class="admin-tab-btn" data-tab="users">👥 المستخدمون</button>
         <button type="button" class="admin-tab-btn" data-tab="reminders">⏳ تنبيهات الاشتراك</button>
         <button type="button" class="admin-tab-btn" data-tab="ads">📢 الإعلانات</button>
+        <button type="button" class="admin-tab-btn" data-tab="plans">💲 باقات الاشتراك</button>
       </div>
 
       <div id="adminPanelRestaurants" class="admin-tab-panel">
@@ -4015,6 +4192,12 @@ async function openAdminPanel(){
         <div class="admin-table-wrap" id="adsTableWrap"><div class="orders-empty">جارِ التحميل...</div></div>
       </div>
 
+      <div id="adminPanelPlans" class="admin-tab-panel hidden">
+        <div class="admin-r-meta" style="margin-bottom:12px;">تعديل الأسعار هنا بيتحدث فورًا في شاشة تجديد الاشتراك لكل العملاء، من غير ما تحتاج تعدّل الكود أو تعمل نشر جديد</div>
+        <div class="admin-table-wrap" id="plansTableWrap"><div class="orders-empty">جارِ التحميل...</div></div>
+      </div>
+
+
       <div class="modal-actions">
         <button class="btn-cancel" id="adminCloseBtn">إغلاق</button>
       </div>
@@ -4032,8 +4215,9 @@ async function openAdminPanel(){
     users: overlay.querySelector('#adminPanelUsers'),
     reminders: overlay.querySelector('#adminPanelReminders'),
     ads: overlay.querySelector('#adminPanelAds'),
+    plans: overlay.querySelector('#adminPanelPlans'),
   };
-  const tabLoaded = { restaurants:false, payments:false, discounts:false, codes:false, users:false, reminders:false, ads:false };
+  const tabLoaded = { restaurants:false, payments:false, discounts:false, codes:false, users:false, reminders:false, ads:false, plans:false };
   function activateAdminTab(tab){
     overlay.querySelectorAll('.admin-tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
     Object.keys(tabPanels).forEach(k=> tabPanels[k].classList.toggle('hidden', k!==tab));
@@ -4046,6 +4230,7 @@ async function openAdminPanel(){
       if(tab==='users') loadUsersTab();
       if(tab==='reminders') loadRemindersTab();
       if(tab==='ads') loadAdsTab();
+      if(tab==='plans') loadPlansTab();
     }
   }
   overlay.querySelectorAll('.admin-tab-btn').forEach(btn=>{
@@ -4284,6 +4469,14 @@ async function openAdminPanel(){
               </select>
             </label>
             <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:4px;">
+              <span style="font-weight:700;">الباقة السعرية</span>
+              <select class="admin-tier-select" data-field="subscription_tier" style="padding:5px 8px; border-radius:6px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-size:12.5px; font-family:var(--body);">
+                <option value="starter" ${(!r.subscription_tier || r.subscription_tier==='starter') ? 'selected' : ''}>STARTER</option>
+                <option value="pro" ${r.subscription_tier==='pro' ? 'selected' : ''}>PRO</option>
+              </select>
+              <small style="opacity:.75;">بيحدد تلقائيًا: Excel، السائقين، ماسنجر/تليجرام، تعدد المحافظ/InstaPay، الرسم البياني اليومي — وتقدر بعدها تظبط كل صلاحية على حدة تحت</small>
+            </label>
+            <label class="admin-toggle-group" style="flex-direction:column; align-items:flex-start; gap:4px;">
               <span style="font-weight:700;">مدة الـ Demo (أيام)</span>
               <input type="number" min="0" class="admin-max-input" data-field="demo_days" value="${r.demo_days ?? ''}" placeholder="بدون حد" style="width:70px;">
               ${demoStatusHtml(r)}
@@ -4392,6 +4585,9 @@ async function openAdminPanel(){
             ${perm('restriction_share_disabled', '🔗', 'منع نسخ الرابط / QR / المشاركة')}
             ${perm('restriction_delivery_zones_disabled', '🚚', 'منع مناطق التوصيل')}
             ${perm('restriction_drivers_disabled', '🚴', 'منع شاشة السائقين')}
+            ${perm('restriction_extra_channels_disabled', '💬', 'منع ماسنجر/تليجرام كقنوات استقبال')}
+            ${perm('restriction_multi_wallet_disabled', '👛', 'منع تعدد المحافظ و InstaPay')}
+            ${perm('restriction_stats_charts_disabled', '📈', 'منع الرسم البياني اليومي بالإحصائيات')}
             ${perm('restriction_customers_disabled', '👥', 'منع شاشة العملاء')}
             ${perm('restriction_settings_disabled', '⚙️', 'منع الوصول لإعدادات المطعم بالكامل')}
             ${perm('restriction_notif_settings_disabled', '📵', 'منع تعديل رقم واتساب التنبيهات')}
@@ -4497,7 +4693,7 @@ async function openAdminPanel(){
     });
   });
 
-  const CLIENT_PERM_FIELDS = ['restriction_prices_disabled','restriction_images_disabled','restriction_orders_disabled','restriction_print_disabled','restriction_stats_disabled','restriction_reports_disabled','restriction_share_disabled','restriction_delivery_zones_disabled','restriction_drivers_disabled','restriction_customers_disabled','restriction_settings_disabled','restriction_notif_settings_disabled','restriction_delete_disabled'];
+  const CLIENT_PERM_FIELDS = ['restriction_prices_disabled','restriction_images_disabled','restriction_orders_disabled','restriction_print_disabled','restriction_stats_disabled','restriction_reports_disabled','restriction_share_disabled','restriction_delivery_zones_disabled','restriction_drivers_disabled','restriction_extra_channels_disabled','restriction_multi_wallet_disabled','restriction_stats_charts_disabled','restriction_customers_disabled','restriction_settings_disabled','restriction_notif_settings_disabled','restriction_delete_disabled'];
 
   wrap.querySelectorAll('.admin-lock-all-btn, .admin-unlock-all-btn').forEach(btn=>{
     btn.addEventListener('click', async (e)=>{
@@ -4575,6 +4771,30 @@ async function openAdminPanel(){
         const { error: updErr } = await sb.from('restaurants').update({ feature_plan: planSelect.value }).eq('id', rId);
         if(updErr){ toast('تعذر الحفظ'); return; }
         toast('تم الحفظ');
+      });
+    }
+    // اختيار الباقة السعرية (STARTER/PRO) بيحدّث القيود المرتبطة بيها كلها دفعة واحدة
+    const tierSelect = row.querySelector('select[data-field="subscription_tier"]');
+    if(tierSelect){
+      tierSelect.addEventListener('change', async ()=>{
+        const isPro = tierSelect.value === 'pro';
+        const updatePayload = {
+          subscription_tier: tierSelect.value,
+          restriction_excel_disabled: !isPro,
+          restriction_drivers_disabled: !isPro,
+          restriction_extra_channels_disabled: !isPro,
+          restriction_multi_wallet_disabled: !isPro,
+          restriction_stats_charts_disabled: !isPro,
+        };
+        tierSelect.disabled = true;
+        const { error: updErr } = await sb.from('restaurants').update(updatePayload).eq('id', rId);
+        tierSelect.disabled = false;
+        if(updErr){ toast('تعذر الحفظ'); return; }
+        ['restriction_excel_disabled','restriction_drivers_disabled','restriction_extra_channels_disabled','restriction_multi_wallet_disabled','restriction_stats_charts_disabled'].forEach(f=>{
+          const cb = row.querySelector(`input[type="checkbox"][data-field="${f}"]`);
+          if(cb) cb.checked = updatePayload[f];
+        });
+        toast(isPro ? 'تم التحويل إلى باقة PRO' : 'تم التحويل إلى باقة STARTER');
       });
     }
     row.querySelectorAll('input[type="number"][data-field]').forEach(numInput=>{
@@ -4680,7 +4900,11 @@ async function openAdminPanel(){
       renderPayments();
     }
 
-    const PLAN_MONTHS = { monthly:1, quarterly:3, yearly:12 };
+    const PLAN_MONTHS_FALLBACK = { monthly:1, quarterly:3, yearly:12 };
+    function planMonthsFor(planKey){
+      const p = RENEW_PLANS.find(x=> x.key === planKey);
+      return (p && p.months) || PLAN_MONTHS_FALLBACK[planKey] || 1;
+    }
     function statusInfo(s){
       if(s==='approved') return { label:'مُفعّلة', color:'var(--basil)' };
       if(s==='rejected') return { label:'مرفوضة', color:'var(--danger)' };
@@ -4694,7 +4918,7 @@ async function openAdminPanel(){
         <div class="admin-list-row" data-id="${p.id}" style="border-right-color:${st.color};">
           <div style="flex:1; min-width:180px;">
             <div style="font-weight:800; font-size:14px;">${escapeHtml(p.restaurant_name || '')}</div>
-            <div class="admin-r-meta">${escapeHtml(p.plan_name_ar || p.plan_key || '')} · ${p.amount} ج${p.discount_code ? ' · كود: ' + escapeHtml(p.discount_code) : ''} · ${created}</div>
+            <div class="admin-r-meta">${escapeHtml(p.plan_name_ar || p.plan_key || '')} · ${p.amount} ${escapeHtml(p.currency || 'EGP')}${p.discount_code ? ' · كود: ' + escapeHtml(p.discount_code) : ''} · ${created}</div>
           </div>
           <span class="admin-status-pill" style="background:${st.color}22; color:${st.color};">${st.label}</span>
           ${p.status === 'pending' ? `
@@ -4716,7 +4940,7 @@ async function openAdminPanel(){
           btn.disabled = true; btn.textContent = 'جارِ التفعيل...';
           const { data: rRow, error: rErr } = await sb.from('restaurants').select('subscription_end_date').eq('id', p.restaurant_id).maybeSingle();
           if(rErr){ toast('تعذر جلب بيانات المطعم'); btn.disabled=false; btn.textContent='✅ قبول وتفعيل'; return; }
-          const months = PLAN_MONTHS[p.plan_key] || 1;
+          const months = planMonthsFor(p.plan_key);
           const newEndStr = extendSubscriptionDate(rRow && rRow.subscription_end_date, months);
           const { error: updErr } = await sb.from('restaurants').update({ subscription_end_date: newEndStr, account_suspended:false }).eq('id', p.restaurant_id);
           if(updErr){ toast('تعذر تفعيل الاشتراك'); btn.disabled=false; btn.textContent='✅ قبول وتفعيل'; return; }
@@ -4739,6 +4963,7 @@ async function openAdminPanel(){
     }
 
     filterSelect.addEventListener('change', fetchPayments);
+    fetchRenewPlans(); // نحمّل مدة كل باقة (بالشهور) من الجدول عشان زر "قبول وتفعيل" يحسب تاريخ الانتهاء صح
     fetchPayments();
   } // end loadPaymentsTab
 
@@ -4845,6 +5070,80 @@ async function openAdminPanel(){
       fetchDiscounts();
     });
   } // end loadDiscountsTab
+
+  /* ================ تبويب باقات وأسعار الاشتراك ================ */
+  async function loadPlansTab(){
+    const wrap = overlay.querySelector('#plansTableWrap');
+    let plansList = [];
+
+    async function fetchPlans(){
+      wrap.innerHTML = `<div class="orders-empty">جارِ التحميل...</div>`;
+      const { data, error } = await sb.from('subscription_plans').select('*').order('sort_order', { ascending:true });
+      if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل الباقات (${escapeHtml(error.message || '')})</div>`; return; }
+      plansList = data || [];
+      renderPlans();
+    }
+
+    function planRowHtml(p){
+      return `
+        <div class="admin-list-row" data-key="${p.plan_key}" style="border-right-color:${p.is_active ? 'var(--basil)' : 'var(--danger)'}; flex-wrap:wrap; align-items:flex-end;">
+          <div style="flex:1; min-width:140px;">
+            <div style="font-weight:800; font-size:14px;">${escapeHtml(p.name_ar)} <span style="opacity:.6; font-size:12px;">(${escapeHtml(p.name_en)})</span></div>
+            <div class="admin-r-meta">مدة الباقة: ${p.months} شهر</div>
+          </div>
+          <div class="field" style="min-width:110px; margin-bottom:0;">
+            <label style="font-size:11px;">السعر (جنيه)</label>
+            <input type="number" class="plan-price-egp-input" min="0" step="1" value="${p.price_egp}">
+          </div>
+          <div class="field" style="min-width:110px; margin-bottom:0;">
+            <label style="font-size:11px;">السعر (دولار)</label>
+            <input type="number" class="plan-price-usd-input" min="0" step="0.01" value="${p.price_usd}">
+          </div>
+          <div class="field" style="min-width:100px; margin-bottom:0;">
+            <label style="font-size:11px;">نسبة الخصم %</label>
+            <input type="number" class="plan-discount-input" min="0" max="100" step="1" value="${p.discount_percent || 0}">
+          </div>
+          <div class="field" style="min-width:130px; margin-bottom:0;">
+            <label style="font-size:11px;">شارة (عربي، اختياري)</label>
+            <input type="text" class="plan-badge-ar-input" placeholder="مثال: أفضل قيمة" value="${p.badge_ar ? escapeHtml(p.badge_ar) : ''}">
+          </div>
+          <label class="admin-toggle-group" style="gap:6px;">
+            <span class="admin-switch"><input type="checkbox" class="plan-active-toggle" ${p.is_active ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+            <span style="font-size:11.5px;">مفعّلة</span>
+          </label>
+          <button type="button" class="save-btn plan-save-btn" style="font-size:12px; padding:6px 12px; width:auto; margin:0;">💾 حفظ</button>
+        </div>`;
+    }
+
+    function renderPlans(){
+      if(!plansList.length){ wrap.innerHTML = `<div class="orders-empty">لا توجد باقات بعد</div>`; return; }
+      wrap.innerHTML = plansList.map(planRowHtml).join('');
+
+      wrap.querySelectorAll('.admin-list-row').forEach(row=>{
+        const key = row.dataset.key;
+        row.querySelector('.plan-save-btn').addEventListener('click', async ()=>{
+          const btn = row.querySelector('.plan-save-btn');
+          const priceEgp = parseFloat(row.querySelector('.plan-price-egp-input').value);
+          const priceUsd = parseFloat(row.querySelector('.plan-price-usd-input').value);
+          const discount = parseFloat(row.querySelector('.plan-discount-input').value) || 0;
+          const badgeAr = row.querySelector('.plan-badge-ar-input').value.trim() || null;
+          const isActive = row.querySelector('.plan-active-toggle').checked;
+          if(!(priceEgp >= 0) || !(priceUsd >= 0)){ toast('من فضلك أدخل أسعارًا صحيحة'); return; }
+          btn.disabled = true; btn.textContent = 'جارِ الحفظ...';
+          const { error: updErr } = await sb.from('subscription_plans').update({
+            price_egp: priceEgp, price_usd: priceUsd, discount_percent: discount, badge_ar: badgeAr, is_active: isActive, updated_at: new Date().toISOString(),
+          }).eq('plan_key', key);
+          btn.disabled = false; btn.textContent = '💾 حفظ';
+          if(updErr){ toast('تعذر حفظ التعديل'); return; }
+          toast('تم حفظ سعر الباقة');
+          renewPlansLoadedOnce = false; // نجبر إعادة تحميل الأسعار في شاشة تجديد الاشتراك في المرة الجاية
+          fetchPlans();
+        });
+      });
+    }
+
+    fetchPlans();
+  } // end loadPlansTab
 
   /* ================ تبويب أكواد التسجيل ================ */
   async function loadCodesTab(){
@@ -5410,10 +5709,14 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
       ${visitCard('آخر 30 يوم', monthVisits)}
       ${visitCard('الإجمالي منذ البداية', allTimeVisits)}
     </div>
+    ${restaurant.restriction_stats_charts_disabled ? `
+    <div class="orders-empty" style="text-align:center; padding:16px 10px; margin-top:20px; border:1.5px dashed var(--stone-light); border-radius:10px;">
+      📈 الرسم البياني اليومي للزيارات متاح في باقة PRO فقط.
+    </div>` : `
     <h3 style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
       <span>زيارات المنيو يوميًا (آخر 30 يوم)</span>
     </h3>
-    <div id="visitsTrendWrap">${buildDailyTrendSVG(vRows, 30, r=> Number(r.visits_count || 0), v=> `${v} زيارة`)}</div>
+    <div id="visitsTrendWrap">${buildDailyTrendSVG(vRows, 30, r=> Number(r.visits_count || 0), v=> `${v} زيارة`)}</div>`}
     <div class="orders-empty" style="text-align:right; padding:10px 0 0; font-size:12px;">
       هل ترغب في تحليل أعمق (اتجاه المبيعات، أكثر الأصناف مبيعًا، أوقات الذروة، العملاء، المناطق، وتصدير تقرير)؟ جرّب "التقارير" من شريط الأدوات.
     </div>`;
@@ -6289,7 +6592,7 @@ async function openSubscriptionModal(){
     return `
       <div class="admin-list-row" style="border-right-color:${pst.color};">
         <div style="flex:1; min-width:150px;">
-          <div style="font-weight:800; font-size:14px;">${escapeHtml(p.plan_name_ar || p.plan_key || '')} · ${p.amount} ج${p.discount_code ? ' · كود: ' + escapeHtml(p.discount_code) : ''}</div>
+          <div style="font-weight:800; font-size:14px;">${escapeHtml(p.plan_name_ar || p.plan_key || '')} · ${p.amount} ${escapeHtml(p.currency || 'EGP')}${p.discount_code ? ' · كود: ' + escapeHtml(p.discount_code) : ''}</div>
           <div class="admin-r-meta">${created}</div>
         </div>
         <span class="admin-status-pill" style="background:${pst.color}22; color:${pst.color};">${pst.label}</span>
@@ -6352,17 +6655,18 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
         <label>يوزر ${t().entityDef} على ماسنجر (اختياري — لإرسال الطلب عبر ماسنجر)</label>
         <small>يوزرنيم صفحة الفيسبوك، من غير رابط كامل. مثال: لو رابط صفحتك facebook.com/mypage اكتب mypage بس.</small>
         <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-          <input type="text" id="restMessengerInput" value="${restaurant.messenger_username ? escapeHtml(restaurant.messenger_username) : ''}" placeholder="مثال: mypage" style="flex:1; min-width:0; direction:ltr;">
-          <button type="button" id="testMessengerBtn" style="width:auto; flex:none; margin:0; white-space:nowrap; padding:10px 16px; background:transparent; border:1.5px dashed var(--stone); color:var(--stone-light); font-family:var(--body); font-weight:700; font-size:14px; border-radius:8px; cursor:pointer;">تجربة</button>
+          <input type="text" id="restMessengerInput" value="${restaurant.messenger_username ? escapeHtml(restaurant.messenger_username) : ''}" placeholder="مثال: mypage" style="flex:1; min-width:0; direction:ltr;" ${restaurant.restriction_extra_channels_disabled ? 'disabled title="قنوات الاستقبال الإضافية (ماسنجر/تليجرام) متاحة في باقة PRO فقط"' : ''}>
+          <button type="button" id="testMessengerBtn" ${restaurant.restriction_extra_channels_disabled ? 'disabled' : ''} style="width:auto; flex:none; margin:0; white-space:nowrap; padding:10px 16px; background:transparent; border:1.5px dashed var(--stone); color:var(--stone-light); font-family:var(--body); font-weight:700; font-size:14px; border-radius:8px; cursor:pointer;">تجربة</button>
         </div>
       </div>
       <div class="field">
         <label>يوزر ${t().entityDef} على تليجرام (اختياري — لإرسال الطلب عبر تليجرام)</label>
         <small>يوزرنيم حسابك أو قناتك في تليجرام من غير @. مثال: mystore</small>
         <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-          <input type="text" id="restTelegramInput" value="${restaurant.telegram_username ? escapeHtml(restaurant.telegram_username) : ''}" placeholder="مثال: mystore" style="flex:1; min-width:0; direction:ltr;">
-          <button type="button" id="testTelegramBtn" style="width:auto; flex:none; margin:0; white-space:nowrap; padding:10px 16px; background:transparent; border:1.5px dashed var(--stone); color:var(--stone-light); font-family:var(--body); font-weight:700; font-size:14px; border-radius:8px; cursor:pointer;">تجربة</button>
+          <input type="text" id="restTelegramInput" value="${restaurant.telegram_username ? escapeHtml(restaurant.telegram_username) : ''}" placeholder="مثال: mystore" style="flex:1; min-width:0; direction:ltr;" ${restaurant.restriction_extra_channels_disabled ? 'disabled title="قنوات الاستقبال الإضافية (ماسنجر/تليجرام) متاحة في باقة PRO فقط"' : ''}>
+          <button type="button" id="testTelegramBtn" ${restaurant.restriction_extra_channels_disabled ? 'disabled' : ''} style="width:auto; flex:none; margin:0; white-space:nowrap; padding:10px 16px; background:transparent; border:1.5px dashed var(--stone); color:var(--stone-light); font-family:var(--body); font-weight:700; font-size:14px; border-radius:8px; cursor:pointer;">تجربة</button>
         </div>
+        ${restaurant.restriction_extra_channels_disabled ? `<small style="color:var(--stone); margin-top:4px; display:block;">🔒 الاستقبال عبر ماسنجر وتليجرام متاح في باقة PRO فقط.</small>` : ''}
       </div>
       <div class="field">
         <label id="rsAddressLabel">عنوان ${t().entityDef} (اختياري)</label>
@@ -6423,16 +6727,17 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
             <label>المحافظ الإلكترونية</label>
             <small>يمكنك إضافة أكثر من محفظة (فودافون كاش، اتصالات كاش، أورنج كاش...) وسيختار العميل منها وقت الدفع.</small>
             <div id="rsWalletsListWrap" style="margin-top:8px; display:flex; flex-direction:column; gap:8px;"></div>
-            <button type="button" class="add-btn" id="rsAddWalletBtn" style="margin-top:8px;">+ إضافة محفظة</button>
+            <button type="button" class="add-btn" id="rsAddWalletBtn" style="margin-top:8px; ${restaurant.restriction_multi_wallet_disabled ? 'opacity:.4; cursor:not-allowed;' : ''}" ${restaurant.restriction_multi_wallet_disabled ? 'title="أكثر من محفظة متاح في باقة PRO فقط"' : ''}>+ إضافة محفظة</button>
           </div>
-          <div class="field" style="margin-bottom:0;">
+          <div class="field" style="margin-bottom:0; ${restaurant.restriction_multi_wallet_disabled ? 'opacity:.55;' : ''}">
             <label>حساب إنستاباي (اختياري)</label>
             <small>اسم المستخدم الخاص بك على إنستاباي (مثل ‎@mystore) أو رابط الدفع الكامل إن وُجد — في حال إدخال رابط، سيُفتح تلقائيًا للعميل بدلًا من أن يبحث عنك يدويًا.</small>
             <div style="display:flex; gap:8px; align-items:flex-start; margin-top:8px;">
-              <input type="text" id="rsInstapayInput" value="${restaurant.instapay_account ? escapeHtml(restaurant.instapay_account) : ''}" placeholder="مثال: mystore@instapay أو رابط الدفع" style="direction:ltr; flex:1;">
-              <button type="button" id="rsInstapayTestBtn" title="اختبار الرابط" style="background:#fff; border:1.5px solid var(--line); border-radius:8px; cursor:pointer; padding:9px 12px; flex-shrink:0; white-space:nowrap;">🔗 اختبار</button>
+              <input type="text" id="rsInstapayInput" value="${restaurant.instapay_account ? escapeHtml(restaurant.instapay_account) : ''}" placeholder="مثال: mystore@instapay أو رابط الدفع" style="direction:ltr; flex:1;" ${restaurant.restriction_multi_wallet_disabled ? 'disabled title="InstaPay متاح في باقة PRO فقط"' : ''}>
+              <button type="button" id="rsInstapayTestBtn" title="اختبار الرابط" ${restaurant.restriction_multi_wallet_disabled ? 'disabled' : ''} style="background:#fff; border:1.5px solid var(--line); border-radius:8px; cursor:pointer; padding:9px 12px; flex-shrink:0; white-space:nowrap;">🔗 اختبار</button>
             </div>
             <small id="rsInstapayKindHint" style="display:block; margin-top:4px;"></small>
+            ${restaurant.restriction_multi_wallet_disabled ? `<small style="color:var(--stone); margin-top:4px; display:block;">🔒 تعدد المحافظ و InstaPay متاحان في باقة PRO فقط.</small>` : ''}
           </div>
         </div>
       </div>
@@ -6539,6 +6844,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
   }
   renderWalletsList();
   overlay.querySelector('#rsAddWalletBtn').addEventListener('click', ()=>{
+    if(restaurant.restriction_multi_wallet_disabled){ toast('تعدد المحافظ متاح في باقة PRO فقط'); return; }
     pendingWallets.push({ label: '', number: '', ussd: '' });
     renderWalletsList();
   });
@@ -6651,8 +6957,9 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     if(!name){ toast(`اسم ${t().entityDef} مطلوب`); return; }
     const name_en = overlay.querySelector('#restNameEnInput').value.trim() || null;
     const phone = overlay.querySelector('#restPhoneInput').value.trim() || null;
-    const messenger_username = overlay.querySelector('#restMessengerInput').value.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.|m\.)?(facebook\.com|fb\.com|m\.me)\//i, '').replace(/\/+$/, '') || null;
-    const telegram_username = overlay.querySelector('#restTelegramInput').value.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?t\.me\//i, '').replace(/\/+$/, '') || null;
+    let messenger_username = overlay.querySelector('#restMessengerInput').value.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.|m\.)?(facebook\.com|fb\.com|m\.me)\//i, '').replace(/\/+$/, '') || null;
+    let telegram_username = overlay.querySelector('#restTelegramInput').value.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?t\.me\//i, '').replace(/\/+$/, '') || null;
+    if(restaurant.restriction_extra_channels_disabled){ messenger_username = null; telegram_username = null; }
     const address = overlay.querySelector('#restAddressInput').value.trim() || null;
     const opening_time = overlay.querySelector('#restOpenTimeInput').value || null;
     const closing_time = overlay.querySelector('#restCloseTimeInput').value || null;
@@ -6676,10 +6983,11 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     const prepRaw = Number(overlay.querySelector('#restPrepMinutesInput').value);
     const default_prep_minutes = (prepRaw && prepRaw > 0) ? Math.round(prepRaw) : 20;
     const accept_online_payment = overlay.querySelector('#rsOnlinePayEnabled').checked;
-    const wallets = pendingWallets
+    let wallets = pendingWallets
       .map(w => ({ label: (w.label || '').trim() || 'محفظة', number: (w.number || '').trim(), ussd: (w.ussd || '').trim() || undefined }))
       .filter(w => w.number);
-    const instapay_account = overlay.querySelector('#rsInstapayInput').value.trim() || null;
+    let instapay_account = overlay.querySelector('#rsInstapayInput').value.trim() || null;
+    if(restaurant.restriction_multi_wallet_disabled){ wallets = wallets.slice(0, 1); instapay_account = null; }
     if(accept_online_payment && !wallets.length && !instapay_account){
       toast('يجب إضافة محفظة إلكترونية واحدة على الأقل أو حساب إنستاباي لتفعيل الدفع أونلاين');
       return;
@@ -6971,7 +7279,7 @@ function parseSizesText(text){
 }
 
 document.getElementById('importExcelBtn').addEventListener('click', ()=>{
-  if(restaurant.restriction_excel_disabled){ toast('هذه الميزة غير متاحة في نسختك الحالية'); return; }
+  if(restaurant.restriction_excel_disabled){ toast('🔒 استيراد Excel متاح في باقة PRO فقط'); return; }
   document.getElementById('importExcelInput').click();
 });
 
@@ -7212,7 +7520,7 @@ function exportableImageUrl(url){
   return safeExcelText(url);
 }
 document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
-  if(restaurant.restriction_excel_disabled){ toast('هذه الميزة غير متاحة في نسختك الحالية'); return; }
+  if(restaurant.restriction_excel_disabled){ toast('🔒 تصدير Excel متاح في باقة PRO فقط'); return; }
   if(categories.length === 0){
     toast(`لا توجد فئات أو ${biz(restaurant.business_type,'itemsIndef')} لتصديرها`);
     return;
@@ -9111,8 +9419,8 @@ async function loadPublic(slug){
   function getOrderChannelsShared(){
     const channels = [];
     if(rest.phone) channels.push({ id:'whatsapp', icon:'📲', label: lang==='en' ? 'WhatsApp' : 'واتساب' });
-    if(rest.messenger_username) channels.push({ id:'messenger', icon:'💬', label: lang==='en' ? 'Messenger' : 'ماسنجر' });
-    if(rest.telegram_username) channels.push({ id:'telegram', icon:'✈️', label: lang==='en' ? 'Telegram' : 'تليجرام' });
+    if(rest.messenger_username && !rest.restriction_extra_channels_disabled) channels.push({ id:'messenger', icon:'💬', label: lang==='en' ? 'Messenger' : 'ماسنجر' });
+    if(rest.telegram_username && !rest.restriction_extra_channels_disabled) channels.push({ id:'telegram', icon:'✈️', label: lang==='en' ? 'Telegram' : 'تليجرام' });
     return channels;
   }
   // بيفتح رسالة الطلب جاهزة في وسيلة التواصل المطلوبة — مشتركة بين مودال تأكيد الطلب وشاشة نجاح الطلب
@@ -9130,14 +9438,19 @@ async function loadPublic(slug){
 
   // بيرجع قائمة المحافظ الإلكترونية المفعّلة للمطعم (يدعم التوافق مع البيانات القديمة اللي فيها محفظة واحدة بس)
   function getWalletsList(){
-    if(Array.isArray(rest.wallets) && rest.wallets.length) return rest.wallets.filter(w => w && w.number);
-    if(rest.wallet_number) return [{ label: rest.wallet_label || 'فودافون كاش', number: rest.wallet_number }];
-    return [];
+    let list = [];
+    if(Array.isArray(rest.wallets) && rest.wallets.length) list = rest.wallets.filter(w => w && w.number);
+    else if(rest.wallet_number) list = [{ label: rest.wallet_label || 'فودافون كاش', number: rest.wallet_number }];
+    return rest.restriction_multi_wallet_disabled ? list.slice(0, 1) : list;
+  }
+  // حساب إنستاباي الفعلي — يختفي تلقائيًا للمتاجر على باقة STARTER
+  function getEffectiveInstapayAccount(){
+    return rest.restriction_multi_wallet_disabled ? null : rest.instapay_account;
   }
 
   function openOrderDetailsModal(){
     let orderType = 'delivery';
-    const canPayOnline = !!(rest.accept_online_payment && (getWalletsList().length || rest.instapay_account));
+    const canPayOnline = !!(rest.accept_online_payment && (getWalletsList().length || getEffectiveInstapayAccount()));
     let paymentMethod = 'cash';
     let onlinePayOption = getWalletsList().length ? 0 : 'instapay';
     let lastPayPref = null;
@@ -9146,7 +9459,7 @@ async function loadPublic(slug){
       if(lastPayPref && lastPayPref.method === 'online'){
         const walletsList = getWalletsList();
         const validOption = (typeof lastPayPref.onlinePayOption === 'number' && walletsList[lastPayPref.onlinePayOption])
-          || (lastPayPref.onlinePayOption === 'instapay' && rest.instapay_account);
+          || (lastPayPref.onlinePayOption === 'instapay' && getEffectiveInstapayAccount());
         if(validOption){ paymentMethod = 'online'; onlinePayOption = lastPayPref.onlinePayOption; }
       }
     }
@@ -9390,7 +9703,7 @@ async function loadPublic(slug){
       function renderOnlinePayOptions(){
         const walletsList = getWalletsList();
         const options = walletsList.map((w,i)=>({ id:i, label: w.label || 'محفظة' }));
-        if(rest.instapay_account) options.push({ id:'instapay', label:'InstaPay' });
+        if(getEffectiveInstapayAccount()) options.push({ id:'instapay', label:'InstaPay' });
         if(!options.some(o=>o.id===onlinePayOption)) onlinePayOption = options.length ? options[0].id : null;
         const tabsHtml = options.length > 1 ? `
           <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
