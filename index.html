@@ -1764,21 +1764,23 @@ function applyFeaturePlanUI(){
 
 /* صلاحيات دقيقة يتحكم فيها الأدمن لكل عميل على حدة (لوحة تحكم m@g) */
 function applyGranularRestrictionsUI(){
+  // بعض الأزرار بتتأثر كمان بـ feature_plan (منيو فقط بدون طلبات) — بندمج الشرطين هنا
+  // عشان الزرار يظهر أو يختفي دايمًا حسب آخر حالة فعلية، ومايفضلش مقفول غلط لو اتفتحت الصلاحية بعدين
+  const menuOnly = restaurant.feature_plan === 'menu_only';
   const restrictions = {
-    viewOrdersBtn: restaurant.restriction_orders_disabled,
+    viewOrdersBtn: restaurant.restriction_orders_disabled || menuOnly,
     viewStatsBtn: restaurant.restriction_stats_disabled,
     reportsBtn: restaurant.restriction_reports_disabled,
     publicLinkSplitBtn: restaurant.restriction_share_disabled,
     showQrBtn: restaurant.restriction_share_disabled,
     shareMenuBtn: restaurant.restriction_share_disabled,
-    deliveryZonesBtn: restaurant.restriction_delivery_zones_disabled,
-    customersBtn: restaurant.restriction_customers_disabled,
+    deliveryZonesBtn: restaurant.restriction_delivery_zones_disabled || menuOnly,
+    customersBtn: restaurant.restriction_customers_disabled || menuOnly,
     restaurantSettingsBtn: restaurant.restriction_settings_disabled,
   };
   Object.entries(restrictions).forEach(([id, restricted])=>{
-    if(!restricted) return; // بنخفي بس، مبنظهرش عشان منتعارضش مع applyFeaturePlanUI
     const el = document.getElementById(id);
-    if(el) el.classList.add('hidden');
+    if(el) el.classList.toggle('hidden', !!restricted);
   });
 }
 
