@@ -1776,11 +1776,51 @@ function renderBranchSwitcher(){
     pickerLinkBtn.textContent = '🔗 رابط الفروع';
     wrap.appendChild(pickerLinkBtn);
   }
-  pickerLinkBtn.classList.toggle('hidden', branches.length <= 1 || !account.slug);
-  pickerLinkBtn.onclick = ()=>{
+  pickerLinkBtn.classList.toggle('hidden', branches.length <= 1);
+  pickerLinkBtn.onclick = openBranchPickerLinkModal;
+}
+
+function openBranchPickerLinkModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  const currentLink = account.slug ? (location.origin + location.pathname + '?store=' + encodeURIComponent(account.slug)) : '';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>رابط اختيار الفرع</h3>
+      <div class="orders-empty" style="text-align:right; padding:0 0 10px; font-size:12.5px;">
+        رابط واحد ثابت لحسابك، الزبون يفتحه ويختار فرعه بنفسه. تقدر تغيّر الجزء الأخير منه لأي حاجة تحبها.
+      </div>
+      <div class="zone-add-row" style="flex-direction:column; align-items:stretch;">
+        <input type="text" id="storeSlugInput" value="${escapeHtml(account.slug || '')}" placeholder="my-store-branches" style="direction:ltr; text-align:left;">
+      </div>
+      <div class="auth-err" id="storeSlugErr"></div>
+      ${currentLink ? `<div class="orders-empty" style="text-align:left; direction:ltr; padding:8px 0; font-size:12px; word-break:break-all;">${escapeHtml(currentLink)}</div>` : ''}
+      <div class="modal-actions">
+        <button class="btn-confirm" id="storeSlugSaveBtn">حفظ ونسخ الرابط</button>
+        <button class="btn-cancel" id="storeSlugCancelBtn">إغلاق</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#storeSlugCancelBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#storeSlugSaveBtn').addEventListener('click', async ()=>{
+    let slug = overlay.querySelector('#storeSlugInput').value.trim().toLowerCase();
+    slug = slug.replace(/[^a-z0-9-]/g, '-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+    const errEl = overlay.querySelector('#storeSlugErr');
+    if(!slug){ errEl.textContent = 'يرجى إدخال رابط صالح بالإنجليزية'; return; }
+    const btn = overlay.querySelector('#storeSlugSaveBtn');
+    btn.disabled = true;
+    const { data, error } = await sb.from('accounts').update({ slug }).eq('id', account.id).select().maybeSingle();
+    btn.disabled = false;
+    if(error){
+      errEl.textContent = (error.message||'').includes('duplicate') ? 'هذا الرابط مستخدم بالفعل، يرجى تجربة رابط آخر' : (error.message || 'حدث خطأ');
+      return;
+    }
+    account.slug = data.slug;
     const link = location.origin + location.pathname + '?store=' + encodeURIComponent(account.slug);
-    navigator.clipboard.writeText(link).then(()=> toast('تم نسخ رابط اختيار الفرع')).catch(()=> toast(link));
-  };
+    navigator.clipboard.writeText(link).then(()=> toast('تم الحفظ ونسخ الرابط')).catch(()=> toast('تم الحفظ'));
+    overlay.remove();
+  });
 }
 
 function openAddBranchModal(){
@@ -4633,6 +4673,7 @@ async function openAdminPanel(){
     const isMainAdminAccount = ownerEmail.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
     const visits = visitsSummaryFor(r.id);
     const orders = ordersSummaryFor(r.id);
+    const siblingBranches = allRestaurants.filter(x=> x.account_id && x.account_id === r.account_id && x.id !== r.id);
     const perm = (field, icon, label) => `
         <label class="admin-perm-item">
           <span class="lbl">${icon} ${label}</span>
@@ -4646,6 +4687,7 @@ async function openAdminPanel(){
             <div>
               <div class="admin-r-name">${escapeHtml(r.name)} <span style="opacity:.5; font-size:11px;">(${r.business_type === 'store' ? 'متجر' : 'مطعم'})</span> ${r.account_suspended ? '<span class="admin-status-pill" style="background:rgba(166,57,43,.15); color:var(--danger);">معطّل</span>' : '<span class="admin-status-pill" style="background:rgba(63,98,71,.15); color:var(--basil);">نشط</span>'} <span class="admin-collapse-arrow">▾</span></div>
               <div class="admin-r-meta">/${escapeHtml(r.slug)} · انضم ${created}</div>
+              ${siblingBranches.length ? `<div class="admin-r-meta" style="margin-top:2px; color:#8a6d3b;">🏢 فرع من ضمن حساب واحد اشتراكه مشترك مع: ${siblingBranches.map(s=> escapeHtml(s.name)).join('، ')} — أي تعديل هنا بيأثر عليهم كلهم</div>` : ''}
               <div class="admin-r-meta" style="direction:ltr; text-align:right; margin-top:2px;">✉️ ${escapeHtml(ownerEmail)}</div>
               <div class="admin-r-meta" style="margin-top:2px;">👁️ زيارات اليوم: ${visits.today} · أمس: ${visits.yesterday} · آخر 7 أيام: ${visits.week}</div>
               <div class="admin-r-meta" style="margin-top:2px;">🧾 طلبات اليوم: ${orders.today} · أمس: ${orders.yesterday} · آخر 7 أيام: ${orders.week}</div>
@@ -5834,9 +5876,18 @@ function buildInsights({ rows, itemStatsRows, hourlyRows, custRows, visitRows })
 document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
+  const showBranchToggle = branches.length > 1;
   overlay.innerHTML = `
     <div class="modal">
       <h3>إحصائيات الطلبات</h3>
+      ${showBranchToggle ? `
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+        <label style="font-size:12px; font-weight:700;">عرض:</label>
+        <select id="statsBranchScope" style="font-size:12px; padding:4px 8px; border-radius:6px; border:1px solid var(--line);">
+          <option value="current">هذا الفرع فقط (${escapeHtml(restaurant.name)})</option>
+          <option value="all">كل الفروع مجمّعة</option>
+        </select>
+      </div>` : ''}
       <div id="statsSummaryWrap"><div class="orders-empty">جارِ التحميل...</div></div>
       <div class="modal-actions">
         <button class="btn-cancel" id="statsCloseBtn">إغلاق</button>
@@ -5847,10 +5898,24 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
 
   const wrap = overlay.querySelector('#statsSummaryWrap');
-  const { data: rows, error } = await sb.from('order_stats_daily').select('*').eq('restaurant_id', restaurant.id).order('day', { ascending:false });
-  const { data: visitRows } = await sb.from('menu_visits_daily').select('*').eq('restaurant_id', restaurant.id).order('day', { ascending:false });
+
+  async function renderStatsScope(restaurantIds){
+  wrap.innerHTML = `<div class="orders-empty">جارِ التحميل...</div>`;
+  const { data: rows, error } = await sb.from('order_stats_daily').select('*').in('restaurant_id', restaurantIds).order('day', { ascending:false });
+  const { data: visitRowsRaw } = await sb.from('menu_visits_daily').select('*').in('restaurant_id', restaurantIds).order('day', { ascending:false });
   if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل الإحصائيات</div>`; return; }
-  if((!rows || rows.length === 0) && (!visitRows || visitRows.length === 0)){ wrap.innerHTML = `<div class="orders-empty">لا توجد إحصائيات بعد</div>`; return; }
+  if((!rows || rows.length === 0) && (!visitRowsRaw || visitRowsRaw.length === 0)){ wrap.innerHTML = `<div class="orders-empty">لا توجد إحصائيات بعد</div>`; return; }
+  // لما نجمع أكتر من فرع، بندمج صفوف نفس اليوم مع بعض (كل فرع بيطلع صف لوحده لكل يوم)
+  function mergeByDay(list, sumFields){
+    const byDay = {};
+    (list||[]).forEach(r=>{
+      if(!byDay[r.day]) byDay[r.day] = { day: r.day };
+      sumFields.forEach(f=> byDay[r.day][f] = (byDay[r.day][f]||0) + Number(r[f]||0));
+    });
+    return Object.values(byDay).sort((a,b)=> b.day.localeCompare(a.day));
+  }
+  const mergedRows = restaurantIds.length > 1 ? mergeByDay(rows, ['orders_count','orders_total']) : (rows||[]);
+  const visitRows = restaurantIds.length > 1 ? mergeByDay(visitRowsRaw, ['visits_count']) : (visitRowsRaw||[]);
 
   const todayStr = new Date().toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
   const sumSince = (list, field, daysAgo)=>{
@@ -5861,12 +5926,12 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
   const sumSinceOrders = (daysAgo)=>{
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - daysAgo);
     const cutoffStr = cutoff.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
-    return rows.filter(r=> r.day >= cutoffStr).reduce((acc,r)=>({ count: acc.count + r.orders_count, total: acc.total + Number(r.orders_total) }), { count:0, total:0 });
+    return mergedRows.filter(r=> r.day >= cutoffStr).reduce((acc,r)=>({ count: acc.count + r.orders_count, total: acc.total + Number(r.orders_total) }), { count:0, total:0 });
   };
-  const today = rows.find(r=> r.day === todayStr) || { orders_count:0, orders_total:0 };
+  const today = mergedRows.find(r=> r.day === todayStr) || { orders_count:0, orders_total:0 };
   const week = sumSinceOrders(7);
   const month = sumSinceOrders(30);
-  const allTime = rows.reduce((acc,r)=>({ count: acc.count + r.orders_count, total: acc.total + Number(r.orders_total) }), { count:0, total:0 });
+  const allTime = mergedRows.reduce((acc,r)=>({ count: acc.count + r.orders_count, total: acc.total + Number(r.orders_total) }), { count:0, total:0 });
 
   const vRows = visitRows || [];
   const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
@@ -5937,6 +6002,16 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
     <div class="orders-empty" style="text-align:right; padding:10px 0 0; font-size:12px;">
       هل ترغب في تحليل أعمق (اتجاه المبيعات، أكثر الأصناف مبيعًا، أوقات الذروة، العملاء، المناطق، وتصدير تقرير)؟ جرّب "التقارير" من شريط الأدوات.
     </div>`;
+  } // end renderStatsScope
+
+  await renderStatsScope([restaurant.id]);
+  const scopeSelect = overlay.querySelector('#statsBranchScope');
+  if(scopeSelect){
+    scopeSelect.addEventListener('change', ()=>{
+      const ids = scopeSelect.value === 'all' ? branches.map(b=> b.id) : [restaurant.id];
+      renderStatsScope(ids);
+    });
+  }
 });
 
 document.getElementById('reportsBtn').addEventListener('click', async ()=>{
