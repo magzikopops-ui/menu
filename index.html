@@ -1794,7 +1794,10 @@ function openBranchPickerLinkModal(){
         <input type="text" id="storeSlugInput" value="${escapeHtml(account.slug || '')}" placeholder="my-store-branches" style="direction:ltr; text-align:left;">
       </div>
       <div class="auth-err" id="storeSlugErr"></div>
-      ${currentLink ? `<div class="orders-empty" style="text-align:left; direction:ltr; padding:8px 0; font-size:12px; word-break:break-all;">${escapeHtml(currentLink)}</div>` : ''}
+      ${currentLink ? `<div class="orders-empty" style="text-align:left; direction:ltr; padding:8px 0; font-size:12px; word-break:break-all;">${escapeHtml(currentLink)}</div>
+      <div style="display:flex; justify-content:center; padding:6px 0 14px;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(currentLink)}" width="180" height="180" style="border-radius:8px; background:#fff;" alt="QR Code">
+      </div>` : ''}
       <div class="modal-actions">
         <button class="btn-confirm" id="storeSlugSaveBtn">حفظ ونسخ الرابط</button>
         <button class="btn-cancel" id="storeSlugCancelBtn">إغلاق</button>
