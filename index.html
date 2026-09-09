@@ -862,6 +862,10 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
   <div class="topbar">
     <div class="brand-group">
       <div class="brand"><span class="dot"></span> <span id="dashRestaurantName">—</span></div>
+      <span id="branchSwitcherWrap" class="hidden" style="display:inline-flex; align-items:center; gap:4px;">
+        <select id="branchSwitcherSelect" style="font-size:12px; padding:3px 6px; border-radius:6px; border:1px solid var(--line); background:var(--paper); color:var(--ink); max-width:140px;"></select>
+        <button type="button" class="link-btn" id="addBranchBtn" title="إضافة فرع جديد" style="font-size:12px; padding:3px 8px;">+ فرع</button>
+      </span>
       <span class="trial-days-badge hidden" id="trialDaysBadge"></span>
       <span class="switch-link" id="changePasswordLink">تغيير كلمة المرور</span>
       <span class="switch-link" id="signOutLink">تسجيل الخروج</span>
@@ -1089,9 +1093,29 @@ const SUPABASE_ANON_KEY = 'sb_publishable_V9nPBwlDN28N3ImfS4NnGg_M4VbvJa4';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
-let restaurant = null; // {id, name, slug}
+let restaurant = null; // {id, name, slug} — الفرع النشط حاليًا (يحمل أيضًا بيانات الاشتراك المنسوخة من الحساب)
+let account = null; // {id, owner_id, subscription_tier, subscription_end_date, account_suspended, ...} — الحساب/الاشتراك
+let branches = []; // كل فروع الحساب الحالي
 const SUPER_ADMIN_EMAIL = 'magziko@gmail.com'; // ✏️ حط هنا نفس الإيميل اللي بتسجل بيه دخولك انت
 let isSuperAdmin = false;
+// الحقول اللي بقت مسؤولية الحساب (accounts) مش الفرع (restaurants) بعد فصل الفروع
+const ACCOUNT_LEVEL_FIELDS = ['subscription_tier','feature_plan','subscription_end_date','account_suspended','demo_days',
+  'restriction_banner_enabled','restriction_watermark_enabled','restriction_prices_disabled','restriction_images_disabled','restriction_orders_disabled',
+  'restriction_print_disabled','restriction_stats_disabled','restriction_reports_disabled','restriction_share_disabled',
+  'restriction_delivery_zones_disabled','restriction_drivers_disabled','restriction_extra_channels_disabled',
+  'restriction_multi_wallet_disabled','restriction_stats_charts_disabled','restriction_customers_disabled',
+  'restriction_settings_disabled','restriction_notif_settings_disabled','restriction_delete_disabled','restriction_excel_disabled'];
+// حد أقصى لعدد الفروع حسب الباقة السعرية — STARTER فرع واحد بس، PRO بلا حدود
+function maxBranchesForTier(tier){ return tier === 'pro' ? Infinity : 1; }
+// بينسخ حقول الاشتراك من الحساب على كل فروعه، عشان كل الكود الحالي اللي بيقرأ
+// restaurant.subscription_end_date / account_suspended / ... يفضل شغّال من غير تعديل
+function mirrorAccountOntoBranches(){
+  branches = branches.map(b=>{
+    const merged = Object.assign({}, b);
+    ACCOUNT_LEVEL_FIELDS.forEach(f=> merged[f] = account[f]);
+    return merged;
+  });
+}
 let categories = [];
 let items = [];
 let itemSizes = {}; // item_id -> [ { id, size_name, size_name_en, price } ]
@@ -1446,7 +1470,7 @@ async function sendExpiryReminderWhatsApp(r){
   window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
   const nowIso = new Date().toISOString();
   const newCount = (r.reminder_count || 0) + 1;
-  const { error } = await sb.from('restaurants').update({ last_reminder_sent_at: nowIso, reminder_count: newCount }).eq('id', r.id);
+  const { error } = await sb.from('accounts').update({ last_reminder_sent_at: nowIso, reminder_count: newCount }).eq('id', r.account_id || r._accountId);
   if(error) return null;
   r.last_reminder_sent_at = nowIso;
   r.reminder_count = newCount;
@@ -1517,6 +1541,7 @@ function setPageMeta({ title, description, image }){
 async function boot(){
   const params = new URLSearchParams(location.search);
   const publicSlug = params.get('r');
+  const storeSlug = params.get('store'); // رابط اختيار الفرع لحساب متعدد الفروع
   const trackId = params.get('t');
   const wantSignup = params.get('signup');
   if(trackId){
@@ -1529,6 +1554,11 @@ async function boot(){
     await loadPublic(publicSlug);
     return;
   }
+  if(storeSlug){
+    setFavicon('menu-favicon.png');
+    await loadBranchPicker(storeSlug);
+    return;
+  }
   setFavicon('favicon.png');
   const { data: { session } } = await sb.auth.getSession();
   if(session && session.user){
@@ -1539,6 +1569,40 @@ async function boot(){
     if(wantSignup) document.getElementById('tabSignup').click();
   }
 }
+
+// صفحة عامة لاختيار الفرع، لحساب فيه أكتر من فرع — رابط واحد ثابت للحساب (?store=account-slug)
+// كل فرع بعد الاختيار بيروح لرابط منيوه الخاص (?r=branch-slug) زي ما هو دايمًا
+async function loadBranchPicker(storeSlug){
+  show('loadingScreen');
+  const { data: accRow, error: accErr } = await sb.from('accounts_public').select('id, slug').eq('slug', storeSlug).maybeSingle();
+  if(accErr || !accRow){
+    show('publicScreen');
+    document.getElementById('pubLogoWrap').innerHTML = `<div class="name-fallback">الصفحة غير موجودة</div>`;
+    document.getElementById('pubTabsWrap').classList.add('hidden');
+    document.getElementById('pubBody').innerHTML = `<div class="pub-empty">هذا الرابط غير صحيح.</div>`;
+    return;
+  }
+  const { data: branchRows, error: brErr } = await sb.from('restaurants_public').select('*').eq('account_id', accRow.id).order('name');
+  show('publicScreen');
+  document.getElementById('pubTabsWrap').classList.add('hidden');
+  document.getElementById('pubFooter').textContent = 'POWERED BY منيو m@g';
+  if(brErr || !branchRows || !branchRows.length){
+    document.getElementById('pubLogoWrap').innerHTML = `<div class="name-fallback">اختر فرعك</div>`;
+    document.getElementById('pubBody').innerHTML = `<div class="pub-empty">لا توجد فروع متاحة حاليًا.</div>`;
+    return;
+  }
+  document.getElementById('pubLogoWrap').innerHTML = `<div class="name-fallback">اختر الفرع الأقرب لك</div>`;
+  document.getElementById('pubBody').innerHTML = branchRows.map(b=> `
+    <a href="?r=${encodeURIComponent(b.slug)}" class="pub-item" style="text-decoration:none; cursor:pointer;">
+      <div class="info">
+        <div class="pub-item-name">${escapeHtml(b.name)}</div>
+        ${b.address ? `<div class="pub-item-desc">${escapeHtml(b.address)}</div>` : ''}
+        ${b.phone ? `<div class="pub-item-desc" style="direction:ltr; text-align:right;">${escapeHtml(b.phone)}</div>` : ''}
+      </div>
+      <span class="chevron">›</span>
+    </a>`).join('');
+}
+
 
 /* ================= auth ================= */
 let authMode = 'login';
@@ -1630,7 +1694,7 @@ document.getElementById('forgotPasswordLink').addEventListener('click', async ()
 async function signOutApp(){
   stopOrderAlertLoop();
   await sb.auth.signOut();
-  currentUser = null; restaurant = null;
+  currentUser = null; restaurant = null; account = null; branches = [];
   document.getElementById('authEmail').value='';
   document.getElementById('authPassword').value='';
   show('authScreen');
@@ -1638,19 +1702,127 @@ async function signOutApp(){
 
 document.getElementById('signOutLink').addEventListener('click', signOutApp);
 
-/* ================= onboarding (create restaurant) ================= */
+/* ================= onboarding (create account + first branch) ================= */
 async function afterLogin(){
   resetLoadingLogo();
   show('loadingScreen');
   isSuperAdmin = (currentUser.email || '').toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
-  const { data, error } = await sb.from('restaurants').select('*').eq('owner_id', currentUser.id).maybeSingle();
-  if(error){ toast('حدث خطأ في تحميل البيانات'); show('authScreen'); return; }
-  if(data){
-    restaurant = data;
-    await openDashboard();
-  } else {
-    show('onboardScreen');
+  const { data: accData, error: accErr } = await sb.from('accounts').select('*').eq('owner_id', currentUser.id).maybeSingle();
+  if(accErr){ toast('حدث خطأ في تحميل البيانات'); show('authScreen'); return; }
+  if(!accData){ show('onboardScreen'); return; }
+  account = accData;
+  const { data: branchRows, error: brErr } = await sb.from('restaurants').select('*').eq('account_id', account.id).order('created_at', { ascending:true });
+  if(brErr){ toast('حدث خطأ في تحميل الفروع'); show('authScreen'); return; }
+  if(!branchRows || !branchRows.length){ show('onboardScreen'); return; }
+  branches = branchRows;
+  mirrorAccountOntoBranches();
+  const savedBranchId = localStorage.getItem('activeBranchId_' + account.id);
+  restaurant = branches.find(b=> b.id === savedBranchId) || branches[0];
+  await openDashboard();
+}
+
+// يبدّل الفرع النشط في نفس الحساب من غير ما يحتاج تسجيل خروج/دخول
+async function switchBranch(branchId){
+  const b = branches.find(x=> x.id === branchId);
+  if(!b || (restaurant && b.id === restaurant.id)) return;
+  restaurant = b;
+  localStorage.setItem('activeBranchId_' + account.id, b.id);
+  await openDashboard();
+}
+
+// إضافة فرع جديد لنفس الحساب — بيتقيّد بحد أقصى حسب الباقة (STARTER فرع واحد، PRO بلا حدود)
+async function createBranch(name, slug){
+  const limit = maxBranchesForTier(account.subscription_tier);
+  if(branches.length >= limit){
+    toast('باقتك الحالية (STARTER) بتسمح بفرع واحد فقط — رقّي للباقة PRO عشان تضيف أكتر من فرع');
+    return { error: { message: 'تجاوز الحد المسموح به من الفروع' } };
   }
+  const { data, error } = await sb.from('restaurants').insert({ account_id: account.id, owner_id: currentUser.id, name, slug, business_type: account.business_type }).select().single();
+  if(error) return { error };
+  branches.push(data);
+  mirrorAccountOntoBranches();
+  // أول مرة الحساب يبقى فيه أكتر من فرع، بننشئ رابط "اختيار الفرع" العام تلقائيًا (لو لسه معملوش)
+  if(branches.length === 2 && !account.slug){
+    const storeSlug = (branches[0].slug || 'store') + '-branches';
+    const { data: accUpd, error: accSlugErr } = await sb.from('accounts').update({ slug: storeSlug }).eq('id', account.id).select().maybeSingle();
+    if(!accSlugErr && accUpd) account.slug = accUpd.slug;
+  }
+  return { data: branches.find(b=> b.id === data.id) };
+}
+
+// بيرسم مبدّل الفروع في أعلى الداشبورد (بيظهر بس لو الحساب فيه أكتر من فرع أو ممكن يضيف فرع جديد)
+function renderBranchSwitcher(){
+  const wrap = document.getElementById('branchSwitcherWrap');
+  const select = document.getElementById('branchSwitcherSelect');
+  const addBtn = document.getElementById('addBranchBtn');
+  if(!wrap || !select) return;
+  const canAddMore = branches.length < maxBranchesForTier(account.subscription_tier);
+  if(branches.length <= 1 && !canAddMore){ wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
+  select.classList.toggle('hidden', branches.length <= 1);
+  select.innerHTML = branches.map(b=> `<option value="${b.id}" ${b.id===restaurant.id?'selected':''}>${escapeHtml(b.name)}</option>`).join('');
+  select.onchange = ()=> switchBranch(select.value);
+  addBtn.classList.toggle('hidden', !canAddMore);
+  addBtn.onclick = openAddBranchModal;
+  let pickerLinkBtn = document.getElementById('branchPickerLinkBtn');
+  if(!pickerLinkBtn){
+    pickerLinkBtn = document.createElement('button');
+    pickerLinkBtn.type = 'button';
+    pickerLinkBtn.id = 'branchPickerLinkBtn';
+    pickerLinkBtn.className = 'link-btn';
+    pickerLinkBtn.title = 'نسخ رابط اختيار الفرع العام (رابط واحد لكل فروعك)';
+    pickerLinkBtn.style.fontSize = '12px';
+    pickerLinkBtn.style.padding = '3px 8px';
+    pickerLinkBtn.textContent = '🔗 رابط الفروع';
+    wrap.appendChild(pickerLinkBtn);
+  }
+  pickerLinkBtn.classList.toggle('hidden', branches.length <= 1 || !account.slug);
+  pickerLinkBtn.onclick = ()=>{
+    const link = location.origin + location.pathname + '?store=' + encodeURIComponent(account.slug);
+    navigator.clipboard.writeText(link).then(()=> toast('تم نسخ رابط اختيار الفرع')).catch(()=> toast(link));
+  };
+}
+
+function openAddBranchModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>إضافة فرع جديد</h3>
+      <div class="zone-add-row" style="flex-direction:column; align-items:stretch;">
+        <input type="text" id="newBranchName" placeholder="اسم الفرع (مثال: فرع مدينة نصر)">
+        <input type="text" id="newBranchSlug" placeholder="رابط الفرع بالإنجليزية (مثال: my-store-nasr)">
+      </div>
+      <div class="auth-err" id="newBranchErr"></div>
+      <div class="modal-actions">
+        <button class="btn-confirm" id="newBranchSaveBtn">إنشاء الفرع</button>
+        <button class="btn-cancel" id="newBranchCancelBtn">إلغاء</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#newBranchCancelBtn').addEventListener('click', ()=> overlay.remove());
+  wireEnterToConfirm(overlay.querySelector('.zone-add-row'), overlay.querySelector('#newBranchSaveBtn'));
+  overlay.querySelector('#newBranchSaveBtn').addEventListener('click', async ()=>{
+    const name = overlay.querySelector('#newBranchName').value.trim();
+    let slug = overlay.querySelector('#newBranchSlug').value.trim().toLowerCase();
+    slug = slug.replace(/[^a-z0-9-]/g, '-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+    const errEl = overlay.querySelector('#newBranchErr');
+    errEl.textContent = '';
+    if(!name){ errEl.textContent = 'يرجى إدخال اسم الفرع'; return; }
+    if(!slug){ errEl.textContent = 'يرجى إدخال رابط صالح بالإنجليزية'; return; }
+    const btn = overlay.querySelector('#newBranchSaveBtn');
+    btn.disabled = true;
+    const { data, error } = await createBranch(name, slug);
+    btn.disabled = false;
+    if(error){
+      errEl.textContent = (error.message || '').includes('duplicate') ? 'هذا الرابط مستخدم بالفعل، يرجى تجربة رابط آخر' : (error.message || 'حدث خطأ');
+      return;
+    }
+    overlay.remove();
+    toast('تم إنشاء الفرع بنجاح');
+    await switchBranch(data.id);
+  });
 }
 
 let obBusinessType = 'restaurant';
@@ -1686,13 +1858,23 @@ document.getElementById('obSubmitBtn').addEventListener('click', async ()=>{
   if(!slug){ errEl.textContent = 'يرجى إدخال رابط صالح بالإنجليزية'; return; }
   const btn = document.getElementById('obSubmitBtn');
   btn.disabled = true;
-  const { data, error } = await sb.from('restaurants').insert({ owner_id: currentUser.id, name, slug, business_type: obBusinessType }).select().single();
+  // أول حساب للمستخدم: بننشئ صف accounts (الاشتراك) + أول فرع (restaurants) مربوط بيه
+  const { data: accData, error: accErr } = await sb.from('accounts').insert({ owner_id: currentUser.id, business_type: obBusinessType }).select().single();
+  if(accErr){
+    btn.disabled = false;
+    errEl.textContent = accErr.message || 'حدث خطأ أثناء إنشاء الحساب';
+    return;
+  }
+  account = accData;
+  const { data, error } = await sb.from('restaurants').insert({ account_id: account.id, owner_id: currentUser.id, name, slug, business_type: obBusinessType }).select().single();
   btn.disabled = false;
   if(error){
     errEl.textContent = error.message.includes('duplicate') ? 'هذا الرابط مستخدم بالفعل، يرجى تجربة رابط آخر' : (error.message || 'حدث خطأ');
     return;
   }
-  restaurant = data;
+  branches = [data];
+  mirrorAccountOntoBranches();
+  restaurant = branches[0];
   await openDashboard();
 });
 
@@ -1704,11 +1886,11 @@ function refreshAllBizLabels(){
 
 async function checkDemoExpiry(){
   if(!restaurant.demo_days || restaurant.restriction_banner_enabled) return;
-  const end = new Date(restaurant.created_at);
+  const end = new Date(account.created_at);
   end.setDate(end.getDate() + Number(restaurant.demo_days));
   if(Date.now() > end.getTime()){
-    const { error } = await sb.from('restaurants').update({ restriction_banner_enabled: true }).eq('id', restaurant.id);
-    if(!error) restaurant.restriction_banner_enabled = true;
+    const { error } = await sb.from('accounts').update({ restriction_banner_enabled: true }).eq('id', account.id);
+    if(!error){ account.restriction_banner_enabled = true; mirrorAccountOntoBranches(); restaurant = branches.find(b=> b.id === restaurant.id) || restaurant; }
   }
 }
 
@@ -1716,8 +1898,8 @@ async function checkSubscriptionExpiry(){
   if(!restaurant.subscription_end_date || restaurant.account_suspended) return;
   const end = new Date(restaurant.subscription_end_date + 'T23:59:59');
   if(Date.now() > end.getTime()){
-    const { error } = await sb.from('restaurants').update({ account_suspended: true }).eq('id', restaurant.id);
-    if(!error) restaurant.account_suspended = true;
+    const { error } = await sb.from('accounts').update({ account_suspended: true }).eq('id', account.id);
+    if(!error){ account.account_suspended = true; mirrorAccountOntoBranches(); restaurant = branches.find(b=> b.id === restaurant.id) || restaurant; }
   }
 }
 
@@ -1817,6 +1999,7 @@ async function openDashboard(){
   show('loadingScreen');
   document.getElementById('dashRestaurantName').textContent = restaurant.name;
   document.getElementById('ticketShopName').textContent = restaurant.name;
+  renderBranchSwitcher();
   refreshAllBizLabels();
   await refreshData();
   subscribeToNewOrders();
@@ -1853,7 +2036,7 @@ function updateTrialDaysBadge(){
     daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
     isSubscription = true;
   } else if(restaurant.demo_days){
-    const end = new Date(restaurant.created_at);
+    const end = new Date(account.created_at);
     end.setDate(end.getDate() + Number(restaurant.demo_days));
     daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
     isSubscription = false;
@@ -2244,6 +2427,7 @@ function openRenewFlow(rest){
         if(appliedCode){ await sb.rpc('redeem_discount_code', { p_code: appliedCode.code }); }
         await sb.from('payment_requests').insert({
           restaurant_id: rest.id,
+          account_id: rest.account_id,
           restaurant_name: rest.name,
           plan_key: plan.key,
           plan_name_ar: plan.name_ar,
@@ -4320,17 +4504,30 @@ async function openAdminPanel(){
   if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل بيانات العملاء (تأكد من صلاحية الأدمن في Supabase)</div>`; return; }
   if(!allRestaurants || allRestaurants.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا يوجد عملاء بعد</div>`; return; }
 
-  // تعليق تلقائي لأي حساب انتهى تاريخ اشتراكه ولم يُعلَّق بعد
-  const expiredNotSuspended = allRestaurants.filter(r=>
-    r.subscription_end_date && !r.account_suspended &&
-    new Date(r.subscription_end_date + 'T23:59:59').getTime() < Date.now()
+  // كل حقول الاشتراك/القيود بقت مسؤولية جدول accounts — بنجيبه ونلصق قيمه على كل فرع تابع له
+  // عشان باقي كود لوحة الأدمن (اللي بيقرأ r.subscription_end_date وغيرها) يفضل شغّال زي ما هو
+  const { data: allAccounts, error: accError } = await sb.from('accounts').select('*');
+  if(accError){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل بيانات الحسابات/الاشتراكات</div>`; return; }
+  const accountById = {};
+  (allAccounts || []).forEach(a=> accountById[a.id] = a);
+
+  // تعليق تلقائي لأي حساب انتهى تاريخ اشتراكه ولم يُعلَّق بعد (على مستوى الحساب، مش الفرع)
+  const expiredNotSuspended = (allAccounts || []).filter(a=>
+    a.subscription_end_date && !a.account_suspended &&
+    new Date(a.subscription_end_date + 'T23:59:59').getTime() < Date.now()
   );
   if(expiredNotSuspended.length){
-    await Promise.all(expiredNotSuspended.map(async r=>{
-      const { error: autoErr } = await sb.from('restaurants').update({ account_suspended: true }).eq('id', r.id);
-      if(!autoErr) r.account_suspended = true;
+    await Promise.all(expiredNotSuspended.map(async a=>{
+      const { error: autoErr } = await sb.from('accounts').update({ account_suspended: true }).eq('id', a.id);
+      if(!autoErr) a.account_suspended = true;
     }));
   }
+
+  allRestaurants.forEach(r=>{
+    const acc = accountById[r.account_id];
+    if(acc) ACCOUNT_LEVEL_FIELDS.forEach(f=> r[f] = acc[f]);
+    r._accountId = r.account_id; // اسم صريح يُستخدم في مستمعي الأحداث تحت
+  });
 
   let emailByOwner = {};
   try{
@@ -4442,7 +4639,7 @@ async function openAdminPanel(){
           <span class="admin-switch"><input type="checkbox" data-field="${field}" ${r[field] ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
         </label>`;
     return `
-      <div class="admin-restaurant-row collapsed" data-id="${r.id}">
+      <div class="admin-restaurant-row collapsed" data-id="${r.id}" data-account-id="${r.account_id || ''}">
         <div class="admin-card-header" data-action="toggleCollapse" style="cursor:pointer;">
           <div class="admin-card-id">
             <div class="admin-r-num">#${idx + 1}</div>
@@ -4707,81 +4904,77 @@ async function openAdminPanel(){
     btn.addEventListener('click', async (e)=>{
       e.stopPropagation();
       const row = btn.closest('.admin-restaurant-row');
-      const rId = row.dataset.id;
+      const accId = row.dataset.accountId;
       const lock = btn.classList.contains('admin-lock-all-btn');
       const updatePayload = {};
       CLIENT_PERM_FIELDS.forEach(f=> updatePayload[f] = lock);
-      const { error: updErr } = await sb.from('restaurants').update(updatePayload).eq('id', rId);
+      const { error: updErr } = await sb.from('accounts').update(updatePayload).eq('id', accId);
       if(updErr){ toast('تعذر الحفظ'); return; }
-      CLIENT_PERM_FIELDS.forEach(f=>{
-        const cb = row.querySelector(`input[type="checkbox"][data-field="${f}"]`);
-        if(cb) cb.checked = lock;
-      });
       toast(lock ? 'تم تقييد كل الصلاحيات' : 'تم فتح كل الصلاحيات');
+      await loadRestaurantsTab();
     });
   });
 
   wrap.querySelectorAll('.admin-restaurant-row').forEach(row=>{
     const rId = row.dataset.id;
+    const accId = row.dataset.accountId; // كل حقول الاشتراك/القيود بقت على مستوى الحساب مش الفرع
     row.querySelectorAll('input[type="checkbox"][data-field]').forEach(cb=>{
       cb.addEventListener('change', async ()=>{
         const field = cb.dataset.field;
+        const isAccountField = ACCOUNT_LEVEL_FIELDS.includes(field);
         if(field === 'account_suspended' && cb.checked){
-          if(!confirm('سيتم إيقاف المنيو العام ولوحة التحكم بالكامل لهذا العميل فورًا. هل أنت متأكد؟')){
+          if(!confirm('سيتم إيقاف المنيو العام ولوحة التحكم بالكامل لكل فروع هذا العميل فورًا. هل أنت متأكد؟')){
             cb.checked = false;
             return;
           }
         }
-        const { error: updErr } = await sb.from('restaurants').update({ [field]: cb.checked }).eq('id', rId);
+        const { error: updErr } = isAccountField
+          ? await sb.from('accounts').update({ [field]: cb.checked }).eq('id', accId)
+          : await sb.from('restaurants').update({ [field]: cb.checked }).eq('id', rId);
         if(updErr){ toast('تعذر الحفظ'); cb.checked = !cb.checked; return; }
         toast('تم الحفظ');
+        if(isAccountField) await loadRestaurantsTab();
       });
     });
     row.querySelectorAll('input[type="date"][data-field]').forEach(dateInput=>{
       dateInput.addEventListener('change', async ()=>{
         const field = dateInput.dataset.field;
         const val = dateInput.value || null;
-        const { error: updErr } = await sb.from('restaurants').update({ [field]: val }).eq('id', rId);
+        const { error: updErr } = await sb.from('accounts').update({ [field]: val }).eq('id', accId);
         if(updErr){ toast('تعذر الحفظ'); return; }
-        toast('تم الحفظ');
         if(field === 'subscription_end_date' && val && new Date(val + 'T23:59:59').getTime() < Date.now()){
-          const suspendCb = row.querySelector('input[type="checkbox"][data-field="account_suspended"]');
-          if(suspendCb && !suspendCb.checked){
-            const { error: suspErr } = await sb.from('restaurants').update({ account_suspended: true }).eq('id', rId);
-            if(!suspErr){ suspendCb.checked = true; toast('تاريخ منتهي بالفعل — تم تعليق الحساب تلقائيًا'); }
-          }
+          await sb.from('accounts').update({ account_suspended: true }).eq('id', accId);
+          toast('تاريخ منتهي بالفعل — تم تعليق الحساب تلقائيًا');
+        } else {
+          toast('تم الحفظ');
         }
+        await loadRestaurantsTab();
       });
     });
     row.querySelectorAll('.admin-quick-renew-btn').forEach(rbtn=>{
       rbtn.addEventListener('click', async ()=>{
         const months = parseInt(rbtn.dataset.months, 10);
         const dateInput = row.querySelector('input[type="date"][data-field="subscription_end_date"]');
-        const suspendCb = row.querySelector('input[type="checkbox"][data-field="account_suspended"]');
         const currentVal = dateInput ? dateInput.value : null;
         const newEndStr = extendSubscriptionDate(currentVal, months);
         rbtn.disabled = true;
-        const { error: updErr } = await sb.from('restaurants').update({ subscription_end_date: newEndStr, account_suspended:false }).eq('id', rId);
+        const { error: updErr } = await sb.from('accounts').update({ subscription_end_date: newEndStr, account_suspended:false }).eq('id', accId);
         rbtn.disabled = false;
         if(updErr){ toast('تعذر تجديد الاشتراك'); return; }
-        if(dateInput) dateInput.value = newEndStr;
-        if(suspendCb) suspendCb.checked = false;
-        const statusWrap = row.querySelector('.sub-expiry-status');
-        if(statusWrap) statusWrap.innerHTML = subExpiryStatusHtml({ subscription_end_date: newEndStr });
-        const headerPill = row.querySelector('.admin-card-header .admin-status-pill');
-        if(headerPill){ headerPill.textContent = 'نشط'; headerPill.style.background = 'rgba(63,98,71,.15)'; headerPill.style.color = 'var(--basil)'; }
         toast('تم تجديد الاشتراك حتى ' + newEndStr);
+        await loadRestaurantsTab();
       });
     });
     const planSelect = row.querySelector('select[data-field="feature_plan"]');
     if(planSelect){
       planSelect.addEventListener('change', async ()=>{
-        const { error: updErr } = await sb.from('restaurants').update({ feature_plan: planSelect.value }).eq('id', rId);
+        const { error: updErr } = await sb.from('accounts').update({ feature_plan: planSelect.value }).eq('id', accId);
         if(updErr){ toast('تعذر الحفظ'); return; }
         toast('تم الحفظ');
+        await loadRestaurantsTab();
       });
     }
-    // اختيار الباقة السعرية (STARTER/PRO) بيحدّث القيود المرتبطة بيها كلها دفعة واحدة
+    // اختيار الباقة السعرية (STARTER/PRO) بيحدّث القيود المرتبطة بيها كلها دفعة واحدة، وبيحدد كمان الحد الأقصى لعدد الفروع
     const tierSelect = row.querySelector('select[data-field="subscription_tier"]');
     if(tierSelect){
       tierSelect.addEventListener('change', async ()=>{
@@ -4795,14 +4988,11 @@ async function openAdminPanel(){
           restriction_stats_charts_disabled: !isPro,
         };
         tierSelect.disabled = true;
-        const { error: updErr } = await sb.from('restaurants').update(updatePayload).eq('id', rId);
+        const { error: updErr } = await sb.from('accounts').update(updatePayload).eq('id', accId);
         tierSelect.disabled = false;
         if(updErr){ toast('تعذر الحفظ'); return; }
-        ['restriction_excel_disabled','restriction_drivers_disabled','restriction_extra_channels_disabled','restriction_multi_wallet_disabled','restriction_stats_charts_disabled'].forEach(f=>{
-          const cb = row.querySelector(`input[type="checkbox"][data-field="${f}"]`);
-          if(cb) cb.checked = updatePayload[f];
-        });
         toast(isPro ? 'تم التحويل إلى باقة PRO' : 'تم التحويل إلى باقة STARTER');
+        await loadRestaurantsTab();
       });
     }
     row.querySelectorAll('input[type="number"][data-field]').forEach(numInput=>{
@@ -4814,7 +5004,7 @@ async function openAdminPanel(){
           val = isDemoDays ? null : 1;
         }
         numInput.value = val ?? '';
-        const { error: updErr } = await sb.from('restaurants').update({ [field]: val }).eq('id', rId);
+        const { error: updErr } = await sb.from('accounts').update({ [field]: val }).eq('id', accId);
         if(updErr){ toast('تعذر الحفظ'); return; }
         toast('تم الحفظ');
       });
@@ -4946,11 +5136,17 @@ async function openAdminPanel(){
           const p = paymentsList.find(x=> x.id === id);
           if(!p) return;
           btn.disabled = true; btn.textContent = 'جارِ التفعيل...';
-          const { data: rRow, error: rErr } = await sb.from('restaurants').select('subscription_end_date').eq('id', p.restaurant_id).maybeSingle();
-          if(rErr){ toast('تعذر جلب بيانات المطعم'); btn.disabled=false; btn.textContent='✅ قبول وتفعيل'; return; }
+          let accId = p.account_id;
+          if(!accId){
+            const { data: rRow } = await sb.from('restaurants').select('account_id').eq('id', p.restaurant_id).maybeSingle();
+            accId = rRow && rRow.account_id;
+          }
+          if(!accId){ toast('تعذر تحديد الحساب المرتبط بهذا الطلب'); btn.disabled=false; btn.textContent='✅ قبول وتفعيل'; return; }
+          const { data: accRow, error: rErr } = await sb.from('accounts').select('subscription_end_date').eq('id', accId).maybeSingle();
+          if(rErr){ toast('تعذر جلب بيانات الحساب'); btn.disabled=false; btn.textContent='✅ قبول وتفعيل'; return; }
           const months = planMonthsFor(p.plan_key);
-          const newEndStr = extendSubscriptionDate(rRow && rRow.subscription_end_date, months);
-          const { error: updErr } = await sb.from('restaurants').update({ subscription_end_date: newEndStr, account_suspended:false }).eq('id', p.restaurant_id);
+          const newEndStr = extendSubscriptionDate(accRow && accRow.subscription_end_date, months);
+          const { error: updErr } = await sb.from('accounts').update({ subscription_end_date: newEndStr, account_suspended:false }).eq('id', accId);
           if(updErr){ toast('تعذر تفعيل الاشتراك'); btn.disabled=false; btn.textContent='✅ قبول وتفعيل'; return; }
           await sb.from('payment_requests').update({ status:'approved', approved_at: new Date().toISOString() }).eq('id', id);
           toast('تم تفعيل الاشتراك حتى ' + newEndStr);
@@ -5292,6 +5488,16 @@ async function openAdminPanel(){
       wrap.innerHTML = `<div class="orders-empty">جارِ التحميل...</div>`;
       const { data: allRestaurants, error } = await sb.from('restaurants').select('*').order('created_at', { ascending:false });
       if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل بيانات العملاء</div>`; return; }
+      const { data: allAccounts, error: accError } = await sb.from('accounts').select('*');
+      if(accError){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل بيانات الحسابات/الاشتراكات</div>`; return; }
+      const accountById2 = {};
+      (allAccounts || []).forEach(a=> accountById2[a.id] = a);
+      allRestaurants.forEach(r=>{
+        const acc = accountById2[r.account_id];
+        if(acc) ACCOUNT_LEVEL_FIELDS.forEach(f=> r[f] = acc[f]);
+        r._accountId = r.account_id;
+        r._accountCreatedAt = acc ? acc.created_at : r.created_at;
+      });
 
       const windowDays = parseInt(windowSelect.value, 10);
 
@@ -5303,7 +5509,7 @@ async function openAdminPanel(){
           return { type:'subscription', end, daysLeft };
         }
         if(r.demo_days){
-          const end = new Date(r.created_at);
+          const end = new Date(r._accountCreatedAt);
           end.setDate(end.getDate() + Number(r.demo_days));
           const daysLeft = Math.ceil((end.getTime() - Date.now()) / 86400000);
           return { type:'demo', end, daysLeft };
@@ -6688,7 +6894,7 @@ async function openSubscriptionModal(){
   overlay.querySelector('#subModalRenewBtn').addEventListener('click', ()=> openRenewFlow(restaurant));
 
   const wrap = overlay.querySelector('#subHistoryWrap');
-  const { data, error } = await sb.from('payment_requests').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending:false });
+  const { data, error } = await sb.from('payment_requests').select('*').eq('account_id', restaurant.account_id).order('created_at', { ascending:false });
   if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل سجل المدفوعات</div>`; return; }
   if(!data || !data.length){ wrap.innerHTML = `<div class="orders-empty">لا توجد عمليات دفع سابقة</div>`; return; }
   wrap.innerHTML = data.map(p=>{
