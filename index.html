@@ -1641,7 +1641,7 @@ document.getElementById('authSubmitBtn').addEventListener('click', async ()=>{
         btn.disabled = false;
         return;
       }
-      const { data: codeOk, error: codeErr } = await sb.rpc('verify_signup_code', { code: signupCode });
+      const { data: codeOk, error: codeErr } = await sb.rpc('verify_signup_code', { code: signupCode, user_email: email });
       if(codeErr || !codeOk){
         errEl.textContent = 'رمز التسجيل غير صحيح';
         btn.disabled = false;
