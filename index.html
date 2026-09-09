@@ -1693,6 +1693,7 @@ document.getElementById('forgotPasswordLink').addEventListener('click', async ()
 // تسجيل خروج موحّد يُستخدم من رابط "تسجيل الخروج" العادي ومن شاشات الحساب المعلّق/التجربة المنتهية
 async function signOutApp(){
   stopOrderAlertLoop();
+  stopOverdueCheckLoop();
   await sb.auth.signOut();
   currentUser = null; restaurant = null; account = null; branches = [];
   document.getElementById('authEmail').value='';
@@ -2871,6 +2872,13 @@ function startOverdueCheckLoop(){
   if(overdueCheckIntervalId) return;
   checkOverdueOrders();
   overdueCheckIntervalId = setInterval(checkOverdueOrders, 60000);
+}
+
+function stopOverdueCheckLoop(){
+  if(overdueCheckIntervalId){
+    clearInterval(overdueCheckIntervalId);
+    overdueCheckIntervalId = null;
+  }
 }
 
 // الطباعة التلقائية للمطبخ — إعداد خاص بكل جهاز/شاشة (متصفح) مش بكل المطعم، عشان تقدر تفعّلها في شاشة المطبخ بس
@@ -8444,12 +8452,19 @@ async function migrateLegacyImages(){
   const catIds = (cats || []).map(c=>c.id);
   if(catIds.length){
     const { data: its } = await sb.from('items').select('id,image_url').in('category_id', catIds);
-    for(const it of (its || [])){
-      if(it.image_url && it.image_url.startsWith('data:')){
-        const url = await uploadImageToStorage(it.image_url, `items/${restaurant.id}`);
-        const { error } = await sb.from('items').update({ image_url: url }).eq('id', it.id);
-        if(!error) migrated++;
-      }
+    const legacyItems = (its || []).filter(it => it.image_url && it.image_url.startsWith('data:'));
+    // بنرفع الصور على دفعات متوازية (5 في المرة) بدل واحدة ورا التانية، عشان يبقى أسرع مع مطاعم فيها صور كتير
+    const BATCH_SIZE = 5;
+    for(let i = 0; i < legacyItems.length; i += BATCH_SIZE){
+      const batch = legacyItems.slice(i, i + BATCH_SIZE);
+      const results = await Promise.all(batch.map(async (it)=>{
+        try{
+          const url = await uploadImageToStorage(it.image_url, `items/${restaurant.id}`);
+          const { error } = await sb.from('items').update({ image_url: url }).eq('id', it.id);
+          return !error;
+        }catch(e){ return false; }
+      }));
+      migrated += results.filter(Boolean).length;
     }
   }
   return migrated;
@@ -8934,14 +8949,30 @@ function renderTrackingStatus(status){
   </div>`;
 }
 
+// بيرجع الساعة والدقيقة دلوقتي بتوقيت المطعم (مصر) مش بتوقيت جهاز الزائر،
+// عشان لو زبون فتح المنيو من بلد تانية تفضل حالة "مفتوح/مقفول" صحيحة بالنسبة لتوقيت المطعم الفعلي
+function getRestaurantLocalNowMinutes(){
+  try{
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', hour12: false
+    }).formatToParts(new Date());
+    const h = Number(parts.find(p=>p.type==='hour').value);
+    const m = Number(parts.find(p=>p.type==='minute').value);
+    return h*60 + m;
+  }catch(e){
+    // fallback لو المتصفح مش داعم Intl.DateTimeFormat مع timeZone لأي سبب
+    const now = new Date();
+    return now.getHours()*60 + now.getMinutes();
+  }
+}
+
 function getRestaurantOpenStatus(rest){
   if(!rest.opening_time || !rest.closing_time) return { isOpen: true };
   const openParts = rest.opening_time.split(':').map(Number);
   const closeParts = rest.closing_time.split(':').map(Number);
   const openMin = openParts[0]*60 + openParts[1];
   const closeMin = closeParts[0]*60 + closeParts[1];
-  const now = new Date();
-  const nowMin = now.getHours()*60 + now.getMinutes();
+  const nowMin = getRestaurantLocalNowMinutes();
   let isOpen;
   if(openMin === closeMin) isOpen = true;
   else if(openMin < closeMin) isOpen = nowMin >= openMin && nowMin < closeMin;
@@ -9699,9 +9730,12 @@ async function loadPublic(slug){
     lang = lang==='ar' ? 'en' : 'ar';
     renderPublicBody();
   });
+  let pubSearchDebounceId = null;
   document.getElementById('pubSearchInput').addEventListener('input', (e)=>{
     searchTerm = e.target.value.trim();
-    renderPublicBody();
+    clearTimeout(pubSearchDebounceId);
+    // بنأجل إعادة الرسم شوية (180ms) عشان منعملش rebuild كامل للـ DOM مع كل حرف يكتبه الزبون
+    pubSearchDebounceId = setTimeout(()=> renderPublicBody(), 180);
   });
 
   window.addEventListener('scroll', ()=>{
@@ -10680,6 +10714,12 @@ boot();
       });
     }
 
+    // بنجمع كل الـ intervals بتاعة تدوير الإعلانات هنا عشان نقدر نوقفها كلها بدل ما تفضل شغالة للأبد
+    if(window.__pubAdIntervalIds){
+      window.__pubAdIntervalIds.forEach(id => clearInterval(id));
+    }
+    window.__pubAdIntervalIds = [];
+
     var mobileBar = document.getElementById('pubMobileAdBar');
     if(mobileBar){
       document.body.classList.add('pub-mobile-ad-open');
@@ -10688,11 +10728,12 @@ boot();
         var idx = 0;
         slides[0].classList.add('active');
         if(slides.length > 1){
-          setInterval(function(){
+          var mobileAdIntervalId = setInterval(function(){
             slides[idx].classList.remove('active');
             idx = (idx + 1) % slides.length;
             slides[idx].classList.add('active');
           }, ROTATE_MS);
+          window.__pubAdIntervalIds.push(mobileAdIntervalId);
         }
       }
     }
@@ -10708,16 +10749,27 @@ boot();
       dSlides[0].classList.add('active');
       container.setAttribute('data-active', dSlides[0].getAttribute('data-key') || '');
       if(dSlides.length > 1){
-        setInterval(function(){
+        var desktopAdIntervalId = setInterval(function(){
           dSlides[dIdx].classList.remove('active');
           dIdx = (dIdx + 1) % dSlides.length;
           dSlides[dIdx].classList.add('active');
           container.setAttribute('data-active', dSlides[dIdx].getAttribute('data-key') || '');
         }, DESKTOP_ROTATE_MS);
+        window.__pubAdIntervalIds.push(desktopAdIntervalId);
       }
     }
     initDesktopAdSlides('pubSideAdLeft');
     initDesktopAdSlides('pubSideAdRight');
+
+    // نوقف كل intervals الإعلانات لما التبويب يبقى مخفي، ونشغّلها تاني لما يرجع ظاهر (توفير بطارية/معالج)
+    if(!window.__pubAdVisibilityHandlerAdded){
+      window.__pubAdVisibilityHandlerAdded = true;
+      document.addEventListener('visibilitychange', function(){
+        if(document.hidden && window.__pubAdIntervalIds){
+          window.__pubAdIntervalIds.forEach(id => clearInterval(id));
+        }
+      });
+    }
 
     // تتبّع نقرة الإعلان (delegation — يقرأ data-ad وقت الضغط، فيشتغل صح حتى لو الإعلان اتغيّر لإعلان مخصص لاحقًا)
     document.addEventListener('click', function(e){
