@@ -908,6 +908,7 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
         <button type="button" class="link-btn dash-menu-trigger">⚙️ الإعدادات <span class="caret">▾</span></button>
         <div class="dash-menu-dropdown">
           <button class="link-btn" id="restaurantSettingsBtn">إعدادات المطعم</button>
+          <button class="link-btn" id="backupBtn">📦 النسخ الاحتياطي</button>
           <button class="link-btn" id="subscriptionBtn">💳 الاشتراك</button>
           <button class="link-btn" id="notifPermBtn">🔔 تفعيل تنبيهات المتصفح</button>
         </div>
@@ -2063,6 +2064,7 @@ async function openDashboard(){
   applyGranularRestrictionsUI();
   applyTierLockBadgesUI();
   migrateLegacyImages().catch(()=>{});
+  maybeRunAutoDailyBackup().catch(()=>{});
 }
 
 // شارة ثابتة بجانب اسم المطعم توضح باستمرار الأيام المتبقية من التجربة المجانية أو الاشتراك،
@@ -4764,6 +4766,7 @@ async function openAdminPanel(){
             ${ownerEmail !== '—' ? `<button type="button" class="link-btn admin-reset-pw-btn" data-email="${escapeHtml(ownerEmail)}" style="font-size:11px; padding:4px 9px;">🔑 تغيير كلمة المرور</button>` : ''}
             ${r.phone ? `<button type="button" class="link-btn admin-send-reminder-btn" data-id="${r.id}" style="font-size:11px; padding:4px 9px;">📲 تنبيه انتهاء</button>` : ''}
             ${r.phone ? `<button type="button" class="link-btn admin-send-payment-btn" data-id="${r.id}" style="font-size:11px; padding:4px 9px;">💳 شرح الدفع</button>` : ''}
+            <button type="button" class="link-btn admin-backup-btn" data-id="${r.id}" data-slug="${escapeHtml(r.slug)}" style="font-size:11px; padding:4px 9px;">📦 نسخة احتياطية</button>
             <span class="admin-reminder-status" data-id="${r.id}" style="font-size:10.5px;">${reminderStatusHtml(r)}</span>
             <a href="${location.origin}${location.pathname}?r=${encodeURIComponent(r.slug)}" target="_blank" rel="noopener" class="link-btn admin-menu-link-btn" style="display:inline-block; font-size:11px; padding:4px 9px; text-decoration:none;">🔗 فتح المنيو</a>
           </div>
@@ -4975,6 +4978,35 @@ async function openAdminPanel(){
       const r = allRestaurants.find(x=> x.id === btn.dataset.id);
       if(!r) return;
       sendPaymentInstructionsWhatsApp(r);
+    });
+  });
+
+  wrap.querySelectorAll('.admin-backup-btn').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      const rId = btn.dataset.id;
+      const slug = btn.dataset.slug;
+      const originalText = btn.textContent;
+      btn.disabled = true; btn.textContent = '⏳ جاري التجهيز...';
+      try{
+        const { data, error } = await sb.rpc('admin_export_restaurant_backup', { p_restaurant_id: rId });
+        if(error) throw error;
+        const json = JSON.stringify(data);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const dateStr = new Date().toISOString().slice(0,10);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `menu-mag-backup-${slug || rId}-${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(()=> URL.revokeObjectURL(url), 5000);
+        toast('✅ تم تنزيل النسخة الاحتياطية');
+      }catch(err){
+        toast('❌ حصل خطأ أثناء تجهيز النسخة الاحتياطية');
+      }
+      btn.disabled = false; btn.textContent = originalText;
     });
   });
 
@@ -6674,6 +6706,70 @@ function exportOrdersToExcel(orderList, itemsByOrderMap, filenameLabel){
   toast(`تم تصدير ${orderList.length} طلب بنجاح`);
 }
 
+function openBackupModal(){
+  const entityLabel = biz(restaurant.business_type, 'entityDef');
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>📦 النسخ الاحتياطي والاستعادة</h3>
+      <div class="field">
+        <label>حفظ نسخة احتياطية</label>
+        <small>نسخة كاملة من بيانات ${entityLabel} (الإعدادات، الفئات، الأصناف، مناطق التوصيل، الطلبات، والعملاء) في ملف واحد تقدر تحتفظ بيه. كمان بينزلّك ملف نسخة احتياطية تلقائيًا مرة كل يوم أول ما تفتح لوحة التحكم.</small>
+        <button type="button" class="add-btn" id="rsBackupNowBtn" style="margin-top:8px;">⬇️ تنزيل نسخة احتياطية الآن</button>
+      </div>
+      <div class="field">
+        <label>الاستعادة من نسخة احتياطية</label>
+        <small style="color:#c0392b;">⚠️ تحذير: الاستعادة هتستبدل كل بيانات ${entityLabel} الحالية بالبيانات الموجودة في الملف، ومينفعش ترجع للحالة الحالية بعد كده إلا لو عندك نسخة احتياطية تانية.</small>
+        <button type="button" class="add-btn" id="rsRestoreBackupBtn" style="margin-top:8px;">⬆️ استعادة من نسخة احتياطية</button>
+        <input type="file" id="rsRestoreBackupFile" accept="application/json,.json" style="display:none;">
+      </div>
+      <div class="auth-err" id="rsBackupStatus" style="display:block;"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="rsBackupCloseBtn">إغلاق</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#rsBackupCloseBtn').addEventListener('click', ()=> overlay.remove());
+
+  overlay.querySelector('#rsBackupNowBtn').addEventListener('click', async ()=>{
+    const btn = overlay.querySelector('#rsBackupNowBtn');
+    const statusEl = overlay.querySelector('#rsBackupStatus');
+    btn.disabled = true; statusEl.textContent = 'جاري تجهيز النسخة الاحتياطية...';
+    try{
+      await downloadRestaurantBackup(restaurant.id, restaurant.slug);
+      statusEl.textContent = '✅ تم تنزيل النسخة الاحتياطية بنجاح';
+    }catch(e){
+      statusEl.textContent = '❌ حصل خطأ أثناء تجهيز النسخة الاحتياطية، حاول تاني';
+    }
+    btn.disabled = false;
+  });
+
+  overlay.querySelector('#rsRestoreBackupBtn').addEventListener('click', ()=>{
+    overlay.querySelector('#rsRestoreBackupFile').click();
+  });
+
+  overlay.querySelector('#rsRestoreBackupFile').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    if(!confirm('تحذير: استعادة النسخة الاحتياطية هتستبدل كل بيانات ' + entityLabel + ' الحالية (الإعدادات، الفئات، الأصناف، مناطق التوصيل، الطلبات، والعملاء) بالبيانات الموجودة في الملف، ومينفعش نرجع للحالة الحالية بعد كده إلا لو عندك نسخة احتياطية تانية. متأكد إنك عايز تكمل؟')) return;
+    const statusEl = overlay.querySelector('#rsBackupStatus');
+    statusEl.textContent = 'جاري استعادة النسخة الاحتياطية...';
+    try{
+      const text = await file.text();
+      const backup = JSON.parse(text);
+      const result = await restoreRestaurantBackupFromObject(restaurant.id, backup);
+      statusEl.textContent = `✅ تمت الاستعادة بنجاح — ${result.orders || 0} طلب، ${result.items || 0} صنف، ${result.customers || 0} عميل`;
+      toast('تمت الاستعادة بنجاح، جاري إعادة تحميل البيانات...');
+      setTimeout(()=> window.location.reload(), 1500);
+    }catch(e){
+      statusEl.textContent = '❌ ' + (e && e.message ? e.message : 'حصل خطأ أثناء الاستعادة، تأكد إن الملف نسخة احتياطية صحيحة لنفس ' + entityLabel);
+    }
+  });
+}
+
 function openCleanupOrdersModal(){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
@@ -7053,6 +7149,9 @@ async function openSubscriptionModal(){
 
 document.getElementById('subscriptionBtn').addEventListener('click', openSubscriptionModal);
 
+document.getElementById('backupBtn').addEventListener('click', ()=>{
+  openBackupModal();
+});
 document.getElementById('restaurantSettingsBtn').addEventListener('click', async ()=>{
   if(restaurant.restriction_settings_disabled){ toast('إعدادات المطعم غير متاحة في نسختك الحالية'); return; }
   const { data: settingsZones } = await sb.from('delivery_zones').select('*').eq('restaurant_id', restaurant.id).order('area_name');
@@ -8527,6 +8626,119 @@ async function uploadImageToStorage(dataUrl, folder){
   if(error) throw error;
   const { data } = sb.storage.from('menu-images').getPublicUrl(path);
   return data.publicUrl;
+}
+
+// ================= النسخ الاحتياطي والاستعادة =================
+
+// بنجمع كل بيانات المطعم (فئات، أصناف، أحجام، مناطق توصيل، طلبات، عناصر الطلبات، وإحصائية العملاء) في كائن واحد
+async function collectRestaurantBackup(restaurantId){
+  const { data: cats, error: catsErr } = await sb.from('categories').select('*').eq('restaurant_id', restaurantId);
+  if(catsErr) throw catsErr;
+  const catIds = (cats || []).map(c=> c.id);
+
+  let items = [];
+  if(catIds.length){
+    const { data, error } = await sb.from('items').select('*').in('category_id', catIds);
+    if(error) throw error;
+    items = data || [];
+  }
+  const itemIds = items.map(i=> i.id);
+
+  let itemSizes = [];
+  if(itemIds.length){
+    const { data, error } = await sb.from('item_sizes').select('*').in('item_id', itemIds);
+    if(error) throw error;
+    itemSizes = data || [];
+  }
+
+  const { data: zones, error: zonesErr } = await sb.from('delivery_zones').select('*').eq('restaurant_id', restaurantId);
+  if(zonesErr) throw zonesErr;
+
+  const { data: orders, error: ordersErr } = await sb.from('orders').select('*').eq('restaurant_id', restaurantId);
+  if(ordersErr) throw ordersErr;
+  const orderIds = (orders || []).map(o=> o.id);
+
+  let orderItems = [];
+  // بنجيب order_items على دفعات (500 طلب في المرة) عشان مانبعتش IN() بعدد ضخم جدًا لو الطلبات كتير
+  for(let i=0; i<orderIds.length; i+=500){
+    const batchIds = orderIds.slice(i, i+500);
+    const { data, error } = await sb.from('order_items').select('*').in('order_id', batchIds);
+    if(error) throw error;
+    orderItems = orderItems.concat(data || []);
+  }
+
+  const { data: customers, error: custErr } = await sb.from('customer_order_stats').select('*').eq('restaurant_id', restaurantId);
+  if(custErr) throw custErr;
+
+  // إعدادات المطعم اللي صاحب المطعم بيتحكم فيها بس (مش أي حقل إداري/اشتراك) — نفس القائمة المستخدمة في استرجاعها
+  const r = restaurant || {};
+  const settingsFields = ['name','name_en','logo_url','phone','messenger_username','telegram_username','address',
+    'opening_time','closing_time','min_delivery_order','min_delivery_order_online','business_type',
+    'default_prep_minutes','accept_online_payment','instapay_account','wallets','wallet_label','wallet_number',
+    'custom_ad_enabled','custom_ad_icon','custom_ad_title','custom_ad_title_en','custom_ad_desc','custom_ad_desc_en',
+    'custom_ad_cta','custom_ad_cta_en','custom_ad_url','default_delivery_fee_mode','default_delivery_fee_amount',
+    'default_delivery_zone_id','notification_phone','notification_apikey','country_code','currency_label'];
+  const restaurantSettings = {};
+  settingsFields.forEach(f=> restaurantSettings[f] = r[f] !== undefined ? r[f] : null);
+
+  return {
+    backup_version: 2,
+    exported_at: new Date().toISOString(),
+    restaurant_id: restaurantId,
+    restaurant_name: restaurant ? restaurant.name : null,
+    restaurant_settings: restaurantSettings,
+    categories: cats || [],
+    items,
+    item_sizes: itemSizes,
+    delivery_zones: zones || [],
+    orders: orders || [],
+    order_items: orderItems,
+    customer_order_stats: customers || [],
+  };
+}
+
+// بينزّل ملف JSON فيه نسخة احتياطية كاملة على جهاز المستخدم
+async function downloadRestaurantBackup(restaurantId, slug){
+  const backup = await collectRestaurantBackup(restaurantId);
+  const json = JSON.stringify(backup);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const dateStr = new Date().toISOString().slice(0,10);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `menu-mag-backup-${slug || restaurantId}-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=> URL.revokeObjectURL(url), 5000);
+  return backup;
+}
+
+// بيستدعي RPC استعادة النسخة الاحتياطية على قاعدة البيانات (استبدال كامل لبيانات المطعم)
+async function restoreRestaurantBackupFromObject(restaurantId, backup){
+  if(!backup || typeof backup !== 'object' || !Array.isArray(backup.categories)){
+    throw new Error('هذا الملف مش نسخة احتياطية صحيحة');
+  }
+  const { data, error } = await sb.rpc('restore_restaurant_backup', { p_restaurant_id: restaurantId, p_backup: backup });
+  if(error) throw error;
+  return data;
+}
+
+// نسخة احتياطية تلقائية يومية: بتتنزل تلقائيًا مرة واحدة كل يوم أول ما صاحب المطعم يفتح لوحة التحكم،
+// من غير أي تخزين دائم على السيرفر — مجرد ملف بينزل على جهازه هو بس
+async function maybeRunAutoDailyBackup(){
+  try{
+    if(!restaurant || !restaurant.id) return;
+    const key = `mag_last_auto_backup_${restaurant.id}`;
+    const today = new Date().toISOString().slice(0,10);
+    if(localStorage.getItem(key) === today) return; // اتعملت النهاردة بالفعل
+    await downloadRestaurantBackup(restaurant.id, restaurant.slug);
+    localStorage.setItem(key, today);
+    toast('📦 تم تنزيل نسخة احتياطية تلقائية لليوم');
+  }catch(e){
+    // فشل النسخة التلقائية مايوقفش استخدام الداشبورد أبدًا
+    console.warn('auto backup failed', e);
+  }
 }
 
 async function migrateLegacyImages(){
