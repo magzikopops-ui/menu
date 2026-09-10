@@ -1488,7 +1488,7 @@ function sendOrderToDriverWhatsApp(order, lines, driver){
   if(order.city || order.area) msg += `المنطقة: ${[order.city, order.area].filter(Boolean).join(' — ')}\n`;
   if(order.address) msg += `العنوان: ${order.address}\n`;
   if(itemsLines) msg += `\nالأصناف:\n${itemsLines}\n`;
-  if(order.total != null) msg += `\nالإجمالي: ${Number(order.total).toFixed(2)} EGP`;
+  if(order.total != null) msg += `\nالإجمالي: ${Number(order.total).toFixed(2)} ${getRestaurantCurrency(restaurant)}`;
   if(order.notes) msg += `\nملاحظات: ${order.notes}`;
   window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
 }
@@ -2183,6 +2183,60 @@ function gccApproxLabel(usdAmount, countryKey){
   return conv ? `≈ ${conv.value} ${conv.code}` : '';
 }
 
+// قايمة دول المطعم نفسه (مش الزبون) — بتحدد التوقيت المستخدم في حساب "مفتوح/مقفول"،
+// وبتحدد هل نعرض وسائل الدفع المصرية (فودافون كاش/USSD) ولا لأ. العملة منفصلة تمامًا وبتتكتب يدويًا من صاحب المطعم.
+const RESTAURANT_COUNTRIES = [
+  { code:'EG', name_ar:'مصر', name_en:'Egypt', tz:'Africa/Cairo', cur:'EGP' },
+  { code:'SA', name_ar:'السعودية', name_en:'Saudi Arabia', tz:'Asia/Riyadh', cur:'SR' },
+  { code:'AE', name_ar:'الإمارات', name_en:'UAE', tz:'Asia/Dubai', cur:'درهم' },
+  { code:'QA', name_ar:'قطر', name_en:'Qatar', tz:'Asia/Qatar', cur:'ريال' },
+  { code:'KW', name_ar:'الكويت', name_en:'Kuwait', tz:'Asia/Kuwait', cur:'دينار' },
+  { code:'BH', name_ar:'البحرين', name_en:'Bahrain', tz:'Asia/Bahrain', cur:'دينار' },
+  { code:'OM', name_ar:'عُمان', name_en:'Oman', tz:'Asia/Muscat', cur:'ريال' },
+  { code:'JO', name_ar:'الأردن', name_en:'Jordan', tz:'Asia/Amman', cur:'دينار' },
+  { code:'LB', name_ar:'لبنان', name_en:'Lebanon', tz:'Asia/Beirut', cur:'ليرة' },
+  { code:'SY', name_ar:'سوريا', name_en:'Syria', tz:'Asia/Damascus', cur:'ليرة' },
+  { code:'IQ', name_ar:'العراق', name_en:'Iraq', tz:'Asia/Baghdad', cur:'دينار' },
+  { code:'PS', name_ar:'فلسطين', name_en:'Palestine', tz:'Asia/Gaza', cur:'شيكل' },
+  { code:'YE', name_ar:'اليمن', name_en:'Yemen', tz:'Asia/Aden', cur:'ريال' },
+  { code:'LY', name_ar:'ليبيا', name_en:'Libya', tz:'Africa/Tripoli', cur:'دينار' },
+  { code:'TN', name_ar:'تونس', name_en:'Tunisia', tz:'Africa/Tunis', cur:'دينار' },
+  { code:'DZ', name_ar:'الجزائر', name_en:'Algeria', tz:'Africa/Algiers', cur:'دينار' },
+  { code:'MA', name_ar:'المغرب', name_en:'Morocco', tz:'Africa/Casablanca', cur:'درهم' },
+  { code:'SD', name_ar:'السودان', name_en:'Sudan', tz:'Africa/Khartoum', cur:'جنيه' },
+  { code:'MR', name_ar:'موريتانيا', name_en:'Mauritania', tz:'Africa/Nouakchott', cur:'أوقية' },
+  { code:'SO', name_ar:'الصومال', name_en:'Somalia', tz:'Africa/Mogadishu', cur:'شلن' },
+  { code:'DJ', name_ar:'جيبوتي', name_en:'Djibouti', tz:'Africa/Djibouti', cur:'فرنك' },
+  { code:'KM', name_ar:'جزر القمر', name_en:'Comoros', tz:'Indian/Comoro', cur:'فرنك' },
+  { code:'TR', name_ar:'تركيا', name_en:'Turkey', tz:'Europe/Istanbul', cur:'ليرة' },
+  { code:'GB', name_ar:'بريطانيا', name_en:'UK', tz:'Europe/London', cur:'£' },
+  { code:'DE', name_ar:'ألمانيا', name_en:'Germany', tz:'Europe/Berlin', cur:'€' },
+  { code:'FR', name_ar:'فرنسا', name_en:'France', tz:'Europe/Paris', cur:'€' },
+  { code:'IT', name_ar:'إيطاليا', name_en:'Italy', tz:'Europe/Rome', cur:'€' },
+  { code:'US', name_ar:'أمريكا', name_en:'USA', tz:'America/New_York', cur:'$' },
+  { code:'CA', name_ar:'كندا', name_en:'Canada', tz:'America/Toronto', cur:'$' },
+  { code:'AU', name_ar:'أستراليا', name_en:'Australia', tz:'Australia/Sydney', cur:'$' },
+  { code:'MY', name_ar:'ماليزيا', name_en:'Malaysia', tz:'Asia/Kuala_Lumpur', cur:'رينجت' },
+  { code:'ID', name_ar:'إندونيسيا', name_en:'Indonesia', tz:'Asia/Jakarta', cur:'روبية' },
+  { code:'PK', name_ar:'باكستان', name_en:'Pakistan', tz:'Asia/Karachi', cur:'روبية' },
+  { code:'IN', name_ar:'الهند', name_en:'India', tz:'Asia/Kolkata', cur:'روبية' },
+];
+// لو دولة المطعم مش محددة (مطاعم قديمة قبل الميزة دي) بنفترض مصر افتراضيًا عشان محدش يتأثر فجأة
+function getRestaurantCountry(rest){
+  return RESTAURANT_COUNTRIES.find(c => c.code === (rest && rest.country_code)) || RESTAURANT_COUNTRIES[0];
+}
+function getRestaurantTimezone(rest){
+  return getRestaurantCountry(rest).tz;
+}
+// لو صاحب المطعم مصري (أو لسه محددش دولته) نعرض وسائل الدفع المصرية (فودافون كاش/USSD)، غير كده نخفيها لأنها مش هتشتغل برة مصر
+function isEgyptRestaurant(rest){
+  return !rest || !rest.country_code || rest.country_code === 'EG';
+}
+// عملة المطعم زي ما صاحب المطعم كتبها بالظبط في الإعدادات (نص حر: EGP، SR، درهم، ريال، دينار...)، وEGP هي الافتراضي لو لسه محددهاش
+function getRestaurantCurrency(rest){
+  return (rest && rest.currency_label && rest.currency_label.trim()) ? rest.currency_label.trim() : 'EGP';
+}
+
 function extendSubscriptionDate(currentEndDateStr, months){
   const now = new Date();
   let base = now;
@@ -2805,7 +2859,7 @@ function showDesktopOrderNotification(orderRow){
     const custName = orderRow && orderRow.customer_name ? orderRow.customer_name : 'عميل';
     const typeLabel = orderRow && orderRow.order_type === 'delivery' ? 'توصيل' : 'استلام';
     const n = new Notification('طلب جديد! 🔔', {
-      body: `من ${custName} — ${typeLabel}${orderRow && orderRow.total != null ? ` — ${orderRow.total} جنيه` : ''}`,
+      body: `من ${custName} — ${typeLabel}${orderRow && orderRow.total != null ? ` — ${orderRow.total} ${getRestaurantCurrency(restaurant)}` : ''}`,
       icon: (restaurant && restaurant.logo_url) ? restaurant.logo_url : undefined,
       tag: 'new-order-' + (orderRow && orderRow.id ? orderRow.id : Date.now()),
       renotify: true
@@ -2976,7 +3030,7 @@ document.getElementById('deliveryZonesBtn').addEventListener('click', async ()=>
     wrap.innerHTML = zones.map(z=>`
       <div class="zone-row" data-id="${z.id}" data-name="${escapeHtml(z.area_name)}" data-fee="${Number(z.fee)}">
         <span class="zone-name">${escapeHtml(z.area_name)}</span>
-        <span class="zone-fee">${Number(z.fee).toFixed(2)} EGP</span>
+        <span class="zone-fee">${Number(z.fee).toFixed(2)} ${getRestaurantCurrency(restaurant)}</span>
         <button data-action="edit">تعديل</button>
         <button data-action="delete">حذف</button>
       </div>`).join('');
@@ -3892,7 +3946,7 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
             </li>`).join('')}
         </ul>
       </div>` : '';
-    const totalsHtml = o.total != null ? `<div class="o-total">الإجمالي <span>${Number(o.total).toFixed(2)} EGP</span></div>` : '';
+    const totalsHtml = o.total != null ? `<div class="o-total">الإجمالي <span>${Number(o.total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</span></div>` : '';
     const status = o.status || 'pending';
     const today = isToday(o);
     const fresh = isNewOrder(o);
@@ -3941,7 +3995,7 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
           ${restaurant.restriction_print_disabled ? '' : `<button type="button" class="o-print-btn" data-action="printReceipt" data-order-id="${o.id}" title="طباعة الطلب / Print Order">🖨️ طباعة الطلب <span style="opacity:.75;">| Print Order</span></button>`}
         </div>
         ${markPaidHtml}
-        <div class="o-time">📍 ${escapeHtml(o.city || '')}${o.area ? ' — ' + escapeHtml(o.area) : ''}${o.delivery_fee != null ? ` <span class="o-fee">(رسوم التوصيل: ${Number(o.delivery_fee).toFixed(2)} EGP)</span>` : ''}</div>
+        <div class="o-time">📍 ${escapeHtml(o.city || '')}${o.area ? ' — ' + escapeHtml(o.area) : ''}${o.delivery_fee != null ? ` <span class="o-fee">(رسوم التوصيل: ${Number(o.delivery_fee).toFixed(2)} ${getRestaurantCurrency(restaurant)})</span>` : ''}</div>
         ${o.address ? `<div class="o-time">${escapeHtml(o.address)}</div>` : ''}
         ${itemsListHtml}
         ${totalsHtml}
@@ -4171,7 +4225,7 @@ function buildReceiptHtml(order, lines, widthMm){
 
   const subtotalRow = order.subtotal != null ? `<div class="receipt-row"><span class="lbl">الإجمالي الفرعي</span><span class="val">${Number(order.subtotal).toFixed(2)}</span></div>` : '';
   const feeRow = order.delivery_fee != null ? `<div class="receipt-row"><span class="lbl">رسوم التوصيل</span><span class="val">${Number(order.delivery_fee).toFixed(2)}</span></div>` : '';
-  const totalRow = order.total != null ? `<div class="receipt-total-row"><span>الإجمالي</span><span>${Number(order.total).toFixed(2)} EGP</span></div>` : '';
+  const totalRow = order.total != null ? `<div class="receipt-total-row"><span>الإجمالي</span><span>${Number(order.total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</span></div>` : '';
 
   const addressLine = order.order_type === 'pickup'
     ? ''
@@ -5687,7 +5741,7 @@ function buildSalesTrendSVG(rows, numDays, metric){
   return buildDailyTrendSVG(
     rows, numDays,
     r=> metric === 'count' ? Number(r.orders_count || 0) : Number(r.orders_total || 0),
-    v=> metric === 'count' ? `${v} طلب` : `${v.toFixed(2)} EGP`
+    v=> metric === 'count' ? `${v} طلب` : `${v.toFixed(2)} ${getRestaurantCurrency(restaurant)}`
   );
 }
 
@@ -5746,11 +5800,11 @@ function buildDeliveryTypeSummary(typeRows, err){
     <div class="orders-list">
       <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
         <span class="o-name" style="font-weight:700;">🚴 توصيل</span>
-        <span class="o-time" style="text-align:left; margin:0;">${delivery.orders_count} طلب (${deliveryPct}%) — ${Number(delivery.orders_total).toFixed(2)} EGP</span>
+        <span class="o-time" style="text-align:left; margin:0;">${delivery.orders_count} طلب (${deliveryPct}%) — ${Number(delivery.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</span>
       </div>
       <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
         <span class="o-name" style="font-weight:700;">🏠 استلام من المحل</span>
-        <span class="o-time" style="text-align:left; margin:0;">${pickup.orders_count} طلب (${pickupPct}%) — ${Number(pickup.orders_total).toFixed(2)} EGP</span>
+        <span class="o-time" style="text-align:left; margin:0;">${pickup.orders_count} طلب (${pickupPct}%) — ${Number(pickup.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</span>
       </div>
     </div>`;
 }
@@ -5768,7 +5822,7 @@ function buildTopAreasList(areaRows, err){
         return `
         <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
           <span class="o-name" style="font-weight:700;">${i+1}. ${escapeHtml(a.area)}</span>
-          <span class="o-time" style="text-align:left; margin:0;">${a.orders_count} طلب — متوسط توصيل ${avgFee.toFixed(2)} EGP — إجمالي ${Number(a.orders_total).toFixed(2)} EGP</span>
+          <span class="o-time" style="text-align:left; margin:0;">${a.orders_count} طلب — متوسط توصيل ${avgFee.toFixed(2)} ${getRestaurantCurrency(restaurant)} — إجمالي ${Number(a.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</span>
         </div>`;
       }).join('')}
     </div>
@@ -5794,9 +5848,9 @@ function buildInsights({ rows, itemStatsRows, hourlyRows, custRows, visitRows })
   if(prev7Sales > 0){
     const delta = ((last7Sales - prev7Sales) / prev7Sales) * 100;
     if(delta >= 15){
-      cards.push({ type:'positive', icon:'📈', text:`ارتفعت مبيعاتك في آخر 7 أيام بنسبة ${delta.toFixed(0)}% مقارنةً بالأسبوع السابق (${last7Sales.toFixed(0)} مقابل ${prev7Sales.toFixed(0)} جنيه).` });
+      cards.push({ type:'positive', icon:'📈', text:`ارتفعت مبيعاتك في آخر 7 أيام بنسبة ${delta.toFixed(0)}% مقارنةً بالأسبوع السابق (${last7Sales.toFixed(0)} مقابل ${prev7Sales.toFixed(0)} ${getRestaurantCurrency(restaurant)}).` });
     } else if(delta <= -15){
-      cards.push({ type:'warning', icon:'📉', text:`انخفضت مبيعاتك في آخر 7 أيام بنسبة ${Math.abs(delta).toFixed(0)}% مقارنةً بالأسبوع السابق (${last7Sales.toFixed(0)} مقابل ${prev7Sales.toFixed(0)} جنيه).` });
+      cards.push({ type:'warning', icon:'📉', text:`انخفضت مبيعاتك في آخر 7 أيام بنسبة ${Math.abs(delta).toFixed(0)}% مقارنةً بالأسبوع السابق (${last7Sales.toFixed(0)} مقابل ${prev7Sales.toFixed(0)} ${getRestaurantCurrency(restaurant)}).` });
     }
   }
 
@@ -5973,7 +6027,7 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
   const card = (label, count, total)=> `
     <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
       <span class="o-name" style="font-weight:700;">${label}</span>
-      <span class="o-time" style="text-align:left; margin:0;">${count} طلب — ${total.toFixed(2)} EGP</span>
+      <span class="o-time" style="text-align:left; margin:0;">${count} طلب — ${total.toFixed(2)} ${getRestaurantCurrency(restaurant)}</span>
     </div>`;
   const visitCard = (label, count)=> `
     <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
@@ -6161,10 +6215,10 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
     const avgOrderVal = totalCount ? (totalSales/totalCount) : 0;
     salesReportWrap.innerHTML = `
       <div class="report-kpi-row" style="margin-bottom:10px;">
-        <div class="report-kpi"><div class="kpi-label">إجمالي المبيعات</div><div class="kpi-value" style="font-size:14px;">${totalSales.toFixed(2)} EGP</div></div>
+        <div class="report-kpi"><div class="kpi-label">إجمالي المبيعات</div><div class="kpi-value" style="font-size:14px;">${totalSales.toFixed(2)} ${getRestaurantCurrency(restaurant)}</div></div>
         <div class="report-kpi"><div class="kpi-label">عدد الطلبات</div><div class="kpi-value" style="font-size:14px;">${totalCount}</div></div>
-        <div class="report-kpi"><div class="kpi-label">متوسط المبيعات اليومية</div><div class="kpi-value" style="font-size:14px;">${avgDaily.toFixed(2)} EGP</div></div>
-        <div class="report-kpi"><div class="kpi-label">متوسط قيمة الطلب</div><div class="kpi-value" style="font-size:14px;">${avgOrderVal.toFixed(2)} EGP</div></div>
+        <div class="report-kpi"><div class="kpi-label">متوسط المبيعات اليومية</div><div class="kpi-value" style="font-size:14px;">${avgDaily.toFixed(2)} ${getRestaurantCurrency(restaurant)}</div></div>
+        <div class="report-kpi"><div class="kpi-label">متوسط قيمة الطلب</div><div class="kpi-value" style="font-size:14px;">${avgOrderVal.toFixed(2)} ${getRestaurantCurrency(restaurant)}</div></div>
       </div>
       <div style="max-height:320px; overflow-y:auto; border:1px solid var(--line); border-radius:8px;">
         <table style="width:100%; border-collapse:collapse; font-size:12px;">
@@ -6183,8 +6237,8 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
               return `<tr>
                 <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${dLabel}</td>
                 <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${r.orders_count}</td>
-                <td style="padding:6px 8px; border-bottom:1px solid var(--line); direction:ltr; text-align:right;">${Number(r.orders_total).toFixed(2)} EGP</td>
-                <td style="padding:6px 8px; border-bottom:1px solid var(--line); direction:ltr; text-align:right;">${avg.toFixed(2)} EGP</td>
+                <td style="padding:6px 8px; border-bottom:1px solid var(--line); direction:ltr; text-align:right;">${Number(r.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid var(--line); direction:ltr; text-align:right;">${avg.toFixed(2)} ${getRestaurantCurrency(restaurant)}</td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -6198,7 +6252,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
     if(!lastReportRange){ toast('اضغط "عرض" الأول'); return; }
     const filtered = rows.filter(r=> r.day >= lastReportRange.from && r.day <= lastReportRange.to).sort((a,b)=> a.day < b.day ? -1 : 1);
     if(filtered.length === 0){ toast('لا توجد بيانات لتصديرها'); return; }
-    const header = ['التاريخ','عدد الطلبات','إجمالي المبيعات (EGP)','متوسط قيمة الطلب (EGP)'];
+    const header = ['التاريخ','عدد الطلبات',`إجمالي المبيعات (${getRestaurantCurrency(restaurant)})`,`متوسط قيمة الطلب (${getRestaurantCurrency(restaurant)})`];
     const aoa = [header];
     filtered.forEach(r=>{
       const avg = r.orders_count ? (Number(r.orders_total)/r.orders_count) : 0;
@@ -6245,7 +6299,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
         ${top.map(([name, v], i)=> `
           <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
             <span class="o-name" style="font-weight:700;">${i+1}. ${escapeHtml(name)}</span>
-            <span class="o-time" style="text-align:left; margin:0;">${v.quantity} قطعة — ${v.revenue.toFixed(2)} EGP</span>
+            <span class="o-time" style="text-align:left; margin:0;">${v.quantity} قطعة — ${v.revenue.toFixed(2)} ${getRestaurantCurrency(restaurant)}</span>
           </div>`).join('')}
       </div>
       <div class="orders-empty" style="text-align:right; padding:6px 0 0; font-size:12px;">
@@ -6342,7 +6396,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
         </div>
         <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
           <span class="o-name" style="font-weight:700;">متوسط قيمة الطلب (كل العملاء)</span>
-          <span class="o-time" style="text-align:left; margin:0;">${isFinite(avgOrderValueOverall) ? avgOrderValueOverall.toFixed(2) : '0.00'} EGP</span>
+          <span class="o-time" style="text-align:left; margin:0;">${isFinite(avgOrderValueOverall) ? avgOrderValueOverall.toFixed(2) : '0.00'} ${getRestaurantCurrency(restaurant)}</span>
         </div>
       </div>`;
 
@@ -6353,7 +6407,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
           ${top.map((c,i)=> `
             <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
               <span class="o-name" style="font-weight:700;">${i+1}. ${escapeHtml(c.customer_name || 'بدون اسم')} <span style="direction:ltr; display:inline-block; font-size:11px; color:var(--stone);">${escapeHtml(c.customer_phone)}</span></span>
-              <span class="o-time" style="text-align:left; margin:0;">${c.orders_count} طلب — ${Number(c.orders_total).toFixed(2)} EGP</span>
+              <span class="o-time" style="text-align:left; margin:0;">${c.orders_count} طلب — ${Number(c.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</span>
             </div>`).join('')}
         </div>
         <div class="orders-empty" style="text-align:right; padding:6px 0 0; font-size:12px;">
@@ -6403,7 +6457,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
     cancelledWrap.innerHTML = `
       <div class="report-kpi-row" style="margin-bottom:10px;">
         <div class="report-kpi"><div class="kpi-label">عدد الطلبات الملغية</div><div class="kpi-value" style="font-size:14px;">${totalCount}</div></div>
-        <div class="report-kpi"><div class="kpi-label">إجمالي القيمة المفقودة</div><div class="kpi-value" style="font-size:14px;">${totalLost.toFixed(2)} EGP</div></div>
+        <div class="report-kpi"><div class="kpi-label">إجمالي القيمة المفقودة</div><div class="kpi-value" style="font-size:14px;">${totalLost.toFixed(2)} ${getRestaurantCurrency(restaurant)}</div></div>
       </div>
       <div style="max-height:320px; overflow-y:auto; border:1px solid var(--line); border-radius:8px;">
         <table style="width:100%; border-collapse:collapse; font-size:12px;">
@@ -6424,7 +6478,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
                 <td style="padding:6px 8px; border-bottom:1px solid var(--line); direction:ltr; text-align:right;">#${o.order_number ?? '—'}</td>
                 <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${escapeHtml(o.customer_name || '—')}</td>
                 <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${o.order_type === 'pickup' ? 'استلام' : 'توصيل'}${o.area ? ' — ' + escapeHtml(o.area) : ''}</td>
-                <td style="padding:6px 8px; border-bottom:1px solid var(--line); direction:ltr; text-align:right;">${Number(o.total||0).toFixed(2)} EGP</td>
+                <td style="padding:6px 8px; border-bottom:1px solid var(--line); direction:ltr; text-align:right;">${Number(o.total||0).toFixed(2)} ${getRestaurantCurrency(restaurant)}</td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -6436,7 +6490,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
 
   overlay.querySelector('#cancelledReportExportBtn').addEventListener('click', ()=>{
     if(!lastCancelledFiltered || lastCancelledFiltered.length === 0){ toast('لا توجد بيانات لتصديرها'); return; }
-    const header = ['التاريخ','رقم الطلب','العميل','رقم الهاتف','النوع','المنطقة','القيمة (EGP)'];
+    const header = ['التاريخ','رقم الطلب','العميل','رقم الهاتف','النوع','المنطقة',`القيمة (${getRestaurantCurrency(restaurant)})`];
     const aoa = [header];
     lastCancelledFiltered.forEach(o=>{
       aoa.push([o.day, o.order_number ?? '', o.customer_name || '', o.customer_phone || '', o.order_type === 'pickup' ? 'استلام' : 'توصيل', o.area || '', Number(o.total||0).toFixed(2)]);
@@ -6535,7 +6589,7 @@ function buildMonthlyReportHtml({ restaurant, dailyRows, itemStatsRows, custRows
       <div class="report-kpi-row">
         <div class="report-kpi">
           <div class="kpi-label">إجمالي المبيعات (من بداية الشهر)</div>
-          <div class="kpi-value">${curSales.toFixed(2)} EGP</div>
+          <div class="kpi-value">${curSales.toFixed(2)} ${getRestaurantCurrency(restaurant)}</div>
           ${deltaHtml(salesDelta)}
         </div>
         <div class="report-kpi">
@@ -6545,33 +6599,33 @@ function buildMonthlyReportHtml({ restaurant, dailyRows, itemStatsRows, custRows
         </div>
         <div class="report-kpi">
           <div class="kpi-label">متوسط قيمة الطلب</div>
-          <div class="kpi-value">${avgOrderValue.toFixed(2)} EGP</div>
+          <div class="kpi-value">${avgOrderValue.toFixed(2)} ${getRestaurantCurrency(restaurant)}</div>
         </div>
       </div>
 
       <h2>${biz(restaurant.business_type,'itemsDef')} الأكثر مبيعًا هذا الشهر</h2>
       <table>
         <tr><th>الصنف</th><th>الكمية</th><th>الإيراد</th></tr>
-        ${topItems.length ? topItems.map(([name,v])=> `<tr><td>${escapeHtml(name)}</td><td class="num">${v.quantity}</td><td class="num">${v.revenue.toFixed(2)} EGP</td></tr>`).join('') : `<tr><td colspan="3">لا توجد بيانات كافية</td></tr>`}
+        ${topItems.length ? topItems.map(([name,v])=> `<tr><td>${escapeHtml(name)}</td><td class="num">${v.quantity}</td><td class="num">${v.revenue.toFixed(2)} ${getRestaurantCurrency(restaurant)}</td></tr>`).join('') : `<tr><td colspan="3">لا توجد بيانات كافية</td></tr>`}
       </table>
 
       <h2>أكثر العملاء طلبًا (طوال الوقت)</h2>
       <table>
         <tr><th>العميل</th><th>عدد الطلبات</th><th>إجمالي الإنفاق</th></tr>
-        ${topCustomers.length ? topCustomers.map(c=> `<tr><td>${escapeHtml(c.customer_name||'بدون اسم')} — ${escapeHtml(c.customer_phone)}</td><td class="num">${c.orders_count}</td><td class="num">${Number(c.orders_total).toFixed(2)} EGP</td></tr>`).join('') : `<tr><td colspan="3">لا توجد بيانات كافية</td></tr>`}
+        ${topCustomers.length ? topCustomers.map(c=> `<tr><td>${escapeHtml(c.customer_name||'بدون اسم')} — ${escapeHtml(c.customer_phone)}</td><td class="num">${c.orders_count}</td><td class="num">${Number(c.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</td></tr>`).join('') : `<tr><td colspan="3">لا توجد بيانات كافية</td></tr>`}
       </table>
 
       <h2>توصيل مقابل استلام من المحل (كل الوقت)</h2>
       <table>
         <tr><th>النوع</th><th>عدد الطلبات</th><th>القيمة</th></tr>
-        <tr><td>توصيل</td><td class="num">${delivery.orders_count} (${deliveryPct}%)</td><td class="num">${Number(delivery.orders_total).toFixed(2)} EGP</td></tr>
-        <tr><td>استلام من المحل</td><td class="num">${pickup.orders_count} (${100-deliveryPct}%)</td><td class="num">${Number(pickup.orders_total).toFixed(2)} EGP</td></tr>
+        <tr><td>توصيل</td><td class="num">${delivery.orders_count} (${deliveryPct}%)</td><td class="num">${Number(delivery.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</td></tr>
+        <tr><td>استلام من المحل</td><td class="num">${pickup.orders_count} (${100-deliveryPct}%)</td><td class="num">${Number(pickup.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</td></tr>
       </table>
 
       <h2>أكثر المناطق طلبًا (طوال الوقت)</h2>
       <table>
         <tr><th>المنطقة</th><th>عدد الطلبات</th><th>القيمة</th></tr>
-        ${topAreas.length ? topAreas.map(a=> `<tr><td>${escapeHtml(a.area)}</td><td class="num">${a.orders_count}</td><td class="num">${Number(a.orders_total).toFixed(2)} EGP</td></tr>`).join('') : `<tr><td colspan="3">لا توجد بيانات كافية</td></tr>`}
+        ${topAreas.length ? topAreas.map(a=> `<tr><td>${escapeHtml(a.area)}</td><td class="num">${a.orders_count}</td><td class="num">${Number(a.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</td></tr>`).join('') : `<tr><td colspan="3">لا توجد بيانات كافية</td></tr>`}
       </table>
     </div>`;
 }
@@ -7070,6 +7124,17 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
         <input type="text" id="restAddressInput" value="${restaurant.address ? escapeHtml(restaurant.address) : ''}" placeholder="مثال: شارع الجمهورية، أمام محطة المترو">
       </div>
       <div class="field">
+        <label id="rsCountryLabel">دولة ${t().entityDef} (تحدد توقيت مواعيد الفتح/القفل، وتحدد إظهار فودافون كاش/USSD)</label>
+        <select id="restCountryInput">
+          ${RESTAURANT_COUNTRIES.map(c => `<option value="${c.code}" ${(restaurant.country_code||'EG')===c.code ? 'selected' : ''}>${c.name_ar}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label id="rsCurrencyLabel">رمز العملة (يظهر بجانب كل الأسعار في المنيو ولوحة التحكم)</label>
+        <small>اكتبها بالظبط زي ما تحب تظهر للزبون. أمثلة: EGP، SR، ريال، درهم، دينار، ج</small>
+        <input type="text" id="restCurrencyInput" value="${restaurant.currency_label ? escapeHtml(restaurant.currency_label) : 'EGP'}" placeholder="EGP" style="margin-top:8px; max-width:160px;">
+      </div>
+      <div class="field">
         <label id="rsHoursLabel">أوقات العمل (اختياري — اتركهما فاضيين ليكون ${t().entityDef} مفتوحًا طوال الوقت)</label>
         <div style="display:flex; gap:10px;">
           <div style="flex:1;">
@@ -7108,7 +7173,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
           ${pendingZonesList.length > 0 ? `
             <select id="restDefaultFeeZoneInput" style="width:100%; border:1.5px solid var(--line); border-radius:8px; padding:10px 12px; font-family:var(--body); font-size:14px; color:var(--ink); background:var(--paper);">
               <option value="">اختر منطقة...</option>
-              ${pendingZonesList.map(z=>`<option value="${z.id}" ${pendingDefaultZoneId===z.id ? 'selected' : ''}>${escapeHtml(z.area_name)} — ${Number(z.fee).toFixed(2)} EGP</option>`).join('')}
+              ${pendingZonesList.map(z=>`<option value="${z.id}" ${pendingDefaultZoneId===z.id ? 'selected' : ''}>${escapeHtml(z.area_name)} — ${Number(z.fee).toFixed(2)} ${getRestaurantCurrency(restaurant)}</option>`).join('')}
             </select>
           ` : `<small style="color:var(--danger);">لا توجد مناطق مضافة بعد — أضف مناطق أولًا من "مناطق التوصيل" لاستخدام هذا الخيار.</small>`}
         </div>
@@ -7126,9 +7191,9 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
             <div id="rsWalletsListWrap" style="margin-top:8px; display:flex; flex-direction:column; gap:8px;"></div>
             <button type="button" class="add-btn" id="rsAddWalletBtn" style="margin-top:8px; ${restaurant.restriction_multi_wallet_disabled ? 'opacity:.4; cursor:not-allowed;' : ''}" ${restaurant.restriction_multi_wallet_disabled ? 'title="أكثر من محفظة متاح في باقة PRO فقط"' : ''}>+ إضافة محفظة</button>
           </div>
-          <div class="field" style="margin-bottom:0; ${restaurant.restriction_multi_wallet_disabled ? 'opacity:.55;' : ''}">
-            <label>حساب إنستاباي (اختياري)</label>
-            <small>اسم المستخدم الخاص بك على إنستاباي (مثل ‎@mystore) أو رابط الدفع الكامل إن وُجد — في حال إدخال رابط، سيُفتح تلقائيًا للعميل بدلًا من أن يبحث عنك يدويًا.</small>
+          <div class="field" style="margin-bottom:0; ${restaurant.restriction_multi_wallet_disabled ? 'opacity:.55;' : ''} ${isEgyptRestaurant(restaurant) ? '' : 'display:none;'}" id="rsInstapayFieldWrap">
+            <label>حساب إنستاباي (اختياري — لمصر فقط)</label>
+            <small>اسم المستخدم الخاص بك على إنستاباي (مثل ‎@mystore) أو رابط الدفع الكامل إن وُجد — في حال إدخال رابط، سيُفتح تلقائيًا للعميل بدلًا من أن يبحث عنك يدويًا. إنستاباي نظام مصري ولا يعمل إلا بحساب بنكي مصري، فلو دولة ${t().entityDef} مش مصر يفضل الاعتماد على "المحافظ الإلكترونية" فوق بس.</small>
             <div style="display:flex; gap:8px; align-items:flex-start; margin-top:8px;">
               <input type="text" id="rsInstapayInput" value="${restaurant.instapay_account ? escapeHtml(restaurant.instapay_account) : ''}" placeholder="مثال: mystore@instapay أو رابط الدفع" style="direction:ltr; flex:1;" ${restaurant.restriction_multi_wallet_disabled ? 'disabled title="InstaPay متاح في باقة PRO فقط"' : ''}>
               <button type="button" id="rsInstapayTestBtn" title="اختبار الرابط" ${restaurant.restriction_multi_wallet_disabled ? 'disabled' : ''} style="background:#fff; border:1.5px solid var(--line); border-radius:8px; cursor:pointer; padding:9px 12px; flex-shrink:0; white-space:nowrap;">🔗 اختبار</button>
@@ -7347,6 +7412,26 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
       defaultFeeZoneWrap.style.display = pendingDefaultFeeMode === 'zone' ? '' : 'none';
     });
   }
+  const countrySelect = overlay.querySelector('#restCountryInput');
+  const instapayFieldWrap = overlay.querySelector('#rsInstapayFieldWrap');
+  const currencyInput = overlay.querySelector('#restCurrencyInput');
+  if(countrySelect && currencyInput){
+    countrySelect.addEventListener('change', ()=>{
+      const prevCountry = getRestaurantCountry({ country_code: countrySelect.dataset.prevValue });
+      // بنعيد ملء خانة العملة تلقائيًا بس لو لسه فاضية أو لسه شايلة القيمة الافتراضية لدولته القديمة
+      // (يعني معملش تعديل يدوي مقصود)، عشان محدش يفقد صياغة كتبها هو بنفسه
+      if(!currencyInput.value.trim() || currencyInput.value.trim() === prevCountry.cur){
+        currencyInput.value = getRestaurantCountry({ country_code: countrySelect.value }).cur;
+      }
+      countrySelect.dataset.prevValue = countrySelect.value;
+    });
+    countrySelect.dataset.prevValue = countrySelect.value;
+  }
+  if(countrySelect && instapayFieldWrap){
+    countrySelect.addEventListener('change', ()=>{
+      instapayFieldWrap.style.display = (countrySelect.value === 'EG') ? '' : 'none';
+    });
+  }
   overlay.querySelector('#rsCancel').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#rsConfirm').addEventListener('click', async ()=>{
@@ -7358,6 +7443,8 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     let telegram_username = overlay.querySelector('#restTelegramInput').value.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?t\.me\//i, '').replace(/\/+$/, '') || null;
     if(restaurant.restriction_extra_channels_disabled){ messenger_username = null; telegram_username = null; }
     const address = overlay.querySelector('#restAddressInput').value.trim() || null;
+    const country_code = overlay.querySelector('#restCountryInput').value || 'EG';
+    const currency_label = overlay.querySelector('#restCurrencyInput').value.trim() || 'EGP';
     const opening_time = overlay.querySelector('#restOpenTimeInput').value || null;
     const closing_time = overlay.querySelector('#restCloseTimeInput').value || null;
     const minOrderRaw = overlay.querySelector('#restMinOrderInput').value.trim();
@@ -7384,6 +7471,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
       .map(w => ({ label: (w.label || '').trim() || 'محفظة', number: (w.number || '').trim(), ussd: (w.ussd || '').trim() || undefined }))
       .filter(w => w.number);
     let instapay_account = overlay.querySelector('#rsInstapayInput').value.trim() || null;
+    if(country_code !== 'EG') instapay_account = null;
     if(restaurant.restriction_multi_wallet_disabled){ wallets = wallets.slice(0, 1); instapay_account = null; }
     if(accept_online_payment && !wallets.length && !instapay_account){
       toast('يجب إضافة محفظة إلكترونية واحدة على الأقل أو حساب إنستاباي لتفعيل الدفع أونلاين');
@@ -7401,7 +7489,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
         return;
       }
     }
-    const { data, error } = await sb.from('restaurants').update({ logo_url: finalLogoUrl, name, name_en, phone, messenger_username, telegram_username, address, opening_time, closing_time, min_delivery_order, min_delivery_order_online, default_delivery_fee_mode, default_delivery_fee_amount, default_delivery_zone_id, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes, accept_online_payment, wallets, wallet_label: wallets[0] ? wallets[0].label : null, wallet_number: wallets[0] ? wallets[0].number : null, instapay_account }).eq('id', restaurant.id).select().single();
+    const { data, error } = await sb.from('restaurants').update({ logo_url: finalLogoUrl, name, name_en, phone, messenger_username, telegram_username, address, country_code, currency_label, opening_time, closing_time, min_delivery_order, min_delivery_order_online, default_delivery_fee_mode, default_delivery_fee_amount, default_delivery_zone_id, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes, accept_online_payment, wallets, wallet_label: wallets[0] ? wallets[0].label : null, wallet_number: wallets[0] ? wallets[0].number : null, instapay_account }).eq('id', restaurant.id).select().single();
     if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     restaurant = data;
     if(originalLogoUrl && originalLogoUrl !== finalLogoUrl){
@@ -7790,7 +7878,7 @@ function openImportPreviewModal(parsed, uniqueCats, isDetailedFormat){
   const previewRows = parsed.slice(0, 8).map(p=>`
     <div class="zone-row">
       <span class="zone-name">${escapeHtml(p.catName)} — ${escapeHtml(p.itemName)}</span>
-      <span class="zone-fee">${p.pricing_type === 'sizes' ? 'أحجام' : p.price.toFixed(2) + ' EGP'}</span>
+      <span class="zone-fee">${p.pricing_type === 'sizes' ? 'أحجام' : p.price.toFixed(2) + ' ' + getRestaurantCurrency(restaurant)}</span>
     </div>`).join('');
   overlay.innerHTML = `
     <div class="modal">
@@ -8050,14 +8138,14 @@ function oldPriceHtml(item){
 
 function formatItemPriceLabel(item){
   if(item.pricing_type === 'weight'){
-    return `${oldPriceHtml(item)}${Number(item.price).toFixed(2)} EGP / كجم`;
+    return `${oldPriceHtml(item)}${Number(item.price).toFixed(2)} ${getRestaurantCurrency(restaurant)} / كجم`;
   }
   if(item.pricing_type === 'sizes'){
     const sizes = itemSizes[item.id] || [];
     if(sizes.length === 0) return 'لم تُضَف أحجام بعد';
-    return sizes.map(s=>`${escapeHtml(s.size_name)} ${Number(s.price).toFixed(2)}`).join(' · ') + ' EGP';
+    return sizes.map(s=>`${escapeHtml(s.size_name)} ${Number(s.price).toFixed(2)}`).join(' · ') + ' ' + getRestaurantCurrency(restaurant);
   }
-  return `${oldPriceHtml(item)}${Number(item.price).toFixed(2)} EGP`;
+  return `${oldPriceHtml(item)}${Number(item.price).toFixed(2)} ${getRestaurantCurrency(restaurant)}`;
 }
 
 let itemSearchQuery = '';
@@ -8527,7 +8615,7 @@ function openItemModal(existing){
         </select>
       </div>
       <div class="field" id="priceFieldWrap">
-        <label id="itemPriceLabel">السعر (EGP)</label>
+        <label id="itemPriceLabel">السعر (${getRestaurantCurrency(restaurant)})</label>
         <input type="number" id="itemPrice" step="0.01" value="${existing && pricingType!=='sizes' ? existing.price : ''}" placeholder="0.00">
       </div>
       <div class="field" id="weightSaleModeFieldWrap">
@@ -8598,7 +8686,7 @@ function openItemModal(existing){
       priceFieldWrap.classList.remove('hidden');
       oldPriceFieldWrap.classList.remove('hidden');
       sizesFieldWrap.classList.add('hidden');
-      priceLabel.textContent = type === 'weight' ? 'السعر لكل كيلوجرام (EGP)' : 'السعر (EGP)';
+      priceLabel.textContent = type === 'weight' ? `السعر لكل كيلوجرام (${getRestaurantCurrency(restaurant)})` : `السعر (${getRestaurantCurrency(restaurant)})`;
       weightSaleModeFieldWrap.classList.toggle('hidden', type !== 'weight');
       minWeightFieldWrap.classList.toggle('hidden', type !== 'weight');
     }
@@ -8823,7 +8911,7 @@ async function refreshTrackingData(orderId){
       <span>${escapeHtml(it.item_name)}</span>
       <span>× ${it.quantity}</span>
     </div>`).join('');
-  document.getElementById('trackTotalWrap').textContent = row.total != null ? `الإجمالي: ${Number(row.total).toFixed(2)} EGP` : '';
+  document.getElementById('trackTotalWrap').textContent = row.total != null ? `الإجمالي: ${Number(row.total).toFixed(2)} ${getRestaurantCurrency(row)}` : '';
   document.getElementById('trackContactWrap').innerHTML = renderTrackingContactButtons(row);
   renderRatingWidget(orderId, row);
   document.getElementById('trackUpdatedAt').textContent = new Date().toLocaleTimeString('ar-EG');
@@ -8888,18 +8976,19 @@ function renderRatingWidget(orderId, row){
 function buildTrackingOrderMessage(row){
   const typeLabel = row.order_type === 'delivery' ? 'توصيل' : 'استلام';
   const dateTimeStr = new Date(row.created_at).toLocaleString('ar-EG', {
-    timeZone: 'Africa/Cairo', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    timeZone: getRestaurantTimezone(row), weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     hour: '2-digit', minute: '2-digit', hour12: true
   });
+  const cur = getRestaurantCurrency(row);
   const items = row.items || [];
   const lines = items.map(it=>{
     const name = it.item_name + (it.variant_label ? ` (${it.variant_label})` : '');
     return `- ${name} × ${it.quantity}`;
   }).join('\n');
   let msg = `طلب جديد — ${row.restaurant_name || ''}\nالتاريخ والوقت: ${dateTimeStr}\n\n${lines}`;
-  if(row.subtotal != null) msg += `\n\nالمجموع الفرعي: ${Number(row.subtotal).toFixed(2)} جنيه`;
-  if(row.order_type === 'delivery' && row.delivery_fee != null) msg += `\nرسوم التوصيل${row.area ? ' ('+row.area+')' : ''}: ${Number(row.delivery_fee).toFixed(2)} جنيه`;
-  if(row.total != null) msg += `\nالإجمالي: ${Number(row.total).toFixed(2)} جنيه`;
+  if(row.subtotal != null) msg += `\n\nالمجموع الفرعي: ${Number(row.subtotal).toFixed(2)} ${cur}`;
+  if(row.order_type === 'delivery' && row.delivery_fee != null) msg += `\nرسوم التوصيل${row.area ? ' ('+row.area+')' : ''}: ${Number(row.delivery_fee).toFixed(2)} ${cur}`;
+  if(row.total != null) msg += `\nالإجمالي: ${Number(row.total).toFixed(2)} ${cur}`;
   msg += `\n\nنوع الطلب: ${typeLabel}`;
   if(row.customer_name) msg += `\nالاسم: ${row.customer_name}`;
   if(row.customer_phone) msg += `\nالتليفون: ${row.customer_phone}`;
@@ -8949,12 +9038,12 @@ function renderTrackingStatus(status){
   </div>`;
 }
 
-// بيرجع الساعة والدقيقة دلوقتي بتوقيت المطعم (مصر) مش بتوقيت جهاز الزائر،
-// عشان لو زبون فتح المنيو من بلد تانية تفضل حالة "مفتوح/مقفول" صحيحة بالنسبة لتوقيت المطعم الفعلي
-function getRestaurantLocalNowMinutes(){
+// بيرجع الساعة والدقيقة دلوقتي بتوقيت دولة المطعم نفسه (مش بتوقيت جهاز الزائر ولا مصر افتراضيًا)،
+// عشان لو زبون فتح المنيو من بلد تانية، أو المطعم نفسه برة مصر، تفضل حالة "مفتوح/مقفول" صحيحة بالنسبة لتوقيت المطعم الفعلي
+function getRestaurantLocalNowMinutes(rest){
   try{
     const parts = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', hour12: false
+      timeZone: getRestaurantTimezone(rest), hour: '2-digit', minute: '2-digit', hour12: false
     }).formatToParts(new Date());
     const h = Number(parts.find(p=>p.type==='hour').value);
     const m = Number(parts.find(p=>p.type==='minute').value);
@@ -8972,7 +9061,7 @@ function getRestaurantOpenStatus(rest){
   const closeParts = rest.closing_time.split(':').map(Number);
   const openMin = openParts[0]*60 + openParts[1];
   const closeMin = closeParts[0]*60 + closeParts[1];
-  const nowMin = getRestaurantLocalNowMinutes();
+  const nowMin = getRestaurantLocalNowMinutes(rest);
   let isOpen;
   if(openMin === closeMin) isOpen = true;
   else if(openMin < closeMin) isOpen = nowMin >= openMin && nowMin < closeMin;
@@ -9450,7 +9539,7 @@ async function loadPublic(slug){
           <button class="qty-btn" data-action="dec">−</button>
           <span class="qty-val">${v.qty}</span>
           <button class="qty-btn" data-action="inc">+</button>
-          <span class="cr-line-total" style="margin-inline-start:8px;">${(v.qty*v.unitPrice).toFixed(2)} EGP</span>
+          <span class="cr-line-total" style="margin-inline-start:8px;">${(v.qty*v.unitPrice).toFixed(2)} ${getRestaurantCurrency(rest)}</span>
         </div>`).join('');
     }
 
@@ -9469,7 +9558,7 @@ async function loadPublic(slug){
       const discountBadge = hasDiscount ? `<span class="discount-badge">${lang==='en' ? '-' : '-'}${Math.round((1 - Number(i.price)/Number(i.old_price))*100)}%</span>` : '';
       const oldPriceSpan = hasDiscount ? `<span class="old-price">${Number(i.old_price).toFixed(2)}</span>` : '';
       if(i.pricing_type === 'weight'){
-        priceLine = `${oldPriceSpan}${lang==='en' ? 'EGP' : 'EGP'} ${Number(i.price).toFixed(2)} / ${lang==='en' ? 'kg' : 'كجم'}${discountBadge}`;
+        priceLine = `${oldPriceSpan}${getRestaurantCurrency(rest)} ${Number(i.price).toFixed(2)} / ${lang==='en' ? 'kg' : 'كجم'}${discountBadge}`;
         const saleMode = i.weight_sale_mode || 'both';
         const wMode = saleMode === 'price_only' ? 'price' : (saleMode === 'weight_only' ? 'weight' : (weightInputMode[i.id] || 'weight'));
         const showToggle = saleMode === 'both';
@@ -9477,7 +9566,7 @@ async function loadPublic(slug){
         const minNote = minG ? `<div class="min-weight-note" style="font-size:11.5px; color:var(--stone); margin-top:3px;">${lang==='en' ? `Min. order: ${weightLabel(minG)}` : `أقل كمية: ${weightLabel(minG)}`}</div>` : '';
         if(wMode === 'price'){
           controlHtml = `
-            <input type="number" inputmode="decimal" min="1" step="1" class="variant-select price-input" data-price-input="${i.id}" placeholder="${lang==='en' ? 'Price (EGP)' : 'السعر (EGP)'}">
+            <input type="number" inputmode="decimal" min="1" step="1" class="variant-select price-input" data-price-input="${i.id}" placeholder="${lang==='en' ? `Price (${getRestaurantCurrency(rest)})` : `السعر (${getRestaurantCurrency(rest)})`}">
             <div class="price-preview" data-price-preview="${i.id}"></div>
             <button class="add-to-cart-btn" data-action="addWeightByPrice" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>
             ${showToggle ? `<span class="mode-toggle-link" data-mode-toggle="${i.id}">${lang==='en' ? 'Choose by weight' : 'اختر بالوزن'}</span>` : ''}
@@ -9496,16 +9585,16 @@ async function loadPublic(slug){
         }
         cartLinesHtml = itemCartLinesHtml(i.id);
       } else if(i.pricing_type === 'sizes'){
-        priceLine = sizes.length ? sizes.map(s=>`${escapeHtml(s.size_name)} ${Number(s.price).toFixed(2)}`).join(' · ') + ' EGP' : (lang==='en' ? 'No sizes available yet' : 'لا تتوفر أحجام حاليًا');
+        priceLine = sizes.length ? sizes.map(s=>`${escapeHtml(s.size_name)} ${Number(s.price).toFixed(2)}`).join(' · ') + ' ' + getRestaurantCurrency(rest) : (lang==='en' ? 'No sizes available yet' : 'لا تتوفر أحجام حاليًا');
         controlHtml = sizes.length ? `
           <select class="variant-select" data-size-select="${i.id}">
-            ${sizes.map(s=>`<option value="${s.id}">${escapeHtml(s.size_name)} — ${Number(s.price).toFixed(2)} EGP</option>`).join('')}
+            ${sizes.map(s=>`<option value="${s.id}">${escapeHtml(s.size_name)} — ${Number(s.price).toFixed(2)} ${getRestaurantCurrency(rest)}</option>`).join('')}
           </select>
           <button class="add-to-cart-btn" data-action="addSize" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>` : '';
         cartLinesHtml = itemCartLinesHtml(i.id);
       } else {
         const qty = cart[i.id] ? cart[i.id].qty : 0;
-        priceLine = `${oldPriceSpan}EGP ${Number(i.price).toFixed(2)}${discountBadge}`;
+        priceLine = `${oldPriceSpan}${getRestaurantCurrency(rest)} ${Number(i.price).toFixed(2)}${discountBadge}`;
         controlHtml = qty > 0 ? `
           <div class="qty-stepper">
             <button class="qty-btn" data-action="dec" data-item-id="${i.id}">−</button>
@@ -9681,8 +9770,8 @@ async function loadPublic(slug){
         if(minG && grams < minG){
           const minPrice = (pricePerKg * minG / 1000).toFixed(2);
           toast(lang==='en'
-            ? `Minimum order for this item is ${weightLabel(minG)} (≈ ${minPrice} EGP)`
-            : `أقل كمية يمكن طلبها لهذا الصنف ${weightLabel(minG)} (بسعر تقريبي ${minPrice} EGP)`);
+            ? `Minimum order for this item is ${weightLabel(minG)} (≈ ${minPrice} ${getRestaurantCurrency(rest)})`
+            : `أقل كمية يمكن طلبها لهذا الصنف ${weightLabel(minG)} (بسعر تقريبي ${minPrice} ${getRestaurantCurrency(rest)})`);
           input.focus();
           return;
         }
@@ -9931,7 +10020,7 @@ async function loadPublic(slug){
           ${pubZones.length > 0 ? `
             <select id="ordZoneSelect" style="width:100%; border:1.5px solid var(--line); border-radius:8px; padding:10px 12px; font-family:var(--body); font-size:14px; color:var(--ink); background:var(--paper);">
               <option value="">${lang==='en' ? 'Select your area' : 'اختر منطقتك'}</option>
-              ${pubZones.map(z=>`<option value="${z.id}" data-fee="${z.fee}">${escapeHtml(z.area_name)} — ${Number(z.fee).toFixed(2)} EGP</option>`).join('')}
+              ${pubZones.map(z=>`<option value="${z.id}" data-fee="${z.fee}">${escapeHtml(z.area_name)} — ${Number(z.fee).toFixed(2)} ${getRestaurantCurrency(rest)}</option>`).join('')}
               <option value="__other__">${lang==='en' ? "My area isn't listed" : 'منطقتي غير موجودة'}</option>
             </select>
             <div id="ordOtherZoneNameWrap" class="hidden" style="margin-top:8px;">
@@ -10037,15 +10126,15 @@ async function loadPublic(slug){
         ${Object.entries(cart).map(([key,c])=>`
           <div class="cart-row">
             <span class="cr-name">${escapeHtml(tName(c.item.name, c.item.name_en))}${c.variantLabel ? ' (' + escapeHtml(c.variantLabel) + ')' : ''} × ${c.qty}</span>
-            <span class="cr-line-total">${(c.qty * Number(c.unitPrice)).toFixed(2)} EGP</span>
+            <span class="cr-line-total">${(c.qty * Number(c.unitPrice)).toFixed(2)} ${getRestaurantCurrency(rest)}</span>
           </div>
           <input type="text" class="cart-item-note" data-cart-key="${key}" value="${escapeHtml(c.note || '')}" placeholder="${lang==='en' ? `Note for this ${biz(rest.business_type,'itemEn')} (optional)` : `ملاحظة على ${biz(rest.business_type,'itemDef')} (اختياري)`}" style="width:100%; margin:2px 0 10px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-family:var(--body); font-size:12px; background:#fff; color:var(--ink);">`).join('')}
-        <div class="cart-summary-row"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${subtotal.toFixed(2)} EGP</span></div>
-        <div class="cart-summary-row"><span>${lang==='en' ? 'Delivery fee' : 'رسوم التوصيل'}</span><span>${isUnlistedZoneSelected() ? (computeDefaultUnlistedFee() != null ? `${fee.toFixed(2)} EGP ${lang==='en' ? '(estimated)' : '(تقديرية)'}` : (lang==='en' ? 'To be confirmed' : 'يحددها المطعم')) : fee.toFixed(2) + ' EGP'}</span></div>
-        <div class="cart-summary-row total"><span>${lang==='en' ? 'Total' : 'الإجمالي'}</span><span>${total.toFixed(2)} EGP${isUnlistedZoneSelected() ? (lang==='en' ? (computeDefaultUnlistedFee() != null ? ' (est.)' : ' + delivery') : (computeDefaultUnlistedFee() != null ? ' (تقديري)' : ' + التوصيل')) : ''}</span></div>
+        <div class="cart-summary-row"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${subtotal.toFixed(2)} ${getRestaurantCurrency(rest)}</span></div>
+        <div class="cart-summary-row"><span>${lang==='en' ? 'Delivery fee' : 'رسوم التوصيل'}</span><span>${isUnlistedZoneSelected() ? (computeDefaultUnlistedFee() != null ? `${fee.toFixed(2)} ${getRestaurantCurrency(rest)} ${lang==='en' ? '(estimated)' : '(تقديرية)'}` : (lang==='en' ? 'To be confirmed' : 'يحددها المطعم')) : fee.toFixed(2) + ' ' + getRestaurantCurrency(rest)}</span></div>
+        <div class="cart-summary-row total"><span>${lang==='en' ? 'Total' : 'الإجمالي'}</span><span>${total.toFixed(2)} ${getRestaurantCurrency(rest)}${isUnlistedZoneSelected() ? (lang==='en' ? (computeDefaultUnlistedFee() != null ? ' (est.)' : ' + delivery') : (computeDefaultUnlistedFee() != null ? ' (تقديري)' : ' + التوصيل')) : ''}</span></div>
         ${showMinOrderNote ? `<div class="orders-empty" style="color:#a33; font-weight:700; padding-top:6px;">${lang==='en'
-          ? `Minimum delivery order is ${minOrder} EGP — add ${(minOrder - subtotal).toFixed(2)} EGP more`
-          : `أقل قيمة طلب للتوصيل ${minOrder} جنيه — أضف ${(minOrder - subtotal).toFixed(2)} جنيه لإتمام الطلب`}</div>` : ''}
+          ? `Minimum delivery order is ${minOrder} ${getRestaurantCurrency(rest)} — add ${(minOrder - subtotal).toFixed(2)} ${getRestaurantCurrency(rest)} more`
+          : `أقل قيمة طلب للتوصيل ${minOrder} ${getRestaurantCurrency(rest)} — أضف ${(minOrder - subtotal).toFixed(2)} ${getRestaurantCurrency(rest)} لإتمام الطلب`}</div>` : ''}
       `;
       overlay.querySelectorAll('.cart-item-note').forEach(inp=>{
         inp.addEventListener('input', ()=>{
@@ -10268,15 +10357,15 @@ async function loadPublic(slug){
         const name = tName(c.item.name, c.item.name_en) + (c.variantLabel ? ` (${c.variantLabel})` : '');
         const lineTotal = (c.qty * Number(c.unitPrice)).toFixed(2);
         const base = lang==='en'
-          ? `- ${name} × ${c.qty} — ${lineTotal} EGP`
-          : `- ${name} × ${c.qty} — ${lineTotal} جنيه`;
+          ? `- ${name} × ${c.qty} — ${lineTotal} ${getRestaurantCurrency(rest)}`
+          : `- ${name} × ${c.qty} — ${lineTotal} ${getRestaurantCurrency(rest)}`;
         return c.note ? `${base}\n  ${lang==='en' ? '(note: ' : '(ملاحظة: '}${c.note})` : base;
       }).join('\n');
       const restName = tName(rest.name, rest.name_en);
       if(lang==='en'){
-        let msg = `New order — ${restName}\nDate/time: ${dateTimeStr}\n\n${lines}\n\nSubtotal: ${subtotal.toFixed(2)} EGP`;
-        if(orderType==='delivery') msg += `\nDelivery fee${area ? ' ('+area+')' : ''}: ${fee.toFixed(2)} EGP`;
-        msg += `\nTotal: ${total.toFixed(2)} EGP`;
+        let msg = `New order — ${restName}\nDate/time: ${dateTimeStr}\n\n${lines}\n\nSubtotal: ${subtotal.toFixed(2)} ${getRestaurantCurrency(rest)}`;
+        if(orderType==='delivery') msg += `\nDelivery fee${area ? ' ('+area+')' : ''}: ${fee.toFixed(2)} ${getRestaurantCurrency(rest)}`;
+        msg += `\nTotal: ${total.toFixed(2)} ${getRestaurantCurrency(rest)}`;
         msg += `\n\nOrder type: ${typeLabel}\nName: ${customer_name}\nPhone: ${customer_phone}`;
         if(secondary_phone) msg += `\nAlt. phone: ${secondary_phone}`;
         if(orderType==='delivery'){ if(city) msg += `\nCity: ${city}`; if(address) msg += `\nAddress: ${address}`; }
@@ -10285,9 +10374,9 @@ async function loadPublic(slug){
         if(payLabel) msg += `\nPayment: ${payLabel}`;
         return msg;
       }
-      let msg = `طلب جديد — ${restName}\nالتاريخ والوقت: ${dateTimeStr}\n\n${lines}\n\nالمجموع الفرعي: ${subtotal.toFixed(2)} جنيه`;
-      if(orderType==='delivery') msg += `\nرسوم التوصيل${area ? ' ('+area+')' : ''}: ${fee.toFixed(2)} جنيه`;
-      msg += `\nالإجمالي: ${total.toFixed(2)} جنيه`;
+      let msg = `طلب جديد — ${restName}\nالتاريخ والوقت: ${dateTimeStr}\n\n${lines}\n\nالمجموع الفرعي: ${subtotal.toFixed(2)} ${getRestaurantCurrency(rest)}`;
+      if(orderType==='delivery') msg += `\nرسوم التوصيل${area ? ' ('+area+')' : ''}: ${fee.toFixed(2)} ${getRestaurantCurrency(rest)}`;
+      msg += `\nالإجمالي: ${total.toFixed(2)} ${getRestaurantCurrency(rest)}`;
       msg += `\n\nنوع الطلب: ${typeLabel}\nالاسم: ${customer_name}\nالتليفون: ${customer_phone}`;
       if(secondary_phone) msg += `\nتليفون إضافي: ${secondary_phone}`;
       if(orderType==='delivery'){ if(city) msg += `\nالمدينة: ${city}`; if(address) msg += `\nالعنوان: ${address}`; }
@@ -10350,8 +10439,8 @@ async function loadPublic(slug){
         const minOrder = currentMinOrder();
         const remaining = (minOrder - subtotal).toFixed(2);
         toast(lang==='en'
-          ? `Minimum delivery order is ${minOrder} EGP. Add ${remaining} EGP more`
-          : `أقل قيمة طلب للتوصيل ${minOrder} جنيه — أضف ${remaining} جنيه لإتمام الطلب`);
+          ? `Minimum delivery order is ${minOrder} ${getRestaurantCurrency(rest)}. Add ${remaining} ${getRestaurantCurrency(rest)} more`
+          : `أقل قيمة طلب للتوصيل ${minOrder} ${getRestaurantCurrency(rest)} — أضف ${remaining} ${getRestaurantCurrency(rest)} لإتمام الطلب`);
         return;
       }
       const fee = delivery_fee != null ? Number(delivery_fee) : 0;
@@ -10598,10 +10687,10 @@ async function loadPublic(slug){
             <span class="qty-val">${c.qty}</span>
             <button class="qty-btn" data-action="inc">+</button>
           </div>
-          <span class="cr-line-total">${(c.qty * Number(c.unitPrice)).toFixed(2)} EGP</span>
+          <span class="cr-line-total">${(c.qty * Number(c.unitPrice)).toFixed(2)} ${getRestaurantCurrency(rest)}</span>
           <button type="button" class="cr-delete-btn" data-action="removeLine" title="${lang==='en' ? 'Remove item' : 'حذف الصنف'}">🗑</button>
         </div>`).join('');
-      subtotalWrap.innerHTML = `<div class="cart-summary-row total"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${cartSubtotal().toFixed(2)} EGP</span></div>`;
+      subtotalWrap.innerHTML = `<div class="cart-summary-row total"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${cartSubtotal().toFixed(2)} ${getRestaurantCurrency(rest)}</span></div>`;
       wrap.querySelectorAll('.cart-row').forEach(row=>{
         const key = row.dataset.cartKey;
         row.querySelector('[data-action="inc"]').addEventListener('click', ()=>{
