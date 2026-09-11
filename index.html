@@ -1234,6 +1234,13 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+// بيتأكد إن القيمة رابط http/https حقيقي قبل ما نحطها كـ href قابل للدوس أو نفتحها بـ window.open —
+// عشان escapeHtml لوحدها بتهرّب علامات زي < > " ' بس مش بتمنع قيم زي javascript:/data: تتحط كرابط كامل
+function isSafeHttpUrl(value){
+  if(!value || typeof value !== 'string') return false;
+  return /^https?:\/\//i.test(value.trim());
+}
+
 /* ================= تسهيلات لوحة المفاتيح للنوافذ المنبثقة ================= */
 // Escape يقفل أعلى نافذة مفتوحة
 document.addEventListener('keydown', function(e){
@@ -5026,6 +5033,10 @@ async function openAdminPanel(){
       form.querySelectorAll('[data-cafield]').forEach(inp=>{
         payload[inp.dataset.cafield] = inp.value.trim() || null;
       });
+      if(payload.custom_ad_url && !isSafeHttpUrl(payload.custom_ad_url)){
+        toast('رابط الإعلان لازم يبدأ بـ https:// أو http://');
+        return;
+      }
       btn.disabled = true;
       const originalText = btn.textContent;
       btn.textContent = 'جارِ الحفظ...';
@@ -7385,7 +7396,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
       btn.addEventListener('click', ()=>{
         const val = (pendingWallets[Number(btn.dataset.idx)].number || '').trim();
         if(!val){ toast('اكتب رقم المحفظة أو الرابط الأول'); return; }
-        if(/^https?:\/\//i.test(val)) window.open(val, '_blank', 'noopener');
+        if(isSafeHttpUrl(val)) window.open(val, '_blank', 'noopener');
         else toast('هذا رقم عادي وليس رابطًا — لن يُفتح شيء، وسيظهر للعميل كرقم للتحويل إليه فقط');
       });
     });
@@ -7428,7 +7439,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
   overlay.querySelector('#rsInstapayTestBtn').addEventListener('click', ()=>{
     const val = instapayInput.value.trim();
     if(!val){ toast('اكتب حساب إنستاباي الأول'); return; }
-    if(/^https?:\/\//i.test(val)) window.open(val, '_blank', 'noopener');
+    if(isSafeHttpUrl(val)) window.open(val, '_blank', 'noopener');
     else toast('هذا اسم مستخدم وليس رابطًا — لن يُفتح شيء، وسيظهر للعميل كنص فقط');
   });
 
@@ -8556,15 +8567,13 @@ function validateImageFile(file){
 
 function loadImageFromFile(file){
   return new Promise((resolve, reject)=>{
-    const reader = new FileReader();
-    reader.onload = (e)=>{
-      const img = new Image();
-      img.onload = ()=> resolve(img);
-      img.onerror = ()=> reject(new Error('تعذرت قراءة الصورة'));
-      img.src = e.target.result;
-    };
-    reader.onerror = ()=> reject(new Error('تعذرت قراءة الملف'));
-    reader.readAsDataURL(file);
+    // بنستخدم object URL (مرجع خفيف للملف) بدل base64 كامل للصورة الأصلية،
+    // عشان صورة 20 ميجا متحولش لنص base64 ضخم (~27 ميجا) في الذاكرة لمجرد إننا هنعرضها في canvas
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{ URL.revokeObjectURL(objectUrl); resolve(img); };
+    img.onerror = ()=>{ URL.revokeObjectURL(objectUrl); reject(new Error('تعذرت قراءة الصورة')); };
+    img.src = objectUrl;
   });
 }
 
@@ -8595,11 +8604,19 @@ async function compressImage(file, { maxDimension = 800, maxSizeKB = 300 } = {})
   let quality = 0.85;
   let best = null;
 
+  // نستخدم canvas واحد بس طول المحاولات، ونرسم فيه بس لما الأبعاد فعلاً تتغيّر —
+  // مش نعمل canvas جديد وpixel buffer جديد كامل في كل محاولة حتى لو الفرق بينهم الجودة بس
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  let drawnWidth = null, drawnHeight = null;
+
   for(let attempt = 0; attempt < 9; attempt++){
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+    if(drawnWidth !== width || drawnHeight !== height){
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      drawnWidth = width; drawnHeight = height;
+    }
 
     const encoded = canvasEncode(canvas, 'image/webp', quality);
     best = encoded;
@@ -9407,7 +9424,10 @@ async function loadPublic(slug){
       const restored = {};
       Object.entries(raw).forEach(([key,v])=>{
         const item = pubItems.find(x=>x.id===v.itemId);
-        if(!item || !v.qty || v.qty <= 0) return; // تجاهل الأصناف اللي اتشالت من المنيو
+        // نتأكد إن الكمية رقم صحيح موجب منطقي فعلاً، مش أي قيمة تانية اتخزنت بالغلط في localStorage
+        // (زي نص مش رقم، كسور، كمية سالبة، أو رقم خرافي) عشان ميعملش NaN أو نتائج غريبة في الحساب
+        const qty = Math.trunc(Number(v.qty));
+        if(!item || !Number.isFinite(qty) || qty <= 0 || qty > 999) return; // تجاهل الأصناف اللي اتشالت من المنيو أو كميتها غير صالحة
         // نحسب السعر من بيانات المنيو الحالية بدل ما نثق في السعر المحفوظ، عشان لو صاحب المطعم غيّر السعر يظهر التحديث فورًا
         let unitPrice = Number(v.unitPrice);
         let variantLabel = v.variantLabel || null;
@@ -9422,7 +9442,7 @@ async function loadPublic(slug){
         } else if(item.pricing_type === 'unit'){
           unitPrice = Number(item.price);
         }
-        restored[key] = { item, variantLabel, unitPrice, qty: v.qty, weightGrams: v.weightGrams || null, note: v.note || null };
+        restored[key] = { item, variantLabel, unitPrice, qty, weightGrams: v.weightGrams || null, note: v.note || null };
       });
       cart = restored;
     }catch(e){}
@@ -9498,10 +9518,25 @@ async function loadPublic(slug){
     let restoredCount = 0, skippedCount = 0;
     lastOrderItems.forEach(li=>{
       const item = pubItems.find(i=>i.id===li.itemId);
-      if(!item){ skippedCount++; return; }
+      const qty = Math.trunc(Number(li.qty));
+      if(!item || !Number.isFinite(qty) || qty <= 0 || qty > 999){ skippedCount++; return; }
+      // بنعيد حساب السعر من بيانات المنيو الحالية بدل ما نثق في السعر المحفوظ من الطلب القديم،
+      // عشان لو صاحب المطعم غيّر السعر من ساعتها، الطلب الجديد يتقبل ومايترفضش من فحص السعر في السيرفر
+      let unitPrice;
+      if(item.pricing_type === 'weight'){
+        const grams = Number(li.weightGrams);
+        if(!Number.isFinite(grams) || grams <= 0){ skippedCount++; return; } // مش عارفين الوزن الأصلي، مانقدرش نحسب السعر بأمان
+        unitPrice = Number(item.price) * grams / 1000;
+      } else if(item.pricing_type === 'sizes'){
+        const sizeObj = (pubItemSizes[item.id] || []).find(s=> s.size_name === li.variantLabel);
+        if(!sizeObj){ skippedCount++; return; } // الحجم ده اتشال من المنيو
+        unitPrice = Number(sizeObj.price);
+      } else {
+        unitPrice = Number(item.price);
+      }
       const key = `${li.itemId}-${li.variantLabel || 'base'}`;
-      if(cart[key]){ cart[key].qty += li.qty; }
-      else { cart[key] = { item, variantLabel: li.variantLabel || null, unitPrice: Number(li.unitPrice), qty: li.qty }; }
+      if(cart[key]){ cart[key].qty += qty; }
+      else { cart[key] = { item, variantLabel: li.variantLabel || null, unitPrice, weightGrams: li.weightGrams || null, qty }; }
       restoredCount++;
     });
     updateCartButton();
@@ -9532,7 +9567,7 @@ async function loadPublic(slug){
     ['pubAdBadgePos','pubAdBadgeRight','pubAdBadgeMobile'].forEach(id => setText(id, 'إعلان', 'Ad'));
 
     // سلوت إعلان الشمال: إعلان مخصص للمطعم (لو مفعّل ومكتمل البيانات) وإلا الإعلان الافتراضي (POS)
-    const hasCustomAd = !!(rest && rest.custom_ad_enabled && rest.custom_ad_url && rest.custom_ad_title);
+    const hasCustomAd = !!(rest && rest.custom_ad_enabled && rest.custom_ad_url && isSafeHttpUrl(rest.custom_ad_url) && rest.custom_ad_title);
     if(hasCustomAd){
       const posTitle = tName(rest.custom_ad_title, rest.custom_ad_title_en);
       const posDesc = tName(rest.custom_ad_desc || '', rest.custom_ad_desc_en || '');
@@ -10436,7 +10471,7 @@ async function loadPublic(slug){
         let detailHtml = '';
         if(typeof onlinePayOption === 'number' && walletsList[onlinePayOption]){
           const w = walletsList[onlinePayOption];
-          const wIsLink = /^https?:\/\//i.test(w.number || '');
+          const wIsLink = isSafeHttpUrl(w.number);
           const total = subtotal + currentDeliveryFee();
           const ussdTel = w.ussd ? buildUssdTelLink(w.ussd, total) : null;
           detailHtml = `
@@ -10460,7 +10495,7 @@ async function loadPublic(slug){
               ${lang==='en' ? '📞 Quick dial (fills the code for you)' : '📞 اتصال سريع (سيفتح لك شاشة الاتصال بالكود جاهزًا)'}
             </a>` : ''}`;
         } else if(onlinePayOption === 'instapay' && rest.instapay_account){
-          const isLink = /^https?:\/\//i.test(rest.instapay_account);
+          const isLink = isSafeHttpUrl(rest.instapay_account);
           detailHtml = `
             <div class="orders-empty" style="text-align:${lang==='en' ? 'left' : 'right'}; padding:10px 0;">
               ${isLink
@@ -10720,7 +10755,7 @@ async function loadPublic(slug){
       }
       try{
         const lastOrderSnapshot = Object.values(cart).map(c=>({
-          itemId: c.item.id, variantLabel: c.variantLabel || null, unitPrice: c.unitPrice, qty: c.qty
+          itemId: c.item.id, variantLabel: c.variantLabel || null, unitPrice: c.unitPrice, qty: c.qty, weightGrams: c.weightGrams || null
         }));
         localStorage.setItem(`menuLastOrder_${rest.id}`, JSON.stringify(lastOrderSnapshot));
       }catch(e){}
