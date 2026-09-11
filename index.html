@@ -4774,6 +4774,8 @@ async function openAdminPanel(){
             ${r.phone ? `<button type="button" class="link-btn admin-send-reminder-btn" data-id="${r.id}" style="font-size:11px; padding:4px 9px;">📲 تنبيه انتهاء</button>` : ''}
             ${r.phone ? `<button type="button" class="link-btn admin-send-payment-btn" data-id="${r.id}" style="font-size:11px; padding:4px 9px;">💳 شرح الدفع</button>` : ''}
             <button type="button" class="link-btn admin-backup-btn" data-id="${r.id}" data-slug="${escapeHtml(r.slug)}" style="font-size:11px; padding:4px 9px;">📦 نسخة احتياطية</button>
+            <button type="button" class="link-btn admin-restore-btn" data-id="${r.id}" data-name="${escapeHtml(r.name)}" style="font-size:11px; padding:4px 9px; color:#c0392b;">⬆️ استعادة نسخة</button>
+            <input type="file" class="admin-restore-file-input" data-id="${r.id}" accept="application/json,.json" style="display:none;">
             <span class="admin-reminder-status" data-id="${r.id}" style="font-size:10.5px;">${reminderStatusHtml(r)}</span>
             <a href="${location.origin}${location.pathname}?r=${encodeURIComponent(r.slug)}" target="_blank" rel="noopener" class="link-btn admin-menu-link-btn" style="display:inline-block; font-size:11px; padding:4px 9px; text-decoration:none;">🔗 فتح المنيو</a>
           </div>
@@ -5012,6 +5014,75 @@ async function openAdminPanel(){
         toast('✅ تم تنزيل النسخة الاحتياطية');
       }catch(err){
         toast('❌ حصل خطأ أثناء تجهيز النسخة الاحتياطية');
+      }
+      btn.disabled = false; btn.textContent = originalText;
+    });
+  });
+
+  wrap.querySelectorAll('.admin-restore-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      wrap.querySelector(`.admin-restore-file-input[data-id="${btn.dataset.id}"]`).click();
+    });
+  });
+
+  wrap.querySelectorAll('.admin-restore-file-input').forEach(inp=>{
+    inp.addEventListener('change', async (e)=>{
+      e.stopPropagation();
+      const file = inp.files[0];
+      inp.value = '';
+      if(!file) return;
+      const rId = inp.dataset.id;
+      const r = allRestaurants.find(x=> x.id === rId);
+      const rName = r ? r.name : '';
+
+      let backup;
+      try{
+        const text = await file.text();
+        backup = JSON.parse(text);
+        if(!backup || typeof backup !== 'object' || !Array.isArray(backup.categories)) throw new Error('bad shape');
+      }catch(parseErr){
+        toast('❌ هذا الملف مش نسخة احتياطية صحيحة');
+        return;
+      }
+
+      const fileCounts = {
+        categories: (backup.categories || []).length,
+        items: (backup.items || []).length,
+        zones: (backup.delivery_zones || []).length,
+        orders: (backup.orders || []).length,
+        customers: (backup.customer_order_stats || []).length,
+      };
+      let currentCounts = { categories: 0, orders: 0 };
+      try{
+        const [{ count: catCount }, { count: orderCount }] = await Promise.all([
+          sb.from('categories').select('id', { count: 'exact', head: true }).eq('restaurant_id', rId),
+          sb.from('orders').select('id', { count: 'exact', head: true }).eq('restaurant_id', rId),
+        ]);
+        currentCounts.categories = catCount || 0;
+        currentCounts.orders = orderCount || 0;
+      }catch(err){}
+
+      const exportedDate = backup.exported_at ? new Date(backup.exported_at).toLocaleString('ar-EG') : 'غير معروف';
+      const confirmMsg = `⚠️ تحذير نهائي — هتستبدل بيانات "${rName}" الحالية بالكامل\n\n`
+        + `تاريخ النسخة الاحتياطية: ${exportedDate}\n\n`
+        + `الملف يحتوي على:\n`
+        + `• ${fileCounts.categories} فئة، ${fileCounts.items} صنف (الحالي دلوقتي: ${currentCounts.categories} فئة)\n`
+        + `• ${fileCounts.orders} طلب (الحالي دلوقتي: ${currentCounts.orders} طلب)\n`
+        + `• ${fileCounts.zones} منطقة توصيل، ${fileCounts.customers} عميل\n\n`
+        + `كل البيانات الحالية هتتمسح وتتستبدل بالكامل بمحتوى الملف، ومينفعش نرجع بعد كده.\n\n`
+        + `متأكد إنك عايز تكمل؟`;
+      if(!confirm(confirmMsg)) return;
+
+      const btn = wrap.querySelector(`.admin-restore-btn[data-id="${rId}"]`);
+      const originalText = btn.textContent;
+      btn.disabled = true; btn.textContent = '⏳ جاري الاستعادة...';
+      try{
+        const { data, error } = await sb.rpc('admin_restore_restaurant_backup', { p_restaurant_id: rId, p_backup: backup });
+        if(error) throw error;
+        toast(`✅ تمت الاستعادة بنجاح — ${data.orders || 0} طلب، ${data.items || 0} صنف، ${data.customers || 0} عميل`);
+      }catch(err){
+        toast('❌ ' + (err && err.message ? err.message : 'حصل خطأ أثناء الاستعادة، تأكد إن الملف نسخة احتياطية صحيحة لنفس المتجر'));
       }
       btn.disabled = false; btn.textContent = originalText;
     });
@@ -6724,6 +6795,9 @@ function openBackupModal(){
   overlay.innerHTML = `
     <div class="modal">
       <h3>📦 النسخ الاحتياطي والاستعادة</h3>
+      <div class="auth-err" style="color:#8A6D00; background:rgba(184,141,14,.1); border:1px solid rgba(184,141,14,.3); border-radius:8px; padding:10px 12px; margin-bottom:14px; display:block;">
+        🔒 ملف النسخة الاحتياطية يحتوي على بيانات حقيقية لعملائك (الأسماء وأرقام التليفونات وعناوين الطلبات)، فهو ملف حساس — احتفظ بيه في مكان آمن ومتشاركوش مع حد مش موثوق فيه.
+      </div>
       <div class="field">
         <label>حفظ نسخة احتياطية</label>
         <small>نسخة كاملة من بيانات ${entityLabel} (الإعدادات، الفئات، الأصناف، مناطق التوصيل، الطلبات، والعملاء) في ملف واحد تقدر تحتفظ بيه. كمان بينزلّك ملف نسخة احتياطية تلقائيًا مرة كل يوم أول ما تفتح لوحة التحكم.</small>
@@ -6765,12 +6839,49 @@ function openBackupModal(){
     const file = e.target.files[0];
     e.target.value = '';
     if(!file) return;
-    if(!confirm('تحذير: استعادة النسخة الاحتياطية هتستبدل كل بيانات ' + entityLabel + ' الحالية (الإعدادات، الفئات، الأصناف، مناطق التوصيل، الطلبات، والعملاء) بالبيانات الموجودة في الملف، ومينفعش نرجع للحالة الحالية بعد كده إلا لو عندك نسخة احتياطية تانية. متأكد إنك عايز تكمل؟')) return;
     const statusEl = overlay.querySelector('#rsBackupStatus');
-    statusEl.textContent = 'جاري استعادة النسخة الاحتياطية...';
+    let backup;
     try{
       const text = await file.text();
-      const backup = JSON.parse(text);
+      backup = JSON.parse(text);
+      if(!backup || typeof backup !== 'object' || !Array.isArray(backup.categories)) throw new Error('bad shape');
+    }catch(parseErr){
+      statusEl.textContent = '❌ هذا الملف مش نسخة احتياطية صحيحة';
+      return;
+    }
+
+    statusEl.textContent = 'جاري تجهيز المعاينة...';
+    const fileCounts = {
+      categories: (backup.categories || []).length,
+      items: (backup.items || []).length,
+      zones: (backup.delivery_zones || []).length,
+      orders: (backup.orders || []).length,
+      customers: (backup.customer_order_stats || []).length,
+    };
+    let currentCounts = { categories: 0, items: 0, orders: 0 };
+    try{
+      const [{ count: catCount }, { count: orderCount }] = await Promise.all([
+        sb.from('categories').select('id', { count: 'exact', head: true }).eq('restaurant_id', restaurant.id),
+        sb.from('orders').select('id', { count: 'exact', head: true }).eq('restaurant_id', restaurant.id),
+      ]);
+      currentCounts.categories = catCount || 0;
+      currentCounts.orders = orderCount || 0;
+    }catch(err){}
+    statusEl.textContent = '';
+
+    const exportedDate = backup.exported_at ? new Date(backup.exported_at).toLocaleString('ar-EG') : 'غير معروف';
+    const confirmMsg = `⚠️ تحذير نهائي — هتستبدل بيانات ${entityLabel} الحالية بالكامل\n\n`
+      + `تاريخ النسخة الاحتياطية: ${exportedDate}\n\n`
+      + `الملف يحتوي على:\n`
+      + `• ${fileCounts.categories} فئة، ${fileCounts.items} صنف (الحالي دلوقتي: ${currentCounts.categories} فئة)\n`
+      + `• ${fileCounts.orders} طلب (الحالي دلوقتي: ${currentCounts.orders} طلب)\n`
+      + `• ${fileCounts.zones} منطقة توصيل، ${fileCounts.customers} عميل\n\n`
+      + `كل البيانات الحالية هتتمسح وتتستبدل بالكامل بمحتوى الملف، ومينفعش نرجع بعد كده إلا لو عندك نسخة احتياطية تانية.\n\n`
+      + `متأكد إنك عايز تكمل؟`;
+    if(!confirm(confirmMsg)) return;
+
+    statusEl.textContent = 'جاري استعادة النسخة الاحتياطية...';
+    try{
       const result = await restoreRestaurantBackupFromObject(restaurant.id, backup);
       statusEl.textContent = `✅ تمت الاستعادة بنجاح — ${result.orders || 0} طلب، ${result.items || 0} صنف، ${result.customers || 0} عميل`;
       toast('تمت الاستعادة بنجاح، جاري إعادة تحميل البيانات...');
