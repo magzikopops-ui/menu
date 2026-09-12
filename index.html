@@ -1136,7 +1136,7 @@ function maxCashiersForTier(tier){ return tier === 'pro' ? 2 : 1; }
 // وبنستخدمه مع Supabase Auth تحت الستار — الكاشير نفسه مايشوفش ولا يحتاج يعرف الإيميل ده أبدًا
 function cashierUsernameToEmail(username){
   const clean = String(username).trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
-  return `${clean}@cashier.menu-mag.internal`;
+  return `${clean}@cashier.menu-mag.com`;
 }
 // بينسخ حقول الاشتراك من الحساب على كل فروعه، عشان كل الكود الحالي اللي بيقرأ
 // restaurant.subscription_end_date / account_suspended / ... يفضل شغّال من غير تعديل
@@ -6949,21 +6949,13 @@ async function openStaffModal(){
     const addBtn = overlay.querySelector('#staffAddBtn');
     addBtn.disabled = true; addBtn.textContent = '⏳ جاري الإضافة...';
     try{
-      // بنستخدم نسخة منفصلة تمامًا من عميل Supabase عشان إنشاء حساب الكاشير الجديد مايبدلش جلسة دخولك الحالية كصاحب المطعم
-      const tempClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-      const syntheticEmail = cashierUsernameToEmail(username);
-      const { data: signUpData, error: signUpErr } = await tempClient.auth.signUp({ email: syntheticEmail, password });
-      if(signUpErr){
-        errEl.textContent = signUpErr.message && signUpErr.message.includes('registered') ? 'اسم المستخدم ده مستخدم بالفعل، جرّب اسم تاني' : ('تعذر إنشاء الحساب: ' + signUpErr.message);
-        addBtn.disabled = false; addBtn.textContent = '➕ إضافة الحساب';
-        return;
-      }
-      const newUserId = signUpData.user && signUpData.user.id;
-      if(!newUserId) throw new Error('لم يتم إنشاء المستخدم');
-
-      const { error: insertErr } = await sb.from('restaurant_staff').insert({ restaurant_id: restaurant.id, user_id: newUserId, username });
-      if(insertErr){
-        errEl.textContent = 'تعذر ربط الحساب بالمطعم: ' + insertErr.message;
+      // بننشئ الحساب مباشرة من قاعدة البيانات (بدون المرور على نظام الإيميل خالص)
+      // عشان مانوصلش لحد إرسال الإيميلات الصارم بتاع Supabase، وعشان مفيش أي إيميل حقيقي أصلًا
+      const { data, error } = await sb.rpc('create_staff_account', {
+        p_restaurant_id: restaurant.id, p_username: username, p_password: password
+      });
+      if(error){
+        errEl.textContent = error.message || 'تعذر إنشاء الحساب';
         addBtn.disabled = false; addBtn.textContent = '➕ إضافة الحساب';
         return;
       }
