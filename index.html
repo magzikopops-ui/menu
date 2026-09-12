@@ -807,8 +807,11 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
       <div class="auth-tab active" id="tabLogin">تسجيل الدخول</div>
       <div class="auth-tab" id="tabSignup">حساب جديد</div>
     </div>
+    <div class="field" id="cashierLoginToggleField" style="margin-bottom:6px;">
+      <span class="switch-link" id="cashierLoginToggle">دخول بحساب كاشير؟</span>
+    </div>
     <div class="field">
-      <label>البريد الإلكتروني</label>
+      <label id="authEmailLabel">البريد الإلكتروني</label>
       <input type="email" id="authEmail" placeholder="name@example.com">
     </div>
     <div class="field">
@@ -830,6 +833,24 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
       <span class="auth-showcase-name">الرفاعي للأمن الغذائي</span>
       <span class="auth-showcase-cta">تصفح المنيو ←</span>
     </a>
+  </div>
+</div>
+
+<div id="cashierScreen" class="hidden">
+  <div class="topbar">
+    <div class="brand-group">
+      <div class="brand"><span class="dot"></span> <span id="cashierRestName">منيو m@g</span></div>
+      <span style="color:var(--stone); font-size:12px; background:#2A2825; border:1px solid #454138; border-radius:6px; padding:5px 10px;">👤 حساب كاشير</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="link-btn" id="cashierOrdersBtn">📋 الطلبات الواردة</button>
+      <button class="link-btn" id="cashierNotifPermBtn">🔔 تفعيل تنبيه الطلبات</button>
+      <button class="link-btn" id="cashierSignOutBtn">تسجيل الخروج</button>
+    </div>
+  </div>
+  <div style="padding:40px 24px; text-align:center; color:var(--stone-light);">
+    <div style="font-size:15px; margin-bottom:16px;">أهلًا بيك 👋 هتلاقي كل الطلبات الجديدة والواردة من هنا.</div>
+    <button class="save-btn" id="cashierOrdersBtnBig" style="padding:14px 28px; font-size:16px;">📋 فتح الطلبات الواردة</button>
   </div>
 </div>
 
@@ -909,6 +930,7 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
         <div class="dash-menu-dropdown">
           <button class="link-btn" id="restaurantSettingsBtn">إعدادات المطعم</button>
           <button class="link-btn" id="backupBtn">📦 النسخ الاحتياطي</button>
+          <button class="link-btn" id="staffBtn">👤 حسابات الكاشير</button>
           <button class="link-btn" id="subscriptionBtn">💳 الاشتراك</button>
           <button class="link-btn" id="notifPermBtn">🔔 تفعيل تنبيهات المتصفح</button>
         </div>
@@ -1108,6 +1130,14 @@ const ACCOUNT_LEVEL_FIELDS = ['subscription_tier','feature_plan','subscription_e
   'restriction_settings_disabled','restriction_notif_settings_disabled','restriction_delete_disabled','restriction_excel_disabled'];
 // حد أقصى لعدد الفروع حسب الباقة السعرية — STARTER فرع واحد بس، PRO بلا حدود
 function maxBranchesForTier(tier){ return tier === 'pro' ? Infinity : 1; }
+// حد أقصى لعدد حسابات الكاشير حسب الباقة — STARTER حساب واحد، PRO حسابين (نفس الحد المطبّق فعليًا في قاعدة البيانات)
+function maxCashiersForTier(tier){ return tier === 'pro' ? 2 : 1; }
+// حساب الكاشير بيسجّل دخول باسم مستخدم بسيط بس (مفيش إيميل حقيقي)، فبنحوّله لإيميل داخلي مصطنع
+// وبنستخدمه مع Supabase Auth تحت الستار — الكاشير نفسه مايشوفش ولا يحتاج يعرف الإيميل ده أبدًا
+function cashierUsernameToEmail(username){
+  const clean = String(username).trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+  return `${clean}@cashier.menu-mag.internal`;
+}
 // بينسخ حقول الاشتراك من الحساب على كل فروعه، عشان كل الكود الحالي اللي بيقرأ
 // restaurant.subscription_end_date / account_suspended / ... يفضل شغّال من غير تعديل
 function mirrorAccountOntoBranches(){
@@ -1502,7 +1532,7 @@ function sendOrderToDriverWhatsApp(order, lines, driver){
 }
 
 function show(id){
-  ['loadingScreen','authScreen','onboardScreen','dashboardScreen','publicScreen','trackingScreen'].forEach(s=>{
+  ['loadingScreen','authScreen','onboardScreen','dashboardScreen','publicScreen','trackingScreen','cashierScreen'].forEach(s=>{
     document.getElementById(s).classList.toggle('hidden', s!==id);
   });
 }
@@ -1614,6 +1644,7 @@ async function loadBranchPicker(storeSlug){
 
 /* ================= auth ================= */
 let authMode = 'login';
+let isCashierLoginMode = false;
 document.getElementById('tabLogin').addEventListener('click', ()=>{
   authMode = 'login';
   document.getElementById('tabLogin').classList.add('active');
@@ -1621,6 +1652,7 @@ document.getElementById('tabLogin').addEventListener('click', ()=>{
   document.getElementById('authSubmitBtn').textContent = 'دخول';
   document.getElementById('signupCodeField').classList.add('hidden');
   document.getElementById('forgotPasswordLink').classList.remove('hidden');
+  document.getElementById('cashierLoginToggleField').classList.remove('hidden');
 });
 document.getElementById('tabSignup').addEventListener('click', ()=>{
   authMode = 'signup';
@@ -1629,6 +1661,27 @@ document.getElementById('tabSignup').addEventListener('click', ()=>{
   document.getElementById('authSubmitBtn').textContent = 'إنشاء حساب';
   document.getElementById('signupCodeField').classList.remove('hidden');
   document.getElementById('forgotPasswordLink').classList.add('hidden');
+  document.getElementById('cashierLoginToggleField').classList.add('hidden');
+  if(isCashierLoginMode) document.getElementById('cashierLoginToggle').click();
+});
+
+document.getElementById('cashierLoginToggle').addEventListener('click', ()=>{
+  isCashierLoginMode = !isCashierLoginMode;
+  const emailInput = document.getElementById('authEmail');
+  const emailLabel = document.getElementById('authEmailLabel');
+  const toggle = document.getElementById('cashierLoginToggle');
+  if(isCashierLoginMode){
+    emailLabel.textContent = 'اسم المستخدم (الكاشير)';
+    emailInput.type = 'text';
+    emailInput.placeholder = 'اسم المستخدم اللي أعطاك إياه صاحب المتجر';
+    toggle.textContent = 'رجوع لتسجيل الدخول بالبريد الإلكتروني';
+  } else {
+    emailLabel.textContent = 'البريد الإلكتروني';
+    emailInput.type = 'email';
+    emailInput.placeholder = 'name@example.com';
+    toggle.textContent = 'دخول بحساب كاشير؟';
+  }
+  document.getElementById('authErr').textContent = '';
 });
 
 wireEnterToConfirm(document.querySelector('#authScreen .auth-box'), document.getElementById('authSubmitBtn'));
@@ -1665,7 +1718,8 @@ document.getElementById('authSubmitBtn').addEventListener('click', async ()=>{
         errEl.textContent = 'تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتأكيد الحساب ثم سجّل الدخول.';
       }
     } else {
-      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      const loginEmail = isCashierLoginMode ? cashierUsernameToEmail(email) : email;
+      const { data, error } = await sb.auth.signInWithPassword({ email: loginEmail, password });
       if(error) throw error;
       currentUser = data.user;
       await afterLogin();
@@ -1718,7 +1772,16 @@ async function afterLogin(){
   isSuperAdmin = (currentUser.email || '').toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
   const { data: accData, error: accErr } = await sb.from('accounts').select('*').eq('owner_id', currentUser.id).maybeSingle();
   if(accErr){ toast('حدث خطأ في تحميل البيانات'); show('authScreen'); return; }
-  if(!accData){ show('onboardScreen'); return; }
+  if(!accData){
+    // مش صاحب حساب — نتأكد هل هو حساب كاشير تابع لمطعم قبل ما نعتبره حساب جديد محتاج onboarding
+    const { data: staffRow, error: staffErr } = await sb.from('restaurant_staff').select('*, restaurants(*)').eq('user_id', currentUser.id).maybeSingle();
+    if(!staffErr && staffRow){
+      await openCashierDashboard(staffRow);
+      return;
+    }
+    show('onboardScreen');
+    return;
+  }
   account = accData;
   const { data: branchRows, error: brErr } = await sb.from('restaurants').select('*').eq('account_id', account.id).order('created_at', { ascending:true });
   if(brErr){ toast('حدث خطأ في تحميل الفروع'); show('authScreen'); return; }
@@ -2044,6 +2107,20 @@ function setFeatureLockBadge(btnId, locked, lockedTooltip){
 }
 function applyTierLockBadgesUI(){
   setFeatureLockBadge('driversBtn', !!restaurant.restriction_drivers_disabled, '🔒 شاشة السائقين متاحة في باقة PRO فقط');
+}
+
+// شاشة الكاشير المبسّطة — بتفتح للحسابات الفرعية اللي عندها صلاحية محدودة (عرض الطلبات وتحديث حالتها بس)
+async function openCashierDashboard(staffRow){
+  restaurant = staffRow.restaurants;
+  if(!restaurant){ toast('تعذر تحميل بيانات المتجر'); show('authScreen'); return; }
+  document.getElementById('cashierRestName').textContent = restaurant.name || 'منيو m@g';
+  show('cashierScreen');
+  subscribeToNewOrders();
+  refreshNewOrdersCount();
+  setupNotificationPermission('cashierNotifPermBtn');
+  document.getElementById('cashierOrdersBtn').onclick = openOrdersOverlay;
+  document.getElementById('cashierOrdersBtnBig').onclick = openOrdersOverlay;
+  document.getElementById('cashierSignOutBtn').onclick = signOutApp;
 }
 
 async function openDashboard(){
@@ -2687,8 +2764,8 @@ async function refreshNewOrdersCount(){
   updateNewOrdersBadge();
 }
 
-function updateNotifPermBtn(){
-  const btn = document.getElementById('notifPermBtn');
+function updateNotifPermBtn(btnId){
+  const btn = document.getElementById(btnId || 'notifPermBtn');
   if(!btn) return;
   btn.classList.remove('notif-granted', 'notif-denied', 'notif-default');
   if(!('Notification' in window)){
@@ -2709,14 +2786,15 @@ function updateNotifPermBtn(){
   }
 }
 
-function setupNotificationPermission(){
-  const btn = document.getElementById('notifPermBtn');
+function setupNotificationPermission(btnId){
+  const idToUse = btnId || 'notifPermBtn';
+  const btn = document.getElementById(idToUse);
   if(!btn) return;
-  updateNotifPermBtn();
+  updateNotifPermBtn(idToUse);
   // لو المستخدم غيّر الإذن من إعدادات المتصفح مباشرة (مش من الزرار)، نحدّث شكل الزرار تلقائيًا
   if('permissions' in navigator && navigator.permissions.query){
     navigator.permissions.query({ name: 'notifications' }).then(status=>{
-      status.onchange = updateNotifPermBtn;
+      status.onchange = ()=> updateNotifPermBtn(idToUse);
     }).catch(()=>{});
   }
   if(btn.dataset.bound) return;
@@ -3820,7 +3898,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
   });
 });
 
-document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
+async function openOrdersOverlay(){
   stopOrderAlertLoop();
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
@@ -4200,7 +4278,8 @@ document.getElementById('viewOrdersBtn').addEventListener('click', async ()=>{
   });
 
   renderList();
-});
+}
+document.getElementById('viewOrdersBtn').addEventListener('click', openOrdersOverlay);
 
 const RECEIPT_WIDTH_KEY = 'menuReceiptWidth';
 function getSavedReceiptWidth(){
@@ -6788,6 +6867,117 @@ function exportOrdersToExcel(orderList, itemsByOrderMap, filenameLabel){
   toast(`تم تصدير ${orderList.length} طلب بنجاح`);
 }
 
+async function openStaffModal(){
+  const entityLabel = biz(restaurant.business_type, 'entityDef');
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>👤 حسابات الكاشير</h3>
+      <div class="field">
+        <small>حسابات فرعية بصلاحيات محدودة — تقدر تشوف الطلبات الواردة وتغيّر حالتها بس، من غير أي وصول لباقي لوحة التحكم (الأصناف، الإعدادات، التقارير، الاشتراك).</small>
+      </div>
+      <div class="field" id="staffListWrap">
+        <label>الحسابات الحالية</label>
+        <div id="staffListInner">جاري التحميل...</div>
+      </div>
+      <div class="field">
+        <label>إضافة كاشير جديد</label>
+        <input type="text" id="staffUsernameInput" placeholder="اسم المستخدم (حروف إنجليزية وأرقام فقط)" style="direction:ltr;">
+        <input type="password" id="staffPasswordInput" placeholder="كلمة المرور (6 أحرف على الأقل)" style="direction:ltr; margin-top:8px;">
+        <small style="display:block; margin-top:6px;">هتديله اسم المستخدم وكلمة المرور دول بنفسك عشان يسجّل دخول بيهم — مفيش إيميل مطلوب.</small>
+        <button type="button" class="add-btn" id="staffAddBtn" style="margin-top:8px;">➕ إضافة الحساب</button>
+      </div>
+      <div class="auth-err" id="staffErr"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="staffCloseBtn">إغلاق</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#staffCloseBtn').addEventListener('click', ()=> overlay.remove());
+
+  async function refreshStaffList(){
+    const listEl = overlay.querySelector('#staffListInner');
+    listEl.textContent = 'جاري التحميل...';
+    const { data: staff, error } = await sb.from('restaurant_staff').select('*').eq('restaurant_id', restaurant.id).order('created_at');
+    if(error){ listEl.textContent = 'تعذر تحميل الحسابات'; return; }
+    const limit = maxCashiersForTier(account ? account.subscription_tier : 'starter');
+    if(!staff || !staff.length){
+      listEl.innerHTML = `<div style="color:var(--stone);">مفيش حسابات كاشير مضافة (0 من ${limit})</div>`;
+    } else {
+      listEl.innerHTML = staff.map(s=> `
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line);">
+          <span>👤 ${escapeHtml(s.username)}</span>
+          <button type="button" class="link-btn staff-remove-btn" data-id="${s.id}" style="color:#c0392b; font-size:12px;">🗑️ حذف</button>
+        </div>`).join('') + `<div style="color:var(--stone); font-size:12px; margin-top:6px;">${staff.length} من ${limit} حسابات متاحة في باقتك</div>`;
+    }
+    overlay.querySelectorAll('.staff-remove-btn').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        if(!confirm('متأكد إنك عايز تلغي وصول حساب الكاشير ده؟ (اسم المستخدم ده مش هينفع يتسجّل بيه حساب جديد تاني بعد كده)')) return;
+        const { error: delErr } = await sb.from('restaurant_staff').delete().eq('id', btn.dataset.id);
+        if(delErr){ toast('تعذر حذف الحساب'); return; }
+        toast('تم إلغاء وصول الحساب');
+        refreshStaffList();
+      });
+    });
+    return staff || [];
+  }
+
+  const currentStaff = await refreshStaffList();
+
+  overlay.querySelector('#staffAddBtn').addEventListener('click', async ()=>{
+    const errEl = overlay.querySelector('#staffErr');
+    errEl.textContent = '';
+    const username = overlay.querySelector('#staffUsernameInput').value.trim();
+    const password = overlay.querySelector('#staffPasswordInput').value;
+    if(!/^[a-zA-Z0-9_.-]{3,20}$/.test(username)){
+      errEl.textContent = 'اسم المستخدم لازم يكون حروف إنجليزية أو أرقام (3 إلى 20 حرف)، من غير مسافات';
+      return;
+    }
+    if(password.length < 6){
+      errEl.textContent = 'كلمة المرور لازم تكون 6 أحرف على الأقل';
+      return;
+    }
+    const existingCount = (await sb.from('restaurant_staff').select('id', { count:'exact', head:true })
+      .eq('restaurant_id', restaurant.id));
+    const limit = maxCashiersForTier(account ? account.subscription_tier : 'starter');
+    if((existingCount.count || 0) >= limit){
+      errEl.textContent = `وصلت للحد الأقصى لعدد حسابات الكاشير في باقتك الحالية (${limit}). تقدر تزوّد الباقة أو تحذف حساب موجود الأول.`;
+      return;
+    }
+
+    const addBtn = overlay.querySelector('#staffAddBtn');
+    addBtn.disabled = true; addBtn.textContent = '⏳ جاري الإضافة...';
+    try{
+      // بنستخدم نسخة منفصلة تمامًا من عميل Supabase عشان إنشاء حساب الكاشير الجديد مايبدلش جلسة دخولك الحالية كصاحب المطعم
+      const tempClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+      const syntheticEmail = cashierUsernameToEmail(username);
+      const { data: signUpData, error: signUpErr } = await tempClient.auth.signUp({ email: syntheticEmail, password });
+      if(signUpErr){
+        errEl.textContent = signUpErr.message && signUpErr.message.includes('registered') ? 'اسم المستخدم ده مستخدم بالفعل، جرّب اسم تاني' : ('تعذر إنشاء الحساب: ' + signUpErr.message);
+        addBtn.disabled = false; addBtn.textContent = '➕ إضافة الحساب';
+        return;
+      }
+      const newUserId = signUpData.user && signUpData.user.id;
+      if(!newUserId) throw new Error('لم يتم إنشاء المستخدم');
+
+      const { error: insertErr } = await sb.from('restaurant_staff').insert({ restaurant_id: restaurant.id, user_id: newUserId, username });
+      if(insertErr){
+        errEl.textContent = 'تعذر ربط الحساب بالمطعم: ' + insertErr.message;
+        addBtn.disabled = false; addBtn.textContent = '➕ إضافة الحساب';
+        return;
+      }
+      overlay.querySelector('#staffUsernameInput').value = '';
+      overlay.querySelector('#staffPasswordInput').value = '';
+      toast('✅ تمت إضافة حساب الكاشير بنجاح');
+      await refreshStaffList();
+    }catch(e){
+      errEl.textContent = 'حصل خطأ غير متوقع، حاول تاني';
+    }
+    addBtn.disabled = false; addBtn.textContent = '➕ إضافة الحساب';
+  });
+}
+
 function openBackupModal(){
   const entityLabel = biz(restaurant.business_type, 'entityDef');
   const overlay = document.createElement('div');
@@ -7273,6 +7463,9 @@ document.getElementById('subscriptionBtn').addEventListener('click', openSubscri
 
 document.getElementById('backupBtn').addEventListener('click', ()=>{
   openBackupModal();
+});
+document.getElementById('staffBtn').addEventListener('click', ()=>{
+  openStaffModal();
 });
 document.getElementById('restaurantSettingsBtn').addEventListener('click', async ()=>{
   if(restaurant.restriction_settings_disabled){ toast('إعدادات المطعم غير متاحة في نسختك الحالية'); return; }
