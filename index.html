@@ -51,10 +51,13 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .auth-box{ background:#2A2825; border:1px solid #3a3733; border-radius:14px; padding:26px; width:min(380px,92vw); }
 .auth-showcase{ margin-top:22px; width:min(380px,92vw); text-align:center; }
 .auth-showcase-label{ color:var(--stone-light); font-size:12px; font-weight:700; margin-bottom:10px; }
-.auth-showcase-link{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:#2A2825; border:1px solid #3a3733; border-radius:12px; padding:14px 18px; text-decoration:none; transition:border-color .15s ease, transform .15s ease; }
+.auth-showcase-link{ display:flex; align-items:center; gap:12px; background:#2A2825; border:1px solid #3a3733; border-radius:12px; padding:12px 16px; text-decoration:none; transition:border-color .15s ease, transform .15s ease; }
 .auth-showcase-link:hover{ border-color:var(--basil); transform:translateY(-1px); }
-.auth-showcase-name{ color:var(--paper); font-weight:800; font-size:14px; font-family:var(--display); }
-.auth-showcase-cta{ color:var(--basil); font-weight:700; font-size:12px; white-space:nowrap; }
+.auth-showcase-logo{ width:38px; height:38px; border-radius:9px; object-fit:cover; flex-shrink:0; background:#1c1a17; border:1px solid #454138; }
+.auth-showcase-info{ display:flex; flex-direction:column; align-items:flex-start; gap:3px; flex:1; min-width:0; }
+.auth-showcase-name{ color:var(--paper); font-weight:800; font-size:14px; font-family:var(--display); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.auth-showcase-meta{ color:var(--stone); font-size:11px; font-weight:600; }
+.auth-showcase-cta{ color:var(--basil); font-weight:700; font-size:12px; white-space:nowrap; flex-shrink:0; }
 .auth-box h3{ font-family:var(--display); color:var(--paper); font-size:20px; margin:0 0 16px; }
 .auth-tabs{display:flex; gap:8px; margin-bottom:18px;}
 .auth-tab{ flex:1; text-align:center; padding:9px; border-radius:8px; font-weight:700; font-size:13px; color:var(--stone); cursor:pointer; background:#221F1C; }
@@ -345,7 +348,7 @@ body.pub-menu-only .add-to-cart-btn{ display:none !important; }
 }
 .pub-side-ad-close.pub-side-ad-close-visible{ opacity:1; pointer-events:auto; transform:scale(1); }
 .pub-side-ad-close:hover{ background:rgba(32,31,29,.22); }
-/* شريحة إعلان واحدة داخل الكارت الطولي — أكتر من شريحة تتناوب تلقائيًا في نفس المساحة */
+/* شريحة إعلان واحدة داخل الكارت الطولي — أكثر من شريحة تتناوب تلقائيًا في نفس المساحة */
 .pub-side-ad-slide{
   position:absolute; inset:0; display:none;
   flex-direction:column; align-items:center; justify-content:center; text-align:center;
@@ -830,7 +833,27 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
   <div class="auth-showcase">
     <div class="auth-showcase-label">✨ نموذج حي من أحد عملائنا</div>
     <a href="https://magzikopops-ui.github.io/menu/?r=al-refaey" target="_blank" rel="noopener" class="auth-showcase-link">
-      <span class="auth-showcase-name">الرفاعي للأمن الغذائي</span>
+      <img class="auth-showcase-logo" src="https://vinpjtrxwqlmwppggbqy.supabase.co/storage/v1/object/public/menu-images/logos/0a31299b-be25-443b-b379-7e1bf482149d/f6590ba2-05b5-4d7c-8df6-c35670d3810d.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
+      <span class="auth-showcase-info">
+        <span class="auth-showcase-name">الرفاعي للأمن الغذائي</span>
+        <span class="auth-showcase-meta">🏪 266 صنف</span>
+      </span>
+      <span class="auth-showcase-cta">تصفح المنيو ←</span>
+    </a>
+    <a href="https://magzikopops-ui.github.io/menu/?r=mo7" target="_blank" rel="noopener" class="auth-showcase-link" style="margin-top:10px;">
+      <img class="auth-showcase-logo" src="https://vinpjtrxwqlmwppggbqy.supabase.co/storage/v1/object/public/menu-images/logos/5b3696a4-1e4e-4406-90c2-292d5398da42/1e6566b6-6ec8-47e3-ae63-51f776c44fa6.webp" alt="" loading="lazy" onerror="this.style.display='none'">
+      <span class="auth-showcase-info">
+        <span class="auth-showcase-name">zikrallah Store</span>
+        <span class="auth-showcase-meta">🏪 276 صنف</span>
+      </span>
+      <span class="auth-showcase-cta">تصفح المنيو ←</span>
+    </a>
+    <a href="https://magzikopops-ui.github.io/menu/?r=arvea" target="_blank" rel="noopener" class="auth-showcase-link" style="margin-top:10px;">
+      <img class="auth-showcase-logo" src="https://vinpjtrxwqlmwppggbqy.supabase.co/storage/v1/object/public/menu-images/logos/bc718802-637b-4cfd-97b2-2b7e80dba4fa/3bb738f7-f099-4973-988e-ade74a18e616.webp" alt="" loading="lazy" onerror="this.style.display='none'">
+      <span class="auth-showcase-info">
+        <span class="auth-showcase-name">مخزن ابو العنين</span>
+        <span class="auth-showcase-meta">🏪 10 أصناف</span>
+      </span>
       <span class="auth-showcase-cta">تصفح المنيو ←</span>
     </a>
   </div>
@@ -849,7 +872,7 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
     </div>
   </div>
   <div style="padding:40px 24px; text-align:center; color:var(--stone-light);">
-    <div style="font-size:15px; margin-bottom:16px;">أهلًا بيك 👋 هتلاقي كل الطلبات الجديدة والواردة من هنا.</div>
+    <div style="font-size:15px; margin-bottom:16px;">أهلًا بك 👋 ستجد هنا جميع الطلبات الجديدة والواردة.</div>
     <button class="save-btn" id="cashierOrdersBtnBig" style="padding:14px 28px; font-size:16px;">📋 فتح الطلبات الواردة</button>
   </div>
 </div>
@@ -909,6 +932,7 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
             <button class="link-btn split-copy" id="copyPublicLinkBtn">نسخ رابط القائمة العام</button><button class="link-btn split-open" id="openPublicLinkBtn" title="فتح المنيو مباشرة">🔗</button>
           </span>
           <button class="link-btn" id="showQrBtn">QR Code</button>
+          <button class="link-btn" id="showTablesQrBtn">🍽️ QR الطاولات</button>
           <button class="link-btn" id="shareMenuBtn">📤 مشاركة القائمة</button>
           <div class="dash-menu-divider"></div>
           <button class="link-btn" id="importExcelBtn">📥 استيراد من إكسيل</button>
@@ -1122,25 +1146,25 @@ let account = null; // {id, owner_id, subscription_tier, subscription_end_date, 
 let branches = []; // كل فروع الحساب الحالي
 const SUPER_ADMIN_EMAIL = 'magziko@gmail.com'; // ✏️ حط هنا نفس الإيميل اللي بتسجل بيه دخولك انت
 let isSuperAdmin = false;
-// الحقول اللي بقت مسؤولية الحساب (accounts) مش الفرع (restaurants) بعد فصل الفروع
+// الحقول التي أصبحت من مسؤولية الحساب (accounts) وليس الفرع (restaurants) بعد فصل الفروع
 const ACCOUNT_LEVEL_FIELDS = ['subscription_tier','feature_plan','subscription_end_date','account_suspended','demo_days',
   'restriction_banner_enabled','restriction_watermark_enabled','restriction_prices_disabled','restriction_images_disabled','restriction_orders_disabled',
   'restriction_print_disabled','restriction_stats_disabled','restriction_reports_disabled','restriction_share_disabled',
   'restriction_delivery_zones_disabled','restriction_drivers_disabled','restriction_extra_channels_disabled',
   'restriction_multi_wallet_disabled','restriction_stats_charts_disabled','restriction_customers_disabled',
   'restriction_settings_disabled','restriction_notif_settings_disabled','restriction_delete_disabled','restriction_excel_disabled'];
-// حد أقصى لعدد الفروع حسب الباقة السعرية — STARTER فرع واحد بس، PRO بلا حدود
+// حد أقصى لعدد الفروع حسب الباقة السعرية — STARTER فرع واحد فقط، PRO بلا حدود
 function maxBranchesForTier(tier){ return tier === 'pro' ? Infinity : 1; }
 // حد أقصى لعدد حسابات الكاشير حسب الباقة — STARTER حساب واحد، PRO حسابين (نفس الحد المطبّق فعليًا في قاعدة البيانات)
 function maxCashiersForTier(tier){ return tier === 'pro' ? 2 : 1; }
-// حساب الكاشير بيسجّل دخول باسم مستخدم بسيط بس (مفيش إيميل حقيقي)، فبنحوّله لإيميل داخلي مصطنع
-// وبنستخدمه مع Supabase Auth تحت الستار — الكاشير نفسه مايشوفش ولا يحتاج يعرف الإيميل ده أبدًا
+// يسجّل حساب الكاشير الدخول باسم مستخدم بسيط فقط (دون بريد إلكتروني حقيقي)، لذلك يتم تحويله إلى بريد إلكتروني داخلي مصطنع
+// ويُستخدم مع Supabase Auth في الخلفية — لا يرى الكاشير هذا البريد الإلكتروني ولا يحتاج إلى معرفته إطلاقًا
 function cashierUsernameToEmail(username){
   const clean = String(username).trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
   return `${clean}@cashier.menu-mag.com`;
 }
-// بينسخ حقول الاشتراك من الحساب على كل فروعه، عشان كل الكود الحالي اللي بيقرأ
-// restaurant.subscription_end_date / account_suspended / ... يفضل شغّال من غير تعديل
+// ينسخ حقول الاشتراك من الحساب إلى جميع فروعه، بحيث يستمر عمل كل الكود الحالي الذي يقرأ
+// restaurant.subscription_end_date / account_suspended / ... دون الحاجة لأي تعديل
 function mirrorAccountOntoBranches(){
   branches = branches.map(b=>{
     const merged = Object.assign({}, b);
@@ -1265,8 +1289,17 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-// بيتأكد إن القيمة رابط http/https حقيقي قبل ما نحطها كـ href قابل للدوس أو نفتحها بـ window.open —
-// عشان escapeHtml لوحدها بتهرّب علامات زي < > " ' بس مش بتمنع قيم زي javascript:/data: تتحط كرابط كامل
+// تسمية موحّدة لنوع الطلب (توصيل / استلام / طاولة)، تُستخدم في كل شاشات العرض والطباعة والتصدير
+function orderTypeLabel(order, lang){
+  const type = order && order.order_type;
+  const tableNum = order && order.table_number;
+  if(type === 'dine_in') return tableNum ? (lang==='en' ? `Table ${tableNum}` : `🍽️ طاولة ${tableNum}`) : (lang==='en' ? 'Dine-in' : '🍽️ داخل المطعم');
+  if(type === 'pickup') return lang==='en' ? 'Pickup' : 'استلام';
+  return lang==='en' ? 'Delivery' : 'توصيل';
+}
+
+// يتحقق من أن القيمة رابط http/https حقيقي قبل استخدامها كـ href قابل للنقر أو فتحها عبر window.open —
+// لأن escapeHtml وحدها تُفلت علامات مثل < > " ' لكنها لا تمنع قيمًا مثل javascript:/data: من أن توضع كرابط كامل
 function isSafeHttpUrl(value){
   if(!value || typeof value !== 'string') return false;
   return /^https?:\/\//i.test(value.trim());
@@ -1281,7 +1314,7 @@ document.addEventListener('keydown', function(e){
   overlays[overlays.length - 1].remove();
 });
 
-// تحديد النص بالكامل تلقائيًا عند التركيز على أي حقل رقمي (سعر، رسوم...) عشان يسهل الكتابة فوقه
+// تحديد النص بالكامل تلقائيًا عند التركيز على أي حقل رقمي (سعر، رسوم...) لتسهيل الكتابة فوقه
 document.addEventListener('focusin', function(e){
   if(e.target.tagName === 'INPUT' && e.target.type === 'number'){
     e.target.select();
@@ -1391,7 +1424,7 @@ function toast(msg){
 }
 
 function toEgyptWaDigits(phone){
-  // أرقام العملاء متخزنة بصيغة محلية 01xxxxxxxxx، لازم نحولها لصيغة دولية 20xxxxxxxxxx عشان رابط واتساب يشتغل صح
+  // أرقام العملاء مخزّنة بصيغة محلية 01xxxxxxxxx، ويجب تحويلها إلى صيغة دولية 20xxxxxxxxxx حتى يعمل رابط واتساب بشكل صحيح
   let digits = (phone || '').replace(/[^\d]/g, '');
   if(!digits) return '';
   if(digits.startsWith('0')) digits = '20' + digits.slice(1);
@@ -1399,8 +1432,8 @@ function toEgyptWaDigits(phone){
   return digits;
 }
 
-// نصوص متنوعة لرسالة "شارك المنيو" — التنويع بيقلل احتمالية إن واتساب يعتبر الرسائل المتكررة سبام
-// وبعضها من غير اسم العميل، لأن الاسم المسجل ممكن يكون غلط
+// نصوص متنوعة لرسالة "شارك المنيو" — يقلل التنويع من احتمالية اعتبار واتساب للرسائل المتكررة سبامًا
+// وبعضها بدون اسم العميل، لأن الاسم المسجل قد يكون غير صحيح
 const MENU_WA_TEMPLATES = [
   { withName:true,  text:(name,link,rest)=> `أهلًا بك ${name}\nيسعدنا أن نرحب بك في ${rest}! يمكنك تصفح المنيو والطلب أونلاين مباشرة من هنا:\n${link}` },
   { withName:false, text:(name,link,rest)=> `أهلًا بك\n${rest} متاح الآن أونلاين! يمكنك تصفح المنيو والطلب من هنا:\n${link}` },
@@ -1410,7 +1443,7 @@ const MENU_WA_TEMPLATES = [
   { withName:false, text:(name,link,rest)=> `منيو ${rest} متاح أونلاين\nاطلب الآن من هنا:\n${link}` },
   { withName:true,  text:(name,link,rest)=> `أهلًا بك ${name}\nاستمتع بعروضنا وخصوماتنا عند الطلب أونلاين من منيو ${rest}:\n${link}` },
   { withName:false, text:(name,link,rest)=> `عروض وخصومات تنتظرك\nاطلب أونلاين من منيو ${rest} واستمتع بأفضل العروض:\n${link}` },
-  { withName:true,  text:(name,link,rest)=> `أخبار سارة يا ${name}\nلدينا عروض وخصومات خاصة عند الطلب أونلاين من ${rest}، جرّب المنيو من هنا:\n${link}` },
+  { withName:true,  text:(name,link,rest)=> `أخبار سارة يا ${name}\nلدينا عروض وخصومات خاصة عند الطلب أونلاين من ${rest}، يمكنك تصفح المنيو من هنا:\n${link}` },
   { withName:false, text:(name,link,rest)=> `خصومات مميزة بانتظارك\n${rest} متاح أونلاين الآن، اطلب من المنيو واستفد من العروض:\n${link}` },
   { withName:true,  text:(name,link,rest)=> `${name}، لا تفوّت الفرصة\nعروض وخصومات على الطلبات أونلاين من ${rest}، شاهد المنيو من هنا:\n${link}` },
   { withName:false, text:(name,link,rest)=> `فرصتك الآن\nاطلب أونلاين من منيو ${rest} واحصل على خصمك على طلبك:\n${link}` },
@@ -1450,14 +1483,14 @@ function openWaTemplatePicker(templates, name, link, digits){
 
 function sendMenuLinkWhatsApp(phone, name){
   const digits = toEgyptWaDigits(phone);
-  if(!digits){ toast('لا يوجد رقم تليفون صالح لهذا العميل'); return; }
+  if(!digits){ toast('لا يوجد رقم هاتف صالح لهذا العميل'); return; }
   const link = `${location.origin}${location.pathname}?r=${restaurant.slug}`;
   const cleanName = (name || '').trim();
   const templates = cleanName ? MENU_WA_TEMPLATES : MENU_WA_TEMPLATES.filter(t=> !t.withName);
   openWaTemplatePicker(templates, cleanName, link, digits);
 }
 
-// بيبني رسالة تنبيه مناسبة لصاحب المتجر حسب حالته: فترة تجريبية قربت تخلص/خلصت، أو اشتراك قرب ينتهي/انتهى
+// يبني رسالة تنبيه مناسبة لصاحب المتجر حسب حالته: فترة تجريبية أوشكت على الانتهاء/انتهت، أو اشتراك أوشك على الانتهاء/انتهى
 function buildExpiryReminderMessage(r){
   const bizName = r.name || '';
   if(r.subscription_end_date){
@@ -1482,29 +1515,29 @@ function buildExpiryReminderMessage(r){
   return `مرحبًا ${bizName}\nنود التواصل معك بخصوص حالة اشتراكك في منيو m@g.`;
 }
 
-// بيبني رسالة تشرح لصاحب المحل إزاي يدفع (إنستاباي) والباقات المتاحة وأسعارها
+// يبني رسالة تشرح لصاحب المحل كيفية الدفع (إنستاباي) والباقات المتاحة وأسعارها
 function buildPaymentInstructionsMessage(r){
   const bizName = r.name || '';
   const plansLines = RENEW_PLANS.map(p=>{
     const badge = p.badge_ar ? ` (${p.badge_ar})` : '';
     return `- ${p.name_ar}: ${p.price} جنيه (${p.suffix_ar})${badge}`;
   }).join('\n');
-  return `مرحبًا ${bizName}\nإليك طريقة دفع اشتراك منيو m@g:\n\n1) افتح رابط الدفع عبر إنستاباي التالي:\n${RENEW_PAY_LINK}\n(أو حوّل مباشرة على حساب إنستاباي: magziko@instapay)\n\n2) اختر الباقة المناسبة لك وادفع قيمتها:\n${plansLines}\n\n3) بعد الدفع، ابعتلنا صورة إثبات التحويل هنا على واتساب وسيتم تفعيل اشتراكك فورًا.\n\nولو حابب الدفع بطريقة تانية (فودافون كاش)، الرقم: ${RENEW_VODAFONE_CASH}`;
+  return `مرحبًا ${bizName}\nإليك طريقة دفع اشتراك منيو m@g:\n\n1) افتح رابط الدفع عبر إنستاباي التالي:\n${RENEW_PAY_LINK}\n(أو حوّل مباشرة على حساب إنستاباي: magziko@instapay)\n\n2) اختر الباقة المناسبة لك وادفع قيمتها:\n${plansLines}\n\n3) بعد الدفع، أرسل لنا صورة إثبات التحويل هنا على واتساب وسيتم تفعيل اشتراكك فورًا.\n\nوإذا كنت تفضل طريقة دفع أخرى (فودافون كاش)، الرقم: ${RENEW_VODAFONE_CASH}`;
 }
 
-// بيفتح واتساب على رقم المتجر برسالة شرح طريقة الدفع (إنستاباي + الباقات)
+// يفتح واتساب على رقم المتجر برسالة تشرح طريقة الدفع (إنستاباي + الباقات)
 function sendPaymentInstructionsWhatsApp(r){
   const digits = (r.phone || '').replace(/[^\d]/g, '');
-  if(!digits){ toast('لا يوجد رقم تليفون مسجل لهذا المتجر — أضِفه من إعدادات المتجر أولًا'); return; }
+  if(!digits){ toast('لا يوجد رقم هاتف مسجل لهذا المتجر — أضِفه من إعدادات المتجر أولًا'); return; }
   const msg = buildPaymentInstructionsMessage(r);
   window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-// بيفتح واتساب على رقم المتجر برسالة تنبيه جاهزة، وبيسجّل وقت الإرسال وعدد المرات في قاعدة البيانات
-// بيرجع القيم الجديدة (last_reminder_sent_at, reminder_count) عشان يتحدّث بيها الواجهة، أو null لو فشل
+// يفتح واتساب على رقم المتجر برسالة تنبيه جاهزة، ويسجّل وقت الإرسال وعدد المرات في قاعدة البيانات
+// يُرجع القيم الجديدة (last_reminder_sent_at, reminder_count) لتحديث الواجهة بها، أو null في حال الفشل
 async function sendExpiryReminderWhatsApp(r){
   const digits = (r.phone || '').replace(/[^\d]/g, '');
-  if(!digits){ toast('لا يوجد رقم تليفون مسجل لهذا المتجر — أضِفه من إعدادات المتجر أولًا'); return null; }
+  if(!digits){ toast('لا يوجد رقم هاتف مسجل لهذا المتجر — أضِفه من إعدادات المتجر أولًا'); return null; }
   const msg = buildExpiryReminderMessage(r);
   window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
   const nowIso = new Date().toISOString();
@@ -1516,14 +1549,14 @@ async function sendExpiryReminderWhatsApp(r){
   return { last_reminder_sent_at: nowIso, reminder_count: newCount };
 }
 
-// بيبعت تفاصيل طلب توصيل للسائق المعيّن عبر واتساب (اسم العميل، العنوان، الأصناف، الإجمالي)
+// يرسل تفاصيل طلب التوصيل إلى السائق المعيّن عبر واتساب (اسم العميل، العنوان، الأصناف، الإجمالي)
 function sendOrderToDriverWhatsApp(order, lines, driver){
   const digits = toEgyptWaDigits(driver.phone);
-  if(!digits){ toast('لا يوجد رقم تليفون صالح لهذا السائق'); return; }
+  if(!digits){ toast('لا يوجد رقم هاتف صالح لهذا السائق'); return; }
   const itemsLines = (lines || []).map(l=> `- ${l.item_name} × ${l.quantity}`).join('\n');
   let msg = `طلب توصيل جديد${order.order_number != null ? ` #${order.order_number}` : ''}\n\n`;
   msg += `العميل: ${order.customer_name || ''}\n`;
-  msg += `التليفون: ${order.customer_phone || ''}${order.secondary_phone ? ` / ${order.secondary_phone}` : ''}\n`;
+  msg += `الهاتف: ${order.customer_phone || ''}${order.secondary_phone ? ` / ${order.secondary_phone}` : ''}\n`;
   if(order.city || order.area) msg += `المنطقة: ${[order.city, order.area].filter(Boolean).join(' — ')}\n`;
   if(order.address) msg += `العنوان: ${order.address}\n`;
   if(itemsLines) msg += `\nالأصناف:\n${itemsLines}\n`;
@@ -1538,7 +1571,7 @@ function show(id){
   });
 }
 
-/* شاشة التحميل: تعرض لوجو المتجر (من الكاش لو موجود) بدل كلمة "جارِ التحميل" لما يكون معروف */
+/* شاشة التحميل: تعرض شعار المتجر (من الذاكرة المؤقتة إن وُجد) بدلًا من كلمة "جارِ التحميل" عندما يكون معروفًا */
 function setLoadingLogo(url){
   const img = document.getElementById('loadingLogo');
   const txt = document.getElementById('loadingText');
@@ -1583,6 +1616,8 @@ async function boot(){
   const storeSlug = params.get('store'); // رابط اختيار الفرع لحساب متعدد الفروع
   const trackId = params.get('t');
   const wantSignup = params.get('signup');
+  const tableParam = parseInt(params.get('table'), 10);
+  window.dineInTable = (tableParam && tableParam > 0) ? tableParam : null; // رقم الطاولة لو الدخول جاي من مسح QR طاولة
   if(trackId){
     setFavicon('menu-favicon.png');
     await loadOrderTracking(trackId);
@@ -1609,8 +1644,8 @@ async function boot(){
   }
 }
 
-// صفحة عامة لاختيار الفرع، لحساب فيه أكتر من فرع — رابط واحد ثابت للحساب (?store=account-slug)
-// كل فرع بعد الاختيار بيروح لرابط منيوه الخاص (?r=branch-slug) زي ما هو دايمًا
+// صفحة عامة لاختيار الفرع، لحساب يحتوي على أكثر من فرع — رابط واحد ثابت للحساب (?store=account-slug)
+// كل فرع بعد الاختيار ينتقل إلى رابط منيوه الخاص (?r=branch-slug) كالمعتاد
 async function loadBranchPicker(storeSlug){
   show('loadingScreen');
   const { data: accRow, error: accErr } = await sb.from('accounts_public').select('id, slug').eq('slug', storeSlug).maybeSingle();
@@ -1674,7 +1709,7 @@ document.getElementById('cashierLoginToggle').addEventListener('click', ()=>{
   if(isCashierLoginMode){
     emailLabel.textContent = 'اسم المستخدم (الكاشير)';
     emailInput.type = 'text';
-    emailInput.placeholder = 'اسم المستخدم اللي أعطاك إياه صاحب المتجر';
+    emailInput.placeholder = 'اسم المستخدم الذي زوّدك به صاحب المتجر';
     toggle.textContent = 'رجوع لتسجيل الدخول بالبريد الإلكتروني';
   } else {
     emailLabel.textContent = 'البريد الإلكتروني';
@@ -1774,7 +1809,7 @@ async function afterLogin(){
   const { data: accData, error: accErr } = await sb.from('accounts').select('*').eq('owner_id', currentUser.id).maybeSingle();
   if(accErr){ toast('حدث خطأ في تحميل البيانات'); show('authScreen'); return; }
   if(!accData){
-    // مش صاحب حساب — نتأكد هل هو حساب كاشير تابع لمطعم قبل ما نعتبره حساب جديد محتاج onboarding
+    // ليس صاحب حساب — نتحقق مما إذا كان حساب كاشير تابعًا لمطعم قبل اعتباره حسابًا جديدًا يحتاج onboarding
     const { data: staffRow, error: staffErr } = await sb.from('restaurant_staff').select('*, restaurants(*)').eq('user_id', currentUser.id).maybeSingle();
     if(!staffErr && staffRow){
       await openCashierDashboard(staffRow);
@@ -1794,7 +1829,7 @@ async function afterLogin(){
   await openDashboard();
 }
 
-// يبدّل الفرع النشط في نفس الحساب من غير ما يحتاج تسجيل خروج/دخول
+// يبدّل الفرع النشط في نفس الحساب دون الحاجة لتسجيل خروج/دخول
 async function switchBranch(branchId){
   const b = branches.find(x=> x.id === branchId);
   if(!b || (restaurant && b.id === restaurant.id)) return;
@@ -1803,18 +1838,18 @@ async function switchBranch(branchId){
   await openDashboard();
 }
 
-// إضافة فرع جديد لنفس الحساب — بيتقيّد بحد أقصى حسب الباقة (STARTER فرع واحد، PRO بلا حدود)
+// إضافة فرع جديد لنفس الحساب — يخضع لحد أقصى حسب الباقة (STARTER فرع واحد، PRO بلا حدود)
 async function createBranch(name, slug){
   const limit = maxBranchesForTier(account.subscription_tier);
   if(branches.length >= limit){
-    toast('باقتك الحالية (STARTER) بتسمح بفرع واحد فقط — رقّي للباقة PRO عشان تضيف أكتر من فرع');
+    toast('باقتك الحالية (STARTER) تسمح بفرع واحد فقط — يرجى الترقية إلى باقة PRO لإضافة أكثر من فرع');
     return { error: { message: 'تجاوز الحد المسموح به من الفروع' } };
   }
   const { data, error } = await sb.from('restaurants').insert({ account_id: account.id, owner_id: currentUser.id, name, slug, business_type: account.business_type }).select().single();
   if(error) return { error };
   branches.push(data);
   mirrorAccountOntoBranches();
-  // أول مرة الحساب يبقى فيه أكتر من فرع، بننشئ رابط "اختيار الفرع" العام تلقائيًا (لو لسه معملوش)
+  // عند أول مرة يصبح فيها الحساب يحتوي على أكثر من فرع، يتم إنشاء رابط "اختيار الفرع" العام تلقائيًا (إذا لم يكن قد أُنشئ بعد)
   if(branches.length === 2 && !account.slug){
     const storeSlug = (branches[0].slug || 'store') + '-branches';
     const { data: accUpd, error: accSlugErr } = await sb.from('accounts').update({ slug: storeSlug }).eq('id', account.id).select().maybeSingle();
@@ -1823,7 +1858,7 @@ async function createBranch(name, slug){
   return { data: branches.find(b=> b.id === data.id) };
 }
 
-// بيرسم مبدّل الفروع في أعلى الداشبورد (بيظهر بس لو الحساب فيه أكتر من فرع أو ممكن يضيف فرع جديد)
+// يرسم مبدّل الفروع في أعلى لوحة التحكم (يظهر فقط إذا كان الحساب يحتوي على أكثر من فرع أو يمكنه إضافة فرع جديد)
 function renderBranchSwitcher(){
   const wrap = document.getElementById('branchSwitcherWrap');
   const select = document.getElementById('branchSwitcherSelect');
@@ -1974,7 +2009,7 @@ document.getElementById('obSubmitBtn').addEventListener('click', async ()=>{
   if(!slug){ errEl.textContent = 'يرجى إدخال رابط صالح بالإنجليزية'; return; }
   const btn = document.getElementById('obSubmitBtn');
   btn.disabled = true;
-  // أول حساب للمستخدم: بننشئ صف accounts (الاشتراك) + أول فرع (restaurants) مربوط بيه
+  // أول حساب للمستخدم: يتم إنشاء صف accounts (الاشتراك) + أول فرع (restaurants) مرتبط به
   const { data: accData, error: accErr } = await sb.from('accounts').insert({ owner_id: currentUser.id, business_type: obBusinessType }).select().single();
   if(accErr){
     btn.disabled = false;
@@ -2026,7 +2061,7 @@ function daysLeftLabel(n){
   return `خلال ${n} أيام`;
 }
 
-// بيبني رابط واتساب لرقم دعم منيو m@g برسالة جاهزة (الرقم معرّف لاحقًا في RENEW_WA_NUMBER)
+// يبني رابط واتساب لرقم دعم منيو m@g برسالة جاهزة (الرقم مُعرَّف لاحقًا في RENEW_WA_NUMBER)
 function SUPPORT_WA_LINK(msg){
   return `https://wa.me/${RENEW_WA_NUMBER}?text=${encodeURIComponent(msg)}`;
 }
@@ -2065,8 +2100,8 @@ function applyFeaturePlanUI(){
 
 /* صلاحيات دقيقة يتحكم فيها الأدمن لكل عميل على حدة (لوحة تحكم m@g) */
 function applyGranularRestrictionsUI(){
-  // بعض الأزرار بتتأثر كمان بـ feature_plan (منيو فقط بدون طلبات) — بندمج الشرطين هنا
-  // عشان الزرار يظهر أو يختفي دايمًا حسب آخر حالة فعلية، ومايفضلش مقفول غلط لو اتفتحت الصلاحية بعدين
+  // تتأثر بعض الأزرار أيضًا بـ feature_plan (منيو فقط بدون طلبات) — يتم دمج الشرطين هنا
+  // حتى يظهر الزر أو يختفي دائمًا وفق آخر حالة فعلية، ولا يبقى مقفلًا بالخطأ إذا فُتحت الصلاحية لاحقًا
   const menuOnly = restaurant.feature_plan === 'menu_only';
   const restrictions = {
     viewOrdersBtn: restaurant.restriction_orders_disabled || menuOnly,
@@ -2074,6 +2109,7 @@ function applyGranularRestrictionsUI(){
     reportsBtn: restaurant.restriction_reports_disabled,
     publicLinkSplitBtn: restaurant.restriction_share_disabled,
     showQrBtn: restaurant.restriction_share_disabled,
+    showTablesQrBtn: restaurant.restriction_share_disabled || menuOnly,
     shareMenuBtn: restaurant.restriction_share_disabled,
     deliveryZonesBtn: restaurant.restriction_delivery_zones_disabled || menuOnly,
     customersBtn: restaurant.restriction_customers_disabled || menuOnly,
@@ -2085,8 +2121,8 @@ function applyGranularRestrictionsUI(){
   });
 }
 
-// شاشات/أزرار خاصة بباقة PRO — تفضل ظاهرة دايمًا (حتى لو المتجر STARTER) مع علامة 🔒،
-// وعند الضغط عليها هيّ نفسها اللي بتوضح إن الميزة متاحة في PRO فقط (الكود جوّه الأزرار)
+// شاشات/أزرار خاصة بباقة PRO — تبقى ظاهرة دائمًا (حتى لو كان المتجر على باقة STARTER) مع علامة 🔒،
+// وعند الضغط عليها فهي نفسها التي توضح أن الميزة متاحة في PRO فقط (الكود داخل الأزرار)
 function setFeatureLockBadge(btnId, locked, lockedTooltip){
   const btn = document.getElementById(btnId);
   if(!btn) return;
@@ -2110,7 +2146,7 @@ function applyTierLockBadgesUI(){
   setFeatureLockBadge('driversBtn', !!restaurant.restriction_drivers_disabled, '🔒 شاشة السائقين متاحة في باقة PRO فقط');
 }
 
-// شاشة الكاشير المبسّطة — بتفتح للحسابات الفرعية اللي عندها صلاحية محدودة (عرض الطلبات وتحديث حالتها بس)
+// شاشة الكاشير المبسّطة — تُفتح للحسابات الفرعية ذات الصلاحية المحدودة (عرض الطلبات وتحديث حالتها فقط)
 async function openCashierDashboard(staffRow){
   restaurant = staffRow.restaurants;
   if(!restaurant){ toast('تعذر تحميل بيانات المتجر'); show('authScreen'); return; }
@@ -2153,7 +2189,7 @@ async function openDashboard(){
 }
 
 // شارة ثابتة بجانب اسم المطعم توضح باستمرار الأيام المتبقية من التجربة المجانية أو الاشتراك،
-// مش بس بانر تحذيري لما يقرب الموعد — عشان الموضوع يفضل حاضر في ذهن صاحب المتجر من بداية التجربة
+// ليست مجرد بانر تحذيري عند اقتراب الموعد — بل ليبقى الأمر حاضرًا في ذهن صاحب المتجر منذ بداية التجربة
 function updateTrialDaysBadge(){
   const badge = document.getElementById('trialDaysBadge');
   if(!badge) return;
@@ -2193,7 +2229,7 @@ function applyExcelRestrictionUI(){
 }
 
 /* ============ باقات الاشتراك وشاشة الدفع ============ */
-// نسخة احتياطية تُستخدم فقط لو تعذّر تحميل الباقات من Supabase (مثلاً بسبب انقطاع الإنترنت)
+// نسخة احتياطية تُستخدم فقط إذا تعذّر تحميل الباقات من Supabase (مثلاً بسبب انقطاع الإنترنت)
 const RENEW_PLANS_FALLBACK = [
   { key:'monthly',   name_ar:'شهري',      name_en:'Monthly',   months:1,  price_egp:700,  price_usd:15,  perMonth:700, discount:0,  suffix_ar:'شهريًا',    suffix_en:'/month', tier_key:'starter' },
   { key:'quarterly', name_ar:'ربع سنوي',  name_en:'Quarterly', months:3,  price_egp:1800, price_usd:40,  perMonth:600, discount:14, suffix_ar:'كل 3 شهور', suffix_en:'/3 months', tier_key:'starter' },
@@ -2202,8 +2238,8 @@ const RENEW_PLANS_FALLBACK = [
 let RENEW_PLANS = RENEW_PLANS_FALLBACK; // تتحدث فورًا بعد أول تحميل ناجح من Supabase عبر fetchRenewPlans()
 let renewPlansLoadedOnce = false;
 
-// بيجيب باقات الاشتراك (الأسعار بالجنيه والدولار) من جدول subscription_plans في Supabase
-// بدل ما تكون مكتوبة ثابتة في الكود، عشان تقدر تتغيّر من لوحة تحكم الأدمن مباشرة من غير تعديل كود أو عمل نشر جديد
+// يجلب باقات الاشتراك (الأسعار بالجنيه والدولار) من جدول subscription_plans في Supabase
+// بدلًا من أن تكون ثابتة في الكود، بحيث يمكن تغييرها من لوحة تحكم الأدمن مباشرة دون تعديل الكود أو إجراء نشر جديد
 async function fetchRenewPlans(){
   try{
     const { data, error } = await sb.from('subscription_plans').select('*').eq('is_active', true).order('sort_order', { ascending:true });
@@ -2234,13 +2270,13 @@ const RENEW_VODAFONE_CASH = '01002707501';
 const RENEW_WA_NUMBER = '201154361888';
 const RENEW_PAYPAL_LINK = 'https://paypal.me/magziko'; // غيّرها لرابط PayPal.me الخاص بيك (أو رابط Payoneer) لاستقبال الدفع من خارج مصر
 
-// تخمين مبدئي هل الزائر برا مصر ولا لأ، بناءً على المنطقة الزمنية للمتصفح — تخمين وليس تأكيدًا، والمستخدم يقدر يبدّل يدويًا
+// تخمين مبدئي لما إذا كان الزائر خارج مصر أم لا، بناءً على المنطقة الزمنية للمتصفح — وهو تخمين وليس تأكيدًا، ويمكن للمستخدم تغييره يدويًا
 function guessIsOutsideEgypt(){
   try{ return Intl.DateTimeFormat().resolvedOptions().timeZone !== 'Africa/Cairo'; }
   catch(err){ return false; }
 }
 
-// عملات دول الخليج مربوطة بسعر ثابت بالدولار (peg)، فالعرض التقريبي هنا مستقر ومش محتاج أي API لأسعار الصرف
+// عملات دول الخليج مربوطة بسعر ثابت بالدولار (peg)، لذا فإن العرض التقريبي هنا مستقر ولا يحتاج إلى أي API لأسعار الصرف
 // ملحوظة: العرض ده للتوضيح فقط — الدفع الفعلي يفضل بالدولار عبر PayPal
 const GCC_CURRENCIES = {
   none: { name_ar: 'بدون', flag: '🌍', code: '', rate: 0 },
@@ -2270,8 +2306,8 @@ function gccApproxLabel(usdAmount, countryKey){
   return conv ? `≈ ${conv.value} ${conv.code}` : '';
 }
 
-// قايمة دول المطعم نفسه (مش الزبون) — بتحدد التوقيت المستخدم في حساب "مفتوح/مقفول"،
-// وبتحدد هل نعرض وسائل الدفع المصرية (فودافون كاش/USSD) ولا لأ. العملة منفصلة تمامًا وبتتكتب يدويًا من صاحب المطعم.
+// قائمة دول المطعم نفسه (وليس الزبون) — تحدد التوقيت المستخدم في حساب "مفتوح/مقفول"،
+// وتحدد ما إذا كانت وسائل الدفع المصرية (فودافون كاش/USSD) تُعرض أم لا. العملة منفصلة تمامًا وتُكتب يدويًا من قبل صاحب المطعم.
 const RESTAURANT_COUNTRIES = [
   { code:'EG', name_ar:'مصر', name_en:'Egypt', tz:'Africa/Cairo', cur:'EGP' },
   { code:'SA', name_ar:'السعودية', name_en:'Saudi Arabia', tz:'Asia/Riyadh', cur:'SR' },
@@ -2308,18 +2344,18 @@ const RESTAURANT_COUNTRIES = [
   { code:'PK', name_ar:'باكستان', name_en:'Pakistan', tz:'Asia/Karachi', cur:'روبية' },
   { code:'IN', name_ar:'الهند', name_en:'India', tz:'Asia/Kolkata', cur:'روبية' },
 ];
-// لو دولة المطعم مش محددة (مطاعم قديمة قبل الميزة دي) بنفترض مصر افتراضيًا عشان محدش يتأثر فجأة
+// إذا لم تكن دولة المطعم محددة (مطاعم قديمة قبل هذه الميزة) تُفترض مصر افتراضيًا حتى لا يتأثر أحد فجأة
 function getRestaurantCountry(rest){
   return RESTAURANT_COUNTRIES.find(c => c.code === (rest && rest.country_code)) || RESTAURANT_COUNTRIES[0];
 }
 function getRestaurantTimezone(rest){
   return getRestaurantCountry(rest).tz;
 }
-// لو صاحب المطعم مصري (أو لسه محددش دولته) نعرض وسائل الدفع المصرية (فودافون كاش/USSD)، غير كده نخفيها لأنها مش هتشتغل برة مصر
+// إذا كان صاحب المطعم مصريًا (أو لم يحدد دولته بعد) تُعرض وسائل الدفع المصرية (فودافون كاش/USSD)، وإلا تُخفى لأنها لن تعمل خارج مصر
 function isEgyptRestaurant(rest){
   return !rest || !rest.country_code || rest.country_code === 'EG';
 }
-// عملة المطعم زي ما صاحب المطعم كتبها بالظبط في الإعدادات (نص حر: EGP، SR، درهم، ريال، دينار...)، وEGP هي الافتراضي لو لسه محددهاش
+// عملة المطعم كما كتبها صاحب المطعم بالضبط في الإعدادات (نص حر: EGP، SR، درهم، ريال، دينار...)، وEGP هي الافتراضية إذا لم تُحدَّد بعد
 function getRestaurantCurrency(rest){
   return (rest && rest.currency_label && rest.currency_label.trim()) ? rest.currency_label.trim() : 'EGP';
 }
@@ -2350,7 +2386,7 @@ function openRenewFlow(rest){
   function closeFlow(){ overlay.remove(); }
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeFlow(); });
 
-  // بيجيب ملخص حقيقي لأداء المتجر (عدد الطلبات والإيرادات) منذ الانضمام، لعرضه كإثبات قيمة ملموس وقت التجديد
+  // يجلب ملخصًا حقيقيًا لأداء المتجر (عدد الطلبات والإيرادات) منذ الانضمام، لعرضه كإثبات قيمة ملموس وقت التجديد
   async function fetchRenewStatsSummary(){
     const { data, error } = await sb.from('orders').select('total, status').eq('restaurant_id', rest.id);
     if(error || !data) return null;
@@ -2486,7 +2522,7 @@ function openRenewFlow(rest){
     const gccConv = isUsd ? gccConvert(basePrice, gccCountry) : null;
     let appliedCode = null; // { code, finalAmount }
 
-    // بيرجع نص العرض الأساسي (بعملة الدولة لو مختارة، وإلا بالدولار/الجنيه) + نص فرعي بالدولار كمرجع للدفع الفعلي عبر PayPal
+    // يُرجع نص العرض الأساسي (بعملة الدولة إن اختيرت، وإلا بالدولار/الجنيه) + نص فرعي بالدولار كمرجع للدفع الفعلي عبر PayPal
     function amountLabels(amtUsd){
       if(isUsd && gccCountry && gccCountry !== 'none'){
         const conv = gccConvert(amtUsd, gccCountry);
@@ -2792,7 +2828,7 @@ function setupNotificationPermission(btnId){
   const btn = document.getElementById(idToUse);
   if(!btn) return;
   updateNotifPermBtn(idToUse);
-  // لو المستخدم غيّر الإذن من إعدادات المتصفح مباشرة (مش من الزرار)، نحدّث شكل الزرار تلقائيًا
+  // إذا غيّر المستخدم الإذن من إعدادات المتصفح مباشرة (وليس من الزر)، يتم تحديث شكل الزر تلقائيًا
   if('permissions' in navigator && navigator.permissions.query){
     navigator.permissions.query({ name: 'notifications' }).then(status=>{
       status.onchange = ()=> updateNotifPermBtn(idToUse);
@@ -2837,7 +2873,7 @@ function showNotifPermModal(mode){
       await Notification.requestPermission();
       updateNotifPermBtn();
       if(Notification.permission === 'granted'){
-        new Notification('تم تفعيل التنبيهات ✅', { body: 'هتوصلك رسالة سطح مكتب مع كل أوردر جديد طول ما المتصفح شغال.' });
+        new Notification('تم تفعيل التنبيهات ✅', { body: 'ستصلك رسالة سطح مكتب مع كل طلب جديد طالما المتصفح مفتوح.' });
       } else if(Notification.permission === 'denied'){
         toast('تم رفض الإذن — يمكنك تفعيله لاحقًا من إعدادات المتصفح');
       }
@@ -2846,7 +2882,7 @@ function showNotifPermModal(mode){
     overlay.innerHTML = `
       <div class="modal" style="text-align:center; max-width:420px;">
         <h3>⛔ الإشعارات محظورة</h3>
-        <div class="orders-empty" style="padding:0 0 12px;">المتصفح ما بيسمحش بإعادة السؤال تلقائيًا بعد الحظر، لازم تفعّلها يدويًا بخطوات بسيطة:</div>
+        <div class="orders-empty" style="padding:0 0 12px;">لا يسمح المتصفح بإعادة طلب الإذن تلقائيًا بعد الحظر، ويلزم تفعيلها يدويًا باتباع خطوات بسيطة:</div>
         <div class="orders-empty" style="text-align:right; padding:0 0 16px; line-height:1.9;">
           1️⃣ اضغط على أيقونة القفل 🔒 (أو ⓘ) بجانب رابط الموقع فوق في المتصفح<br>
           2️⃣ دوّر على "Notifications" وحوّلها لـ "Allow"<br>
@@ -2882,7 +2918,7 @@ function showNotifPermModal(mode){
   }
 }
 
-// مكتبة نغمات التنبيه — كل نغمة بنمط صوتي مختلف يتم توليده بـWeb Audio API (من غير ملفات صوت خارجية)
+// مكتبة نغمات التنبيه — كل نغمة بنمط صوتي مختلف يتم توليده عبر Web Audio API (دون ملفات صوت خارجية)
 const ALERT_TONES = {
   siren: { label: '🚨 صفارة (افتراضي)', play: (ctx)=>{
     [0, 0.15, 0.3, 0.45].forEach((delay, i)=>{
@@ -2945,7 +2981,7 @@ function showDesktopOrderNotification(orderRow){
   if(!('Notification' in window) || Notification.permission !== 'granted') return;
   try{
     const custName = orderRow && orderRow.customer_name ? orderRow.customer_name : 'عميل';
-    const typeLabel = orderRow && orderRow.order_type === 'delivery' ? 'توصيل' : 'استلام';
+    const typeLabel = orderTypeLabel(orderRow);
     const n = new Notification('طلب جديد! 🔔', {
       body: `من ${custName} — ${typeLabel}${orderRow && orderRow.total != null ? ` — ${orderRow.total} ${getRestaurantCurrency(restaurant)}` : ''}`,
       icon: (restaurant && restaurant.logo_url) ? restaurant.logo_url : undefined,
@@ -2973,7 +3009,7 @@ function stopOrderAlertLoop(){
   }
 }
 
-// تنبيه تأخير منفصل — نغمة مختلفة عن نغمة الطلب الجديد، بتتشغل لما طلب نشط يتجاوز وقت جاهزيته المتوقع
+// تنبيه تأخير منفصل — نغمة مختلفة عن نغمة الطلب الجديد، تُشغَّل عندما يتجاوز طلب نشط وقت جاهزيته المتوقع
 function playDelayAlertSound(){
   try{
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -2999,7 +3035,7 @@ async function checkOverdueOrders(){
     .eq('restaurant_id', restaurant.id).in('status', ['pending','preparing']).lt('estimated_ready_at', nowIso);
   if(error || !data) return;
   const stillActiveIds = new Set(data.map(o=> o.id));
-  // ننضّف قايمة اللي اتنبهنا عليهم لو الطلب بقى مش نشط (اتسلم/اتلغى) عشان لو رجع يتأخر تاني في المستقبل يتنبه عليه
+  // يتم تنظيف قائمة الطلبات التي نُبِّه عليها إذا أصبح الطلب غير نشط (تم تسليمه/إلغاؤه)، حتى إذا تأخر مرة أخرى مستقبلًا يُنبَّه عليه من جديد
   overdueAlertedIds.forEach(id=>{ if(!stillActiveIds.has(id)) overdueAlertedIds.delete(id); });
   data.forEach(o=>{
     if(!overdueAlertedIds.has(o.id)){
@@ -3023,12 +3059,12 @@ function stopOverdueCheckLoop(){
   }
 }
 
-// الطباعة التلقائية للمطبخ — إعداد خاص بكل جهاز/شاشة (متصفح) مش بكل المطعم، عشان تقدر تفعّلها في شاشة المطبخ بس
+// الطباعة التلقائية للمطبخ — إعداد خاص بكل جهاز/شاشة (متصفح) وليس بكل المطعم، بحيث يمكن تفعيلها في شاشة المطبخ فقط
 function autoPrintStorageKey(){ return `mag_autoprint_${restaurant.id}`; }
 function isAutoPrintEnabled(){ return localStorage.getItem(autoPrintStorageKey()) === '1'; }
 function setAutoPrintEnabled(val){ localStorage.setItem(autoPrintStorageKey(), val ? '1' : '0'); }
 
-// بيطبع فاتورة المطبخ فورًا من غير معاينة ومن غير ما يغيّر حالة الطلب (بعكس الطباعة اليدوية اللي بتأكد التسليم)
+// يطبع فاتورة المطبخ فورًا دون معاينة ودون تغيير حالة الطلب (بعكس الطباعة اليدوية التي تؤكد التسليم)
 async function autoPrintNewOrder(orderId){
   try{
     const { data: order, error } = await sb.from('orders').select('*').eq('id', orderId).maybeSingle();
@@ -3210,7 +3246,7 @@ document.getElementById('driversBtn').addEventListener('click', async ()=>{
     if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل السائقين — تأكد من إضافة جدول drivers في قاعدة البيانات</div>`; return; }
     if(!drivers || drivers.length === 0){ wrap.innerHTML = `<div class="orders-empty">لم تتم إضافة أي سائقين بعد</div>`; return; }
 
-    // عدد الطلبات النشطة (قيد الانتظار أو التجهيز) المعيّنة لكل سائق دلوقتي
+    // عدد الطلبات النشطة (قيد الانتظار أو التجهيز) المعيّنة لكل سائق حاليًا
     const { data: activeAssigned } = await sb.from('orders').select('driver_id').eq('restaurant_id', restaurant.id).in('status', ['pending','preparing']).not('driver_id', 'is', null);
     const activeCounts = {};
     (activeAssigned || []).forEach(o=>{ activeCounts[o.driver_id] = (activeCounts[o.driver_id]||0) + 1; });
@@ -3262,7 +3298,7 @@ document.getElementById('driversBtn').addEventListener('click', async ()=>{
         row.querySelector('[data-action="saveEdit"]').addEventListener('click', async ()=>{
           const newName = row.querySelector('.driver-edit-name').value.trim();
           const newPhone = row.querySelector('.driver-edit-phone').value.replace(/[^\d]/g,'');
-          if(!newName || newPhone.length < 8){ toast('تأكد من الاسم ورقم التليفون'); return; }
+          if(!newName || newPhone.length < 8){ toast('تأكد من الاسم ورقم الهاتف'); return; }
           const saveBtn = row.querySelector('[data-action="saveEdit"]');
           saveBtn.disabled = true;
           const { error: updErr } = await sb.from('drivers').update({ name:newName, phone:newPhone }).eq('id', id);
@@ -3282,7 +3318,7 @@ document.getElementById('driversBtn').addEventListener('click', async ()=>{
     const name = nameInput.value.trim();
     const phone = phoneInput.value.replace(/[^\d]/g,'');
     if(!name){ nameInput.focus(); return; }
-    if(phone.length < 8){ toast('اكتب رقم تليفون صحيح'); phoneInput.focus(); return; }
+    if(phone.length < 8){ toast('أدخل رقم هاتف صحيح'); phoneInput.focus(); return; }
     const btn = overlay.querySelector('#driverAddBtn');
     btn.disabled = true;
     const { error } = await sb.from('drivers').insert({ restaurant_id: restaurant.id, name, phone });
@@ -3322,7 +3358,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
         <input type="text" id="newCustomerAddress" placeholder="العنوان (اختياري)" style="flex:1; min-width:160px;">
         <button type="button" class="btn-confirm" id="customerAddBtn" style="white-space:nowrap;">إضافة عميل</button>
       </div>
-      <input type="text" id="customersSearchInput" class="orders-search-input" style="margin-top:14px;" placeholder="بحث بالاسم أو رقم التليفون...">
+      <input type="text" id="customersSearchInput" class="orders-search-input" style="margin-top:14px;" placeholder="بحث بالاسم أو رقم الهاتف...">
       <div id="customersListWrap"><div class="orders-empty">جارِ التحميل...</div></div>
       <input type="file" id="customersExcelInput" accept=".xlsx,.xls" style="display:none;">
       <div class="modal-actions">
@@ -3337,7 +3373,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
 
   let allCustomers = [];
 
-  // بيتأكد إن العنوان (لو موجود) متسجل كصف "افتراضي" في جدول العناوين، بس لو العميل لسه مالوش عناوين
+  // يتحقق من أن العنوان (إن وُجد) مسجَّل كصف "افتراضي" في جدول العناوين، فقط إذا لم يكن للعميل عناوين بعد
   async function ensureDefaultAddress(customerId, address){
     if(!address || !customerId) return;
     const { count } = await sb.from('customer_addresses').select('id', { count:'exact', head:true }).eq('customer_id', customerId);
@@ -3345,7 +3381,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
     await sb.from('customer_addresses').insert({ customer_id: customerId, label:'الرئيسي', address, is_default:true });
   }
 
-  // بيتأكد إن الرقم (لو موجود) متسجل كصف "افتراضي" في جدول الأرقام، بس لو العميل لسه مالوش أرقام
+  // يتحقق من أن الرقم (إن وُجد) مسجَّل كصف "افتراضي" في جدول الأرقام، فقط إذا لم يكن للعميل أرقام بعد
   async function ensureDefaultPhone(customerId, phone){
     if(!phone || !customerId) return;
     const { count } = await sb.from('customer_phones').select('id', { count:'exact', head:true }).eq('customer_id', customerId);
@@ -3369,7 +3405,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
     return true;
   }
 
-  // إدارة عناوين العميل (أكتر من عنوان لكل عميل، مع تحديد عنوان افتراضي)
+  // إدارة عناوين العميل (أكثر من عنوان لكل عميل، مع تحديد عنوان افتراضي)
   async function openCustomerAddressesModal(customerId, customerName){
     const addrOverlay = document.createElement('div');
     addrOverlay.className = 'overlay';
@@ -3465,13 +3501,13 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
     });
   }
 
-  // إدارة أرقام تليفون العميل (أكتر من رقم لكل عميل، مع تحديد رقم افتراضي هو اللي بيتربط بالطلبات والواتساب)
+  // إدارة أرقام هاتف العميل (أكثر من رقم لكل عميل، مع تحديد رقم افتراضي وهو الذي يرتبط بالطلبات والواتساب)
   async function openCustomerPhonesModal(customerId, customerName){
     const phOverlay = document.createElement('div');
     phOverlay.className = 'overlay';
     phOverlay.innerHTML = `
       <div class="modal">
-        <h3>أرقام تليفون ${escapeHtml(customerName || 'العميل')}</h3>
+        <h3>أرقام هاتف ${escapeHtml(customerName || 'العميل')}</h3>
         <div class="orders-empty" style="text-align:right; padding:0 0 10px; font-size:12px;">
           الرقم "الافتراضي" هو الذي يرتبط به واتساب والطلبات الجديدة، أما باقي الأرقام فهي للتواصل فقط.
         </div>
@@ -3495,7 +3531,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
     phOverlay.addEventListener('click', (e)=>{ if(e.target===phOverlay) closeAndRefresh(); });
     wireEnterToConfirm(phOverlay.querySelector('.zone-add-row'), phOverlay.querySelector('#phoneAddBtn'));
 
-    // بيتأكد إن الرقم مش رقم أساسي لعميل تاني في نفس المطعم
+    // يتحقق من أن الرقم ليس رقمًا أساسيًا لعميل آخر في نفس المطعم
     async function isPhoneTakenByAnotherCustomer(phone){
       const { data } = await sb.from('customers').select('id').eq('restaurant_id', restaurant.id).eq('phone', phone).neq('id', customerId).maybeSingle();
       return !!data;
@@ -3609,7 +3645,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
     mergeOverlay.querySelector('#mergeConfirmBtn').addEventListener('click', async ()=>{
       const keepId = mergeOverlay.querySelector('#mergeKeepSelect').value;
       const awayId = mergeOverlay.querySelector('#mergeAwaySelect').value;
-      if(keepId === awayId){ toast('اختار عميلين مختلفين'); return; }
+      if(keepId === awayId){ toast('اختر عميلين مختلفين'); return; }
       const keepC = allCustomers.find(c=> c.id === keepId);
       const awayC = allCustomers.find(c=> c.id === awayId);
       if(!confirm(`سيتم دمج "${awayC.name} — ${awayC.phone}" داخل "${keepC.name} — ${keepC.phone}" وحذفه نهائيًا. هل تريد المتابعة؟`)) return;
@@ -3636,7 +3672,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
       <div class="zone-row" data-id="${c.id}" data-name="${escapeHtml(c.name||'')}" data-phone="${escapeHtml(c.phone||'')}" data-address="${escapeHtml(c.address||'')}">
         <div style="flex:1; min-width:120px;">
           <span class="zone-name" style="display:block;">${escapeHtml(c.name)}</span>
-          ${c.address ? `<span style="display:block; font-size:11.5px; color:var(--stone); margin-top:2px;">📍 ${escapeHtml(c.address)}${c._addressCount > 1 ? ` <span style="color:var(--ember);">(+${c._addressCount - 1} عنوان تاني)</span>` : ''}</span>` : ''}
+          ${c.address ? `<span style="display:block; font-size:11.5px; color:var(--stone); margin-top:2px;">📍 ${escapeHtml(c.address)}${c._addressCount > 1 ? ` <span style="color:var(--ember);">(+${c._addressCount - 1} عنوان آخر)</span>` : ''}</span>` : ''}
         </div>
         <span class="zone-fee" style="direction:ltr;">${escapeHtml(c.phone)}${c._phoneCount > 1 ? ` <span style="color:var(--ember); direction:rtl; display:inline-block;">(+${c._phoneCount - 1})</span>` : ''}</span>
         <button type="button" data-action="addresses">📍 العناوين</button>
@@ -3680,7 +3716,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
         const curAddress = row.dataset.address;
         row.innerHTML = `
           <input type="text" class="cust-edit-name" value="${escapeHtml(curName)}" placeholder="اسم العميل" style="flex:1; min-width:110px; border:1.5px solid var(--line); border-radius:8px; padding:7px 9px; font-family:var(--body); font-size:13px; background:var(--paper); color:var(--ink);">
-          <input type="text" class="cust-edit-phone" value="${escapeHtml(curPhone)}" placeholder="التليفون" style="width:120px; direction:ltr; border:1.5px solid var(--line); border-radius:8px; padding:7px 9px; font-family:var(--mono); background:var(--paper); color:var(--ink);">
+          <input type="text" class="cust-edit-phone" value="${escapeHtml(curPhone)}" placeholder="الهاتف" style="width:120px; direction:ltr; border:1.5px solid var(--line); border-radius:8px; padding:7px 9px; font-family:var(--mono); background:var(--paper); color:var(--ink);">
           <input type="text" class="cust-edit-address" value="${escapeHtml(curAddress)}" placeholder="العنوان (اختياري)" style="flex:1; min-width:140px; border:1.5px solid var(--line); border-radius:8px; padding:7px 9px; font-family:var(--body); font-size:13px; background:var(--paper); color:var(--ink);">
           <button type="button" data-action="saveEdit" style="border-color:var(--basil); color:var(--basil);">حفظ</button>
           <button type="button" data-action="cancelEdit">إلغاء</button>`;
@@ -3697,8 +3733,8 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
           if(newPhone.length < 8){ phoneInput.focus(); return; }
           saveBtn.disabled = true;
           const { error: updErr } = await sb.from('customers').update({ name: newName, phone: newPhone, address: newAddress || null }).eq('id', id);
-          if(updErr){ toast('تعذر حفظ التعديل — تأكد أن رقم التليفون غير مستخدم لعميل آخر'); saveBtn.disabled = false; return; }
-          // نزامن الرقم والعنوان الافتراضيين في جداول الأرقام/العناوين المتعددة لو موجودين
+          if(updErr){ toast('تعذر حفظ التعديل — تأكد أن رقم الهاتف غير مستخدم لعميل آخر'); saveBtn.disabled = false; return; }
+          // يتم مزامنة الرقم والعنوان الافتراضيين في جداول الأرقام/العناوين المتعددة إن وُجدت
           const { data: defPhone } = await sb.from('customer_phones').select('id').eq('customer_id', id).eq('is_default', true).maybeSingle();
           if(defPhone) await sb.from('customer_phones').update({ phone: newPhone }).eq('id', defPhone.id);
           else await ensureDefaultPhone(id, newPhone);
@@ -3718,7 +3754,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
   if(!ok){ overlay.querySelector('#customersListWrap').innerHTML = `<div class="orders-empty">تعذر تحميل العملاء، تأكد من إضافة جدول customers في قاعدة البيانات (راجع تعليمات الإعداد)</div>`; }
   else renderCustomers();
 
-  // عملاء جدد من الطلبات — مقترحين تلقائيًا من بيانات الطلبات، وميتضافوش إلا بعد موافقة صريحة
+  // عملاء جدد من الطلبات — مقترحون تلقائيًا من بيانات الطلبات، ولا يُضافون إلا بعد موافقة صريحة
   let currentPending = [];
   async function loadAndRenderPendingCustomers(){
     const { data: statRows } = await sb.from('customer_order_stats')
@@ -3808,7 +3844,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
     const q = overlay.querySelector('#customersSearchInput').value.trim().toLowerCase();
     const list = q ? allCustomers.filter(c=> (c.name||'').toLowerCase().includes(q) || (c.phone||'').includes(q)) : allCustomers;
     if(!list.length){ toast('لا يوجد عملاء لتصديرهم'); return; }
-    const header = ['اسم العميل','رقم التليفون','العنوان','تاريخ التسجيل'];
+    const header = ['اسم العميل','رقم الهاتف','العنوان','تاريخ التسجيل'];
     const rows = [header];
     list.forEach(c=>{
       const d = c.created_at ? new Date(c.created_at).toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' }) : '';
@@ -3866,7 +3902,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
       return;
     }
 
-    // نتجاهل صف العناوين لو العمود الثاني مش شكله رقم تليفون (يعني نص زي "Customer phone")
+    // يتم تجاهل صف العناوين إذا لم يكن العمود الثاني يبدو كرقم هاتف (أي نص مثل "Customer phone")
     const looksLikePhone = v => String(v ?? '').replace(/[^\d]/g,'').length >= 8;
     if(rows.length && !looksLikePhone(rows[0][1])){
       rows = rows.slice(1);
@@ -3882,7 +3918,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
     const parsed = [...byPhone.values()];
 
     if(parsed.length === 0){
-      toast('لم يتم العثور على صفوف صالحة (اسم، رقم تليفون)');
+      toast('لم يتم العثور على صفوف صالحة (اسم، رقم هاتف)');
       return;
     }
     if(!confirm(`سيتم استيراد ${parsed.length} عميل. متابعة؟`)) return;
@@ -3925,6 +3961,10 @@ async function openOrdersOverlay(){
         <button type="button" class="order-filter-btn" data-filter="week">آخر 7 أيام</button>
         <button type="button" class="order-filter-btn" data-filter="previous">أيام سابقة</button>
       </div>
+      <select id="ordersTableFilter" class="hidden" style="width:100%; box-sizing:border-box; border:1.5px solid var(--line); border-radius:10px; padding:9px 12px; font-family:var(--body); font-size:13px; color:var(--ink); background:var(--paper); margin-bottom:12px;">
+        <option value="all">🧾 كل الطلبات (توصيل / استلام / طاولات)</option>
+        <option value="dine_in_any">🍽️ كل طلبات الطاولات</option>
+      </select>
       <input type="text" id="ordersSearchInput" class="orders-search-input" placeholder="بحث برقم الطلب، اسم العميل، أو رقم الهاتف...">
       <div class="orders-list" id="ordersListWrap"><div class="orders-empty">جارِ التحميل...</div></div>
       <div class="modal-actions">
@@ -3965,8 +4005,8 @@ async function openOrdersOverlay(){
   if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل الطلبات</div>`; return; }
   if(!orders || orders.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا توجد طلبات بعد</div>`; return; }
 
-  // بنسجل مين كان "لسه ما اتشافش" قبل ما نفتح الشاشة دي، عشان نعرض شارة "جديد" ليها في العرض الحالي بس
-  // (لو مانعملناش كده، أي طلب هيتحط عليه seen_at فورًا مجرد ما تفتح الشاشة، فمش هنقدر نميّزه)
+  // يتم تسجيل الطلبات التي "لم تُشاهَد بعد" قبل فتح هذه الشاشة، لعرض شارة "جديد" عليها في العرض الحالي فقط
+  // (إذا لم يتم ذلك، سيُضاف seen_at لأي طلب فور فتح الشاشة، فلن نتمكن من تمييزه)
   const unseenAtOpenIds = new Set(orders.filter(o=> !o.seen_at).map(o=> o.id));
   if(unseenAtOpenIds.size){
     const nowIso = new Date().toISOString();
@@ -3992,6 +4032,19 @@ async function openOrdersOverlay(){
 
   const STATUS_LABELS = { pending:'قيد الانتظار', preparing:'قيد التجهيز', delivered:'تم التسليم', cancelled:'ملغي' };
 
+  // تعبئة فلتر الطاولات بأرقام الطاولات الفعلية الموجودة في الطلبات، وإظهاره فقط لو فيه طلبات طاولات أصلًا
+  const tableFilterSelect = overlay.querySelector('#ordersTableFilter');
+  const distinctTables = [...new Set(orders.filter(o=> o.order_type === 'dine_in' && o.table_number != null).map(o=> o.table_number))].sort((a,b)=> a-b);
+  if(distinctTables.length){
+    tableFilterSelect.classList.remove('hidden');
+    distinctTables.forEach(n=>{
+      const opt = document.createElement('option');
+      opt.value = 'table_' + n;
+      opt.textContent = `🍽️ طاولة ${n}`;
+      tableFilterSelect.appendChild(opt);
+    });
+  }
+
   const todayStr = new Date().toDateString();
   const isToday = (o)=> new Date(o.created_at).toDateString() === todayStr;
   const isNewOrder = (o)=> (o.status || 'pending') === 'pending';
@@ -4003,6 +4056,7 @@ async function openOrdersOverlay(){
   const isLast7Days = (o)=> new Date(o.created_at) >= startOf7DaysAgo;
 
   let currentFilter = 'all';
+  let currentTableFilter = 'all';
   let searchQuery = '';
 
   function matchesSearch(o){
@@ -4019,7 +4073,7 @@ async function openOrdersOverlay(){
   function orderRowHtml(o){
     const d = new Date(o.created_at);
     const time = d.toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' });
-    const typeLabel = o.order_type === 'pickup' ? '📦 استلام' : '🛵 توصيل';
+    const typeLabel = o.order_type === 'dine_in' ? orderTypeLabel(o) : (o.order_type === 'pickup' ? '📦 استلام' : '🛵 توصيل');
     const lines = itemsByOrder[o.id] || [];
     const itemsCount = lines.reduce((sum,l)=> sum + (Number(l.quantity)||0), 0);
     const itemsListHtml = lines.length ? `
@@ -4234,9 +4288,17 @@ async function openOrdersOverlay(){
     });
   }
 
+  function matchesTableFilter(o){
+    if(currentTableFilter === 'all') return true;
+    if(currentTableFilter === 'dine_in_any') return o.order_type === 'dine_in';
+    if(currentTableFilter.startsWith('table_')) return o.order_type === 'dine_in' && String(o.table_number) === currentTableFilter.slice(6);
+    return true;
+  }
+
   function renderList(){
     const filtered = orders.filter(o=>{
       if(!matchesSearch(o)) return false;
+      if(!matchesTableFilter(o)) return false;
       if(currentFilter === 'new') return isNewOrder(o);
       if(currentFilter === 'today') return isToday(o);
       if(currentFilter === 'yesterday') return isYesterday(o);
@@ -4257,9 +4319,15 @@ async function openOrdersOverlay(){
     renderList();
   });
 
+  tableFilterSelect.addEventListener('change', (e)=>{
+    currentTableFilter = e.target.value;
+    renderList();
+  });
+
   overlay.querySelector('#ordersExportBtn').addEventListener('click', ()=>{
     const filtered = orders.filter(o=>{
       if(!matchesSearch(o)) return false;
+      if(!matchesTableFilter(o)) return false;
       if(currentFilter === 'new') return isNewOrder(o);
       if(currentFilter === 'today') return isToday(o);
       if(currentFilter === 'yesterday') return isYesterday(o);
@@ -4296,7 +4364,7 @@ const RECEIPT_STATUS_LABELS = { pending:'قيد الانتظار', preparing:'ق
 function buildReceiptHtml(order, lines, widthMm){
   const d = new Date(order.created_at);
   const dateStr = d.toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' });
-  const typeLabel = order.order_type === 'pickup' ? 'استلام من المحل' : 'توصيل';
+  const typeLabel = orderTypeLabel(order);
   const numberHtml = order.order_number != null ? `<div class="receipt-sub">طلب رقم: #${order.order_number}</div>` : '';
 
   const itemsHtml = lines.map(l=>{
@@ -4316,7 +4384,7 @@ function buildReceiptHtml(order, lines, widthMm){
   const feeRow = order.delivery_fee != null ? `<div class="receipt-row"><span class="lbl">رسوم التوصيل</span><span class="val">${Number(order.delivery_fee).toFixed(2)}</span></div>` : '';
   const totalRow = order.total != null ? `<div class="receipt-total-row"><span>الإجمالي</span><span>${Number(order.total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</span></div>` : '';
 
-  const addressLine = order.order_type === 'pickup'
+  const addressLine = (order.order_type === 'pickup' || order.order_type === 'dine_in')
     ? ''
     : `<div class="receipt-row"><span class="lbl receipt-highlight">${escapeHtml([order.city, order.area].filter(Boolean).join(' — '))}</span></div>${order.address ? `<div class="receipt-row"><span class="lbl receipt-highlight">${escapeHtml(order.address)}</span></div>` : ''}`;
 
@@ -4390,12 +4458,12 @@ function openReceiptPreviewModal(order, lines){
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
 
   overlay.querySelector('#receiptPrintBtn').addEventListener('click', async ()=>{
-    // لما يطبع الطلب وهو لسه قيد الانتظار، نحول حالته تلقائيًا لـ "تم التسليم"
+    // عند طباعة الطلب وهو لا يزال قيد الانتظار، يتم تحويل حالته تلقائيًا إلى "تم التسليم"
     if((order.status || 'pending') === 'pending'){
       const { error: updErr } = await sb.from('orders').update({ status:'delivered' }).eq('id', order.id);
       if(!updErr){
         order.status = 'delivered';
-        // نحدّث نفس الصف في شاشة الطلبات لو لسه موجود في الخلفية
+        // يتم تحديث نفس الصف في شاشة الطلبات إذا كان لا يزال موجودًا في الخلفية
         const row = document.querySelector(`.order-row[data-order-id="${order.id}"]`);
         if(row){
           const badge = row.querySelector('.status-badge');
@@ -4416,7 +4484,7 @@ function openReceiptPreviewModal(order, lines){
           if(existingTag) existingTag.remove();
         }
         if(typeof refreshNewOrdersCount === 'function') refreshNewOrdersCount();
-        // نحدّث الفاتورة المعروضة عشان تظهر الحالة الجديدة "تم التسليم" في الطباعة نفسها
+        // يتم تحديث الفاتورة المعروضة لتظهر الحالة الجديدة "تم التسليم" في الطباعة نفسها
         renderPreview();
       }
     }
@@ -4429,8 +4497,8 @@ function openReceiptPreviewModal(order, lines){
     }
     printArea.innerHTML = buildReceiptHtml(order, lines, widthMm);
 
-    // نظبط حجم صفحة الطباعة على قد عرض الرول واختيار الارتفاع تلقائي (auto)
-    // عشان الطابعة توقف عند آخر سطر في الفاتورة من غير مساحة فاضية بعدها
+    // يتم ضبط حجم صفحة الطباعة على عرض الرول مع اختيار الارتفاع تلقائيًا (auto)
+    // حتى تتوقف الطابعة عند آخر سطر في الفاتورة دون مساحة فارغة بعده
     let pageStyle = document.getElementById('receiptPageStyle');
     if(!pageStyle){
       pageStyle = document.createElement('style');
@@ -4560,7 +4628,7 @@ async function openAdminPanel(){
         <div class="admin-list-row" id="adsGlobalToggleRow" style="border-right-color:var(--ember); margin-bottom:16px;">
           <div style="flex:1; min-width:200px;">
             <div style="font-weight:800; font-size:14px;">تفعيل الإعلانات الجانبية في المنيو</div>
-            <div class="admin-r-meta">إيقاف المفتاح ده بيخفي كل الإعلانات (POS/الراديو/المصحف والإعلانات المخصصة) من كل المنيوهات فورًا</div>
+            <div class="admin-r-meta">إيقاف هذا المفتاح يُخفي جميع الإعلانات (POS/الراديو/المصحف والإعلانات المخصصة) من كل القوائم فورًا</div>
           </div>
           <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:700;">
             <input type="checkbox" id="adsGlobalToggle" style="width:20px; height:20px; cursor:pointer;">
@@ -4579,7 +4647,7 @@ async function openAdminPanel(){
       </div>
 
       <div id="adminPanelPlans" class="admin-tab-panel hidden">
-        <div class="admin-r-meta" style="margin-bottom:12px;">تعديل الأسعار هنا بيتحدث فورًا في شاشة تجديد الاشتراك لكل العملاء، من غير ما تحتاج تعدّل الكود أو تعمل نشر جديد</div>
+        <div class="admin-r-meta" style="margin-bottom:12px;">تعديل الأسعار هنا يُحدَّث فورًا في شاشة تجديد الاشتراك لدى جميع العملاء، دون الحاجة لتعديل الكود أو إجراء نشر جديد</div>
         <div class="admin-table-wrap" id="plansTableWrap"><div class="orders-empty">جارِ التحميل...</div></div>
       </div>
 
@@ -4698,14 +4766,14 @@ async function openAdminPanel(){
   if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل بيانات العملاء (تأكد من صلاحية الأدمن في Supabase)</div>`; return; }
   if(!allRestaurants || allRestaurants.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا يوجد عملاء بعد</div>`; return; }
 
-  // كل حقول الاشتراك/القيود بقت مسؤولية جدول accounts — بنجيبه ونلصق قيمه على كل فرع تابع له
-  // عشان باقي كود لوحة الأدمن (اللي بيقرأ r.subscription_end_date وغيرها) يفضل شغّال زي ما هو
+  // أصبحت جميع حقول الاشتراك/القيود من مسؤولية جدول accounts — يتم جلبه وإسقاط قيمه على كل فرع تابع له
+  // حتى يستمر بقية كود لوحة الأدمن (الذي يقرأ r.subscription_end_date وغيرها) في العمل كما هو
   const { data: allAccounts, error: accError } = await sb.from('accounts').select('*');
   if(accError){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل بيانات الحسابات/الاشتراكات</div>`; return; }
   const accountById = {};
   (allAccounts || []).forEach(a=> accountById[a.id] = a);
 
-  // تعليق تلقائي لأي حساب انتهى تاريخ اشتراكه ولم يُعلَّق بعد (على مستوى الحساب، مش الفرع)
+  // تعليق تلقائي لأي حساب انتهى تاريخ اشتراكه ولم يُعلَّق بعد (على مستوى الحساب، وليس الفرع)
   const expiredNotSuspended = (allAccounts || []).filter(a=>
     a.subscription_end_date && !a.account_suspended &&
     new Date(a.subscription_end_date + 'T23:59:59').getTime() < Date.now()
@@ -4729,7 +4797,7 @@ async function openAdminPanel(){
     (emailRows || []).forEach(row=>{ emailByOwner[row.owner_id] = row.email; });
   }catch(e){}
 
-  // بيجيب زيارات المنيو لكل المطاعم دفعة واحدة (آخر 30 يوم بس) ويجمّعها حسب المطعم
+  // يجلب زيارات المنيو لكل المطاعم دفعة واحدة (آخر 30 يومًا فقط) ويجمّعها حسب المطعم
   const visitsCutoff = new Date(); visitsCutoff.setDate(visitsCutoff.getDate() - 30);
   const visitsCutoffStr = visitsCutoff.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
   const visitsByRestaurant = {};
@@ -4744,9 +4812,9 @@ async function openAdminPanel(){
     });
   }catch(e){}
 
-  // بيجيب طلبات كل المطاعم دفعة واحدة (آخر 30 يوم بس) ويجمّعها حسب المطعم
-  // ملحوظة: لازم يمر عبر RPC بصلاحية أدمن (admin_list_recent_orders) لأن جدول orders محمي بـ RLS
-  // بيسمح لصاحب المطعم بس يشوف طلباته — الاستعلام المباشر كان بيرجّع فاضي لغير حساب الأدمن نفسه
+  // يجلب طلبات كل المطاعم دفعة واحدة (آخر 30 يومًا فقط) ويجمّعها حسب المطعم
+  // ملحوظة: يجب أن يمر عبر RPC بصلاحية أدمن (admin_list_recent_orders) لأن جدول orders محمي بـ RLS
+  // يسمح لصاحب المطعم فقط برؤية طلباته — الاستعلام المباشر كان يُرجع نتيجة فارغة لغير حساب الأدمن نفسه
   const ordersCutoffDate = new Date(); ordersCutoffDate.setDate(ordersCutoffDate.getDate() - 30);
   const ordersByRestaurant = {};
   try{
@@ -4774,7 +4842,7 @@ async function openAdminPanel(){
     return `<div style="font-size:11px; margin-top:3px; color:${expired ? '#e08a78' : 'var(--stone-light)'};">${expired ? '⚠️ الاشتراك منتهي منذ' : 'الاشتراك ينتهي في'} ${endStr}</div>`;
   }
 
-  // بيعرض تاريخ آخر تنبيه اتبعت للمتجر وعدد المرات، لو اتبعت قبل كده
+  // يعرض تاريخ آخر تنبيه أُرسل للمتجر وعدد المرات، إن كان قد أُرسل من قبل
   function reminderStatusHtml(r){
     if(!r.last_reminder_sent_at) return '';
     const d = new Date(r.last_reminder_sent_at);
@@ -4783,7 +4851,7 @@ async function openAdminPanel(){
     return `<span style="opacity:.75;">📨 آخر تنبيه: ${dStr} ${tStr}${r.reminder_count > 1 ? ` (×${r.reminder_count})` : ''}</span>`;
   }
 
-  // بيحسب عدد زيارات المنيو اليوم/أمس/آخر 7 أيام/آخر 30 يوم لمطعم معيّن من الصفوف المجمّعة مسبقًا
+  // يحسب عدد زيارات المنيو اليوم/أمس/آخر 7 أيام/آخر 30 يومًا لمطعم معيّن من الصفوف المجمّعة مسبقًا
   function visitsSummaryFor(rId){
     const rows = visitsByRestaurant[rId] || [];
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
@@ -4796,13 +4864,13 @@ async function openAdminPanel(){
     };
     const today = (rows.find(r=> r.day === todayStr) || { visits_count:0 }).visits_count;
     const yesterday = (rows.find(r=> r.day === yesterdayStr) || { visits_count:0 }).visits_count;
-    // زيارات وصلت لمنيو وقت ما كان الحساب معلّق — بتدل على عملاء حاولوا يطلبوا وارتدوا بسبب التعليق
+    // زيارات وصلت للمنيو أثناء تعليق الحساب — تدل على عملاء حاولوا الطلب وارتدّوا بسبب التعليق
     const suspendedWeek = sumSince(7, 'suspended_visits_count');
     const suspendedMonth = sumSince(30, 'suspended_visits_count');
     return { today: Number(today || 0), yesterday: Number(yesterday || 0), week: sumSince(7, 'visits_count'), month: sumSince(30, 'visits_count'), suspendedWeek, suspendedMonth, rows };
   }
 
-  // بيحسب عدد الطلبات اليوم/أمس/آخر 7 أيام/آخر 30 يوم لمطعم معيّن من الصفوف المجمّعة مسبقًا
+  // يحسب عدد الطلبات اليوم/أمس/آخر 7 أيام/آخر 30 يومًا لمطعم معيّن من الصفوف المجمّعة مسبقًا
   function ordersSummaryFor(rId){
     const rows = ordersByRestaurant[rId] || [];
     const dayOf = (iso)=> new Date(iso).toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
@@ -4816,7 +4884,7 @@ async function openAdminPanel(){
     };
     const today = rows.filter(o=> dayOf(o.created_at) === todayStr).length;
     const yesterday = rows.filter(o=> dayOf(o.created_at) === yesterdayStr).length;
-    // عدد الطلبات (آخر 30 يوم) اللي صاحب المحل لسه ما فتحش شاشة الطلبات عشان يشوفها
+    // عدد الطلبات (آخر 30 يومًا) التي لم يفتح صاحب المحل شاشة الطلبات لرؤيتها بعد
     const unseen = rows.filter(o=> !o.seen_at).length;
     return { today, yesterday, week: sumSince(7), month: sumSince(30), unseen };
   }
@@ -4924,7 +4992,7 @@ async function openAdminPanel(){
           ${visits.suspendedMonth > 0 ? `
           <div style="margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(224,138,120,.12); border:1px solid rgba(224,138,120,.35);">
             <div style="font-size:12.5px; font-weight:800; color:#e08a78;">⚠️ محاولات دخول على المنيو أثناء تعليق الحساب</div>
-            <div style="font-size:12px; margin-top:4px; color:var(--stone);">آخر 7 أيام: ${visits.suspendedWeek} · آخر 30 يوم: ${visits.suspendedMonth} — عملاء فتحوا الرابط ولقوا شاشة "غير متاحة"، فرصة كويسة تستخدمها في التواصل عشان التجديد.</div>
+            <div style="font-size:12px; margin-top:4px; color:var(--stone);">آخر 7 أيام: ${visits.suspendedWeek} · آخر 30 يوم: ${visits.suspendedMonth} — عملاء فتحوا الرابط ووجدوا شاشة "غير متاحة"، وهي فرصة جيدة للتواصل معهم بخصوص التجديد.</div>
           </div>` : ''}
         </div>
 
@@ -4951,7 +5019,7 @@ async function openAdminPanel(){
           ${orders.unseen > 0 ? `
           <div style="margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(224,138,120,.12); border:1px solid rgba(224,138,120,.35);">
             <div style="font-size:12.5px; font-weight:800; color:#e08a78;">👀 طلبات لم يفتحها المحل بعد</div>
-            <div style="font-size:12px; margin-top:4px; color:var(--stone);">${orders.unseen} طلب (آخر 30 يوم) لسه صاحب المحل ما فتحش شاشة "الطلبات الواردة" ليهم — مؤشر إن المحل مش بيتابع طلباته أول بأول.</div>
+            <div style="font-size:12px; margin-top:4px; color:var(--stone);">${orders.unseen} طلب (آخر 30 يوم) لم يفتح صاحب المحل شاشة "الطلبات الواردة" لها بعد — وهو مؤشر على أن المحل لا يتابع طلباته أولًا بأول.</div>
           </div>` : ''}
         </div>
 
@@ -5093,7 +5161,7 @@ async function openAdminPanel(){
         setTimeout(()=> URL.revokeObjectURL(url), 5000);
         toast('✅ تم تنزيل النسخة الاحتياطية');
       }catch(err){
-        toast('❌ حصل خطأ أثناء تجهيز النسخة الاحتياطية');
+        toast('❌ حدث خطأ أثناء تجهيز النسخة الاحتياطية');
       }
       btn.disabled = false; btn.textContent = originalText;
     });
@@ -5122,7 +5190,7 @@ async function openAdminPanel(){
         backup = JSON.parse(text);
         if(!backup || typeof backup !== 'object' || !Array.isArray(backup.categories)) throw new Error('bad shape');
       }catch(parseErr){
-        toast('❌ هذا الملف مش نسخة احتياطية صحيحة');
+        toast('❌ هذا الملف ليس نسخة احتياطية صحيحة');
         return;
       }
 
@@ -5150,8 +5218,8 @@ async function openAdminPanel(){
         + `• ${fileCounts.categories} فئة، ${fileCounts.items} صنف (الحالي دلوقتي: ${currentCounts.categories} فئة)\n`
         + `• ${fileCounts.orders} طلب (الحالي دلوقتي: ${currentCounts.orders} طلب)\n`
         + `• ${fileCounts.zones} منطقة توصيل، ${fileCounts.customers} عميل\n\n`
-        + `كل البيانات الحالية هتتمسح وتتستبدل بالكامل بمحتوى الملف، ومينفعش نرجع بعد كده.\n\n`
-        + `متأكد إنك عايز تكمل؟`;
+        + `سيتم مسح جميع البيانات الحالية واستبدالها بالكامل بمحتوى الملف، ولا يمكن التراجع عن ذلك بعد إتمام العملية.\n\n`
+        + `هل أنت متأكد من رغبتك في المتابعة؟`;
       if(!confirm(confirmMsg)) return;
 
       const btn = wrap.querySelector(`.admin-restore-btn[data-id="${rId}"]`);
@@ -5162,7 +5230,7 @@ async function openAdminPanel(){
         if(error) throw error;
         toast(`✅ تمت الاستعادة بنجاح — ${data.orders || 0} طلب، ${data.items || 0} صنف، ${data.customers || 0} عميل`);
       }catch(err){
-        toast('❌ ' + (err && err.message ? err.message : 'حصل خطأ أثناء الاستعادة، تأكد إن الملف نسخة احتياطية صحيحة لنفس المتجر'));
+        toast('❌ ' + (err && err.message ? err.message : 'حدث خطأ أثناء الاستعادة، تأكد من أن الملف نسخة احتياطية صحيحة لنفس المتجر'));
       }
       btn.disabled = false; btn.textContent = originalText;
     });
@@ -5185,7 +5253,7 @@ async function openAdminPanel(){
         payload[inp.dataset.cafield] = inp.value.trim() || null;
       });
       if(payload.custom_ad_url && !isSafeHttpUrl(payload.custom_ad_url)){
-        toast('رابط الإعلان لازم يبدأ بـ https:// أو http://');
+        toast('يجب أن يبدأ رابط الإعلان بـ https:// أو http://');
         return;
       }
       btn.disabled = true;
@@ -5275,7 +5343,7 @@ async function openAdminPanel(){
         await loadRestaurantsTab();
       });
     }
-    // اختيار الباقة السعرية (STARTER/PRO) بيحدّث القيود المرتبطة بيها كلها دفعة واحدة، وبيحدد كمان الحد الأقصى لعدد الفروع
+    // يؤدي اختيار الباقة السعرية (STARTER/PRO) إلى تحديث جميع القيود المرتبطة بها دفعة واحدة، ويحدد أيضًا الحد الأقصى لعدد الفروع
     const tierSelect = row.querySelector('select[data-field="subscription_tier"]');
     if(tierSelect){
       tierSelect.addEventListener('change', async ()=>{
@@ -5315,7 +5383,7 @@ async function openAdminPanel(){
   bindRowEvents();
 
   function sortSubExpiryValue(r){
-    // من غير تاريخ اشتراك يتحط آخر القائمة دايمًا (قيمة كبيرة جدًا)
+    // بدون تاريخ اشتراك يوضع دائمًا في آخر القائمة (قيمة كبيرة جدًا)
     if(!r.subscription_end_date) return Infinity;
     return new Date(r.subscription_end_date + 'T23:59:59').getTime();
   }
@@ -5802,7 +5870,7 @@ async function openAdminPanel(){
 
       const windowDays = parseInt(windowSelect.value, 10);
 
-      // بيحسب أقرب موعد انتهاء للمتجر (اشتراك فعلي، أو Demo لو مفيش اشتراك) وعدد الأيام المتبقية
+      // يحسب أقرب موعد انتهاء للمتجر (اشتراك فعلي، أو Demo إذا لم يوجد اشتراك) وعدد الأيام المتبقية
       function expiryInfo(r){
         if(r.subscription_end_date){
           const end = new Date(r.subscription_end_date + 'T23:59:59');
@@ -5846,7 +5914,7 @@ async function openAdminPanel(){
                    <button type="button" class="link-btn reminders-send-btn" data-id="${r.id}" style="font-size:12px; padding:6px 12px; white-space:nowrap;">📲 إرسال تنبيه الآن</button>
                    <button type="button" class="link-btn reminders-send-payment-btn" data-id="${r.id}" style="font-size:12px; padding:6px 12px; white-space:nowrap;">💳 شرح الدفع</button>
                  </div>`
-              : `<span class="admin-r-meta" style="opacity:.6;">لا يوجد رقم تليفون مسجل</span>`}
+              : `<span class="admin-r-meta" style="opacity:.6;">لا يوجد رقم هاتف مسجل</span>`}
           </div>`;
       }
 
@@ -5891,9 +5959,9 @@ async function openAdminPanel(){
   activateAdminTab('restaurants');
 }
 
-// رسم بياني SVG خفيف لاتجاه المبيعات (آخر N يوم) — من غير أي مكتبة خارجية
-// رسم بياني SVG خفيف لاتجاه القيم اليومية (مبيعات/طلبات/زيارات...) — من غير أي مكتبة خارجية
-// valueFn(row) بترجع القيمة الرقمية للصف، labelFn(value) بترجع نص الـ tooltip
+// رسم بياني SVG خفيف لاتجاه المبيعات (آخر N يوم) — دون أي مكتبة خارجية
+// رسم بياني SVG خفيف لاتجاه القيم اليومية (مبيعات/طلبات/زيارات...) — دون أي مكتبة خارجية
+// valueFn(row) تُرجع القيمة الرقمية للصف، labelFn(value) تُرجع نص الـ tooltip
 function buildDailyTrendSVG(rows, numDays, valueFn, labelFn){
   const byDay = {};
   (rows || []).forEach(r=>{ byDay[r.day] = r; });
@@ -5930,7 +5998,7 @@ function buildDailyTrendSVG(rows, numDays, valueFn, labelFn){
   return `<svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto; display:block;">${bars}</svg>${emptyNote}`;
 }
 
-// نفس المنطق القديم (لتوافق أي استخدام سابق باسم buildSalesTrendSVG) — بيلف على buildDailyTrendSVG
+// نفس المنطق القديم (لتوافق أي استخدام سابق باسم buildSalesTrendSVG) — يستدعي buildDailyTrendSVG
 function buildSalesTrendSVG(rows, numDays, metric){
   return buildDailyTrendSVG(
     rows, numDays,
@@ -5980,16 +6048,18 @@ function buildDowDistributionSVG(byDow, labels){
   return `<svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto; display:block;">${bars}</svg>`;
 }
 
-// ملخص توصيل مقابل استلام من المحل
+// ملخص توصيل مقابل استلام من المحل مقابل طلبات الطاولات (Dine-in)
 function buildDeliveryTypeSummary(typeRows, err){
   if(err || !typeRows || typeRows.length === 0){
     return `لا توجد بيانات كافية بعد`;
   }
   const delivery = typeRows.find(r=> r.order_type === 'delivery') || { orders_count:0, orders_total:0 };
   const pickup = typeRows.find(r=> r.order_type === 'pickup') || { orders_count:0, orders_total:0 };
-  const totalCount = Number(delivery.orders_count) + Number(pickup.orders_count);
+  const dineIn = typeRows.find(r=> r.order_type === 'dine_in') || { orders_count:0, orders_total:0 };
+  const totalCount = Number(delivery.orders_count) + Number(pickup.orders_count) + Number(dineIn.orders_count);
   const deliveryPct = totalCount ? Math.round(Number(delivery.orders_count)/totalCount*100) : 0;
-  const pickupPct = totalCount ? 100 - deliveryPct : 0;
+  const pickupPct = totalCount ? Math.round(Number(pickup.orders_count)/totalCount*100) : 0;
+  const dineInPct = totalCount ? Math.max(0, 100 - deliveryPct - pickupPct) : 0;
   return `
     <div class="orders-list">
       <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
@@ -6000,6 +6070,11 @@ function buildDeliveryTypeSummary(typeRows, err){
         <span class="o-name" style="font-weight:700;">🏠 استلام من المحل</span>
         <span class="o-time" style="text-align:left; margin:0;">${pickup.orders_count} طلب (${pickupPct}%) — ${Number(pickup.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</span>
       </div>
+      ${Number(dineIn.orders_count) > 0 ? `
+      <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="o-name" style="font-weight:700;">🍽️ طاولات</span>
+        <span class="o-time" style="text-align:left; margin:0;">${dineIn.orders_count} طلب (${dineInPct}%) — ${Number(dineIn.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</span>
+      </div>` : ''}
     </div>`;
 }
 
@@ -6036,7 +6111,7 @@ function buildInsights({ rows, itemStatsRows, hourlyRows, custRows, visitRows })
     return list.filter(r=> r.day >= startKey && r.day <= endKey).reduce((s,r)=> s + Number(r[field]||0), 0);
   };
 
-  // 1) اتجاه المبيعات: آخر 7 أيام مقابل الـ7 اللي قبلهم
+  // 1) اتجاه المبيعات: آخر 7 أيام مقابل الأيام السبعة التي قبلها
   const last7Sales = sumRange(rows, 'orders_total', 6, 0);
   const prev7Sales = sumRange(rows, 'orders_total', 13, 7);
   if(prev7Sales > 0){
@@ -6048,7 +6123,7 @@ function buildInsights({ rows, itemStatsRows, hourlyRows, custRows, visitRows })
     }
   }
 
-  // 1ب) اتجاه زيارات المنيو: آخر 7 أيام مقابل الـ7 اللي قبلهم
+  // 1ب) اتجاه زيارات المنيو: آخر 7 أيام مقابل الأيام السبعة التي قبلها
   if(visitRows && visitRows.length > 0){
     const last7Visits = sumRange(visitRows, 'visits_count', 6, 0);
     const prev7Visits = sumRange(visitRows, 'visits_count', 13, 7);
@@ -6080,7 +6155,7 @@ function buildInsights({ rows, itemStatsRows, hourlyRows, custRows, visitRows })
     }
   }
 
-  // 4) أصناف في تراجع (مقارنة آخر 14 يوم بالـ14 اللي قبلهم)
+  // 4) أصناف في تراجع (مقارنة آخر 14 يومًا بالأيام الـ14 التي قبلها)
   if(itemStatsRows && itemStatsRows.length > 0){
     const agg = {};
     itemStatsRows.forEach(r=>{
@@ -6164,7 +6239,7 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
   const { data: visitRowsRaw } = await sb.from('menu_visits_daily').select('*').in('restaurant_id', restaurantIds).order('day', { ascending:false });
   if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل الإحصائيات</div>`; return; }
   if((!rows || rows.length === 0) && (!visitRowsRaw || visitRowsRaw.length === 0)){ wrap.innerHTML = `<div class="orders-empty">لا توجد إحصائيات بعد</div>`; return; }
-  // لما نجمع أكتر من فرع، بندمج صفوف نفس اليوم مع بعض (كل فرع بيطلع صف لوحده لكل يوم)
+  // عند تجميع أكثر من فرع، يتم دمج صفوف نفس اليوم معًا (كل فرع يُخرج صفًا مستقلًا لكل يوم)
   function mergeByDay(list, sumFields){
     const byDay = {};
     (list||[]).forEach(r=>{
@@ -6200,7 +6275,7 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
   const weekVisits = sumSince(vRows, 'visits_count', 7);
   const monthVisits = sumSince(vRows, 'visits_count', 30);
   const allTimeVisits = vRows.reduce((acc,r)=> acc + Number(r.visits_count || 0), 0);
-  // نسبة تغيّر زيارات آخر 7 أيام مقارنةً بالـ7 اللي قبلهم (زي مبيعات بالظبط)
+  // نسبة تغيّر زيارات آخر 7 أيام مقارنةً بالأيام السبعة التي قبلها (بنفس منطق المبيعات تمامًا)
   const sumRangeVisits = (startDaysAgo, endDaysAgo)=>{
     const start = new Date(); start.setDate(start.getDate() - startDaysAgo);
     const end = new Date(); end.setDate(end.getDate() - endDaysAgo);
@@ -6321,7 +6396,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
       <button type="button" class="chip-btn active" id="salesReportGoBtn" style="padding:7px 14px;">عرض</button>
       <button type="button" class="btn-export-sm" id="salesReportExportBtn" style="margin-right:auto;">⬇️ تصدير Excel</button>
     </div>
-    <div id="salesReportWrap"><div class="orders-empty">اختار فترة واضغط "عرض"</div></div>
+    <div id="salesReportWrap"><div class="orders-empty">اختر فترة واضغط "عرض"</div></div>
     <h3 style="margin-top:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
       <span>${biz(restaurant.business_type,'itemsDef')} الأكثر طلبًا</span>
       <span style="display:flex; gap:6px; flex-wrap:wrap;">
@@ -6369,7 +6444,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
       <button type="button" class="chip-btn active" id="cancelledReportGoBtn" style="padding:7px 14px;">عرض</button>
       <button type="button" class="btn-export-sm" id="cancelledReportExportBtn" style="margin-right:auto;">⬇️ تصدير Excel</button>
     </div>
-    <div id="cancelledReportWrap"><div class="orders-empty">اختار فترة واضغط "عرض"</div></div>`;
+    <div id="cancelledReportWrap"><div class="orders-empty">اختر فترة واضغط "عرض"</div></div>`;
 
   const trendWrap = overlay.querySelector('#salesTrendWrap');
   const renderTrend = (metric)=>{ trendWrap.innerHTML = buildSalesTrendSVG(rows, 30, metric); };
@@ -6382,7 +6457,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
     });
   });
 
-  // تقرير المبيعات التفصيلي — فترة تاريخ مخصصة (من — لحد)
+  // تقرير المبيعات التفصيلي — فترة تاريخ مخصصة (من — إلى)
   const salesReportWrap = overlay.querySelector('#salesReportWrap');
   const fromInput = overlay.querySelector('#salesReportFrom');
   const toInput = overlay.querySelector('#salesReportTo');
@@ -6396,7 +6471,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
   let lastReportRange = null;
   const runSalesReport = ()=>{
     const from = fromInput.value, to = toInput.value;
-    if(!from || !to || from > to){ toast('اختار فترة صحيحة (من قبل لحد)'); return; }
+    if(!from || !to || from > to){ toast('اختر فترة صحيحة (من تاريخ إلى تاريخ)'); return; }
     lastReportRange = { from, to };
     const filtered = rows.filter(r=> r.day >= from && r.day <= to).sort((a,b)=> a.day < b.day ? 1 : -1);
     if(filtered.length === 0){
@@ -6619,7 +6694,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
   overlay.querySelector('#deliverySummaryWrap').innerHTML = buildDeliveryTypeSummary(typeRows, typeErr);
   overlay.querySelector('#topAreasWrap').innerHTML = buildTopAreasList(areaRows, areaErr);
 
-  // تقرير الطلبات الملغية — بيجيب الطلبات نفسها من جدول orders لأنها مستبعدة عمدًا من جداول الإحصائيات
+  // تقرير الطلبات الملغية — يجلب الطلبات نفسها من جدول orders لأنها مستبعدة عمدًا من جداول الإحصائيات
   const cancelledWrap = overlay.querySelector('#cancelledReportWrap');
   const cFromInput = overlay.querySelector('#cancelledReportFrom');
   const cToInput = overlay.querySelector('#cancelledReportTo');
@@ -6639,7 +6714,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
   let lastCancelledFiltered = null;
   const runCancelledReport = ()=>{
     const from = cFromInput.value, to = cToInput.value;
-    if(!from || !to || from > to){ toast('اختار فترة صحيحة (من قبل لحد)'); return; }
+    if(!from || !to || from > to){ toast('اختر فترة صحيحة (من تاريخ إلى تاريخ)'); return; }
     const filtered = cancelledOrders.filter(o=> o.day >= from && o.day <= to);
     lastCancelledFiltered = filtered;
     if(filtered.length === 0){
@@ -6671,7 +6746,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
                 <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${dLabel}</td>
                 <td style="padding:6px 8px; border-bottom:1px solid var(--line); direction:ltr; text-align:right;">#${o.order_number ?? '—'}</td>
                 <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${escapeHtml(o.customer_name || '—')}</td>
-                <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${o.order_type === 'pickup' ? 'استلام' : 'توصيل'}${o.area ? ' — ' + escapeHtml(o.area) : ''}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${orderTypeLabel(o)}${o.area ? ' — ' + escapeHtml(o.area) : ''}</td>
                 <td style="padding:6px 8px; border-bottom:1px solid var(--line); direction:ltr; text-align:right;">${Number(o.total||0).toFixed(2)} ${getRestaurantCurrency(restaurant)}</td>
               </tr>`;
             }).join('')}
@@ -6687,7 +6762,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
     const header = ['التاريخ','رقم الطلب','العميل','رقم الهاتف','النوع','المنطقة',`القيمة (${getRestaurantCurrency(restaurant)})`];
     const aoa = [header];
     lastCancelledFiltered.forEach(o=>{
-      aoa.push([o.day, o.order_number ?? '', o.customer_name || '', o.customer_phone || '', o.order_type === 'pickup' ? 'استلام' : 'توصيل', o.area || '', Number(o.total||0).toFixed(2)]);
+      aoa.push([o.day, o.order_number ?? '', o.customer_name || '', o.customer_phone || '', orderTypeLabel(o), o.area || '', Number(o.total||0).toFixed(2)]);
     });
     const totalLost = lastCancelledFiltered.reduce((s,o)=> s + Number(o.total||0), 0);
     aoa.push(['الإجمالي', '', '', '', '', '', totalLost.toFixed(2)]);
@@ -6730,7 +6805,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
   });
 });
 
-// بيبني تقرير شهري (الشهر الحالي حتى اليوم) مقارنةً بنفس الفترة من الشهر اللي فات، جاهز للطباعة/الحفظ كـ PDF
+// يبني تقريرًا شهريًا (الشهر الحالي حتى اليوم) مقارنةً بنفس الفترة من الشهر الماضي، جاهزًا للطباعة/الحفظ كملف PDF
 function buildMonthlyReportHtml({ restaurant, dailyRows, itemStatsRows, custRows, areaRows, typeRows }){
   const now = new Date();
   const cairoToday = new Date(now.toLocaleString('en-US', { timeZone:'Africa/Cairo' }));
@@ -6768,8 +6843,11 @@ function buildMonthlyReportHtml({ restaurant, dailyRows, itemStatsRows, custRows
 
   const delivery = typeRows.find(r=> r.order_type==='delivery') || { orders_count:0, orders_total:0 };
   const pickup = typeRows.find(r=> r.order_type==='pickup') || { orders_count:0, orders_total:0 };
-  const totalTypeCount = Number(delivery.orders_count) + Number(pickup.orders_count);
+  const dineIn = typeRows.find(r=> r.order_type==='dine_in') || { orders_count:0, orders_total:0 };
+  const totalTypeCount = Number(delivery.orders_count) + Number(pickup.orders_count) + Number(dineIn.orders_count);
   const deliveryPct = totalTypeCount ? Math.round(Number(delivery.orders_count)/totalTypeCount*100) : 0;
+  const pickupPct = totalTypeCount ? Math.round(Number(pickup.orders_count)/totalTypeCount*100) : 0;
+  const dineInPct = totalTypeCount ? Math.max(0, 100 - deliveryPct - pickupPct) : 0;
 
   const topAreas = [...areaRows].sort((a,b)=> b.orders_count - a.orders_count).slice(0,5);
 
@@ -6813,7 +6891,8 @@ function buildMonthlyReportHtml({ restaurant, dailyRows, itemStatsRows, custRows
       <table>
         <tr><th>النوع</th><th>عدد الطلبات</th><th>القيمة</th></tr>
         <tr><td>توصيل</td><td class="num">${delivery.orders_count} (${deliveryPct}%)</td><td class="num">${Number(delivery.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</td></tr>
-        <tr><td>استلام من المحل</td><td class="num">${pickup.orders_count} (${100-deliveryPct}%)</td><td class="num">${Number(pickup.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</td></tr>
+        <tr><td>استلام من المحل</td><td class="num">${pickup.orders_count} (${pickupPct}%)</td><td class="num">${Number(pickup.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</td></tr>
+        ${Number(dineIn.orders_count) > 0 ? `<tr><td>طاولات (داخل المطعم)</td><td class="num">${dineIn.orders_count} (${dineInPct}%)</td><td class="num">${Number(dineIn.orders_total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</td></tr>` : ''}
       </table>
 
       <h2>أكثر المناطق طلبًا (طوال الوقت)</h2>
@@ -6835,7 +6914,7 @@ function exportOrdersToExcel(orderList, itemsByOrderMap, filenameLabel){
     const itemsCount = lines.reduce((sum,l)=> sum + (Number(l.quantity)||0), 0);
     const d = new Date(o.created_at);
     const dateStr = d.toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' });
-    const typeLabel = o.order_type === 'pickup' ? 'استلام' : 'توصيل';
+    const typeLabel = orderTypeLabel(o);
     rows.push([
       o.order_number != null ? o.order_number : '',
       dateStr,
@@ -6876,7 +6955,7 @@ async function openStaffModal(){
     <div class="modal">
       <h3>👤 حسابات الكاشير</h3>
       <div class="field">
-        <small>حسابات فرعية بصلاحيات محدودة — تقدر تشوف الطلبات الواردة وتغيّر حالتها بس، من غير أي وصول لباقي لوحة التحكم (الأصناف، الإعدادات، التقارير، الاشتراك).</small>
+        <small>حسابات فرعية بصلاحيات محدودة — يمكنها الاطلاع على الطلبات الواردة وتغيير حالتها فقط، دون أي صلاحية للوصول إلى باقي لوحة التحكم (الأصناف، الإعدادات، التقارير، الاشتراك).</small>
       </div>
       <div class="field" id="staffListWrap">
         <label>الحسابات الحالية</label>
@@ -6886,7 +6965,7 @@ async function openStaffModal(){
         <label>إضافة كاشير جديد</label>
         <input type="text" id="staffUsernameInput" placeholder="اسم المستخدم (حروف إنجليزية وأرقام فقط)" style="direction:ltr;">
         <input type="password" id="staffPasswordInput" placeholder="كلمة المرور (6 أحرف على الأقل)" style="direction:ltr; margin-top:8px;">
-        <small style="display:block; margin-top:6px;">هتديله اسم المستخدم وكلمة المرور دول بنفسك عشان يسجّل دخول بيهم — مفيش إيميل مطلوب.</small>
+        <small style="display:block; margin-top:6px;">تقوم بتزويده باسم المستخدم وكلمة المرور بنفسك ليتمكن من تسجيل الدخول بهما — لا حاجة إلى بريد إلكتروني.</small>
         <button type="button" class="add-btn" id="staffAddBtn" style="margin-top:8px;">➕ إضافة الحساب</button>
       </div>
       <div class="auth-err" id="staffErr"></div>
@@ -6904,7 +6983,7 @@ async function openStaffModal(){
     if(error){ listEl.textContent = 'تعذر تحميل الحسابات'; return; }
     const limit = maxCashiersForTier(account ? account.subscription_tier : 'starter');
     if(!staff || !staff.length){
-      listEl.innerHTML = `<div style="color:var(--stone);">مفيش حسابات كاشير مضافة (0 من ${limit})</div>`;
+      listEl.innerHTML = `<div style="color:var(--stone);">لا توجد حسابات كاشير مضافة (0 من ${limit})</div>`;
     } else {
       listEl.innerHTML = staff.map(s=> `
         <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line);">
@@ -6914,7 +6993,7 @@ async function openStaffModal(){
     }
     overlay.querySelectorAll('.staff-remove-btn').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
-        if(!confirm('متأكد إنك عايز تلغي وصول حساب الكاشير ده؟ (اسم المستخدم ده مش هينفع يتسجّل بيه حساب جديد تاني بعد كده)')) return;
+        if(!confirm('هل أنت متأكد من رغبتك في إلغاء وصول حساب الكاشير هذا؟ (لن يمكن استخدام اسم المستخدم هذا لإنشاء حساب جديد لاحقًا)')) return;
         const { error: delErr } = await sb.from('restaurant_staff').delete().eq('id', btn.dataset.id);
         if(delErr){ toast('تعذر حذف الحساب'); return; }
         toast('تم إلغاء وصول الحساب');
@@ -6932,26 +7011,26 @@ async function openStaffModal(){
     const username = overlay.querySelector('#staffUsernameInput').value.trim();
     const password = overlay.querySelector('#staffPasswordInput').value;
     if(!/^[a-zA-Z0-9_.-]{3,20}$/.test(username)){
-      errEl.textContent = 'اسم المستخدم لازم يكون حروف إنجليزية أو أرقام (3 إلى 20 حرف)، من غير مسافات';
+      errEl.textContent = 'يجب أن يتكون اسم المستخدم من حروف إنجليزية أو أرقام (من 3 إلى 20 حرفًا)، دون مسافات';
       return;
     }
     if(password.length < 6){
-      errEl.textContent = 'كلمة المرور لازم تكون 6 أحرف على الأقل';
+      errEl.textContent = 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل';
       return;
     }
     const existingCount = (await sb.from('restaurant_staff').select('id', { count:'exact', head:true })
       .eq('restaurant_id', restaurant.id));
     const limit = maxCashiersForTier(account ? account.subscription_tier : 'starter');
     if((existingCount.count || 0) >= limit){
-      errEl.textContent = `وصلت للحد الأقصى لعدد حسابات الكاشير في باقتك الحالية (${limit}). تقدر تزوّد الباقة أو تحذف حساب موجود الأول.`;
+      errEl.textContent = `وصلت للحد الأقصى لعدد حسابات الكاشير في باقتك الحالية (${limit}). يمكنك ترقية الباقة أو حذف حساب موجود أولًا.`;
       return;
     }
 
     const addBtn = overlay.querySelector('#staffAddBtn');
     addBtn.disabled = true; addBtn.textContent = '⏳ جاري الإضافة...';
     try{
-      // بننشئ الحساب مباشرة من قاعدة البيانات (بدون المرور على نظام الإيميل خالص)
-      // عشان مانوصلش لحد إرسال الإيميلات الصارم بتاع Supabase، وعشان مفيش أي إيميل حقيقي أصلًا
+      // يتم إنشاء الحساب مباشرة من قاعدة البيانات (دون المرور على نظام البريد الإلكتروني إطلاقًا)
+      // حتى لا نصل إلى حد إرسال البريد الإلكتروني الصارم الخاص بـ Supabase، ولأنه لا يوجد بريد إلكتروني حقيقي أصلًا
       const { data, error } = await sb.rpc('create_staff_account', {
         p_restaurant_id: restaurant.id, p_username: username, p_password: password
       });
@@ -6965,7 +7044,7 @@ async function openStaffModal(){
       toast('✅ تمت إضافة حساب الكاشير بنجاح');
       await refreshStaffList();
     }catch(e){
-      errEl.textContent = 'حصل خطأ غير متوقع، حاول تاني';
+      errEl.textContent = 'حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى';
     }
     addBtn.disabled = false; addBtn.textContent = '➕ إضافة الحساب';
   });
@@ -6979,16 +7058,16 @@ function openBackupModal(){
     <div class="modal">
       <h3>📦 النسخ الاحتياطي والاستعادة</h3>
       <div class="auth-err" style="color:#8A6D00; background:rgba(184,141,14,.1); border:1px solid rgba(184,141,14,.3); border-radius:8px; padding:10px 12px; margin-bottom:14px; display:block;">
-        🔒 ملف النسخة الاحتياطية يحتوي على بيانات حقيقية لعملائك (الأسماء وأرقام التليفونات وعناوين الطلبات)، فهو ملف حساس — احتفظ بيه في مكان آمن ومتشاركوش مع حد مش موثوق فيه.
+        🔒 يحتوي ملف النسخة الاحتياطية على بيانات حقيقية لعملائك (الأسماء وأرقام الهواتف وعناوين الطلبات)، وهو بذلك ملف حساس — احتفظ به في مكان آمن، ولا تشاركه مع أي جهة غير موثوقة.
       </div>
       <div class="field">
         <label>حفظ نسخة احتياطية</label>
-        <small>نسخة كاملة من بيانات ${entityLabel} (الإعدادات، الفئات، الأصناف، مناطق التوصيل، الطلبات، والعملاء) في ملف واحد تقدر تحتفظ بيه. كمان بينزلّك ملف نسخة احتياطية تلقائيًا مرة كل يوم أول ما تفتح لوحة التحكم.</small>
+        <small>نسخة كاملة من بيانات ${entityLabel} (الإعدادات، الفئات، الأصناف، مناطق التوصيل، الطلبات، والعملاء) في ملف واحد يمكنك الاحتفاظ به. كما يتم تنزيل نسخة احتياطية تلقائيًا مرة كل يوم عند فتح لوحة التحكم لأول مرة.</small>
         <button type="button" class="add-btn" id="rsBackupNowBtn" style="margin-top:8px;">⬇️ تنزيل نسخة احتياطية الآن</button>
       </div>
       <div class="field">
         <label>الاستعادة من نسخة احتياطية</label>
-        <small style="color:#c0392b;">⚠️ تحذير: الاستعادة هتستبدل كل بيانات ${entityLabel} الحالية بالبيانات الموجودة في الملف، ومينفعش ترجع للحالة الحالية بعد كده إلا لو عندك نسخة احتياطية تانية.</small>
+        <small style="color:#c0392b;">⚠️ تحذير: ستستبدل عملية الاستعادة جميع بيانات ${entityLabel} الحالية بالبيانات الموجودة في الملف، ولا يمكن الرجوع إلى الحالة الحالية بعد ذلك إلا في حال توفر نسخة احتياطية أخرى.</small>
         <button type="button" class="add-btn" id="rsRestoreBackupBtn" style="margin-top:8px;">⬆️ استعادة من نسخة احتياطية</button>
         <input type="file" id="rsRestoreBackupFile" accept="application/json,.json" style="display:none;">
       </div>
@@ -7009,7 +7088,7 @@ function openBackupModal(){
       await downloadRestaurantBackup(restaurant.id, restaurant.slug);
       statusEl.textContent = '✅ تم تنزيل النسخة الاحتياطية بنجاح';
     }catch(e){
-      statusEl.textContent = '❌ حصل خطأ أثناء تجهيز النسخة الاحتياطية، حاول تاني';
+      statusEl.textContent = '❌ حدث خطأ أثناء تجهيز النسخة الاحتياطية، يرجى المحاولة مرة أخرى';
     }
     btn.disabled = false;
   });
@@ -7029,7 +7108,7 @@ function openBackupModal(){
       backup = JSON.parse(text);
       if(!backup || typeof backup !== 'object' || !Array.isArray(backup.categories)) throw new Error('bad shape');
     }catch(parseErr){
-      statusEl.textContent = '❌ هذا الملف مش نسخة احتياطية صحيحة';
+      statusEl.textContent = '❌ هذا الملف ليس نسخة احتياطية صحيحة';
       return;
     }
 
@@ -7059,8 +7138,8 @@ function openBackupModal(){
       + `• ${fileCounts.categories} فئة، ${fileCounts.items} صنف (الحالي دلوقتي: ${currentCounts.categories} فئة)\n`
       + `• ${fileCounts.orders} طلب (الحالي دلوقتي: ${currentCounts.orders} طلب)\n`
       + `• ${fileCounts.zones} منطقة توصيل، ${fileCounts.customers} عميل\n\n`
-      + `كل البيانات الحالية هتتمسح وتتستبدل بالكامل بمحتوى الملف، ومينفعش نرجع بعد كده إلا لو عندك نسخة احتياطية تانية.\n\n`
-      + `متأكد إنك عايز تكمل؟`;
+      + `سيتم مسح جميع البيانات الحالية واستبدالها بالكامل بمحتوى الملف، ولا يمكن التراجع عن ذلك إلا في حال توفر نسخة احتياطية أخرى.\n\n`
+      + `هل أنت متأكد من رغبتك في المتابعة؟`;
     if(!confirm(confirmMsg)) return;
 
     statusEl.textContent = 'جاري استعادة النسخة الاحتياطية...';
@@ -7070,7 +7149,7 @@ function openBackupModal(){
       toast('تمت الاستعادة بنجاح، جاري إعادة تحميل البيانات...');
       setTimeout(()=> window.location.reload(), 1500);
     }catch(e){
-      statusEl.textContent = '❌ ' + (e && e.message ? e.message : 'حصل خطأ أثناء الاستعادة، تأكد إن الملف نسخة احتياطية صحيحة لنفس ' + entityLabel);
+      statusEl.textContent = '❌ ' + (e && e.message ? e.message : 'حدث خطأ أثناء الاستعادة، تأكد من أن الملف نسخة احتياطية صحيحة لنفس ' + entityLabel);
     }
   });
 }
@@ -7331,7 +7410,7 @@ function openCleanupImagesModal(){
         ${report.scanFailed ? '⚠️ تعذر فحص ملفات التخزين (مشكلة صلاحيات محتملة)، لكن تم فحص الصور المحفوظة في قاعدة البيانات بنجاح.<br>' : ''}
         🗑️ ملفات غير مستخدمة تم حذفها: <b>${report.orphansDeleted}</b> (${freedKB > 0 ? `~${freedKB}KB تم توفيرها` : 'لا توجد مساحة إضافية'})
         <br>🗜️ صور اتضغطت وحُسّنت: <b>${report.imagesOptimized}</b> ${savedKB > 0 ? `(اتوفر منها ~${savedKB}KB)` : ''}
-        ${report.errors > 0 ? `<br>⚠️ حصل خطأ في ${report.errors} عملية، ممكن تعيد المحاولة تاني.` : ''}
+        ${report.errors > 0 ? `<br>⚠️ حدث خطأ في ${report.errors} عملية، يمكنك إعادة المحاولة مرة أخرى.` : ''}
       </div>
       <div class="modal-actions">
         <button class="btn-confirm" id="ciDoneBtn">تمام</button>
@@ -7501,7 +7580,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
         <input type="text" id="restNameEnInput" value="${restaurant.name_en ? escapeHtml(restaurant.name_en) : ''}" placeholder="e.g. Al Asayel Restaurant">
       </div>
       <div class="field">
-        <label id="rsPhoneLabel">رقم تليفون ${t().entityDef} (يظهر للعميل - اتصال)</label>
+        <label id="rsPhoneLabel">رقم هاتف ${t().entityDef} (يظهر للعميل - اتصال)</label>
         <input type="text" id="restPhoneInput" value="${restaurant.phone ? escapeHtml(restaurant.phone) : ''}" placeholder="رقم بصيغة دولية: 201154361888" style="direction:ltr;">
       </div>
       <div class="field">
@@ -7511,7 +7590,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
       </div>
       <div class="field">
         <label>يوزر ${t().entityDef} على ماسنجر (اختياري — لإرسال الطلب عبر ماسنجر)</label>
-        <small>يوزرنيم صفحة الفيسبوك، من غير رابط كامل. مثال: لو رابط صفحتك facebook.com/mypage اكتب mypage بس.</small>
+        <small>اسم المستخدم (Username) الخاص بصفحة الفيسبوك، دون كتابة الرابط كاملاً. مثال: إذا كان رابط صفحتك facebook.com/mypage فأدخل mypage فقط.</small>
         <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
           <input type="text" id="restMessengerInput" value="${restaurant.messenger_username ? escapeHtml(restaurant.messenger_username) : ''}" placeholder="مثال: mypage" style="flex:1; min-width:0; direction:ltr;" ${restaurant.restriction_extra_channels_disabled ? 'disabled title="قنوات الاستقبال الإضافية (ماسنجر/تليجرام) متاحة في باقة PRO فقط"' : ''}>
           <button type="button" id="testMessengerBtn" ${restaurant.restriction_extra_channels_disabled ? 'disabled' : ''} style="width:auto; flex:none; margin:0; white-space:nowrap; padding:10px 16px; background:transparent; border:1.5px dashed var(--stone); color:var(--stone-light); font-family:var(--body); font-weight:700; font-size:14px; border-radius:8px; cursor:pointer;">تجربة</button>
@@ -7538,7 +7617,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
       </div>
       <div class="field">
         <label id="rsCurrencyLabel">رمز العملة (يظهر بجانب كل الأسعار في المنيو ولوحة التحكم)</label>
-        <small>اكتبها بالظبط زي ما تحب تظهر للزبون. أمثلة: EGP، SR، ريال، درهم، دينار، ج</small>
+        <small>اكتبها كما تريد أن تظهر للعميل بالضبط. أمثلة: EGP، SR، ريال، درهم، دينار، ج</small>
         <input type="text" id="restCurrencyInput" value="${restaurant.currency_label ? escapeHtml(restaurant.currency_label) : 'EGP'}" placeholder="EGP" style="margin-top:8px; max-width:160px;">
       </div>
       <div class="field">
@@ -7565,7 +7644,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
       </div>
       <div class="field">
         <label>رسوم توصيل افتراضية لمنطقة "غير مدرجة" (اختياري)</label>
-        <small>لما العميل يختار "منطقتي غير موجودة" وقت الطلب، ممكن تظهرله رسوم تقديرية بدل ما تفضل غير محددة، وتقدر تعدّلها بعد كده وقت تأكيد الطلب.</small>
+        <small>عند اختيار العميل "منطقتي غير موجودة" أثناء الطلب، يمكن إظهار رسوم تقديرية بدلًا من تركها غير محددة، ويمكن تعديلها لاحقًا عند تأكيد الطلب.</small>
         <select id="restDefaultFeeModeInput" style="margin-top:8px; width:100%; border:1.5px solid var(--line); border-radius:8px; padding:10px 12px; font-family:var(--body); font-size:14px; color:var(--ink); background:var(--paper);">
           <option value="none" ${pendingDefaultFeeMode==='none' ? 'selected' : ''}>بدون رسوم تقديرية (تتحدد لاحقًا بعد التواصل)</option>
           <option value="manual" ${pendingDefaultFeeMode==='manual' ? 'selected' : ''}>رقم ثابت أحدده يدويًا</option>
@@ -7600,7 +7679,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
           </div>
           <div class="field" style="margin-bottom:0; ${restaurant.restriction_multi_wallet_disabled ? 'opacity:.55;' : ''} ${isEgyptRestaurant(restaurant) ? '' : 'display:none;'}" id="rsInstapayFieldWrap">
             <label>حساب إنستاباي (اختياري — لمصر فقط)</label>
-            <small>اسم المستخدم الخاص بك على إنستاباي (مثل ‎@mystore) أو رابط الدفع الكامل إن وُجد — في حال إدخال رابط، سيُفتح تلقائيًا للعميل بدلًا من أن يبحث عنك يدويًا. إنستاباي نظام مصري ولا يعمل إلا بحساب بنكي مصري، فلو دولة ${t().entityDef} مش مصر يفضل الاعتماد على "المحافظ الإلكترونية" فوق بس.</small>
+            <small>اسم المستخدم الخاص بك على إنستاباي (مثل ‎@mystore) أو رابط الدفع الكامل إن وُجد — في حال إدخال رابط، سيُفتح تلقائيًا للعميل بدلًا من أن يبحث عنك يدويًا. إنستاباي نظام مصري ولا يعمل إلا بحساب بنكي مصري، وفي حال كانت دولة ${t().entityDef} غير مصر، يُفضَّل الاعتماد على "المحافظ الإلكترونية" أعلاه فقط.</small>
             <div style="display:flex; gap:8px; align-items:flex-start; margin-top:8px;">
               <input type="text" id="rsInstapayInput" value="${restaurant.instapay_account ? escapeHtml(restaurant.instapay_account) : ''}" placeholder="مثال: mystore@instapay أو رابط الدفع" style="direction:ltr; flex:1;" ${restaurant.restriction_multi_wallet_disabled ? 'disabled title="InstaPay متاح في باقة PRO فقط"' : ''}>
               <button type="button" id="rsInstapayTestBtn" title="اختبار الرابط" ${restaurant.restriction_multi_wallet_disabled ? 'disabled' : ''} style="background:#fff; border:1.5px solid var(--line); border-radius:8px; cursor:pointer; padding:9px 12px; flex-shrink:0; white-space:nowrap;">🔗 اختبار</button>
@@ -7612,7 +7691,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
       </div>
       <div class="field">
         <label>إشعار واتساب بالطلبات الجديدة (اختياري)</label>
-        <small>لتفعيل الإشعار: احفظ رقم <span dir="ltr" style="font-family:var(--mono);">+34 684 74 26 79</span> في هاتفك، وابعتله على واتساب رسالة نصها بالإنجليزية بالظبط: <span dir="ltr" style="font-family:var(--mono);">I allow callmebot to send me messages</span>، وهيردلك برسالة فيها الرمز الخاص بيك (apikey). اكتب رقمك ورمزك تحت.</small>
+        <small>لتفعيل الإشعار: احفظ رقم <span dir="ltr" style="font-family:var(--mono);">+34 684 74 26 79</span> في هاتفك، وأرسل إليه عبر واتساب رسالة نصها بالإنجليزية تمامًا: <span dir="ltr" style="font-family:var(--mono);">I allow callmebot to send me messages</span>، وسيصلك رد برسالة تحتوي على الرمز الخاص بك (apikey). أدخل رقمك ورمزك أدناه.</small>
         <input type="text" id="notifPhoneInput" value="${restaurant.notification_phone ? escapeHtml(restaurant.notification_phone) : ''}" placeholder="رقم واتساب بصيغة دولية: 201154361888" style="margin-top:8px; direction:ltr;" ${restaurant.restriction_notif_settings_disabled ? 'disabled title="تعديل رقم التنبيهات غير متاح في نسختك الحالية"' : ''}>
         <input type="text" id="notifApikeyInput" value="${restaurant.notification_apikey ? escapeHtml(restaurant.notification_apikey) : ''}" placeholder="الرمز (apikey) الذي وصلك من البوت" style="margin-top:8px; direction:ltr;" ${restaurant.restriction_notif_settings_disabled ? 'disabled title="تعديل رقم التنبيهات غير متاح في نسختك الحالية"' : ''}>
         ${restaurant.restriction_notif_settings_disabled ? `<small style="color:var(--stone); margin-top:4px; display:block;">🔒 رقم استلام إشعارات الطلبات مقفول من الإدارة.</small>` : ''}
@@ -7633,7 +7712,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
   document.body.appendChild(overlay);
   wireEnterToConfirm(overlay, overlay.querySelector('#rsConfirm'));
 
-  // إدارة قائمة المحافظ الإلكترونية (أكتر من محفظة لكل متجر)
+  // إدارة قائمة المحافظ الإلكترونية (أكثر من محفظة لكل متجر)
   let pendingWallets = (Array.isArray(restaurant.wallets) && restaurant.wallets.length)
     ? restaurant.wallets.map(w => ({ label: w && w.label || '', number: w && w.number || '', ussd: w && w.ussd || '' }))
     : (restaurant.wallet_number ? [{ label: restaurant.wallet_label || 'فودافون كاش', number: restaurant.wallet_number, ussd: '' }] : [{ label: 'فودافون كاش', number: '', ussd: '' }]);
@@ -7692,7 +7771,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     walletsListWrap.querySelectorAll('.rs-wallet-test').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const val = (pendingWallets[Number(btn.dataset.idx)].number || '').trim();
-        if(!val){ toast('اكتب رقم المحفظة أو الرابط الأول'); return; }
+        if(!val){ toast('أدخل رقم المحفظة أو الرابط أولًا'); return; }
         if(isSafeHttpUrl(val)) window.open(val, '_blank', 'noopener');
         else toast('هذا رقم عادي وليس رابطًا — لن يُفتح شيء، وسيظهر للعميل كرقم للتحويل إليه فقط');
       });
@@ -7700,7 +7779,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     walletsListWrap.querySelectorAll('.rs-wallet-test-ussd').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const val = (pendingWallets[Number(btn.dataset.idx)].ussd || '').trim();
-        if(!val){ toast('اكتب كود الاتصال الأول'); return; }
+        if(!val){ toast('أدخل كود الاتصال أولًا'); return; }
         window.location.href = buildUssdTelLink(val, 100);
       });
     });
@@ -7735,7 +7814,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
   instapayInput.addEventListener('input', updateInstapayHint);
   overlay.querySelector('#rsInstapayTestBtn').addEventListener('click', ()=>{
     const val = instapayInput.value.trim();
-    if(!val){ toast('اكتب حساب إنستاباي الأول'); return; }
+    if(!val){ toast('أدخل حساب إنستاباي أولًا'); return; }
     if(isSafeHttpUrl(val)) window.open(val, '_blank', 'noopener');
     else toast('هذا اسم مستخدم وليس رابطًا — لن يُفتح شيء، وسيظهر للعميل كنص فقط');
   });
@@ -7756,7 +7835,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     overlay.querySelector('#rsLogoLabel').textContent = `شعار ${t().entityDef} (اختياري)`;
     overlay.querySelector('#rsNameLabel').textContent = `اسم ${t().entityDef}`;
     overlay.querySelector('#rsNameEnLabel').textContent = `اسم ${t().entityDef} بالإنجليزية (اختياري)`;
-    overlay.querySelector('#rsPhoneLabel').textContent = `رقم تليفون ${t().entityDef} (يظهر للعميل - اتصال)`;
+    overlay.querySelector('#rsPhoneLabel').textContent = `رقم هاتف ${t().entityDef} (يظهر للعميل - اتصال)`;
     overlay.querySelector('#rsAddressLabel').textContent = `عنوان ${t().entityDef} (اختياري)`;
     overlay.querySelector('#rsHoursLabel').textContent = `أوقات العمل (اختياري — اتركهما فاضيين ليكون ${t().entityDef} مفتوحًا طوال الوقت)`;
   }
@@ -7799,13 +7878,13 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
   });
   overlay.querySelector('#testMessengerBtn').addEventListener('click', ()=>{
     const raw = overlay.querySelector('#restMessengerInput').value.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.|m\.)?(facebook\.com|fb\.com|m\.me)\//i, '').replace(/\/+$/, '');
-    if(!raw){ toast('اكتب اليوزرنيم الأول'); return; }
+    if(!raw){ toast('أدخل اسم المستخدم أولًا'); return; }
     const text = encodeURIComponent(`رسالة تجربة من ${overlay.querySelector('#restNameInput').value.trim() || t().entityDef} — للتأكد من صحة يوزر الماسنجر ✅`);
     window.open(`https://m.me/${raw}?text=${text}`, '_blank');
   });
   overlay.querySelector('#testTelegramBtn').addEventListener('click', ()=>{
     const raw = overlay.querySelector('#restTelegramInput').value.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?t\.me\//i, '').replace(/\/+$/, '');
-    if(!raw){ toast('اكتب اليوزرنيم الأول'); return; }
+    if(!raw){ toast('أدخل اسم المستخدم أولًا'); return; }
     const text = encodeURIComponent(`رسالة تجربة من ${overlay.querySelector('#restNameInput').value.trim() || t().entityDef} — للتأكد من صحة يوزر التليجرام ✅`);
     window.open(`https://t.me/${raw}?text=${text}`, '_blank');
   });
@@ -7825,8 +7904,8 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
   if(countrySelect && currencyInput){
     countrySelect.addEventListener('change', ()=>{
       const prevCountry = getRestaurantCountry({ country_code: countrySelect.dataset.prevValue });
-      // بنعيد ملء خانة العملة تلقائيًا بس لو لسه فاضية أو لسه شايلة القيمة الافتراضية لدولته القديمة
-      // (يعني معملش تعديل يدوي مقصود)، عشان محدش يفقد صياغة كتبها هو بنفسه
+      // يُعاد ملء خانة العملة تلقائيًا فقط إذا كانت لا تزال فارغة أو لا تزال تحمل القيمة الافتراضية لدولته القديمة
+      // (أي لم يُجرَ تعديل يدوي مقصود)، حتى لا يفقد أحد صياغة كتبها بنفسه
       if(!currencyInput.value.trim() || currencyInput.value.trim() === prevCountry.cur){
         currencyInput.value = getRestaurantCountry({ country_code: countrySelect.value }).cur;
       }
@@ -7864,7 +7943,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     if(default_delivery_fee_mode === 'manual'){
       const manualRaw = overlay.querySelector('#restDefaultFeeManualInput')?.value.trim();
       default_delivery_fee_amount = manualRaw ? Number(manualRaw) : null;
-      if(default_delivery_fee_amount == null){ toast('اكتب قيمة رسوم التوصيل الافتراضية'); return; }
+      if(default_delivery_fee_amount == null){ toast('أدخل قيمة رسوم التوصيل الافتراضية'); return; }
     } else if(default_delivery_fee_mode === 'zone'){
       default_delivery_zone_id = overlay.querySelector('#restDefaultFeeZoneInput')?.value || null;
       if(!default_delivery_zone_id){ toast('اختر منطقة لاستخدام رسومها كافتراضي'); return; }
@@ -7955,12 +8034,83 @@ document.getElementById('showQrBtn').addEventListener('click', ()=>{
       setTimeout(()=> URL.revokeObjectURL(objUrl), 3000);
     }catch(e){
       window.open(qrImgUrl, '_blank');
-      toast('فتحنا الصورة في نافذة جديدة، اضغط عليها بزر الفأرة الأيمن واحفظها');
+      toast('تم فتح الصورة في نافذة جديدة، اضغط عليها بزر الفأرة الأيمن ثم احفظها');
     }
   });
 });
 
-/* ================= مشاركة القائمة (صورة ستوري) ================= */
+/* ================= QR لكل طاولة (Dine-in) ================= */
+document.getElementById('showTablesQrBtn').addEventListener('click', ()=>{
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="text-align:center;">
+      <h3>🍽️ QR الطاولات</h3>
+      <div class="orders-empty" style="padding:0 0 14px; font-size:12.5px;">اطبع كود لكل طاولة — لما العميل يمسحه، هتتحدد طاولته تلقائيًا مع الطلب</div>
+      <div class="field" style="max-width:200px; margin:0 auto 14px;">
+        <label>عدد الطاولات</label>
+        <input type="number" id="tablesCountInput" min="1" max="200" value="${restaurant.tables_count || 10}" style="text-align:center;">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="tablesQrCloseBtn">إغلاق</button>
+        <button class="btn-confirm" id="tablesQrGenerateBtn">توليد الأكواد</button>
+      </div>
+      <div id="tablesQrGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:14px; margin-top:18px;"></div>
+      <div class="modal-actions hidden" id="tablesQrPrintWrap" style="margin-top:10px;">
+        <button class="btn-confirm" id="tablesQrPrintBtn">🖨️ طباعة كل الأكواد</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#tablesQrCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+
+  overlay.querySelector('#tablesQrGenerateBtn').addEventListener('click', async ()=>{
+    const count = Math.max(1, Math.min(200, parseInt(overlay.querySelector('#tablesCountInput').value, 10) || 0));
+    if(!count) return;
+    const grid = overlay.querySelector('#tablesQrGrid');
+    grid.innerHTML = '';
+    for(let n=1; n<=count; n++){
+      const link = `${location.origin}${location.pathname}?r=${restaurant.slug}&table=${n}`;
+      const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(link)}`;
+      const card = document.createElement('div');
+      card.className = 'table-qr-card';
+      card.style.cssText = 'border:1px solid var(--line); border-radius:10px; padding:10px; background:#fff;';
+      card.innerHTML = `<img src="${qrImgUrl}" alt="" loading="lazy" style="width:100%; border-radius:6px;"><div style="font-family:var(--display); font-size:15px; margin-top:6px;">طاولة ${n}</div>`;
+      grid.appendChild(card);
+    }
+    overlay.querySelector('#tablesQrPrintWrap').classList.remove('hidden');
+    try{
+      await sb.from('restaurants').update({ tables_count: count }).eq('id', restaurant.id);
+      restaurant.tables_count = count;
+    }catch(e){}
+  });
+
+  overlay.querySelector('#tablesQrPrintBtn').addEventListener('click', ()=>{
+    const grid = overlay.querySelector('#tablesQrGrid');
+    const cardsHtml = Array.from(grid.children).map(c=>{
+      const img = c.querySelector('img').src;
+      const label = c.querySelector('div').textContent;
+      return `<div class="card"><img src="${img}"><div class="label">${escapeHtml(label)}</div><div class="rest">${escapeHtml(restaurant.name)}</div></div>`;
+    }).join('');
+    const printWin = window.open('', '_blank');
+    printWin.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>QR الطاولات — ${escapeHtml(restaurant.name)}</title>
+      <style>
+        body{ font-family:sans-serif; margin:0; padding:20px; }
+        .grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:24px; }
+        .card{ border:1.5px dashed #999; border-radius:10px; padding:14px; text-align:center; break-inside:avoid; }
+        .card img{ width:100%; max-width:220px; }
+        .card .label{ font-size:18px; font-weight:800; margin-top:8px; }
+        .card .rest{ font-size:12px; color:#666; margin-top:2px; }
+        @media print{ .card{ page-break-inside:avoid; } }
+      </style></head><body>
+      <div class="grid">${cardsHtml}</div>
+      </body></html>`);
+    printWin.document.close();
+    setTimeout(()=>{ printWin.focus(); printWin.print(); }, 400);
+  });
+});
+
+
 function loadImageAsBlobUrl(src){
   return fetch(src).then(res=>{
     if(!res.ok) throw new Error('fetch failed');
@@ -8244,7 +8394,7 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
       });
     });
   } else {
-    // الشكل البسيط: فئة، اسم، سعر فقط (مع أو من غير صف عناوين)
+    // الشكل البسيط: فئة، اسم، سعر فقط (مع أو دون صف عناوين)
     let simpleRows = rows;
     if(simpleRows.length && isNaN(parseFloat(simpleRows[0][2]))){
       simpleRows = simpleRows.slice(1);
@@ -8400,7 +8550,7 @@ function weightSaleModeLabelAr(mode){
   if(mode === 'price_only') return 'بالمبلغ فقط';
   return 'بالوزن أو بالمبلغ';
 }
-// Excel/xlsx.js بيرفض أي خلية نصها أطول من 32767 حرف (بيحصل مع صور base64 لسه محفوظة محليًا ولم تُرفع للتخزين بعد)
+// يرفض Excel/xlsx.js أي خلية يتجاوز نصها 32767 حرفًا (يحدث هذا مع صور base64 لا تزال محفوظة محليًا ولم تُرفع للتخزين بعد)
 const EXCEL_CELL_MAX = 32000;
 function safeExcelText(v){
   const s = String(v ?? '');
@@ -8620,7 +8770,7 @@ function buildItemCard(item){
   if(!isAvailable) div.style.opacity = '0.55';
   div.innerHTML = `
     <span class="drag-handle" title="اسحب لإعادة الترتيب">⋮⋮</span>
-    ${item.image_url ? `<img src="${item.image_url}">` : `<div class="no-img">${biz(restaurant.business_type,'placeholderIcon')}</div>`}
+    ${item.image_url ? `<img src="${item.image_url}" loading="lazy" decoding="async">` : `<div class="no-img">${biz(restaurant.business_type,'placeholderIcon')}</div>`}
     <div class="item-body">
       <div class="item-top">
         <span class="item-name">${escapeHtml(item.name)}${!isAvailable ? ' <span style="color:var(--danger); font-size:12px; font-weight:700;">(غير متوفر)</span>' : ''}</span>
@@ -8661,7 +8811,7 @@ async function fetchLastPriceUpdateLog(){
 }
 
 async function undoPriceUpdateLog(log, undoBtn){
-  if(!confirm('هيتم إرجاع كل الأسعار اللي اتغيرت في هذا التحديث لقيمتها قبله. متأكد؟')) return;
+  if(!confirm('سيتم إرجاع جميع الأسعار التي تغيّرت في هذا التحديث إلى قيمتها السابقة. هل أنت متأكد؟')) return;
   undoBtn.disabled = true;
   undoBtn.textContent = 'جارِ التراجع...';
   try{
@@ -8825,7 +8975,7 @@ function openBulkPriceModal(){
     return Math.round(np * 100) / 100;
   }
 
-  // بيرجع خطة التحديث الكاملة (من غير ما يلمس القاعدة) عشان نعرضها في المعاينة ونستخدمها بعد التأكيد
+  // يُرجع خطة التحديث الكاملة (دون المساس بقاعدة البيانات) لعرضها في المعاينة واستخدامها بعد التأكيد
   function buildUpdatePlan(){
     const method = methodSelect.value;
     const rawValue = parseFloat(valueInput.value);
@@ -8981,7 +9131,7 @@ function renderTicket(){
   }
   itemsWrap.innerHTML = catItems.map(i=>`
     <div class="t-item">
-      ${i.image_url ? `<img class="t-img" src="${i.image_url}">` : `<div class="t-img"></div>`}
+      ${i.image_url ? `<img class="t-img" src="${i.image_url}" loading="lazy" decoding="async">` : `<div class="t-img"></div>`}
       <span class="t-name">${escapeHtml(i.name)}</span>
       <span class="t-price">${Number(i.price).toFixed(2)}</span>
     </div>`).join('');
@@ -9061,8 +9211,8 @@ async function listStorageFolder(folder){
 }
 
 // يمر على ملفات الصور الخاصة بالمطعم في التخزين وفي قاعدة البيانات:
-// 1) يمسح أي ملف مش مرتبط بصنف أو لوجو حاليًا (orphan) من التخزين
-// 2) يعيد ضغط أي صورة لسه بالنظام القديم أو محفوظة كـ base64 خام جوه قاعدة البيانات (لم تُرفع للتخزين أصلاً)
+// 1) يمسح أي ملف غير مرتبط بصنف أو شعار حاليًا (orphan) من التخزين
+// 2) يعيد ضغط أي صورة لا تزال بالنظام القديم أو محفوظة كـ base64 خام داخل قاعدة البيانات (لم تُرفع للتخزين أصلًا)
 async function runImageCleanupAndOptimization(onProgress){
   const report = { orphansDeleted: 0, orphanBytesFreed: 0, imagesOptimized: 0, bytesBefore: 0, bytesAfter: 0, errors: 0, scanFailed: false };
 
@@ -9088,7 +9238,7 @@ async function runImageCleanupAndOptimization(onProgress){
     }
   }
 
-  // بيشتغل مع 3 حالات: صورة base64 خام لسه في قاعدة البيانات، أو ملف مرفوع لكن مش WebP، أو ملف WebP بالفعل (يتجاهله)
+  // يعمل مع 3 حالات: صورة base64 خام لا تزال في قاعدة البيانات، أو ملف مرفوع لكن ليس بصيغة WebP، أو ملف WebP بالفعل (يتم تجاهله)
   async function optimizeIfNeeded(url, folder, maxDimension, maxSizeKB, applyFn){
     if(!url) return;
     const isStorageUrl = url.includes('/menu-images/');
@@ -9147,8 +9297,8 @@ function validateImageFile(file){
 
 function loadImageFromFile(file){
   return new Promise((resolve, reject)=>{
-    // بنستخدم object URL (مرجع خفيف للملف) بدل base64 كامل للصورة الأصلية،
-    // عشان صورة 20 ميجا متحولش لنص base64 ضخم (~27 ميجا) في الذاكرة لمجرد إننا هنعرضها في canvas
+    // يتم استخدام object URL (مرجع خفيف للملف) بدلًا من base64 كامل للصورة الأصلية،
+    // حتى لا تتحول صورة بحجم 20 ميجا إلى نص base64 ضخم (~27 ميجا) في الذاكرة لمجرد عرضها في canvas
     const objectUrl = URL.createObjectURL(file);
     const img = new Image();
     img.onload = ()=>{ URL.revokeObjectURL(objectUrl); resolve(img); };
@@ -9164,7 +9314,7 @@ function canvasEncode(canvas, mimeType, quality){
   return { dataUrl, sizeBytes };
 }
 
-// بيرجع الحجم التقريبي بالكيلوبايت لأي data URL (زي اللي بنخزنها في القاعدة)، أو null لو مش data URL
+// يُرجع الحجم التقريبي بالكيلوبايت لأي data URL (كتلك المخزَّنة في قاعدة البيانات)، أو null إذا لم يكن data URL
 function dataUrlSizeKB(dataUrl){
   if(!dataUrl || !dataUrl.startsWith('data:')) return null;
   const base64Length = (dataUrl.split(',')[1] || '').length;
@@ -9172,8 +9322,8 @@ function dataUrlSizeKB(dataUrl){
   return Math.round(sizeBytes / 1024);
 }
 
-// يضغط الصورة تلقائيًا: يصغّر الأبعاد للحد الأقصى المطلوب، وبعدين يقلل الجودة تدريجيًا
-// (وأخيرًا الأبعاد لو لسه أكبر من المطلوب) لحد ما يوصل للحجم المستهدف بالكيلوبايت
+// يضغط الصورة تلقائيًا: يصغّر الأبعاد إلى الحد الأقصى المطلوب، ثم يقلل الجودة تدريجيًا
+// (وأخيرًا الأبعاد إذا كانت لا تزال أكبر من المطلوب) إلى أن يصل إلى الحجم المستهدف بالكيلوبايت
 async function compressImage(file, { maxDimension = 800, maxSizeKB = 300 } = {}){
   const img = await loadImageFromFile(file);
   let scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
@@ -9184,8 +9334,8 @@ async function compressImage(file, { maxDimension = 800, maxSizeKB = 300 } = {})
   let quality = 0.85;
   let best = null;
 
-  // نستخدم canvas واحد بس طول المحاولات، ونرسم فيه بس لما الأبعاد فعلاً تتغيّر —
-  // مش نعمل canvas جديد وpixel buffer جديد كامل في كل محاولة حتى لو الفرق بينهم الجودة بس
+  // يتم استخدام canvas واحد فقط طوال المحاولات، ويُرسم فيه فقط عندما تتغيّر الأبعاد فعلًا —
+  // دون إنشاء canvas جديد وpixel buffer جديد بالكامل في كل محاولة حتى لو كان الفرق بينهما في الجودة فقط
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   let drawnWidth = null, drawnHeight = null;
@@ -9227,7 +9377,7 @@ async function uploadImageToStorage(dataUrl, folder){
 
 // ================= النسخ الاحتياطي والاستعادة =================
 
-// بنجمع كل بيانات المطعم (فئات، أصناف، أحجام، مناطق توصيل، طلبات، عناصر الطلبات، وإحصائية العملاء) في كائن واحد
+// يتم تجميع كل بيانات المطعم (فئات، أصناف، أحجام، مناطق توصيل، طلبات، عناصر الطلبات، وإحصائية العملاء) في كائن واحد
 async function collectRestaurantBackup(restaurantId){
   const { data: cats, error: catsErr } = await sb.from('categories').select('*').eq('restaurant_id', restaurantId);
   if(catsErr) throw catsErr;
@@ -9256,7 +9406,7 @@ async function collectRestaurantBackup(restaurantId){
   const orderIds = (orders || []).map(o=> o.id);
 
   let orderItems = [];
-  // بنجيب order_items على دفعات (500 طلب في المرة) عشان مانبعتش IN() بعدد ضخم جدًا لو الطلبات كتير
+  // يتم جلب order_items على دفعات (500 طلب في المرة) لتجنّب إرسال IN() بعدد ضخم جدًا عند كثرة الطلبات
   for(let i=0; i<orderIds.length; i+=500){
     const batchIds = orderIds.slice(i, i+500);
     const { data, error } = await sb.from('order_items').select('*').in('order_id', batchIds);
@@ -9267,7 +9417,7 @@ async function collectRestaurantBackup(restaurantId){
   const { data: customers, error: custErr } = await sb.from('customer_order_stats').select('*').eq('restaurant_id', restaurantId);
   if(custErr) throw custErr;
 
-  // إعدادات المطعم اللي صاحب المطعم بيتحكم فيها بس (مش أي حقل إداري/اشتراك) — نفس القائمة المستخدمة في استرجاعها
+  // إعدادات المطعم التي يتحكم فيها صاحب المطعم فقط (وليس أي حقل إداري/اشتراك) — نفس القائمة المستخدمة في استرجاعها
   const r = restaurant || {};
   const settingsFields = ['name','name_en','logo_url','phone','messenger_username','telegram_username','address',
     'opening_time','closing_time','min_delivery_order','min_delivery_order_online','business_type',
@@ -9294,7 +9444,7 @@ async function collectRestaurantBackup(restaurantId){
   };
 }
 
-// بينزّل ملف JSON فيه نسخة احتياطية كاملة على جهاز المستخدم
+// يُنزّل ملف JSON يحتوي على نسخة احتياطية كاملة على جهاز المستخدم
 async function downloadRestaurantBackup(restaurantId, slug){
   const backup = await collectRestaurantBackup(restaurantId);
   const json = JSON.stringify(backup);
@@ -9311,18 +9461,18 @@ async function downloadRestaurantBackup(restaurantId, slug){
   return backup;
 }
 
-// بيستدعي RPC استعادة النسخة الاحتياطية على قاعدة البيانات (استبدال كامل لبيانات المطعم)
+// يستدعي RPC استعادة النسخة الاحتياطية على قاعدة البيانات (استبدال كامل لبيانات المطعم)
 async function restoreRestaurantBackupFromObject(restaurantId, backup){
   if(!backup || typeof backup !== 'object' || !Array.isArray(backup.categories)){
-    throw new Error('هذا الملف مش نسخة احتياطية صحيحة');
+    throw new Error('هذا الملف ليس نسخة احتياطية صحيحة');
   }
   const { data, error } = await sb.rpc('restore_restaurant_backup', { p_restaurant_id: restaurantId, p_backup: backup });
   if(error) throw error;
   return data;
 }
 
-// نسخة احتياطية تلقائية يومية: بتتنزل تلقائيًا مرة واحدة كل يوم أول ما صاحب المطعم يفتح لوحة التحكم،
-// من غير أي تخزين دائم على السيرفر — مجرد ملف بينزل على جهازه هو بس
+// نسخة احتياطية تلقائية يومية: تُنزَّل تلقائيًا مرة واحدة كل يوم عند فتح صاحب المطعم للوحة التحكم لأول مرة،
+// دون أي تخزين دائم على السيرفر — مجرد ملف يُنزَّل على جهازه فقط
 async function maybeRunAutoDailyBackup(){
   try{
     if(!restaurant || !restaurant.id) return;
@@ -9333,7 +9483,7 @@ async function maybeRunAutoDailyBackup(){
     localStorage.setItem(key, today);
     toast('📦 تم تنزيل نسخة احتياطية تلقائية لليوم');
   }catch(e){
-    // فشل النسخة التلقائية مايوقفش استخدام الداشبورد أبدًا
+    // لا يوقف فشل النسخة التلقائية استخدام لوحة التحكم أبدًا
     console.warn('auto backup failed', e);
   }
 }
@@ -9350,7 +9500,7 @@ async function migrateLegacyImages(){
   if(catIds.length){
     const { data: its } = await sb.from('items').select('id,image_url').in('category_id', catIds);
     const legacyItems = (its || []).filter(it => it.image_url && it.image_url.startsWith('data:'));
-    // بنرفع الصور على دفعات متوازية (5 في المرة) بدل واحدة ورا التانية، عشان يبقى أسرع مع مطاعم فيها صور كتير
+    // يتم رفع الصور على دفعات متوازية (5 في المرة) بدلًا من واحدة تلو الأخرى، لتكون أسرع مع المطاعم ذات الصور الكثيرة
     const BATCH_SIZE = 5;
     for(let i = 0; i < legacyItems.length; i += BATCH_SIZE){
       const batch = legacyItems.slice(i, i + BATCH_SIZE);
@@ -9575,7 +9725,7 @@ function openItemModal(existing){
       if(minWeightRaw !== ''){
         const parsedMinWeight = parseInt(minWeightRaw, 10);
         if(isNaN(parsedMinWeight) || parsedMinWeight <= 0){
-          toast('أقل وزن مسموح لازم يكون رقم صحيح أكبر من صفر');
+          toast('يجب أن يكون أقل وزن مسموح رقمًا صحيحًا أكبر من صفر');
           overlay.querySelector('#itemMinWeight').focus();
           return;
         }
@@ -9596,19 +9746,19 @@ function openItemModal(existing){
         toast('يرجى إضافة حجم واحد على الأقل بسعره');
         return;
       }
-      // تأكيد صريح لو أي حجم هيتحفظ بسعر صفر — عشان منمنعش العروض المجانية المقصودة، بس نتأكد إنها مش غلطة كتابة
+      // تأكيد صريح إذا كان سيتم حفظ أي حجم بسعر صفر — حتى لا نمنع العروض المجانية المقصودة، لكن نتأكد أنها ليست خطأ كتابيًا
       if(zeroPriceSizeNames.length > 0){
         const sizesMsg = zeroPriceSizeNames.join('، ');
-        if(!confirm(`الحجم/الأحجام دي هتتحفظ بسعر صفر (${sizesMsg}) — يعني العميل هيقدر يطلبها مجانًا. متأكد إنك عايز كده؟`)){
+        if(!confirm(`سيتم حفظ هذا الحجم/هذه الأحجام بسعر صفر (${sizesMsg}) — بمعنى أن العميل سيتمكن من طلبها مجانًا. هل أنت متأكد من ذلك؟`)){
           return;
         }
       }
     } else {
       price = parseFloat(overlay.querySelector('#itemPrice').value);
       if(isNaN(price) || price < 0){ overlay.querySelector('#itemPrice').focus(); return; }
-      // تأكيد صريح لو السعر صفر — عشان منمنعش العروض المجانية المقصودة، بس نتأكد إنها مش غلطة كتابة
+      // تأكيد صريح إذا كان السعر صفرًا — حتى لا نمنع العروض المجانية المقصودة، لكن نتأكد أنها ليست خطأ كتابيًا
       if(price === 0){
-        if(!confirm('السعر هيتحفظ صفر — يعني أي عميل هيقدر يطلب هذا الصنف مجانًا. متأكد إنك عايز كده؟')){
+        if(!confirm('سيتم حفظ السعر كصفر — بمعنى أن أي عميل سيتمكن من طلب هذا الصنف مجانًا. هل أنت متأكد من ذلك؟')){
           overlay.querySelector('#itemPrice').focus();
           return;
         }
@@ -9675,7 +9825,7 @@ async function loadOrderTracking(orderId){
   show('trackingScreen');
   await refreshTrackingData(orderId);
   if(trackingInterval) clearInterval(trackingInterval);
-  // بولّينج كل 30 ثانية كخط رجوع احتياطي، مع اشتراك Realtime للتحديث الفوري لحظة ما حالة الطلب تتغيّر
+  // استعلام دوري (polling) كل 30 ثانية كخط رجوع احتياطي، مع اشتراك Realtime للتحديث الفوري لحظة تغيّر حالة الطلب
   trackingInterval = setInterval(()=> refreshTrackingData(orderId), 30000);
   if(trackingChannel){ sb.removeChannel(trackingChannel); trackingChannel = null; }
   trackingChannel = sb.channel(`track-${orderId}`)
@@ -9726,7 +9876,7 @@ async function refreshTrackingData(orderId){
   document.getElementById('trackUpdatedAt').textContent = new Date().toLocaleTimeString('ar-EG');
 }
 
-// بيعرض ويجت التقييم بعد ما الطلب يتسلم، أو النجوم اللي اتقيّمت بيها لو العميل قيّمه قبل كده
+// يعرض واجهة التقييم بعد تسليم الطلب، أو النجوم التي قيّم بها العميل الطلب إن كان قد قيّمه من قبل
 function renderRatingWidget(orderId, row){
   const wrap = document.getElementById('trackRatingWrap');
   if(row.order_status !== 'delivered'){ wrap.innerHTML = ''; return; }
@@ -9771,7 +9921,7 @@ function renderRatingWidget(orderId, row){
     const comment = wrap.querySelector('#trackRatingComment').value.trim();
     const { data: ok, error } = await sb.rpc('submit_order_rating', { p_order_id: orderId, p_stars: selectedStars, p_comment: comment });
     if(error || !ok){
-      toast('تعذر إرسال التقييم، حاول تاني');
+      toast('تعذر إرسال التقييم، يرجى المحاولة مرة أخرى');
       submitBtn.disabled = false;
       submitBtn.textContent = 'إرسال التقييم';
       return;
@@ -9781,9 +9931,9 @@ function renderRatingWidget(orderId, row){
   });
 }
 
-// بيبني نص الطلب كامل (زي رسالة الطلب الأصلية) عشان يتبعت من شاشة التتبع لو العميل حاب يتواصل بخصوص طلبه
+// يبني نص الطلب كاملًا (كرسالة الطلب الأصلية) ليُرسل من شاشة التتبع إذا رغب العميل في التواصل بخصوص طلبه
 function buildTrackingOrderMessage(row){
-  const typeLabel = row.order_type === 'delivery' ? 'توصيل' : 'استلام';
+  const typeLabel = orderTypeLabel(row);
   const dateTimeStr = new Date(row.created_at).toLocaleString('ar-EG', {
     timeZone: getRestaurantTimezone(row), weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     hour: '2-digit', minute: '2-digit', hour12: true
@@ -9800,8 +9950,8 @@ function buildTrackingOrderMessage(row){
   if(row.total != null) msg += `\nالإجمالي: ${Number(row.total).toFixed(2)} ${cur}`;
   msg += `\n\nنوع الطلب: ${typeLabel}`;
   if(row.customer_name) msg += `\nالاسم: ${row.customer_name}`;
-  if(row.customer_phone) msg += `\nالتليفون: ${row.customer_phone}`;
-  if(row.secondary_phone) msg += `\nتليفون إضافي: ${row.secondary_phone}`;
+  if(row.customer_phone) msg += `\nالهاتف: ${row.customer_phone}`;
+  if(row.secondary_phone) msg += `\nهاتف إضافي: ${row.secondary_phone}`;
   if(row.order_type === 'delivery'){
     if(row.city) msg += `\nالمدينة: ${row.city}`;
     if(row.address) msg += `\nالعنوان: ${row.address}`;
@@ -9810,7 +9960,7 @@ function buildTrackingOrderMessage(row){
   return msg;
 }
 
-// أزرار تواصل اختيارية في شاشة تتبع الطلب — بتظهر بس للوسائل اللي المطعم فعّلها
+// أزرار تواصل اختيارية في شاشة تتبع الطلب — تظهر فقط للوسائل التي فعّلها المطعم
 function renderTrackingContactButtons(row){
   const msg = encodeURIComponent(buildTrackingOrderMessage(row));
   const btns = [];
@@ -9847,8 +9997,8 @@ function renderTrackingStatus(status){
   </div>`;
 }
 
-// بيرجع الساعة والدقيقة دلوقتي بتوقيت دولة المطعم نفسه (مش بتوقيت جهاز الزائر ولا مصر افتراضيًا)،
-// عشان لو زبون فتح المنيو من بلد تانية، أو المطعم نفسه برة مصر، تفضل حالة "مفتوح/مقفول" صحيحة بالنسبة لتوقيت المطعم الفعلي
+// يُرجع الساعة والدقيقة الحاليتين بتوقيت دولة المطعم نفسه (وليس بتوقيت جهاز الزائر ولا مصر افتراضيًا)،
+// حتى إذا فتح زبون المنيو من بلد آخر، أو كان المطعم نفسه خارج مصر، تبقى حالة "مفتوح/مقفول" صحيحة بالنسبة لتوقيت المطعم الفعلي
 function getRestaurantLocalNowMinutes(rest){
   try{
     const parts = new Intl.DateTimeFormat('en-GB', {
@@ -9858,7 +10008,7 @@ function getRestaurantLocalNowMinutes(rest){
     const m = Number(parts.find(p=>p.type==='minute').value);
     return h*60 + m;
   }catch(e){
-    // fallback لو المتصفح مش داعم Intl.DateTimeFormat مع timeZone لأي سبب
+    // fallback إذا كان المتصفح لا يدعم Intl.DateTimeFormat مع timeZone لأي سبب
     const now = new Date();
     return now.getHours()*60 + now.getMinutes();
   }
@@ -9878,7 +10028,7 @@ function getRestaurantOpenStatus(rest){
   return { isOpen, openLabel: rest.opening_time.slice(0,5), closeLabel: rest.closing_time.slice(0,5) };
 }
 
-// بيحول كود الـUSSD (زي *9*7*01xxxxxxxxx*{amount}#) لرابط tel: بعد ما يحط المبلغ الفعلي مكان {amount} — مستخدمة في شاشة الطلب ولوحة تحكم المطعم
+// يحول كود الـUSSD (مثل *9*7*01xxxxxxxxx*{amount}#) إلى رابط tel: بعد وضع المبلغ الفعلي مكان {amount} — تُستخدم في شاشة الطلب ولوحة تحكم المطعم
 function buildUssdTelLink(ussdTemplate, amount){
   const code = String(ussdTemplate).trim().replace(/\{amount\}/gi, String(Math.round(amount)));
   return 'tel:' + encodeURIComponent(code);
@@ -9901,7 +10051,7 @@ async function loadPublic(slug){
     try{ localStorage.setItem(`pubLogo_${slug}`, rest.logo_url); }catch(e){}
     if(rest.logo_url !== cachedLogoUrl) setLoadingLogo(rest.logo_url);
   }
-  // بيسجل الزيارة دايمًا (حتى لو الحساب معلّق) — الدالة نفسها بتفرّق بين زيارة عادية وزيارة لمنيو معلّق
+  // يسجل الزيارة دائمًا (حتى لو كان الحساب معلّقًا) — تفرّق الدالة نفسها بين زيارة عادية وزيارة لمنيو معلّق
   sb.rpc('track_menu_visit', { p_restaurant_id: rest.id }).then(
     (res)=>{ if(res && res.error) console.error('track_menu_visit failed:', res.error); },
     (err)=>{ console.error('track_menu_visit failed:', err); }
@@ -9940,7 +10090,7 @@ async function loadPublic(slug){
     });
   }
   const pubZones = zonesRes.data || [];
-  // لو فشل تحميل مناطق التوصيل (مشكلة شبكة مؤقتة)، نحاول مرة تانية بدل ما نفترض إن المطعم مالوش مناطق أصلاً
+  // إذا فشل تحميل مناطق التوصيل (مشكلة شبكة مؤقتة)، تتم إعادة المحاولة بدلًا من افتراض أن المطعم ليس له مناطق أصلًا
   let zonesLoadFailed = !!zonesRes.error;
   if(zonesLoadFailed){
     const retryZones = await sb.from('delivery_zones').select('*').eq('restaurant_id', rest.id).order('area_name');
@@ -10004,11 +10154,11 @@ async function loadPublic(slug){
       const restored = {};
       Object.entries(raw).forEach(([key,v])=>{
         const item = pubItems.find(x=>x.id===v.itemId);
-        // نتأكد إن الكمية رقم صحيح موجب منطقي فعلاً، مش أي قيمة تانية اتخزنت بالغلط في localStorage
-        // (زي نص مش رقم، كسور، كمية سالبة، أو رقم خرافي) عشان ميعملش NaN أو نتائج غريبة في الحساب
+        // يتم التأكد من أن الكمية رقم صحيح موجب منطقي فعلًا، وليست أي قيمة أخرى خُزِّنت بالخطأ في localStorage
+        // (مثل نص ليس رقمًا، كسور، كمية سالبة، أو رقم غير منطقي) لتجنّب نتيجة NaN أو نتائج غريبة في الحساب
         const qty = Math.trunc(Number(v.qty));
         if(!item || !Number.isFinite(qty) || qty <= 0 || qty > 999) return; // تجاهل الأصناف اللي اتشالت من المنيو أو كميتها غير صالحة
-        // نحسب السعر من بيانات المنيو الحالية بدل ما نثق في السعر المحفوظ، عشان لو صاحب المطعم غيّر السعر يظهر التحديث فورًا
+        // يتم حساب السعر من بيانات المنيو الحالية بدلًا من الوثوق بالسعر المحفوظ، بحيث إذا غيّر صاحب المطعم السعر يظهر التحديث فورًا
         let unitPrice = Number(v.unitPrice);
         let variantLabel = v.variantLabel || null;
         if(item.pricing_type === 'weight' && v.weightGrams){
@@ -10100,8 +10250,8 @@ async function loadPublic(slug){
       const item = pubItems.find(i=>i.id===li.itemId);
       const qty = Math.trunc(Number(li.qty));
       if(!item || !Number.isFinite(qty) || qty <= 0 || qty > 999){ skippedCount++; return; }
-      // بنعيد حساب السعر من بيانات المنيو الحالية بدل ما نثق في السعر المحفوظ من الطلب القديم،
-      // عشان لو صاحب المطعم غيّر السعر من ساعتها، الطلب الجديد يتقبل ومايترفضش من فحص السعر في السيرفر
+      // يُعاد حساب السعر من بيانات المنيو الحالية بدلًا من الوثوق بالسعر المحفوظ من الطلب القديم،
+      // حتى إذا غيّر صاحب المطعم السعر منذ ذلك الحين، يُقبل الطلب الجديد ولا يُرفض من فحص السعر في السيرفر
       let unitPrice;
       if(item.pricing_type === 'weight'){
         const grams = Number(li.weightGrams);
@@ -10146,7 +10296,7 @@ async function loadPublic(slug){
     const setHtml = (id, ar, enHtml) => { const el = document.getElementById(id); if(el) el.innerHTML = en ? enHtml : ar; };
     ['pubAdBadgePos','pubAdBadgeRight','pubAdBadgeMobile'].forEach(id => setText(id, 'إعلان', 'Ad'));
 
-    // سلوت إعلان الشمال: إعلان مخصص للمطعم (لو مفعّل ومكتمل البيانات) وإلا الإعلان الافتراضي (POS)
+    // موضع الإعلان الأيسر: إعلان مخصص للمطعم (إن كان مفعّلًا ومكتمل البيانات) وإلا الإعلان الافتراضي (POS)
     const hasCustomAd = !!(rest && rest.custom_ad_enabled && rest.custom_ad_url && isSafeHttpUrl(rest.custom_ad_url) && rest.custom_ad_title);
     if(hasCustomAd){
       const posTitle = tName(rest.custom_ad_title, rest.custom_ad_title_en);
@@ -10650,7 +10800,7 @@ async function loadPublic(slug){
   document.getElementById('pubSearchInput').addEventListener('input', (e)=>{
     searchTerm = e.target.value.trim();
     clearTimeout(pubSearchDebounceId);
-    // بنأجل إعادة الرسم شوية (180ms) عشان منعملش rebuild كامل للـ DOM مع كل حرف يكتبه الزبون
+    // يتم تأجيل إعادة الرسم قليلًا (180ms) لتجنّب إعادة بناء كاملة للـ DOM مع كل حرف يكتبه الزبون
     pubSearchDebounceId = setTimeout(()=> renderPublicBody(), 180);
   });
 
@@ -10754,7 +10904,7 @@ async function loadPublic(slug){
       </div>`;
   }
 
-  // بيرجع قائمة وسائل التواصل المفعّلة عند المطعم/المتجر لإرسال رسالة الطلب عليها — مشتركة بين مودال تأكيد الطلب وشاشة نجاح الطلب
+  // يُرجع قائمة وسائل التواصل المفعّلة لدى المطعم/المتجر لإرسال رسالة الطلب عليها — مشتركة بين نافذة تأكيد الطلب وشاشة نجاح الطلب
   function getOrderChannelsShared(){
     const channels = [];
     if(rest.phone) channels.push({ id:'whatsapp', icon:'📲', label: lang==='en' ? 'WhatsApp' : 'واتساب' });
@@ -10762,7 +10912,7 @@ async function loadPublic(slug){
     if(rest.telegram_username && !rest.restriction_extra_channels_disabled) channels.push({ id:'telegram', icon:'✈️', label: lang==='en' ? 'Telegram' : 'تليجرام' });
     return channels;
   }
-  // بيفتح رسالة الطلب جاهزة في وسيلة التواصل المطلوبة — مشتركة بين مودال تأكيد الطلب وشاشة نجاح الطلب
+  // يفتح رسالة الطلب جاهزة في وسيلة التواصل المطلوبة — مشتركة بين نافذة تأكيد الطلب وشاشة نجاح الطلب
   function openOrderChannel(channelId, msgText){
     const text = encodeURIComponent(msgText);
     if(channelId === 'whatsapp' && rest.phone){
@@ -10775,7 +10925,7 @@ async function loadPublic(slug){
     }
   }
 
-  // بيرجع قائمة المحافظ الإلكترونية المفعّلة للمطعم (يدعم التوافق مع البيانات القديمة اللي فيها محفظة واحدة بس)
+  // يُرجع قائمة المحافظ الإلكترونية المفعّلة للمطعم (يدعم التوافق مع البيانات القديمة التي فيها محفظة واحدة فقط)
   function getWalletsList(){
     let list = [];
     if(Array.isArray(rest.wallets) && rest.wallets.length) list = rest.wallets.filter(w => w && w.number);
@@ -10788,7 +10938,8 @@ async function loadPublic(slug){
   }
 
   function openOrderDetailsModal(){
-    let orderType = 'delivery';
+    const dineInTable = window.dineInTable || null;
+    let orderType = dineInTable ? 'dine_in' : 'delivery';
     const canPayOnline = !!(rest.accept_online_payment && (getWalletsList().length || getEffectiveInstapayAccount()));
     let paymentMethod = 'cash';
     let onlinePayOption = getWalletsList().length ? 0 : 'instapay';
@@ -10811,6 +10962,13 @@ async function loadPublic(slug){
         <h3>${lang==='en' ? 'Complete your order' : 'إتمام الطلب'}</h3>
         ${renderOrderSteps(3)}
         <div id="ordSummaryWrap"></div>
+        ${dineInTable ? `
+        <div class="field">
+          <div style="background:var(--paper-dim); border:1.5px dashed var(--basil); border-radius:10px; padding:10px 14px; text-align:center; font-weight:800; font-family:var(--display); color:var(--basil-dark);">
+            🍽️ ${lang==='en' ? `Order from table ${dineInTable}` : `طلب من طاولة رقم ${dineInTable}`}
+          </div>
+        </div>
+        ` : `
         <div class="field">
           <label>${lang==='en' ? 'Order type' : 'نوع الطلب'} *</label>
           <div class="ord-type-toggle">
@@ -10818,6 +10976,7 @@ async function loadPublic(slug){
             <div class="ord-type-btn" id="ordTypePickup">${lang==='en' ? 'Pickup' : 'استلام'}</div>
           </div>
         </div>
+        `}
         ${canPayOnline ? `
         <div class="field" id="ordPayField">
           <label>${lang==='en' ? 'Payment method' : 'طريقة الدفع'} *</label>
@@ -10842,7 +11001,7 @@ async function loadPublic(slug){
             <input type="text" id="ordPhone" placeholder="01xxxxxxxxx">
           </div>
         </div>
-        <div class="field" id="ordAreaField">
+        <div class="field ${dineInTable ? 'hidden' : ''}" id="ordAreaField">
           <label>${lang==='en' ? 'Area / district' : 'المنطقة'} *</label>
           ${pubZones.length > 0 ? `
             <select id="ordZoneSelect" style="width:100%; border:1.5px solid var(--line); border-radius:8px; padding:10px 12px; font-family:var(--body); font-size:14px; color:var(--ink); background:var(--paper);">
@@ -10867,7 +11026,7 @@ async function loadPublic(slug){
             <input type="text" id="ordArea" placeholder="${lang==='en' ? 'e.g. Nasr City' : 'مثال: مدينة نصر'}">
           `}
         </div>
-        <div class="field" id="ordAddressField">
+        <div class="field ${dineInTable ? 'hidden' : ''}" id="ordAddressField">
           <label>${lang==='en' ? 'Detailed address' : 'العنوان بالتفصيل'} *</label>
           <textarea id="ordAddress" placeholder="${lang==='en' ? 'Street, building, floor, landmark...' : 'الشارع، رقم المبنى، الدور، أقرب علامة مميزة...'}"></textarea>
         </div>
@@ -10899,7 +11058,7 @@ async function loadPublic(slug){
       </div>`;
     document.body.appendChild(overlay);
 
-    // بيحسب رسوم توصيل تقديرية افتراضية للمنطقة غير المدرجة حسب إعداد المطعم (رقم ثابت / أعلى سعر / متوسط / منطقة معينة)
+    // يحسب رسوم توصيل تقديرية افتراضية للمنطقة غير المدرجة حسب إعداد المطعم (رقم ثابت / أعلى سعر / متوسط / منطقة معينة)
     function computeDefaultUnlistedFee(){
       const mode = rest.default_delivery_fee_mode;
       if(!mode || mode === 'none') return null;
@@ -10939,7 +11098,7 @@ async function loadPublic(slug){
       const sel = overlay.querySelector('#ordZoneSelect');
       return !!sel && sel.value === '__other__';
     }
-    // بيرجع الحد الأدنى المناسب لقيمة الطلب حسب طريقة الدفع المختارة (لو فيه حد مختلف للدفع أونلاين)
+    // يُرجع الحد الأدنى المناسب لقيمة الطلب حسب طريقة الدفع المختارة (إن وُجد حد مختلف للدفع أونلاين)
     function currentMinOrder(){
       if(paymentMethod === 'online' && rest.min_delivery_order_online != null) return Number(rest.min_delivery_order_online);
       return rest.min_delivery_order != null ? Number(rest.min_delivery_order) : null;
@@ -11007,22 +11166,24 @@ async function loadPublic(slug){
     const typePickupBtn = overlay.querySelector('#ordTypePickup');
     const areaField = overlay.querySelector('#ordAreaField');
     const addressField = overlay.querySelector('#ordAddressField');
-    typeDeliveryBtn.addEventListener('click', ()=>{
-      orderType = 'delivery';
-      typeDeliveryBtn.classList.add('active');
-      typePickupBtn.classList.remove('active');
-      areaField.classList.remove('hidden');
-      addressField.classList.remove('hidden');
-      renderSummary();
-    });
-    typePickupBtn.addEventListener('click', ()=>{
-      orderType = 'pickup';
-      typePickupBtn.classList.add('active');
-      typeDeliveryBtn.classList.remove('active');
-      areaField.classList.add('hidden');
-      addressField.classList.add('hidden');
-      renderSummary();
-    });
+    if(typeDeliveryBtn && typePickupBtn){
+      typeDeliveryBtn.addEventListener('click', ()=>{
+        orderType = 'delivery';
+        typeDeliveryBtn.classList.add('active');
+        typePickupBtn.classList.remove('active');
+        areaField.classList.remove('hidden');
+        addressField.classList.remove('hidden');
+        renderSummary();
+      });
+      typePickupBtn.addEventListener('click', ()=>{
+        orderType = 'pickup';
+        typePickupBtn.classList.add('active');
+        typeDeliveryBtn.classList.remove('active');
+        areaField.classList.add('hidden');
+        addressField.classList.add('hidden');
+        renderSummary();
+      });
+    }
     const zoneSelect = overlay.querySelector('#ordZoneSelect');
     const otherZoneNote = overlay.querySelector('#ordOtherZoneNote');
     const otherZoneNameWrap = overlay.querySelector('#ordOtherZoneNameWrap');
@@ -11114,7 +11275,7 @@ async function loadPublic(slug){
         const copyInstapayBtn = payOnlineWrap.querySelector('#ordCopyInstapayBtn');
         if(copyInstapayBtn) copyInstapayBtn.addEventListener('click', ()=> copyToClipboard(rest.instapay_account, lang==='en' ? 'Account copied' : 'تم نسخ الحساب'));
       }
-      // بيرجع رابط وسيلة الدفع المختارة حاليًا (لو كانت رابط)، من غير ما يفتحه
+      // يُرجع رابط وسيلة الدفع المختارة حاليًا (إن كانت رابطًا)، دون فتحه
       function getCurrentPayLinkValue(){
         let val = null;
         if(onlinePayOption === 'instapay') val = rest.instapay_account;
@@ -11124,7 +11285,7 @@ async function loadPublic(slug){
         }
         return (val && /^https?:\/\//i.test(val)) ? val : null;
       }
-      // بيفتح رابط وسيلة الدفع المختارة تلقائي (يفتح التطبيق لو موجود على الموبايل، أو الموقع لو من الكمبيوتر)
+      // يفتح رابط وسيلة الدفع المختارة تلقائيًا (يفتح التطبيق إن وُجد على الموبايل، أو الموقع إن كان من الكمبيوتر)
       function openCurrentPayLink(){
         const val = getCurrentPayLinkValue();
         if(val) window.open(val, '_blank', 'noopener');
@@ -11157,7 +11318,7 @@ async function loadPublic(slug){
       if(paymentMethod === 'online') renderOnlinePayOptions();
     }
 
-    // بيرجع قائمة وسائل التواصل المفعّلة عند المطعم/المتجر لإرسال رسالة الطلب عليها
+    // يُرجع قائمة وسائل التواصل المفعّلة لدى المطعم/المتجر لإرسال رسالة الطلب عليها
     function getOrderChannels(){
       return getOrderChannelsShared();
     }
@@ -11174,7 +11335,7 @@ async function loadPublic(slug){
       return null;
     }
     function buildOrderMessage({customer_name, customer_phone, secondary_phone, orderType, city, area, address, notes, fee, total}){
-      const typeLabel = orderType==='delivery' ? (lang==='en' ? 'Delivery' : 'توصيل') : (lang==='en' ? 'Pickup' : 'استلام');
+      const typeLabel = orderTypeLabel({ order_type: orderType, table_number: dineInTable }, lang);
       const now = new Date();
       const dateTimeStr = now.toLocaleString(lang==='en' ? 'en-GB' : 'ar-EG', {
         timeZone: 'Africa/Cairo', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -11204,8 +11365,8 @@ async function loadPublic(slug){
       let msg = `طلب جديد — ${restName}\nالتاريخ والوقت: ${dateTimeStr}\n\n${lines}\n\nالمجموع الفرعي: ${subtotal.toFixed(2)} ${getRestaurantCurrency(rest)}`;
       if(orderType==='delivery') msg += `\nرسوم التوصيل${area ? ' ('+area+')' : ''}: ${fee.toFixed(2)} ${getRestaurantCurrency(rest)}`;
       msg += `\nالإجمالي: ${total.toFixed(2)} ${getRestaurantCurrency(rest)}`;
-      msg += `\n\nنوع الطلب: ${typeLabel}\nالاسم: ${customer_name}\nالتليفون: ${customer_phone}`;
-      if(secondary_phone) msg += `\nتليفون إضافي: ${secondary_phone}`;
+      msg += `\n\nنوع الطلب: ${typeLabel}\nالاسم: ${customer_name}\nالهاتف: ${customer_phone}`;
+      if(secondary_phone) msg += `\nهاتف إضافي: ${secondary_phone}`;
       if(orderType==='delivery'){ if(city) msg += `\nالمدينة: ${city}`; if(address) msg += `\nالعنوان: ${address}`; }
       if(notes) msg += `\nملاحظات: ${notes}`;
       const payLabel = paymentMethodLabel();
@@ -11281,8 +11442,8 @@ async function loadPublic(slug){
       const btn = overlay.querySelector('#ordConfirm');
       btn.disabled = true;
 
-      // بنولّد رقم الطلب (id) من المتصفح نفسه، وبنحفظ من غير ما نطلب "استرجاع" الصف من السيرفر
-      // (.select() محتاج صلاحية قراءة مش متاحة للعميل) — كده الحفظ يشتغل مضمون 100%
+      // يتم توليد رقم الطلب (id) من المتصفح نفسه، ويُحفظ دون طلب "استرجاع" الصف من السيرفر
+      // (.select() يحتاج صلاحية قراءة غير متاحة للعميل) — بهذا يعمل الحفظ بشكل مضمون 100%
       const newOrderId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
         const r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8); return v.toString(16);
       }));
@@ -11302,6 +11463,7 @@ async function loadPublic(slug){
         id: newOrderId,
         restaurant_id: rest.id, customer_name, customer_phone, secondary_phone,
         order_type: orderType, city, area, address, notes, zone_id, delivery_fee,
+        table_number: dineInTable || null,
         subtotal, total,
         payment_method: orderPaymentMethod,
         payment_detail: orderPaymentDetail,
@@ -11315,7 +11477,7 @@ async function loadPublic(slug){
         return;
       }
       const orderRow = { id: newOrderId, order_number: null };
-      // نجيب رقم الطلب بعد الحفظ (صلاحية القراءة دلوقتي بتسمح بالطلبات اللي اتحفظت في آخر دقيقتين بس)
+      // يتم جلب رقم الطلب بعد الحفظ (صلاحية القراءة حاليًا تسمح فقط بالطلبات المحفوظة خلال آخر دقيقتين)
       try{
         const { data: numData } = await sb.from('orders').select('order_number').eq('id', newOrderId).single();
         if(numData && numData.order_number != null) orderRow.order_number = numData.order_number;
@@ -11349,7 +11511,7 @@ async function loadPublic(slug){
         await sb.from('order_items').insert(cartLines);
       }
 
-      // لازم نجهّز رسالة الطلب قبل ما نفضي السلة، لأن الدالة بتقرأ الأصناف من نفس متغيّر cart
+      // يجب تجهيز رسالة الطلب قبل تفريغ السلة، لأن الدالة تقرأ الأصناف من نفس متغيّر cart
       const orderChannels = getOrderChannels();
       let orderMsgText = null;
       if(orderChannels.length){
@@ -11360,10 +11522,10 @@ async function loadPublic(slug){
       renderPublicBody();
       overlay.remove();
 
-      // الطلب اتحفظ فعليًا في قاعدة البيانات وهيظهر في شاشة الطلبات دايمًا وبشكل أوتوماتيكي.
-      // واتساب — لو مفعّل — بيتفتح أوتوماتيك زي ما كان، وفي نفس الوقت بتفضل أزرار ماسنجر/تليجرام
-      // (لو مفعّلين) ظاهرة في شاشة نجاح الطلب كخيار إضافي للعميل يبعت بيهم كمان لو حب.
-      // لو مفيش واتساب لكن فيه وسيلة واحدة بس تانية مفعّلة، نفتحها هي أوتوماتيك بدل واتساب.
+      // تم حفظ الطلب فعليًا في قاعدة البيانات وسيظهر في شاشة الطلبات دائمًا وبشكل تلقائي.
+      // واتساب — إن كان مفعّلًا — يُفتح تلقائيًا كما كان، وفي الوقت نفسه تبقى أزرار ماسنجر/تليجرام
+      // (إن كانا مفعّلين) ظاهرة في شاشة نجاح الطلب كخيار إضافي يمكن للعميل الإرسال عبرهما أيضًا إن رغب.
+      // إذا لم يوجد واتساب لكن توجد وسيلة واحدة أخرى مفعّلة فقط، تُفتح تلقائيًا بدلًا من واتساب.
       if(orderMsgText){
         const waChannel = orderChannels.find(c=> c.id === 'whatsapp');
         if(waChannel){
@@ -11441,14 +11603,14 @@ async function loadPublic(slug){
         const caption = lang==='en'
           ? `Payment proof — order #${orderRow.order_number != null ? orderRow.order_number : ''} — ${tName(rest.name, rest.name_en)}`
           : `إثبات دفع — طلب رقم ${orderRow.order_number != null ? orderRow.order_number : ''} — ${tName(rest.name, rest.name_en)}`;
-        // بيحاول يستخدم شاشة المشاركة بتاعة الجهاز عشان يبعت الصورة نفسها لواتساب بضغطة واحدة (متاحة غالبًا على الموبايل)
+        // يحاول استخدام شاشة المشاركة الخاصة بالجهاز لإرسال الصورة نفسها إلى واتساب بضغطة واحدة (متاحة غالبًا على الموبايل)
         if(navigator.canShare && navigator.canShare({ files: [paymentProofFile] })){
           try{
             await navigator.share({ files: [paymentProofFile], text: caption });
             return;
           }catch(e){ /* المستخدم لغى المشاركة أو فشلت — هنكمل بالطريقة التانية تحت */ }
         }
-        // لو المشاركة المباشرة مش متاحة (زي أغلب متصفحات الكمبيوتر)، بنفتح شاشة واتساب مع رسالة، والصورة المستخدم يرفقها بنفسه لأن روابط واتساب مش بتدعم إرفاق صور تلقائي
+        // إذا لم تكن المشاركة المباشرة متاحة (كما في أغلب متصفحات الكمبيوتر)، تُفتح شاشة واتساب مع رسالة، ويقوم المستخدم بإرفاق الصورة بنفسه لأن روابط واتساب لا تدعم إرفاق الصور تلقائيًا
         if(rest.phone){
           const digits = rest.phone.replace(/[^\d]/g,'');
           window.open(`https://wa.me/${digits}?text=${encodeURIComponent(caption)}`, '_blank');
@@ -11572,7 +11734,7 @@ async function loadPublic(slug){
   show('publicScreen');
 }
 
-// تفعيل القوائم المنسدلة الجديدة في الشريط العلوي (تجميع الأزرار داخل قوائم بدل عرضها كلها في صف واحد)
+// تفعيل القوائم المنسدلة الجديدة في الشريط العلوي (تجميع الأزرار داخل قوائم بدلًا من عرضها جميعًا في صف واحد)
 document.querySelectorAll('.dash-menu-group').forEach(group=>{
   const trigger = group.querySelector('.dash-menu-trigger');
   if(!trigger) return;
@@ -11630,7 +11792,7 @@ boot();
       });
     }
 
-    // بنجمع كل الـ intervals بتاعة تدوير الإعلانات هنا عشان نقدر نوقفها كلها بدل ما تفضل شغالة للأبد
+    // يتم تجميع كل الـ intervals الخاصة بتدوير الإعلانات هنا حتى يمكن إيقافها جميعًا بدلًا من أن تبقى تعمل إلى الأبد
     if(window.__pubAdIntervalIds){
       window.__pubAdIntervalIds.forEach(id => clearInterval(id));
     }
@@ -11677,7 +11839,7 @@ boot();
     initDesktopAdSlides('pubSideAdLeft');
     initDesktopAdSlides('pubSideAdRight');
 
-    // نوقف كل intervals الإعلانات لما التبويب يبقى مخفي، ونشغّلها تاني لما يرجع ظاهر (توفير بطارية/معالج)
+    // يتم إيقاف كل intervals الإعلانات عندما يصبح التبويب مخفيًا، وتشغيلها مجددًا عند ظهوره (توفيرًا للبطارية/المعالج)
     if(!window.__pubAdVisibilityHandlerAdded){
       window.__pubAdVisibilityHandlerAdded = true;
       document.addEventListener('visibilitychange', function(){
@@ -11687,14 +11849,14 @@ boot();
       });
     }
 
-    // تتبّع نقرة الإعلان (delegation — يقرأ data-ad وقت الضغط، فيشتغل صح حتى لو الإعلان اتغيّر لإعلان مخصص لاحقًا)
+    // تتبّع نقرة الإعلان (delegation — يقرأ data-ad وقت الضغط، فيعمل بشكل صحيح حتى لو تغيّر الإعلان إلى إعلان مخصص لاحقًا)
     document.addEventListener('click', function(e){
       var el = e.target.closest('[data-ad]');
       if(el) trackAdEvent(el.getAttribute('data-ad'), 'click');
     });
   }
 
-  // تتبّع الظهور (مرة واحدة لكل إعلان)، بيتنادى من loadPublic بعد ما يظبط محتوى الإعلان (افتراضي/مخصص) وحالة التفعيل العام
+  // تتبّع الظهور (مرة واحدة لكل إعلان)، يُستدعى من loadPublic بعد ضبط محتوى الإعلان (افتراضي/مخصص) وحالة التفعيل العام
   var seenImpressions = {};
   window.trackAdImpressions = function(){
     document.querySelectorAll('.pub-side-ad:not(.pub-side-ad-hidden) [data-ad], .pub-mobile-ad-bar:not(.pub-side-ad-hidden) [data-ad]').forEach(function(el){
