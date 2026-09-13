@@ -946,6 +946,7 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
           <button class="link-btn" id="customersBtn">العملاء</button>
           <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
           <button class="link-btn" id="driversBtn">🚴 السائقين</button>
+          <button class="link-btn" id="couponsBtn">🏷️ أكواد الخصم</button>
         </div>
       </div>
 
@@ -1152,7 +1153,8 @@ const ACCOUNT_LEVEL_FIELDS = ['subscription_tier','feature_plan','subscription_e
   'restriction_print_disabled','restriction_stats_disabled','restriction_reports_disabled','restriction_share_disabled',
   'restriction_delivery_zones_disabled','restriction_drivers_disabled','restriction_extra_channels_disabled',
   'restriction_multi_wallet_disabled','restriction_stats_charts_disabled','restriction_customers_disabled',
-  'restriction_settings_disabled','restriction_notif_settings_disabled','restriction_delete_disabled','restriction_excel_disabled'];
+  'restriction_settings_disabled','restriction_notif_settings_disabled','restriction_delete_disabled','restriction_excel_disabled',
+  'restriction_status_wa_disabled','restriction_coupons_disabled'];
 // حد أقصى لعدد الفروع حسب الباقة السعرية — STARTER فرع واحد فقط، PRO بلا حدود
 function maxBranchesForTier(tier){ return tier === 'pro' ? Infinity : 1; }
 // حد أقصى لعدد حسابات الكاشير حسب الباقة — STARTER حساب واحد، PRO حسابين (نفس الحد المطبّق فعليًا في قاعدة البيانات)
@@ -2106,7 +2108,6 @@ function applyGranularRestrictionsUI(){
   const restrictions = {
     viewOrdersBtn: restaurant.restriction_orders_disabled || menuOnly,
     viewStatsBtn: restaurant.restriction_stats_disabled,
-    reportsBtn: restaurant.restriction_reports_disabled,
     publicLinkSplitBtn: restaurant.restriction_share_disabled,
     showQrBtn: restaurant.restriction_share_disabled,
     showTablesQrBtn: restaurant.restriction_share_disabled || menuOnly,
@@ -2144,6 +2145,8 @@ function setFeatureLockBadge(btnId, locked, lockedTooltip){
 }
 function applyTierLockBadgesUI(){
   setFeatureLockBadge('driversBtn', !!restaurant.restriction_drivers_disabled, '🔒 شاشة السائقين متاحة في باقة PRO فقط');
+  setFeatureLockBadge('couponsBtn', !!restaurant.restriction_coupons_disabled, '🔒 أكواد الخصم للعملاء متاحة في باقة PRO فقط');
+  setFeatureLockBadge('reportsBtn', !!restaurant.restriction_reports_disabled, '🔒 التقارير (أكتر الأصناف مبيعًا، أوقات الذروة، العملاء، والتصدير) متاحة في باقة PRO فقط');
 }
 
 // شاشة الكاشير المبسّطة — تُفتح للحسابات الفرعية ذات الصلاحية المحدودة (عرض الطلبات وتحديث حالتها فقط)
@@ -3330,6 +3333,106 @@ document.getElementById('driversBtn').addEventListener('click', async ()=>{
   });
 });
 
+// شاشة إدارة أكواد الخصم الخاصة بعملاء المتجر (ميزة PRO) — يديرها صاحب المتجر، ويستخدمها العميل في شاشة الطلب العامة
+document.getElementById('couponsBtn').addEventListener('click', async ()=>{
+  if(restaurant.restriction_coupons_disabled){ toast('🔒 أكواد الخصم للعملاء متاحة في باقة PRO فقط'); return; }
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>🏷️ أكواد الخصم للعملاء</h3>
+      <p style="font-size:12.5px; color:var(--stone); margin:-6px 0 12px; line-height:1.7;">أنشئ كودًا يقدر العميل يكتبه في شاشة الطلب ليحصل على خصم مباشر على قيمة طلبه.</p>
+      <div class="zone-add-row" style="flex-wrap:wrap;">
+        <input type="text" id="newCouponCode" placeholder="الكود (مثال: SAVE10)" style="width:130px; direction:ltr; text-transform:uppercase;">
+        <select id="newCouponType" style="padding:8px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--body);">
+          <option value="percent">نسبة %</option>
+          <option value="fixed">مبلغ ثابت</option>
+        </select>
+        <input type="number" id="newCouponValue" placeholder="القيمة" min="0.01" step="0.01" style="width:90px;">
+        <input type="number" id="newCouponMinOrder" placeholder="أقل قيمة طلب (اختياري)" min="0" step="0.01" style="width:150px;">
+        <input type="number" id="newCouponLimit" placeholder="حد الاستخدام (اختياري)" min="1" step="1" style="width:150px;">
+        <input type="date" id="newCouponExpiry" style="width:150px;">
+        <button type="button" class="btn-confirm" id="couponAddBtn" style="white-space:nowrap;">إضافة كود</button>
+      </div>
+      <div id="couponsListWrap" style="margin-top:12px;"><div class="orders-empty">جارِ التحميل...</div></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="couponsCloseBtn">إغلاق</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#couponsCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+
+  async function renderCoupons(){
+    const wrap = overlay.querySelector('#couponsListWrap');
+    const { data: coupons, error } = await sb.from('store_coupons').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending:false });
+    if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل أكواد الخصم</div>`; return; }
+    if(!coupons || coupons.length === 0){ wrap.innerHTML = `<div class="orders-empty">لم تُضف أي أكواد خصم بعد</div>`; return; }
+    wrap.innerHTML = coupons.map(c=>{
+      const valueLabel = c.discount_type === 'percent' ? `${Number(c.discount_value)}%` : `${Number(c.discount_value)} ${getRestaurantCurrency(restaurant)}`;
+      const usageLabel = c.usage_limit ? `${c.used_count}/${c.usage_limit}` : `${c.used_count} استخدام`;
+      const expiredNote = c.expires_at && new Date(c.expires_at) < new Date(new Date().toDateString()) ? ' <span style="color:var(--danger); font-weight:700;">(منتهي)</span>' : '';
+      return `
+      <div class="zone-row" data-id="${c.id}" style="${c.is_active ? '' : 'opacity:.55;'} flex-wrap:wrap;">
+        <div style="flex:1; min-width:140px;">
+          <span class="zone-name" style="display:block; direction:ltr; text-align:right; font-family:var(--mono); font-weight:800;">${escapeHtml(c.code)}${expiredNote}</span>
+          <span style="display:block; font-size:11.5px; color:var(--stone); margin-top:2px;">خصم ${valueLabel}${c.min_order_amount ? ` · أقل طلب ${Number(c.min_order_amount)} ${getRestaurantCurrency(restaurant)}` : ''} · ${usageLabel}${c.expires_at ? ` · حتى ${c.expires_at}` : ''}</span>
+        </div>
+        <button type="button" data-action="toggleActive">${c.is_active ? 'إيقاف' : 'تفعيل'}</button>
+        <button type="button" data-action="delete">حذف</button>
+      </div>`;
+    }).join('');
+
+    wrap.querySelectorAll('[data-action="toggleActive"]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.closest('.zone-row').dataset.id;
+        const coupon = coupons.find(c=> c.id === id);
+        const { error: updErr } = await sb.from('store_coupons').update({ is_active: !coupon.is_active }).eq('id', id);
+        if(updErr){ toast('تعذر التحديث'); return; }
+        await renderCoupons();
+      });
+    });
+    wrap.querySelectorAll('[data-action="delete"]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.closest('.zone-row').dataset.id;
+        if(!confirm('هل تريد حذف كود الخصم هذا؟')) return;
+        const { error: delErr } = await sb.from('store_coupons').delete().eq('id', id);
+        if(delErr){ toast('تعذر الحذف'); return; }
+        await renderCoupons();
+      });
+    });
+  }
+  await renderCoupons();
+
+  overlay.querySelector('#couponAddBtn').addEventListener('click', async ()=>{
+    const codeInput = overlay.querySelector('#newCouponCode');
+    const typeInput = overlay.querySelector('#newCouponType');
+    const valueInput = overlay.querySelector('#newCouponValue');
+    const minOrderInput = overlay.querySelector('#newCouponMinOrder');
+    const limitInput = overlay.querySelector('#newCouponLimit');
+    const expiryInput = overlay.querySelector('#newCouponExpiry');
+    const code = codeInput.value.trim().toUpperCase();
+    const discount_type = typeInput.value;
+    const discount_value = parseFloat(valueInput.value);
+    if(!code){ codeInput.focus(); return; }
+    if(!discount_value || discount_value <= 0){ toast('أدخل قيمة خصم صحيحة'); valueInput.focus(); return; }
+    if(discount_type === 'percent' && discount_value > 100){ toast('نسبة الخصم لا يمكن أن تتجاوز 100%'); return; }
+    const btn = overlay.querySelector('#couponAddBtn');
+    btn.disabled = true;
+    const { error } = await sb.from('store_coupons').insert({
+      restaurant_id: restaurant.id, code, discount_type, discount_value,
+      min_order_amount: minOrderInput.value ? parseFloat(minOrderInput.value) : null,
+      usage_limit: limitInput.value ? parseInt(limitInput.value) : null,
+      expires_at: expiryInput.value || null,
+    });
+    btn.disabled = false;
+    if(error){ toast(error.code === '23505' ? 'يوجد كود بنفس الاسم بالفعل' : 'تعذر إضافة الكود'); return; }
+    codeInput.value=''; valueInput.value=''; minOrderInput.value=''; limitInput.value=''; expiryInput.value='';
+    toast('تمت إضافة كود الخصم');
+    await renderCoupons();
+  });
+});
+
 document.getElementById('customersBtn').addEventListener('click', async ()=>{
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
@@ -4032,6 +4135,21 @@ async function openOrdersOverlay(){
 
   const STATUS_LABELS = { pending:'قيد الانتظار', preparing:'قيد التجهيز', delivered:'تم التسليم', cancelled:'ملغي' };
 
+  // رسائل واتساب جاهزة تُرسل للعميل عند تغيير حالة طلبه (ميزة PRO) — يفتح واتساب برسالة معبأة مسبقًا ليضغط صاحب المتجر إرسال فقط
+  const STATUS_WA_MESSAGES = {
+    preparing: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nطلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} دلوقتي قيد التجهيز 👨‍🍳\nهيوصلك قريب إن شاء الله.`,
+    delivered: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nطلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} تم تسليمه ✅\nنتمنالك بالهنا والشفا، ومنتظرين طلبك تاني 🌟`,
+    cancelled: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nنأسف، طلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} تم إلغاؤه ❌\nلو محتاج تفاصيل أو حابب تطلب تاني، احنا في خدمتك.`,
+  };
+  function sendStatusWaToCustomer(o, newStatus){
+    if(restaurant.restriction_status_wa_disabled) return; // متاحة في باقة PRO فقط
+    const builder = STATUS_WA_MESSAGES[newStatus];
+    if(!builder || !o) return;
+    const digits = toEgyptWaDigits(o.customer_phone);
+    if(!digits) return;
+    window.open(`https://wa.me/${digits}?text=${encodeURIComponent(builder(o))}`, '_blank');
+  }
+
   // تعبئة فلتر الطاولات بأرقام الطاولات الفعلية الموجودة في الطلبات، وإظهاره فقط لو فيه طلبات طاولات أصلًا
   const tableFilterSelect = overlay.querySelector('#ordersTableFilter');
   const distinctTables = [...new Set(orders.filter(o=> o.order_type === 'dine_in' && o.table_number != null).map(o=> o.table_number))].sort((a,b)=> a-b);
@@ -4142,6 +4260,7 @@ async function openOrdersOverlay(){
         ${itemsListHtml}
         ${totalsHtml}
         ${o.notes ? `<div class="o-notes">📝 ${escapeHtml(o.notes)}</div>` : ''}
+        ${o.coupon_code ? `<div class="o-notes" style="color:var(--basil);">🏷️ كوبون: ${escapeHtml(o.coupon_code)} (- ${Number(o.discount_amount||0).toFixed(2)} ${getRestaurantCurrency(restaurant)})</div>` : ''}
         <div class="o-time" style="margin-top:6px;">🕒 ${time}</div>
         ${prepHtml}
         <select class="status-select" data-action="statusSelect" ${(status==='delivered' || status==='cancelled') ? 'disabled title="لا يمكن تغيير حالة الطلب بعد أن أصبح نهائيًا"' : ''}>
@@ -4151,6 +4270,7 @@ async function openOrdersOverlay(){
           <option value="cancelled" ${status==='cancelled' ? 'selected' : ''}>ملغي</option>
         </select>
         ${(status==='delivered' || status==='cancelled') ? `<div class="o-time" style="margin-top:2px; font-size:11px;">لا يمكن تغيير الحالة بعد أن أصبحت نهائية</div>` : ''}
+        ${!restaurant.restriction_status_wa_disabled ? `<div class="o-time" style="margin-top:2px; font-size:10.5px; color:var(--basil);">📲 هيتفتح واتساب تلقائي للعميل بالحالة الجديدة عند التغيير</div>` : `<div class="o-time" style="margin-top:2px; font-size:10.5px;">🔒 إشعار العميل بواتساب عند تغيير الحالة متاح في باقة PRO فقط</div>`}
         ${o.order_type !== 'pickup' ? `
         <div style="display:flex; align-items:center; gap:6px; margin-top:8px; flex-wrap:wrap;">
           <select class="status-select" data-action="driverSelect" style="width:auto; flex:1; min-width:120px;">
@@ -4211,6 +4331,7 @@ async function openOrdersOverlay(){
         if(updErr){ toast('تعذر تحديث حالة الطلب'); select.disabled = false; return; }
         const orderObj = orders.find(o=> o.id === orderId);
         if(orderObj) orderObj.status = newStatus;
+        sendStatusWaToCustomer(orderObj, newStatus);
         refreshNewOrdersCount();
         const badge = row.querySelector('.status-badge');
         badge.className = `status-badge ${newStatus}`;
@@ -5064,6 +5185,8 @@ async function openAdminPanel(){
             ${perm('restriction_settings_disabled', '⚙️', 'منع الوصول لإعدادات المطعم بالكامل')}
             ${perm('restriction_notif_settings_disabled', '📵', 'منع تعديل رقم واتساب التنبيهات')}
             ${perm('restriction_delete_disabled', '🗑️', 'منع حذف الأصناف أو الفئات')}
+            ${perm('restriction_status_wa_disabled', '📦', 'منع إشعار العميل بواتساب عند تغيير حالة الطلب')}
+            ${perm('restriction_coupons_disabled', '🏷️', 'منع أكواد الخصم للعملاء')}
           </div>
         </div>
 
@@ -5267,7 +5390,7 @@ async function openAdminPanel(){
     });
   });
 
-  const CLIENT_PERM_FIELDS = ['restriction_prices_disabled','restriction_images_disabled','restriction_orders_disabled','restriction_print_disabled','restriction_stats_disabled','restriction_reports_disabled','restriction_share_disabled','restriction_delivery_zones_disabled','restriction_drivers_disabled','restriction_extra_channels_disabled','restriction_multi_wallet_disabled','restriction_stats_charts_disabled','restriction_customers_disabled','restriction_settings_disabled','restriction_notif_settings_disabled','restriction_delete_disabled'];
+  const CLIENT_PERM_FIELDS = ['restriction_prices_disabled','restriction_images_disabled','restriction_orders_disabled','restriction_print_disabled','restriction_stats_disabled','restriction_reports_disabled','restriction_share_disabled','restriction_delivery_zones_disabled','restriction_drivers_disabled','restriction_extra_channels_disabled','restriction_multi_wallet_disabled','restriction_stats_charts_disabled','restriction_customers_disabled','restriction_settings_disabled','restriction_notif_settings_disabled','restriction_delete_disabled','restriction_status_wa_disabled','restriction_coupons_disabled'];
 
   wrap.querySelectorAll('.admin-lock-all-btn, .admin-unlock-all-btn').forEach(btn=>{
     btn.addEventListener('click', async (e)=>{
@@ -5355,6 +5478,9 @@ async function openAdminPanel(){
           restriction_extra_channels_disabled: !isPro,
           restriction_multi_wallet_disabled: !isPro,
           restriction_stats_charts_disabled: !isPro,
+          restriction_status_wa_disabled: !isPro,
+          restriction_coupons_disabled: !isPro,
+          restriction_reports_disabled: !isPro,
         };
         tierSelect.disabled = true;
         const { error: updErr } = await sb.from('accounts').update(updatePayload).eq('id', accId);
@@ -6349,7 +6475,7 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('reportsBtn').addEventListener('click', async ()=>{
-  if(restaurant.restriction_reports_disabled){ toast('التقارير غير متاحة في نسختك الحالية'); return; }
+  if(restaurant.restriction_reports_disabled){ toast('🔒 التقارير متاحة في باقة PRO فقط'); return; }
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
@@ -10955,6 +11081,7 @@ async function loadPublic(slug){
     }
     let paymentProofFile = null;
     const subtotal = cartSubtotal();
+    let appliedCoupon = null; // { code, discount_type, discount_value, discount_amount } — يُملأ بعد التحقق الناجح من redeem_store_coupon
     const overlay = document.createElement('div');
     overlay.className = 'overlay';
     overlay.innerHTML = `
@@ -10962,6 +11089,15 @@ async function loadPublic(slug){
         <h3>${lang==='en' ? 'Complete your order' : 'إتمام الطلب'}</h3>
         ${renderOrderSteps(3)}
         <div id="ordSummaryWrap"></div>
+        ${!rest.restriction_coupons_disabled ? `
+        <div class="field" id="ordCouponField">
+          <label>${lang==='en' ? 'Discount code (optional)' : 'كود الخصم (اختياري)'}</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="ordCouponInput" placeholder="${lang==='en' ? 'e.g. SAVE10' : 'مثال: SAVE10'}" style="flex:1; min-width:0; direction:ltr; text-transform:uppercase;">
+            <button type="button" class="pay-copy-btn" id="ordCouponApplyBtn" style="white-space:nowrap;">${lang==='en' ? 'Apply' : 'تطبيق'}</button>
+          </div>
+          <div id="ordCouponMsg" style="font-size:11.5px; margin-top:6px;"></div>
+        </div>` : ''}
         ${dineInTable ? `
         <div class="field">
           <div style="background:var(--paper-dim); border:1.5px dashed var(--basil); border-radius:10px; padding:10px 14px; text-align:center; font-weight:800; font-family:var(--display); color:var(--basil-dark);">
@@ -11103,9 +11239,13 @@ async function loadPublic(slug){
       if(paymentMethod === 'online' && rest.min_delivery_order_online != null) return Number(rest.min_delivery_order_online);
       return rest.min_delivery_order != null ? Number(rest.min_delivery_order) : null;
     }
+    function currentDiscount(){
+      return appliedCoupon ? Number(appliedCoupon.discount_amount) : 0;
+    }
     function renderSummary(){
       const fee = currentDeliveryFee();
-      const total = subtotal + fee;
+      const discount = currentDiscount();
+      const total = Math.max(0, subtotal - discount) + fee;
       const minOrder = currentMinOrder();
       const showMinOrderNote = orderType === 'delivery' && minOrder != null && subtotal < minOrder;
       overlay.querySelector('#ordSummaryWrap').innerHTML = `
@@ -11116,6 +11256,7 @@ async function loadPublic(slug){
           </div>
           <input type="text" class="cart-item-note" data-cart-key="${key}" value="${escapeHtml(c.note || '')}" placeholder="${lang==='en' ? `Note for this ${biz(rest.business_type,'itemEn')} (optional)` : `ملاحظة على ${biz(rest.business_type,'itemDef')} (اختياري)`}" style="width:100%; margin:2px 0 10px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-family:var(--body); font-size:12px; background:#fff; color:var(--ink);">`).join('')}
         <div class="cart-summary-row"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${subtotal.toFixed(2)} ${getRestaurantCurrency(rest)}</span></div>
+        ${discount > 0 ? `<div class="cart-summary-row" style="color:var(--basil);"><span>${lang==='en' ? `Discount (${appliedCoupon.code})` : `خصم (${appliedCoupon.code})`}</span><span>- ${discount.toFixed(2)} ${getRestaurantCurrency(rest)}</span></div>` : ''}
         <div class="cart-summary-row"><span>${lang==='en' ? 'Delivery fee' : 'رسوم التوصيل'}</span><span>${isUnlistedZoneSelected() ? (computeDefaultUnlistedFee() != null ? `${fee.toFixed(2)} ${getRestaurantCurrency(rest)} ${lang==='en' ? '(estimated)' : '(تقديرية)'}` : (lang==='en' ? 'To be confirmed' : 'يحددها المطعم')) : fee.toFixed(2) + ' ' + getRestaurantCurrency(rest)}</span></div>
         <div class="cart-summary-row total"><span>${lang==='en' ? 'Total' : 'الإجمالي'}</span><span>${total.toFixed(2)} ${getRestaurantCurrency(rest)}${isUnlistedZoneSelected() ? (lang==='en' ? (computeDefaultUnlistedFee() != null ? ' (est.)' : ' + delivery') : (computeDefaultUnlistedFee() != null ? ' (تقديري)' : ' + التوصيل')) : ''}</span></div>
         ${showMinOrderNote ? `<div class="orders-empty" style="color:#a33; font-weight:700; padding-top:6px;">${lang==='en'
@@ -11130,6 +11271,44 @@ async function loadPublic(slug){
       });
     }
     renderSummary();
+
+    // تطبيق كود الخصم: يستدعي الدالة الآمنة redeem_store_coupon التي تتحقق وتستبدل الكود ذريًا من جهة السيرفر
+    const couponApplyBtn = overlay.querySelector('#ordCouponApplyBtn');
+    if(couponApplyBtn){
+      couponApplyBtn.addEventListener('click', async ()=>{
+        const input = overlay.querySelector('#ordCouponInput');
+        const msgEl = overlay.querySelector('#ordCouponMsg');
+        const code = input.value.trim();
+        if(!code){ input.focus(); return; }
+        couponApplyBtn.disabled = true;
+        msgEl.style.color = 'var(--stone)';
+        msgEl.textContent = lang==='en' ? 'Checking...' : 'جارِ التحقق...';
+        const { data, error } = await sb.rpc('redeem_store_coupon', { p_restaurant_id: rest.id, p_code: code, p_subtotal: subtotal });
+        couponApplyBtn.disabled = false;
+        if(error || !data || !data.ok){
+          appliedCoupon = null;
+          const reason = data && data.reason;
+          const reasonMsg = {
+            not_found: lang==='en' ? 'Invalid discount code' : 'كود الخصم غير صحيح',
+            expired: lang==='en' ? 'This code has expired' : 'انتهت صلاحية هذا الكود',
+            limit_reached: lang==='en' ? 'This code has reached its usage limit' : 'تم استنفاد عدد مرات استخدام هذا الكود',
+            min_order: lang==='en' ? `Minimum order for this code is ${data && data.min_order_amount} ${getRestaurantCurrency(rest)}` : `أقل قيمة طلب لهذا الكود ${data && data.min_order_amount} ${getRestaurantCurrency(rest)}`,
+            not_available: lang==='en' ? 'Discount codes are not available for this store' : 'أكواد الخصم غير متاحة لهذا المتجر',
+          }[reason] || (lang==='en' ? 'Could not apply this code' : 'تعذر تطبيق هذا الكود');
+          msgEl.style.color = 'var(--danger)';
+          msgEl.textContent = reasonMsg;
+          renderSummary();
+          return;
+        }
+        appliedCoupon = { code: data.code, discount_type: data.discount_type, discount_value: data.discount_value, discount_amount: data.discount_amount };
+        msgEl.style.color = 'var(--basil)';
+        msgEl.textContent = lang==='en' ? `Code applied — you saved ${Number(data.discount_amount).toFixed(2)} ${getRestaurantCurrency(rest)}` : `تم تطبيق الكود — وفّرت ${Number(data.discount_amount).toFixed(2)} ${getRestaurantCurrency(rest)}`;
+        input.disabled = true;
+        couponApplyBtn.disabled = true;
+        couponApplyBtn.textContent = lang==='en' ? 'Applied ✓' : 'تم التطبيق ✓';
+        renderSummary();
+      });
+    }
 
     const optionalToggle = overlay.querySelector('#ordOptionalToggle');
     const optionalWrap = overlay.querySelector('#ordOptionalWrap');
@@ -11352,6 +11531,7 @@ async function loadPublic(slug){
       const restName = tName(rest.name, rest.name_en);
       if(lang==='en'){
         let msg = `New order — ${restName}\nDate/time: ${dateTimeStr}\n\n${lines}\n\nSubtotal: ${subtotal.toFixed(2)} ${getRestaurantCurrency(rest)}`;
+        if(appliedCoupon) msg += `\nDiscount (${appliedCoupon.code}): - ${Number(appliedCoupon.discount_amount).toFixed(2)} ${getRestaurantCurrency(rest)}`;
         if(orderType==='delivery') msg += `\nDelivery fee${area ? ' ('+area+')' : ''}: ${fee.toFixed(2)} ${getRestaurantCurrency(rest)}`;
         msg += `\nTotal: ${total.toFixed(2)} ${getRestaurantCurrency(rest)}`;
         msg += `\n\nOrder type: ${typeLabel}\nName: ${customer_name}\nPhone: ${customer_phone}`;
@@ -11363,6 +11543,7 @@ async function loadPublic(slug){
         return msg;
       }
       let msg = `طلب جديد — ${restName}\nالتاريخ والوقت: ${dateTimeStr}\n\n${lines}\n\nالمجموع الفرعي: ${subtotal.toFixed(2)} ${getRestaurantCurrency(rest)}`;
+      if(appliedCoupon) msg += `\nخصم (${appliedCoupon.code}): - ${Number(appliedCoupon.discount_amount).toFixed(2)} ${getRestaurantCurrency(rest)}`;
       if(orderType==='delivery') msg += `\nرسوم التوصيل${area ? ' ('+area+')' : ''}: ${fee.toFixed(2)} ${getRestaurantCurrency(rest)}`;
       msg += `\nالإجمالي: ${total.toFixed(2)} ${getRestaurantCurrency(rest)}`;
       msg += `\n\nنوع الطلب: ${typeLabel}\nالاسم: ${customer_name}\nالهاتف: ${customer_phone}`;
@@ -11432,7 +11613,8 @@ async function loadPublic(slug){
         return;
       }
       const fee = delivery_fee != null ? Number(delivery_fee) : 0;
-      const total = subtotal + fee;
+      const discount = currentDiscount();
+      const total = Math.max(0, subtotal - discount) + fee;
 
       if(canPayOnline && paymentMethod === 'online' && !((typeof onlinePayOption === 'number' && getWalletsList()[onlinePayOption]) || (onlinePayOption==='instapay' && rest.instapay_account))){
         toast(lang==='en' ? 'Please choose a payment option' : 'يرجى اختيار وسيلة الدفع');
@@ -11465,6 +11647,8 @@ async function loadPublic(slug){
         order_type: orderType, city, area, address, notes, zone_id, delivery_fee,
         table_number: dineInTable || null,
         subtotal, total,
+        coupon_code: appliedCoupon ? appliedCoupon.code : null,
+        discount_amount: appliedCoupon ? discount : null,
         payment_method: orderPaymentMethod,
         payment_detail: orderPaymentDetail,
         payment_status: isOnlinePayment ? 'unpaid' : null
