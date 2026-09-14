@@ -950,7 +950,7 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
           <button class="link-btn" id="deliveryZonesBtn">مناطق التوصيل</button>
           <button class="link-btn" id="driversBtn">🚴 السائقين</button>
           <button class="link-btn" id="couponsBtn">🏷️ أكواد الخصم</button>
-          <button class="link-btn" id="winbackBtn">🎯 عملاء غايبين</button>
+          <button class="link-btn" id="winbackBtn">🎯 العملاء غير النشطين</button>
         </div>
       </div>
 
@@ -2156,7 +2156,7 @@ function applyTierLockBadgesUI(){
   setFeatureLockBadge('couponsBtn', !!restaurant.restriction_coupons_disabled, '🔒 أكواد الخصم للعملاء متاحة في باقة PRO فقط');
   setFeatureLockBadge('reportsBtn', !!restaurant.restriction_reports_disabled, '🔒 التقارير (أكتر الأصناف مبيعًا، أوقات الذروة، العملاء، والتصدير) متاحة في باقة PRO فقط');
   setFeatureLockBadge('dailyCloseBtn', !!restaurant.restriction_daily_report_disabled, '🔒 تقرير تقفيل اليوم متاح في باقة PRO فقط');
-  setFeatureLockBadge('winbackBtn', !!restaurant.restriction_winback_disabled, '🔒 شاشة عملاء غايبين متاحة في باقة PRO فقط');
+  setFeatureLockBadge('winbackBtn', !!restaurant.restriction_winback_disabled, '🔒 شاشة العملاء غير النشطين متاحة في باقة PRO فقط');
 }
 
 // شاشة الكاشير المبسّطة — تُفتح للحسابات الفرعية ذات الصلاحية المحدودة (عرض الطلبات وتحديث حالتها فقط)
@@ -3407,7 +3407,7 @@ document.getElementById('addonGroupsBtn').addEventListener('click', async ()=>{
 
   function renderGroupsList(){
     const wrap = overlay.querySelector('#addonGroupsListWrap');
-    if(!addonGroups.length){ wrap.innerHTML = `<div class="orders-empty">لسه مفيش مجموعات إضافات — أضف أول مجموعة من فوق</div>`; return; }
+    if(!addonGroups.length){ wrap.innerHTML = `<div class="orders-empty">لا توجد مجموعات إضافات بعد — أضف أول مجموعة أعلاه</div>`; return; }
     wrap.innerHTML = addonGroups.map(g=>{
       const typeLabel = g.selection_type === 'single' ? 'متغيّر (اختيار واحد)' : 'إضافة (اختيار متعدد)';
       const optionsHtml = (g.options || []).map(o=>`
@@ -3586,20 +3586,20 @@ document.getElementById('couponsBtn').addEventListener('click', async ()=>{
   });
 });
 
-// شاشة "عملاء غايبين" (Win-back، ميزة PRO): تعرض عملاء customer_order_stats اللي معدّاش عليهم طلب من مدة يحددها صاحب المتجر بنفسه،
+// شاشة "العملاء غير النشطين" (Win-back، ميزة PRO): تعرض عملاء customer_order_stats الذين لم يطلبوا خلال مدة يحددها صاحب المتجر بنفسه،
 // مع زرار واتساب جاهز لكل عميل لرسالة استرجاع، واختياريًا تضمين أحد أكواد الخصم النشطة (نفس نظام store_coupons)
 document.getElementById('winbackBtn').addEventListener('click', async ()=>{
-  if(restaurant.restriction_winback_disabled){ toast('🔒 شاشة عملاء غايبين متاحة في باقة PRO فقط'); return; }
+  if(restaurant.restriction_winback_disabled){ toast('🔒 شاشة العملاء غير النشطين متاحة في باقة PRO فقط'); return; }
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
     <div class="modal">
-      <h3>🎯 عملاء غايبين</h3>
-      <p style="font-size:12.5px; color:var(--stone); margin:-6px 0 12px; line-height:1.7;">عملاء طلبوا من متجرك قبل كده لكن معدّاش عليهم طلب من المدة اللي تحددها.</p>
+      <h3>🎯 العملاء غير النشطين</h3>
+      <p style="font-size:12.5px; color:var(--stone); margin:-6px 0 12px; line-height:1.7;">عملاء سبق أن طلبوا من متجرك، لكن لم يطلبوا خلال المدة التي تحددها.</p>
       <div class="zone-add-row" style="flex-wrap:wrap; align-items:center;">
-        <label style="font-size:13px; white-space:nowrap;">اعتبر العميل غايب بعد</label>
+        <label style="font-size:13px; white-space:nowrap;">اعتبر العميل غير نشط بعد</label>
         <input type="number" id="winbackDaysInput" min="1" step="1" value="${restaurant.winback_days || 30}" style="width:70px;">
-        <label style="font-size:13px; white-space:nowrap;">يوم من غير طلب</label>
+        <label style="font-size:13px; white-space:nowrap;">يوم بدون طلب</label>
         <button type="button" class="btn-confirm" id="winbackDaysSaveBtn" style="white-space:nowrap;">حفظ</button>
         <select id="winbackCouponSelect" style="padding:8px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--body); margin-inline-start:auto;">
           <option value="">بدون كود خصم في الرسالة</option>
@@ -3643,9 +3643,9 @@ document.getElementById('winbackBtn').addEventListener('click', async ()=>{
       .lt('last_order_at', cutoff)
       .order('last_order_at', { ascending: true });
     if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل بيانات العملاء</div>`; return; }
-    if(!lapsed || lapsed.length === 0){ wrap.innerHTML = `<div class="orders-empty">مفيش عملاء غايبين حاليًا 🎉 كل عملائك رجعوا يطلبوا قريب</div>`; return; }
+    if(!lapsed || lapsed.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا يوجد عملاء غير نشطين حاليًا 🎉 جميع عملائك يطلبون بانتظام</div>`; return; }
     const now = Date.now();
-    wrap.innerHTML = `<div style="font-size:12.5px; color:var(--stone); margin-bottom:8px;">${lapsed.length} عميل غايب</div>` + lapsed.map(c=>{
+    wrap.innerHTML = `<div style="font-size:12.5px; color:var(--stone); margin-bottom:8px;">${lapsed.length} عميل غير نشط</div>` + lapsed.map(c=>{
       const daysAgo = Math.floor((now - new Date(c.last_order_at).getTime()) / (24*3600*1000));
       return `
       <div class="zone-row" data-phone="${escapeHtml(c.customer_phone)}" style="flex-wrap:wrap;">
@@ -3665,7 +3665,7 @@ document.getElementById('winbackBtn').addEventListener('click', async ()=>{
         const digits = toEgyptWaDigits(phone);
         if(!digits){ toast('رقم الهاتف غير صالح'); return; }
         const selectedCode = couponSelect.value;
-        let msg = `مرحبًا ${c.customer_name || ''} 👋\nمشتقلين لك في ${restaurant.name}! معدّاش عليك من فترة من غير ما تطلب مننا.`;
+        let msg = `مرحبًا ${c.customer_name || ''} 👋\nنفتقدك في ${restaurant.name}! لم تطلب منّا منذ فترة.`;
         if(selectedCode) msg += `\n\nخصيصًا لك، استخدم كود "${selectedCode}" في طلبك الجاي وهتاخد خصم 🎁`;
         msg += `\n\nمستنيينك تطلب تاني قريب 🌟`;
         window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
@@ -4379,9 +4379,9 @@ async function openOrdersOverlay(){
 
   // رسائل واتساب جاهزة تُرسل للعميل عند تغيير حالة طلبه (ميزة PRO) — يفتح واتساب برسالة معبأة مسبقًا ليضغط صاحب المتجر إرسال فقط
   const STATUS_WA_MESSAGES = {
-    preparing: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nطلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} دلوقتي قيد التجهيز 👨‍🍳\nهيوصلك قريب إن شاء الله.`,
+    preparing: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nطلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} الآن قيد التجهيز 👨‍🍳\nسيصلك قريبًا إن شاء الله.`,
     delivered: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nطلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} تم تسليمه ✅\nنتمنالك بالهنا والشفا، ومنتظرين طلبك تاني 🌟`,
-    cancelled: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nنأسف، طلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} تم إلغاؤه ❌\nلو محتاج تفاصيل أو حابب تطلب تاني، احنا في خدمتك.`,
+    cancelled: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nنأسف، طلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} تم إلغاؤه ❌\nإذا كنت بحاجة لمزيد من التفاصيل أو ترغب في تقديم طلب جديد، فنحن في خدمتك.`,
   };
   function sendStatusWaToCustomer(o, newStatus){
     if(restaurant.restriction_status_wa_disabled) return; // متاحة في باقة PRO فقط
@@ -4512,7 +4512,7 @@ async function openOrdersOverlay(){
           <option value="cancelled" ${status==='cancelled' ? 'selected' : ''}>ملغي</option>
         </select>
         ${(status==='delivered' || status==='cancelled') ? `<div class="o-time" style="margin-top:2px; font-size:11px;">لا يمكن تغيير الحالة بعد أن أصبحت نهائية</div>` : ''}
-        ${!restaurant.restriction_status_wa_disabled ? `<div class="o-time" style="margin-top:2px; font-size:10.5px; color:var(--basil);">📲 هيتفتح واتساب تلقائي للعميل بالحالة الجديدة عند التغيير</div>` : `<div class="o-time" style="margin-top:2px; font-size:10.5px;">🔒 إشعار العميل بواتساب عند تغيير الحالة متاح في باقة PRO فقط</div>`}
+        ${!restaurant.restriction_status_wa_disabled ? `<div class="o-time" style="margin-top:2px; font-size:10.5px; color:var(--basil);">📲 سيتم فتح واتساب تلقائيًا لإرسال إشعار للعميل بالحالة الجديدة عند التغيير</div>` : `<div class="o-time" style="margin-top:2px; font-size:10.5px;">🔒 إشعار العميل بواتساب عند تغيير الحالة متاح في باقة PRO فقط</div>`}
         ${o.order_type !== 'pickup' ? `
         <div style="display:flex; align-items:center; gap:6px; margin-top:8px; flex-wrap:wrap;">
           <select class="status-select" data-action="driverSelect" style="width:auto; flex:1; min-width:120px;">
@@ -5430,7 +5430,7 @@ async function openAdminPanel(){
             ${perm('restriction_status_wa_disabled', '📦', 'منع إشعار العميل بواتساب عند تغيير حالة الطلب')}
             ${perm('restriction_coupons_disabled', '🏷️', 'منع أكواد الخصم للعملاء')}
             ${perm('restriction_daily_report_disabled', '📊', 'منع تقرير تقفيل اليوم')}
-            ${perm('restriction_winback_disabled', '🎯', 'منع شاشة عملاء غايبين')}
+            ${perm('restriction_winback_disabled', '🎯', 'منع شاشة العملاء غير النشطين')}
           </div>
         </div>
 
@@ -5582,8 +5582,8 @@ async function openAdminPanel(){
       const confirmMsg = `⚠️ تحذير نهائي — هتستبدل بيانات "${rName}" الحالية بالكامل\n\n`
         + `تاريخ النسخة الاحتياطية: ${exportedDate}\n\n`
         + `الملف يحتوي على:\n`
-        + `• ${fileCounts.categories} فئة، ${fileCounts.items} صنف (الحالي دلوقتي: ${currentCounts.categories} فئة)\n`
-        + `• ${fileCounts.orders} طلب (الحالي دلوقتي: ${currentCounts.orders} طلب)\n`
+        + `• ${fileCounts.categories} فئة، ${fileCounts.items} صنف (الحالي الآن: ${currentCounts.categories} فئة)\n`
+        + `• ${fileCounts.orders} طلب (الحالي الآن: ${currentCounts.orders} طلب)\n`
         + `• ${fileCounts.zones} منطقة توصيل، ${fileCounts.customers} عميل\n\n`
         + `سيتم مسح جميع البيانات الحالية واستبدالها بالكامل بمحتوى الملف، ولا يمكن التراجع عن ذلك بعد إتمام العملية.\n\n`
         + `هل أنت متأكد من رغبتك في المتابعة؟`;
@@ -7557,8 +7557,8 @@ function openBackupModal(){
     const confirmMsg = `⚠️ تحذير نهائي — هتستبدل بيانات ${entityLabel} الحالية بالكامل\n\n`
       + `تاريخ النسخة الاحتياطية: ${exportedDate}\n\n`
       + `الملف يحتوي على:\n`
-      + `• ${fileCounts.categories} فئة، ${fileCounts.items} صنف (الحالي دلوقتي: ${currentCounts.categories} فئة)\n`
-      + `• ${fileCounts.orders} طلب (الحالي دلوقتي: ${currentCounts.orders} طلب)\n`
+      + `• ${fileCounts.categories} فئة، ${fileCounts.items} صنف (الحالي الآن: ${currentCounts.categories} فئة)\n`
+      + `• ${fileCounts.orders} طلب (الحالي الآن: ${currentCounts.orders} طلب)\n`
       + `• ${fileCounts.zones} منطقة توصيل، ${fileCounts.customers} عميل\n\n`
       + `سيتم مسح جميع البيانات الحالية واستبدالها بالكامل بمحتوى الملف، ولا يمكن التراجع عن ذلك إلا في حال توفر نسخة احتياطية أخرى.\n\n`
       + `هل أنت متأكد من رغبتك في المتابعة؟`;
@@ -8779,6 +8779,16 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
   function parseAddonsText(text){
     return parseSizesText(text).map(s=> ({ name: s.size_name, price: s.price }));
   }
+  // "مجموعات الإضافات والمتغيرات" عمود اختياري كمان — أسماء مجموعات جاهزة (مفصولة بـ |) بيتم البحث عنها في المجموعات
+  // الموجودة بالفعل بنفس الاسم (لازم تكون اتعملت مسبقًا من شاشة "الإضافات والمتغيرات")؛ أي اسم مش موجود يُتجاهل بصمت
+  const groupsColIdx = firstRowNormalized.indexOf('مجموعات الإضافات والمتغيرات');
+  function parseGroupNames(text){
+    const raw = String(text ?? '').trim();
+    if(!raw) return [];
+    return raw.split('|').map(s=> s.trim()).filter(Boolean)
+      .map(name=> (addonGroups.find(g=> g.name === name) || {}).id)
+      .filter(Boolean);
+  }
 
   const parsed = [];
 
@@ -8792,6 +8802,7 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
       const pricing_type = pricingTypeValueFromLabel(r[colIdx['طريقة التسعير']]);
       const sizes = pricing_type === 'sizes' ? parseSizesText(r[colIdx['الأحجام والأسعار']]) : [];
       const addons = addonsColIdx !== -1 ? parseAddonsText(r[addonsColIdx]) : [];
+      const groupIds = groupsColIdx !== -1 ? parseGroupNames(r[groupsColIdx]) : [];
       let price = parseFloat(r[colIdx['السعر']]);
       if(pricing_type === 'sizes'){
         if(sizes.length === 0) return; // لازم حجم واحد على الأقل بسعره
@@ -8819,6 +8830,7 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
         min_weight_grams,
         sizes,
         addons,
+        groupIds,
         description: String(r[colIdx['الوصف']] ?? '').trim(),
         is_available: isAvailableValueFromLabel(r[colIdx['الحالة']]),
         image_url: (()=>{ const raw = String(r[colIdx['رابط الصورة']] ?? '').trim(); return /^https?:\/\//i.test(raw) ? raw : null; })()
@@ -8837,7 +8849,7 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
       if(!catName || !itemName || isNaN(price) || price < 0) return;
       parsed.push({
         catName, itemName, name_en: null, pricing_type: 'unit', price, old_price: null,
-        weight_sale_mode: 'both', min_weight_grams: null, sizes: [], addons: [], description: '',
+        weight_sale_mode: 'both', min_weight_grams: null, sizes: [], addons: [], groupIds: [], description: '',
         is_available: true, image_url: null
       });
     });
@@ -8975,6 +8987,14 @@ async function runImport(parsed, uniqueCats){
       const { error: addonErr } = await sb.from('item_addons').insert(addonRowsToInsert);
       if(addonErr) throw addonErr;
     }
+
+    // ربط مجموعات الإضافات/المتغيرات المذكورة بالاسم في عمود "مجموعات الإضافات والمتغيرات" (بدون المساس بأي تخصيص سعر سابق للصنف)
+    await sb.from('item_addon_groups').delete().eq('item_id', itemId);
+    if(p.groupIds && p.groupIds.length){
+      const groupLinkRows = p.groupIds.map((gId, idx)=>({ item_id: itemId, group_id: gId, position: idx }));
+      const { error: groupLinkErr } = await sb.from('item_addon_groups').insert(groupLinkRows);
+      if(groupLinkErr) throw groupLinkErr;
+    }
   }
 }
 
@@ -9017,6 +9037,7 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
     'أقل وزن مسموح (جرام)',
     'الأحجام والأسعار',
     'الإضافات والأسعار',
+    'مجموعات الإضافات والمتغيرات',
     'الوصف',
     'الحالة',
     'رابط الصورة'
@@ -9036,6 +9057,10 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
       const addonsText = addons.length
         ? addons.map(a=> `${a.name}: ${a.price}`).join(' | ')
         : '';
+      const linkedGroupNames = (itemAddonGroupLinks[item.id] || [])
+        .map(gId=> (addonGroups.find(g=> g.id === gId) || {}).name)
+        .filter(Boolean)
+        .join(' | ');
       const isWeightType = item.pricing_type === 'weight';
       rows.push([
         safeExcelText(cat.name),
@@ -9048,6 +9073,7 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
         isWeightType && item.min_weight_grams != null ? item.min_weight_grams : '',
         safeExcelText(sizesText),
         safeExcelText(addonsText),
+        safeExcelText(linkedGroupNames),
         safeExcelText(item.description || ''),
         (item.is_available !== false) ? 'متاح' : 'غير متاح',
         exportableImageUrl(item.image_url)
@@ -9062,7 +9088,7 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   ws['!cols'] = [
     { wch: 18 }, { wch: 26 }, { wch: 22 }, { wch: 14 },
     { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 16 },
-    { wch: 30 }, { wch: 30 }, { wch: 34 }, { wch: 10 }, { wch: 40 }
+    { wch: 30 }, { wch: 30 }, { wch: 28 }, { wch: 34 }, { wch: 10 }, { wch: 40 }
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'المنيو');
@@ -9851,6 +9877,27 @@ async function collectRestaurantBackup(restaurantId){
     itemAddonsBackup = data || [];
   }
 
+  // مجموعات الإضافات/المتغيرات القابلة لإعادة الاستخدام + خياراتها + الربط بالأصناف + تخصيصات الأسعار لكل صنف
+  const { data: addonGroupsBackup, error: groupsBackupErr } = await sb.from('addon_groups').select('*').eq('restaurant_id', restaurantId);
+  if(groupsBackupErr) throw groupsBackupErr;
+  const groupIdsBackup = (addonGroupsBackup || []).map(g=>g.id);
+  let addonGroupOptionsBackup = [];
+  if(groupIdsBackup.length){
+    const { data, error } = await sb.from('addon_group_options').select('*').in('group_id', groupIdsBackup);
+    if(error) throw error;
+    addonGroupOptionsBackup = data || [];
+  }
+  let itemAddonGroupsBackup = [];
+  let itemAddonOptionPricesBackup = [];
+  if(itemIds.length){
+    const { data: linksData, error: linksErr } = await sb.from('item_addon_groups').select('*').in('item_id', itemIds);
+    if(linksErr) throw linksErr;
+    itemAddonGroupsBackup = linksData || [];
+    const { data: pricesData, error: pricesErr } = await sb.from('item_addon_option_prices').select('*').in('item_id', itemIds);
+    if(pricesErr) throw pricesErr;
+    itemAddonOptionPricesBackup = pricesData || [];
+  }
+
   const { data: zones, error: zonesErr } = await sb.from('delivery_zones').select('*').eq('restaurant_id', restaurantId);
   if(zonesErr) throw zonesErr;
 
@@ -9891,6 +9938,10 @@ async function collectRestaurantBackup(restaurantId){
     items,
     item_sizes: itemSizes,
     item_addons: itemAddonsBackup,
+    addon_groups: addonGroupsBackup || [],
+    addon_group_options: addonGroupOptionsBackup,
+    item_addon_groups: itemAddonGroupsBackup,
+    item_addon_option_prices: itemAddonOptionPricesBackup,
     delivery_zones: zones || [],
     orders: orders || [],
     order_items: orderItems,
@@ -9932,7 +9983,7 @@ async function maybeRunAutoDailyBackup(){
     if(!restaurant || !restaurant.id) return;
     const key = `mag_last_auto_backup_${restaurant.id}`;
     const today = new Date().toISOString().slice(0,10);
-    if(localStorage.getItem(key) === today) return; // اتعملت النهاردة بالفعل
+    if(localStorage.getItem(key) === today) return; // تمت اليوم بالفعل
     await downloadRestaurantBackup(restaurant.id, restaurant.slug);
     localStorage.setItem(key, today);
     toast('📦 تم تنزيل نسخة احتياطية تلقائية لليوم');
@@ -9951,7 +10002,7 @@ function maybeShowDailyCloseReminder(){
     if(cairoHour < 21) return; // يظهر بس من الساعة 9 مساءً بتوقيت القاهرة فصاعدًا
     const key = `mag_daily_close_reminder_${restaurant.id}`;
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
-    if(localStorage.getItem(key) === todayStr) return; // اتعرض النهاردة بالفعل
+    if(localStorage.getItem(key) === todayStr) return; // تم عرضه اليوم بالفعل
     localStorage.setItem(key, todayStr);
     toast('📊 تقرير تقفيل اليوم جاهز — من "التقارير والإحصائيات"');
   }catch(e){ /* تذكير اختياري فقط، أي خطأ فيه لا يوقف باقي لوحة التحكم */ }
@@ -10068,7 +10119,7 @@ function openItemModal(existing){
         <button type="button" class="add-btn" id="addSizeRowBtn" style="margin-top:8px; margin-bottom:0;">+ إضافة حجم</button>
       </div>
       <div class="field">
-        <label>🧂 إضافات خاصة بهذا الصنف فقط (اختياري) — لو حابب إضافة مش موجودة في أي مجموعة عامة</label>
+        <label>🧂 إضافات خاصة بهذا الصنف فقط (اختياري) — في حال الرغبة بإضافة غير مدرجة ضمن أي مجموعة عامة</label>
         <div id="addonsRowsWrap"></div>
         <button type="button" class="add-btn" id="addAddonRowBtn" style="margin-top:8px; margin-bottom:0;">+ إضافة</button>
       </div>
@@ -10120,7 +10171,7 @@ function openItemModal(existing){
   const linkedGroupIds = existing ? (itemAddonGroupLinks[existing.id] || []) : [];
   const existingOverrides = existing ? (itemOptionPriceOverrides[existing.id] || {}) : {};
   if(!addonGroups.length){
-    itemAddonGroupsWrap.innerHTML = `<div class="orders-empty" style="padding:10px 0;">لسه مفيش مجموعات إضافات — تقدر تعملها من "الإضافات والمتغيرات" في القائمة العلوية</div>`;
+    itemAddonGroupsWrap.innerHTML = `<div class="orders-empty" style="padding:10px 0;">لا توجد مجموعات إضافات بعد — يمكنك إنشاؤها من "الإضافات والمتغيرات" في القائمة العلوية</div>`;
   } else {
     itemAddonGroupsWrap.innerHTML = addonGroups.map(g=>{
       const isChecked = linkedGroupIds.includes(g.id);
