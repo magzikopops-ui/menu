@@ -8635,6 +8635,13 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
   const isDetailedFormat = firstRowNormalized[0] === 'الفئة'
     && DETAILED_IMPORT_HEADERS.every(h => firstRowNormalized.includes(h));
 
+  // "الإضافات والأسعار" عمود اختياري (اتضاف لاحقًا) — نكشف عن مكانه بشكل مستقل بدل إضافته لقائمة DETAILED_IMPORT_HEADERS،
+  // عشان ملفات مُصدَّرة قديمة من غير هذا العمود تفضل تتعرف كصيغة تفصيلية كاملة برضه (توافق رجعي)
+  const addonsColIdx = firstRowNormalized.indexOf('الإضافات والأسعار');
+  function parseAddonsText(text){
+    return parseSizesText(text).map(s=> ({ name: s.size_name, price: s.price }));
+  }
+
   const parsed = [];
 
   if(isDetailedFormat){
@@ -8646,6 +8653,7 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
       if(!catName || !itemName) return;
       const pricing_type = pricingTypeValueFromLabel(r[colIdx['طريقة التسعير']]);
       const sizes = pricing_type === 'sizes' ? parseSizesText(r[colIdx['الأحجام والأسعار']]) : [];
+      const addons = addonsColIdx !== -1 ? parseAddonsText(r[addonsColIdx]) : [];
       let price = parseFloat(r[colIdx['السعر']]);
       if(pricing_type === 'sizes'){
         if(sizes.length === 0) return; // لازم حجم واحد على الأقل بسعره
@@ -8672,6 +8680,7 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
         weight_sale_mode: pricing_type === 'weight' ? weightSaleModeValueFromLabel(r[colIdx['طريقة الطلب بالوزن']]) : 'both',
         min_weight_grams,
         sizes,
+        addons,
         description: String(r[colIdx['الوصف']] ?? '').trim(),
         is_available: isAvailableValueFromLabel(r[colIdx['الحالة']]),
         image_url: (()=>{ const raw = String(r[colIdx['رابط الصورة']] ?? '').trim(); return /^https?:\/\//i.test(raw) ? raw : null; })()
@@ -8690,7 +8699,7 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
       if(!catName || !itemName || isNaN(price) || price < 0) return;
       parsed.push({
         catName, itemName, name_en: null, pricing_type: 'unit', price, old_price: null,
-        weight_sale_mode: 'both', min_weight_grams: null, sizes: [], description: '',
+        weight_sale_mode: 'both', min_weight_grams: null, sizes: [], addons: [], description: '',
         is_available: true, image_url: null
       });
     });
@@ -8820,6 +8829,14 @@ async function runImport(parsed, uniqueCats){
     } else if(existing){
       await sb.from('item_sizes').delete().eq('item_id', itemId);
     }
+
+    // مزامنة الإضافات (بنفس أسلوب حذف-ثم-إدراج المتبع مع الأحجام)
+    await sb.from('item_addons').delete().eq('item_id', itemId);
+    if(p.addons && p.addons.length){
+      const addonRowsToInsert = p.addons.map((a, idx)=>({ item_id: itemId, name: a.name, price: a.price, position: idx }));
+      const { error: addonErr } = await sb.from('item_addons').insert(addonRowsToInsert);
+      if(addonErr) throw addonErr;
+    }
   }
 }
 
@@ -8861,6 +8878,7 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
     'طريقة الطلب بالوزن',
     'أقل وزن مسموح (جرام)',
     'الأحجام والأسعار',
+    'الإضافات والأسعار',
     'الوصف',
     'الحالة',
     'رابط الصورة'
@@ -8876,6 +8894,10 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
       const sizesText = sizes.length
         ? sizes.map(s=> `${s.size_name}: ${s.price}`).join(' | ')
         : '';
+      const addons = itemAddons[item.id] || [];
+      const addonsText = addons.length
+        ? addons.map(a=> `${a.name}: ${a.price}`).join(' | ')
+        : '';
       const isWeightType = item.pricing_type === 'weight';
       rows.push([
         safeExcelText(cat.name),
@@ -8887,6 +8909,7 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
         isWeightType ? weightSaleModeLabelAr(item.weight_sale_mode) : '',
         isWeightType && item.min_weight_grams != null ? item.min_weight_grams : '',
         safeExcelText(sizesText),
+        safeExcelText(addonsText),
         safeExcelText(item.description || ''),
         (item.is_available !== false) ? 'متاح' : 'غير متاح',
         exportableImageUrl(item.image_url)
@@ -8901,7 +8924,7 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   ws['!cols'] = [
     { wch: 18 }, { wch: 26 }, { wch: 22 }, { wch: 14 },
     { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 16 },
-    { wch: 30 }, { wch: 34 }, { wch: 10 }, { wch: 40 }
+    { wch: 30 }, { wch: 30 }, { wch: 34 }, { wch: 10 }, { wch: 40 }
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'المنيو');
