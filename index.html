@@ -938,6 +938,8 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
           <div class="dash-menu-divider"></div>
           <button class="link-btn" id="importExcelBtn">📥 استيراد من إكسيل</button>
           <button class="link-btn" id="exportExcelBtn">📤 تصدير إلى إكسيل</button>
+          <div class="dash-menu-divider"></div>
+          <button class="link-btn" id="addonGroupsBtn">🧩 الإضافات والمتغيرات</button>
         </div>
       </div>
 
@@ -1179,7 +1181,10 @@ function mirrorAccountOntoBranches(){
 let categories = [];
 let items = [];
 let itemSizes = {}; // item_id -> [ { id, size_name, size_name_en, price } ]
-let itemAddons = {}; // item_id -> [ { id, name, name_en, price } ] — إضافات اختيارية متاحة لأي صنف بغض النظر عن طريقة تسعيره
+let itemAddons = {}; // item_id -> [ { id, name, name_en, price } ] — إضافات اختيارية متاحة لأي صنف بغض النظر عن طريقة تسعيره (النظام القديم البسيط، لسه شغال لأي بيانات قديمة)
+let addonGroups = []; // [{ id, name, name_en, selection_type, position, options:[{id,name,name_en,price,position}] }] — مجموعات إضافات/متغيرات قابلة لإعادة الاستخدام على مستوى المتجر كله
+let itemAddonGroupLinks = {}; // item_id -> [group_id, ...] المجموعات المربوطة بكل صنف
+let itemOptionPriceOverrides = {}; // item_id -> { option_id: price } تخصيص سعر مختلف لخيار معيّن في صنف معيّن (اختياري)
 let selectedCategoryId = null;
 let previewCategoryId = null;
 let pendingImage = null;
@@ -2792,6 +2797,31 @@ async function refreshData(){
       itemAddons[a.item_id].push(a);
     });
   }
+
+  // تحميل مجموعات الإضافات/المتغيرات القابلة لإعادة الاستخدام + خياراتها + الربط بالأصناف + تخصيصات السعر لكل صنف
+  const { data: groupsData } = await sb.from('addon_groups').select('*').eq('restaurant_id', restaurant.id).order('position');
+  addonGroups = groupsData || [];
+  const groupIds = addonGroups.map(g=>g.id);
+  if(groupIds.length){
+    const { data: optionsData } = await sb.from('addon_group_options').select('*').in('group_id', groupIds).order('position');
+    addonGroups.forEach(g=> g.options = (optionsData || []).filter(o=> o.group_id === g.id));
+  } else {
+    addonGroups.forEach(g=> g.options = []);
+  }
+  itemAddonGroupLinks = {};
+  itemOptionPriceOverrides = {};
+  if(allItemIds.length){
+    const { data: linksData } = await sb.from('item_addon_groups').select('item_id,group_id').in('item_id', allItemIds).order('position');
+    (linksData || []).forEach(l=>{
+      if(!itemAddonGroupLinks[l.item_id]) itemAddonGroupLinks[l.item_id] = [];
+      itemAddonGroupLinks[l.item_id].push(l.group_id);
+    });
+    const { data: overridesData } = await sb.from('item_addon_option_prices').select('item_id,option_id,price').in('item_id', allItemIds);
+    (overridesData || []).forEach(o=>{
+      if(!itemOptionPriceOverrides[o.item_id]) itemOptionPriceOverrides[o.item_id] = {};
+      itemOptionPriceOverrides[o.item_id][o.option_id] = Number(o.price);
+    });
+  }
   if(!selectedCategoryId || !categories.find(c=>c.id===selectedCategoryId)){
     selectedCategoryId = categories[0] ? categories[0].id : null;
   }
@@ -3349,6 +3379,114 @@ document.getElementById('driversBtn').addEventListener('click', async ()=>{
 });
 
 // شاشة إدارة أكواد الخصم الخاصة بعملاء المتجر (ميزة PRO) — يديرها صاحب المتجر، ويستخدمها العميل في شاشة الطلب العامة
+// شاشة "الإضافات والمتغيرات": مجموعات إعادة استخدام (زي "الإضافات الإضافية"، "درجة الحرارة") تتسجل مرة واحدة
+// وبعدين تترط بأي عدد من الأصناف من شاشة الصنف نفسها، بدل تكرار كتابتها في كل صنف لوحده
+document.getElementById('addonGroupsBtn').addEventListener('click', async ()=>{
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>🧩 الإضافات والمتغيرات</h3>
+      <p style="font-size:12.5px; color:var(--stone); margin:-6px 0 12px; line-height:1.7;">سجّل مجموعة مرة واحدة (زي "الإضافات الإضافية" أو "الحجم") وبعدين اربطها بأي عدد من الأصناف من شاشة تعديل الصنف — بدل ما تكتبها من الأول في كل صنف.</p>
+      <div class="zone-add-row" style="flex-wrap:wrap;">
+        <input type="text" id="newGroupName" placeholder="اسم المجموعة (مثال: الإضافات الإضافية)" style="flex:1; min-width:180px;">
+        <select id="newGroupType" style="padding:8px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper); color:var(--ink); font-family:var(--body);">
+          <option value="multiple">إضافة (اختيار متعدد اختياري)</option>
+          <option value="single">متغيّر (اختيار واحد إجباري، زي الحجم)</option>
+        </select>
+        <button type="button" class="btn-confirm" id="addGroupBtn" style="white-space:nowrap;">+ مجموعة جديدة</button>
+      </div>
+      <div id="addonGroupsListWrap" style="margin-top:14px;"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="addonGroupsCloseBtn">إغلاق</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#addonGroupsCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+
+  function renderGroupsList(){
+    const wrap = overlay.querySelector('#addonGroupsListWrap');
+    if(!addonGroups.length){ wrap.innerHTML = `<div class="orders-empty">لسه مفيش مجموعات إضافات — أضف أول مجموعة من فوق</div>`; return; }
+    wrap.innerHTML = addonGroups.map(g=>{
+      const typeLabel = g.selection_type === 'single' ? 'متغيّر (اختيار واحد)' : 'إضافة (اختيار متعدد)';
+      const optionsHtml = (g.options || []).map(o=>`
+        <div class="zone-row" data-option-id="${o.id}" style="padding:6px 10px;">
+          <span class="zone-name" style="flex:1;">${escapeHtml(o.name)}</span>
+          <span style="font-weight:700; margin-inline-end:8px;">${Number(o.price).toFixed(2)} ${getRestaurantCurrency(restaurant)}</span>
+          <button type="button" data-action="deleteOption" style="background:none; border:1px solid var(--line); border-radius:6px; padding:4px 10px; cursor:pointer; color:var(--stone); font-size:12px;">حذف</button>
+        </div>`).join('');
+      return `
+      <div class="zone-row" data-group-id="${g.id}" style="flex-direction:column; align-items:stretch; gap:8px; padding:12px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="flex:1;">
+            <span class="zone-name" style="font-weight:800;">${escapeHtml(g.name)}</span>
+            <span style="display:block; font-size:11.5px; color:var(--stone); margin-top:2px;">${typeLabel} · ${(g.options||[]).length} خيار</span>
+          </div>
+          <button type="button" data-action="deleteGroup" style="background:none; border:1px solid var(--line); border-radius:6px; padding:8px 12px; cursor:pointer; color:var(--stone);">حذف المجموعة</button>
+        </div>
+        <div class="options-list">${optionsHtml}</div>
+        <div class="zone-add-row" style="flex-wrap:wrap;">
+          <input type="text" class="new-option-name" placeholder="اسم الخيار (مثال: جبنة إضافية)" style="flex:1; min-width:140px;">
+          <input type="number" class="new-option-price" placeholder="السعر" min="0" step="0.01" style="width:90px;">
+          <button type="button" data-action="addOption" style="white-space:nowrap;">+ إضافة خيار</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    wrap.querySelectorAll('[data-action="deleteGroup"]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const groupId = btn.closest('[data-group-id]').dataset.groupId;
+        if(!confirm('حذف المجموعة هيشيلها من كل الأصناف المربوطة بيها. متأكد؟')) return;
+        const { error } = await sb.from('addon_groups').delete().eq('id', groupId);
+        if(error){ toast('تعذر الحذف'); return; }
+        await refreshData();
+        renderGroupsList();
+      });
+    });
+    wrap.querySelectorAll('[data-action="deleteOption"]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const optionId = btn.closest('[data-option-id]').dataset.optionId;
+        const { error } = await sb.from('addon_group_options').delete().eq('id', optionId);
+        if(error){ toast('تعذر الحذف'); return; }
+        await refreshData();
+        renderGroupsList();
+      });
+    });
+    wrap.querySelectorAll('[data-action="addOption"]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const row = btn.closest('.zone-row');
+        const groupId = row.dataset.groupId;
+        const nameInput = row.querySelector('.new-option-name');
+        const priceInput = row.querySelector('.new-option-price');
+        const oName = nameInput.value.trim();
+        const oPrice = parseFloat(priceInput.value);
+        if(!oName){ nameInput.focus(); return; }
+        if(isNaN(oPrice) || oPrice < 0){ toast('أدخل سعر صحيح'); priceInput.focus(); return; }
+        const group = addonGroups.find(g=> g.id === groupId);
+        const { error } = await sb.from('addon_group_options').insert({ group_id: groupId, name: oName, price: oPrice, position: (group.options||[]).length });
+        if(error){ toast('تعذر الإضافة'); return; }
+        await refreshData();
+        renderGroupsList();
+      });
+    });
+  }
+  renderGroupsList();
+
+  overlay.querySelector('#addGroupBtn').addEventListener('click', async ()=>{
+    const nameInput = overlay.querySelector('#newGroupName');
+    const typeSelect = overlay.querySelector('#newGroupType');
+    const name = nameInput.value.trim();
+    if(!name){ nameInput.focus(); return; }
+    const { error } = await sb.from('addon_groups').insert({ restaurant_id: restaurant.id, name, selection_type: typeSelect.value, position: addonGroups.length });
+    if(error){ toast('تعذر إضافة المجموعة'); return; }
+    nameInput.value = '';
+    toast('تمت إضافة المجموعة');
+    await refreshData();
+    renderGroupsList();
+  });
+});
+
 document.getElementById('couponsBtn').addEventListener('click', async ()=>{
   if(restaurant.restriction_coupons_disabled){ toast('🔒 أكواد الخصم للعملاء متاحة في باقة PRO فقط'); return; }
   const overlay = document.createElement('div');
@@ -9930,9 +10068,13 @@ function openItemModal(existing){
         <button type="button" class="add-btn" id="addSizeRowBtn" style="margin-top:8px; margin-bottom:0;">+ إضافة حجم</button>
       </div>
       <div class="field">
-        <label>🧂 الإضافات (اختياري) — إضافات يقدر العميل يختار منها عند الطلب (زي: جبنة إضافية، صوص حار)</label>
+        <label>🧂 إضافات خاصة بهذا الصنف فقط (اختياري) — لو حابب إضافة مش موجودة في أي مجموعة عامة</label>
         <div id="addonsRowsWrap"></div>
         <button type="button" class="add-btn" id="addAddonRowBtn" style="margin-top:8px; margin-bottom:0;">+ إضافة</button>
+      </div>
+      <div class="field" id="addonGroupsFieldWrap">
+        <label>🧩 مجموعات الإضافات والمتغيرات (اختياري) — اختر أي مجموعات جاهزة من "الإضافات والمتغيرات" لربطها بهذا الصنف</label>
+        <div id="itemAddonGroupsWrap"></div>
       </div>
       <div class="field">
         <label>الوصف (اختياري)</label>
@@ -9972,6 +10114,43 @@ function openItemModal(existing){
   }
   existingAddons.forEach(a=> addAddonRow(a.name, a.name_en, a.price));
   overlay.querySelector('#addAddonRowBtn').addEventListener('click', ()=> addAddonRow('', '', null));
+
+  // ربط مجموعات الإضافات/المتغيرات الجاهزة بهذا الصنف، مع إمكانية تخصيص سعر مختلف لكل خيار في الصنف ده تحديدًا
+  const itemAddonGroupsWrap = overlay.querySelector('#itemAddonGroupsWrap');
+  const linkedGroupIds = existing ? (itemAddonGroupLinks[existing.id] || []) : [];
+  const existingOverrides = existing ? (itemOptionPriceOverrides[existing.id] || {}) : {};
+  if(!addonGroups.length){
+    itemAddonGroupsWrap.innerHTML = `<div class="orders-empty" style="padding:10px 0;">لسه مفيش مجموعات إضافات — تقدر تعملها من "الإضافات والمتغيرات" في القائمة العلوية</div>`;
+  } else {
+    itemAddonGroupsWrap.innerHTML = addonGroups.map(g=>{
+      const isChecked = linkedGroupIds.includes(g.id);
+      const typeLabel = g.selection_type === 'single' ? 'متغيّر (اختيار واحد)' : 'إضافة (اختيار متعدد)';
+      const optionsHtml = (g.options || []).map(o=>{
+        const overridePrice = existingOverrides[o.id] != null ? existingOverrides[o.id] : o.price;
+        return `
+        <div style="display:flex; align-items:center; gap:8px; padding:4px 0 4px 20px;">
+          <span style="flex:1; font-size:13px;">${escapeHtml(o.name)}</span>
+          <span style="font-size:11px; color:var(--stone);">افتراضي: ${Number(o.price).toFixed(2)}</span>
+          <input type="number" class="option-price-override" data-option-id="${o.id}" data-default-price="${o.price}" value="${overridePrice}" min="0" step="0.01" style="width:90px;" ${pricesLocked ? 'disabled' : ''}>
+        </div>`;
+      }).join('');
+      return `
+      <div class="addon-group-attach-row" data-group-id="${g.id}" style="border:1px solid var(--line); border-radius:10px; padding:10px; margin-top:8px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="checkbox" class="group-attach-checkbox" data-group-id="${g.id}" ${isChecked ? 'checked' : ''}>
+          <span style="font-weight:700;">${escapeHtml(g.name)}</span>
+          <span style="font-size:11.5px; color:var(--stone);">(${typeLabel} · ${(g.options||[]).length} خيار)</span>
+        </label>
+        <div class="group-options-prices" style="${isChecked ? '' : 'display:none;'} margin-top:6px;">${optionsHtml}</div>
+      </div>`;
+    }).join('');
+    itemAddonGroupsWrap.querySelectorAll('.group-attach-checkbox').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const pricesDiv = cb.closest('.addon-group-attach-row').querySelector('.group-options-prices');
+        pricesDiv.style.display = cb.checked ? '' : 'none';
+      });
+    });
+  }
 
   function addSizeRow(sizeName, sizeNameEn, price){
     const row = document.createElement('div');
@@ -10178,6 +10357,33 @@ function openItemModal(existing){
       const addonRowsToInsert = addonsToSave.map((a, idx)=>({ item_id: itemId, name: a.name, price: a.price, position: idx }));
       const { error: addonErr } = await sb.from('item_addons').insert(addonRowsToInsert);
       if(addonErr){ toast(`تم حفظ ${biz(restaurant.business_type,'itemDef')} لكن تعذر حفظ الإضافات`); overlay.remove(); await refreshData(); return; }
+    }
+
+    // حفظ ربط مجموعات الإضافات/المتغيرات المختارة + أي أسعار مخصصة لخيارات هذا الصنف تحديدًا (تختلف عن السعر الافتراضي للمجموعة)
+    const checkedGroupBoxes = [...itemAddonGroupsWrap.querySelectorAll('.group-attach-checkbox:checked')];
+    const selectedGroupIds = checkedGroupBoxes.map(cb=> cb.dataset.groupId);
+    await sb.from('item_addon_groups').delete().eq('item_id', itemId);
+    if(selectedGroupIds.length){
+      const linkRows = selectedGroupIds.map((gId, idx)=>({ item_id: itemId, group_id: gId, position: idx }));
+      const { error: linkErr } = await sb.from('item_addon_groups').insert(linkRows);
+      if(linkErr){ toast(`تم حفظ ${biz(restaurant.business_type,'itemDef')} لكن تعذر ربط مجموعات الإضافات`); overlay.remove(); await refreshData(); return; }
+    }
+    // نحفظ فقط الأسعار المخصصة اللي فعلًا مختلفة عن السعر الافتراضي، وفقط للمجموعات المختارة
+    await sb.from('item_addon_option_prices').delete().eq('item_id', itemId);
+    const overridesToSave = [];
+    checkedGroupBoxes.forEach(cb=>{
+      const row = cb.closest('.addon-group-attach-row');
+      row.querySelectorAll('.option-price-override').forEach(inp=>{
+        const overridePrice = parseFloat(inp.value);
+        const defaultPrice = parseFloat(inp.dataset.defaultPrice);
+        if(!isNaN(overridePrice) && overridePrice >= 0 && overridePrice !== defaultPrice){
+          overridesToSave.push({ item_id: itemId, option_id: inp.dataset.optionId, price: overridePrice });
+        }
+      });
+    });
+    if(overridesToSave.length){
+      const { error: overrideErr } = await sb.from('item_addon_option_prices').insert(overridesToSave);
+      if(overrideErr){ toast(`تم حفظ ${biz(restaurant.business_type,'itemDef')} لكن تعذر حفظ تخصيصات الأسعار`); overlay.remove(); await refreshData(); return; }
     }
 
     overlay.remove();
@@ -10467,6 +10673,50 @@ async function loadPublic(slug){
       pubItemAddons[a.item_id].push(a);
     });
   }
+
+  // مجموعات الإضافات/المتغيرات القابلة لإعادة الاستخدام (تُعرض بجانب الإضافات الخاصة بالصنف نفسه، إن وُجدت)
+  let pubAddonGroups = [];
+  let pubItemAddonGroupLinks = {};
+  let pubItemOptionPriceOverrides = {};
+  const { data: pubGroupsData } = await sb.from('addon_groups').select('*').eq('restaurant_id', rest.id).order('position');
+  pubAddonGroups = pubGroupsData || [];
+  const pubGroupIds = pubAddonGroups.map(g=>g.id);
+  if(pubGroupIds.length){
+    const { data: pubOptionsData } = await sb.from('addon_group_options').select('*').in('group_id', pubGroupIds).order('position');
+    pubAddonGroups.forEach(g=> g.options = (pubOptionsData || []).filter(o=> o.group_id === g.id));
+  }
+  if(allPubItemIds.length){
+    const { data: pubLinksData } = await sb.from('item_addon_groups').select('item_id,group_id').in('item_id', allPubItemIds).order('position');
+    (pubLinksData || []).forEach(l=>{
+      if(!pubItemAddonGroupLinks[l.item_id]) pubItemAddonGroupLinks[l.item_id] = [];
+      pubItemAddonGroupLinks[l.item_id].push(l.group_id);
+    });
+    const { data: pubOverridesData } = await sb.from('item_addon_option_prices').select('item_id,option_id,price').in('item_id', allPubItemIds);
+    (pubOverridesData || []).forEach(o=>{
+      if(!pubItemOptionPriceOverrides[o.item_id]) pubItemOptionPriceOverrides[o.item_id] = {};
+      pubItemOptionPriceOverrides[o.item_id][o.option_id] = Number(o.price);
+    });
+  }
+  // تجميع كل "أقسام" الاختيار الخاصة بصنف معيّن في شكل واحد موحّد: مجموعات مرتبطة (متغيّر/إضافة) + إضافات الصنف الخاصة به نفسه
+  function getItemModifierSections(itemId){
+    const sections = [];
+    (pubItemAddonGroupLinks[itemId] || []).forEach(gId=>{
+      const group = pubAddonGroups.find(g=> g.id === gId);
+      if(!group || !(group.options||[]).length) return;
+      const overrides = pubItemOptionPriceOverrides[itemId] || {};
+      sections.push({
+        key: `group-${group.id}`,
+        title: group.name, title_en: group.name_en,
+        type: group.selection_type, // 'single' | 'multiple'
+        options: group.options.map(o=> ({ id: o.id, name: o.name, name_en: o.name_en, price: overrides[o.id] != null ? overrides[o.id] : Number(o.price) }))
+      });
+    });
+    const flatAddons = pubItemAddons[itemId] || [];
+    if(flatAddons.length){
+      sections.push({ key: `flat-${itemId}`, title: null, title_en: null, type: 'multiple', options: flatAddons.map(a=> ({ id: a.id, name: a.name, name_en: a.name_en, price: Number(a.price) })) });
+    }
+    return sections;
+  }
   const pubZones = zonesRes.data || [];
   // إذا فشل تحميل مناطق التوصيل (مشكلة شبكة مؤقتة)، تتم إعادة المحاولة بدلًا من افتراض أن المطعم ليس له مناطق أصلًا
   let zonesLoadFailed = !!zonesRes.error;
@@ -10551,8 +10801,10 @@ async function loadPublic(slug){
           unitPrice = Number(item.price);
         }
         // إعادة التحقق من الإضافات المحفوظة مقابل قائمة إضافات الصنف الحالية (تُسقط أي إضافة اتحذفت، وتحدّث سعرها لو اتغيّر)
-        const liveAddonsForItem = pubItemAddons[v.itemId] || [];
-        const restoredAddons = (v.addons || []).map(sa=> liveAddonsForItem.find(la=> la.id === sa.id)).filter(Boolean);
+        // إعادة التحقق من الإضافات/المتغيرات المحفوظة مقابل كل الأقسام الحالية المرتبطة بالصنف (مجموعات + إضافات خاصة به)،
+        // فتُسقط أي خيار اتحذف أو اتشال ربطه، وتُحدَّث أسعار الباقي (تشمل أي تخصيص سعر لهذا الصنف تحديدًا)
+        const liveOptionsForItem = getItemModifierSections(v.itemId).flatMap(sec=> sec.options);
+        const restoredAddons = (v.addons || []).map(sa=> liveOptionsForItem.find(la=> la.id === sa.id)).filter(Boolean);
         const addonsTotal = restoredAddons.reduce((s,a)=> s + Number(a.price), 0);
         unitPrice += addonsTotal;
         if(restoredAddons.length){
@@ -10957,7 +11209,7 @@ async function loadPublic(slug){
           <button class="add-to-cart-btn" data-action="addSize" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>` : '';
         cartLinesHtml = itemCartLinesHtml(i.id);
       } else {
-        const itemHasAddons = (pubItemAddons[i.id] || []).length > 0;
+        const itemHasAddons = getItemModifierSections(i.id).length > 0;
         priceLine = `${oldPriceSpan}${getRestaurantCurrency(rest)} ${Number(i.price).toFixed(2)}${discountBadge}`;
         if(itemHasAddons){
           controlHtml = `<button class="add-to-cart-btn" data-action="addUnit" data-item-id="${i.id}">${lang==='en' ? '+ Add' : '+ أضف'}</button>`;
@@ -11033,22 +11285,26 @@ async function loadPublic(slug){
       body.appendChild(frag);
     }
 
-    // منتقي الإضافات الاختيارية (checkboxes) — يظهر فقط لو الصنف عنده إضافات معرّفة، وإلا يُضاف الصنف مباشرة زي قبل كده
+    // منتقي الإضافات/المتغيرات — يعرض كل الأقسام المرتبطة بالصنف (مجموعات + إضافات خاصة به):
+    // أقسام "متغيّر" تظهر كاختيار واحد إجباري (radio)، وأقسام "إضافة" تظهر كاختيار متعدد اختياري (checkbox)
     function openAddonsPickerModal(item, onConfirm){
-      const addonsList = pubItemAddons[item.id] || [];
+      const sections = getItemModifierSections(item.id);
       const pOverlay = document.createElement('div');
       pOverlay.className = 'overlay';
       pOverlay.innerHTML = `
         <div class="modal">
           <h3>${escapeHtml(tName(item.name, item.name_en))}</h3>
-          <p style="font-size:12.5px; color:var(--stone); margin:-6px 0 12px;">${lang==='en' ? 'Choose extras (optional)' : 'اختر الإضافات (اختياري)'}</p>
           <div id="addonsPickerList">
-            ${addonsList.map(a=>`
-              <label style="display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--line); cursor:pointer;">
-                <input type="checkbox" class="addon-checkbox" data-addon-id="${a.id}">
-                <span style="flex:1;">${escapeHtml(tName(a.name, a.name_en))}</span>
-                <span style="font-weight:700; white-space:nowrap;">+${Number(a.price).toFixed(2)} ${getRestaurantCurrency(rest)}</span>
-              </label>`).join('')}
+            ${sections.map(sec=>`
+              <div class="addon-picker-section" data-section-key="${sec.key}" data-section-type="${sec.type}" style="margin-bottom:14px;">
+                ${sec.title ? `<div style="font-weight:800; font-size:13.5px; margin-bottom:6px;">${escapeHtml(tName(sec.title, sec.title_en))}${sec.type==='single' ? (lang==='en' ? ' (required)' : ' (إجباري)') : ''}</div>` : (sec.type!=='multiple' ? '' : (sections.length>1 ? `<div style="font-weight:800; font-size:13.5px; margin-bottom:6px;">${lang==='en'?'Extras':'إضافات'}</div>` : ''))}
+                ${sec.options.map((o,idx)=>`
+                  <label style="display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--line); cursor:pointer;">
+                    <input type="${sec.type==='single' ? 'radio' : 'checkbox'}" name="sec-${sec.key}" class="sec-option-input" data-section-key="${sec.key}" data-option-id="${o.id}">
+                    <span style="flex:1;">${escapeHtml(tName(o.name, o.name_en))}</span>
+                    <span style="font-weight:700; white-space:nowrap;">+${Number(o.price).toFixed(2)} ${getRestaurantCurrency(rest)}</span>
+                  </label>`).join('')}
+              </div>`).join('')}
           </div>
           <div class="modal-actions">
             <button class="btn-cancel" id="addonsPickerCancel">${lang==='en' ? 'Cancel' : 'إلغاء'}</button>
@@ -11059,16 +11315,27 @@ async function loadPublic(slug){
       pOverlay.querySelector('#addonsPickerCancel').addEventListener('click', ()=> pOverlay.remove());
       pOverlay.addEventListener('click', (e)=>{ if(e.target===pOverlay) pOverlay.remove(); });
       pOverlay.querySelector('#addonsPickerConfirm').addEventListener('click', ()=>{
-        const checkedIds = [...pOverlay.querySelectorAll('.addon-checkbox:checked')].map(cb=> cb.dataset.addonId);
-        const selectedAddons = addonsList.filter(a=> checkedIds.includes(a.id));
+        // التأكد من إن كل قسم "متغيّر" (إجباري) اتم اختيار قيمة له قبل المتابعة
+        const missingRequired = sections.some(sec=> sec.type==='single' && !pOverlay.querySelector(`input[name="sec-${sec.key}"]:checked`));
+        if(missingRequired){
+          toast(lang==='en' ? 'Please choose a required option' : 'من فضلك اختر الخيار الإجباري أولًا');
+          return;
+        }
+        const checkedInputs = [...pOverlay.querySelectorAll('.sec-option-input:checked')];
+        const selectedAddons = [];
+        checkedInputs.forEach(inp=>{
+          const sec = sections.find(s=> s.key === inp.dataset.sectionKey);
+          const opt = sec && sec.options.find(o=> o.id === inp.dataset.optionId);
+          if(opt) selectedAddons.push(opt);
+        });
         pOverlay.remove();
         onConfirm(selectedAddons);
       });
     }
-    // إضافة صنف للسلة مع مراعاة الإضافات: يفتح منتقي الإضافات أولًا لو الصنف عنده إضافات، وإلا يضيف مباشرة
-    // baseKey: مفتاح الصنف الأساسي (itemId أو itemId:sizeId أو itemId:grams) — يُلحق به تعريف الإضافات المختارة ليبقى كل توليفة إضافات سطر سلة منفصل
+    // إضافة صنف للسلة مع مراعاة الإضافات/المتغيرات: يفتح المنتقي أولًا لو الصنف عنده أي أقسام، وإلا يضيف مباشرة
+    // baseKey: مفتاح الصنف الأساسي (itemId أو itemId:sizeId أو itemId:grams) — يُلحق به تعريف الاختيارات المختارة ليبقى كل توليفة سطر سلة منفصل
     function addToCartRespectingAddons(item, baseKey, variantLabel, baseUnitPrice, weightGrams, triggerEl){
-      const addonsList = pubItemAddons[item.id] || [];
+      const sections = getItemModifierSections(item.id);
       const finalize = (selectedAddons)=>{
         const addonsTotal = selectedAddons.reduce((s,a)=> s + Number(a.price), 0);
         const addonIdsKey = selectedAddons.map(a=>a.id).sort().join(',');
@@ -11082,7 +11349,7 @@ async function loadPublic(slug){
         showAddedToast(tName(item.name, item.name_en));
         renderPublicBody();
       };
-      if(addonsList.length){ openAddonsPickerModal(item, finalize); }
+      if(sections.length){ openAddonsPickerModal(item, finalize); }
       else { finalize([]); }
     }
 
