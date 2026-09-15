@@ -3956,6 +3956,60 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
   }
 
   // دمج عميلين لهما نفس الهوية الفعلية في سجل واحد — الأرقام والعناوين تتوحّد تلقائيًا
+  // كشف تلقائي للعملاء المرشّحين للدمج: نفس الاسم برقمين مختلفين، أو رقم هاتف واحد مسجّل لدى عميلين
+  async function findDuplicateCandidates(){
+    const normalizeName = (n)=> String(n || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const normalizePhone = (p)=> String(p || '').replace(/[^\d]/g,'').replace(/^(?:0020|20)/, '').replace(/^0/, '');
+    const pairs = new Map(); // "idA|idB" -> { a, b, reasons:Set }
+    const addPair = (a, b, reason)=>{
+      if(!a || !b || a.id === b.id) return;
+      const key = [a.id, b.id].sort().join('|');
+      if(!pairs.has(key)) pairs.set(key, { a, b, reasons: new Set() });
+      pairs.get(key).reasons.add(reason);
+    };
+
+    // 1) تطابق الاسم
+    const byName = {};
+    allCustomers.forEach(c=>{
+      const n = normalizeName(c.name);
+      if(!n) return;
+      if(!byName[n]) byName[n] = [];
+      byName[n].push(c);
+    });
+    Object.values(byName).forEach(group=>{
+      for(let i=0; i<group.length; i++){
+        for(let j=i+1; j<group.length; j++) addPair(group[i], group[j], 'نفس الاسم');
+      }
+    });
+
+    // 2) تطابق رقم الهاتف — يشمل الأرقام الإضافية المسجّلة في جدول الأرقام، وليس الرقم الرئيسي فقط
+    const phoneOwners = {}; // رقم مُطبَّع -> [عميل]
+    const registerPhone = (customer, rawPhone)=>{
+      const p = normalizePhone(rawPhone);
+      if(p.length < 8) return;
+      if(!phoneOwners[p]) phoneOwners[p] = [];
+      if(!phoneOwners[p].some(x=> x.id === customer.id)) phoneOwners[p].push(customer);
+    };
+    allCustomers.forEach(c=> registerPhone(c, c.phone));
+    try{
+      const { data: extraPhones } = await sb.from('customer_phones').select('customer_id,phone').in('customer_id', allCustomers.map(c=> c.id));
+      (extraPhones || []).forEach(row=>{
+        const owner = allCustomers.find(c=> c.id === row.customer_id);
+        if(owner) registerPhone(owner, row.phone);
+      });
+    }catch(e){ /* في حال تعذّر جلب الأرقام الإضافية، يستمر الكشف بالأرقام الرئيسية فقط */ }
+    Object.values(phoneOwners).forEach(owners=>{
+      for(let i=0; i<owners.length; i++){
+        for(let j=i+1; j<owners.length; j++) addPair(owners[i], owners[j], 'نفس رقم الهاتف');
+      }
+    });
+
+    // الأولوية لتطابق رقم الهاتف لأنه مؤشر أقوى على أنهما نفس الشخص فعلًا
+    return [...pairs.values()]
+      .map(p=> ({ ...p, reasons: [...p.reasons] }))
+      .sort((x, y)=> (y.reasons.includes('نفس رقم الهاتف') ? 1 : 0) - (x.reasons.includes('نفس رقم الهاتف') ? 1 : 0));
+  }
+
   function openMergeCustomersModal(){
     if(allCustomers.length < 2){ toast('يلزم وجود عميلين على الأقل لإجراء الدمج'); return; }
     const mergeOverlay = document.createElement('div');
@@ -3964,8 +4018,11 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
     mergeOverlay.innerHTML = `
       <div class="modal">
         <h3>دمج عملاء مكررين</h3>
+        <div id="duplicateSuggestionsWrap" style="margin-bottom:14px;">
+          <div class="orders-empty" style="text-align:right; padding:0 0 8px; font-size:12px;">جارٍ البحث عن التكرارات...</div>
+        </div>
         <div class="orders-empty" style="text-align:right; padding:0 0 12px; font-size:12px;">
-          اختر العميلين اللذين هما فعليًا نفس الشخص. ستُجمع جميع أرقامه وعناوينه في سجل واحد، وسيُحذف العميل الآخر نهائيًا.
+          أو اختر العميلين يدويًا. ستُجمع جميع أرقامه وعناوينه في سجل واحد، وسيُحذف العميل الآخر نهائيًا.
         </div>
         <div style="display:flex; flex-direction:column; gap:3px; margin-bottom:10px;">
           <label style="font-size:12px; color:var(--stone);">العميل الذي سيبقى (الأساسي)</label>
@@ -3987,6 +4044,40 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
     if(allCustomers.length > 1) mergeOverlay.querySelector('#mergeAwaySelect').selectedIndex = 1;
     mergeOverlay.querySelector('#mergeCancelBtn').addEventListener('click', ()=> mergeOverlay.remove());
     mergeOverlay.addEventListener('click', (e)=>{ if(e.target===mergeOverlay) mergeOverlay.remove(); });
+
+    async function renderDuplicateSuggestions(){
+      const wrap = mergeOverlay.querySelector('#duplicateSuggestionsWrap');
+      const candidates = await findDuplicateCandidates();
+      if(!candidates.length){
+        wrap.innerHTML = `<div class="orders-empty" style="text-align:right; padding:0 0 8px; font-size:12px;">✅ لم يُعثر على عملاء مكررين (بتطابق الاسم أو رقم الهاتف).</div>`;
+        return;
+      }
+      wrap.innerHTML = `
+        <div style="font-weight:700; font-size:13px; margin-bottom:8px;">🔍 تكرارات محتملة (${candidates.length})</div>
+        ${candidates.map((p, idx)=>{
+          const isPhoneMatch = p.reasons.includes('نفس رقم الهاتف');
+          return `
+          <div class="zone-row" data-cand-index="${idx}" style="flex-wrap:wrap; ${isPhoneMatch ? 'border-inline-start:3px solid var(--ember);' : ''}">
+            <div style="flex:1; min-width:150px;">
+              <span style="display:block; font-size:12.5px;">${escapeHtml(p.a.name)} — <span style="direction:ltr; display:inline-block;">${escapeHtml(p.a.phone)}</span></span>
+              <span style="display:block; font-size:12.5px;">${escapeHtml(p.b.name)} — <span style="direction:ltr; display:inline-block;">${escapeHtml(p.b.phone)}</span></span>
+              <span style="display:block; font-size:11px; color:${isPhoneMatch ? 'var(--ember)' : 'var(--stone)'}; margin-top:3px;">${escapeHtml(p.reasons.join(' + '))}</span>
+            </div>
+            <button type="button" data-action="selectCandidate" style="white-space:nowrap;">اختيار للدمج</button>
+          </div>`;
+        }).join('')}`;
+      wrap.querySelectorAll('[data-action="selectCandidate"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const idx = parseInt(btn.closest('[data-cand-index]').dataset.candIndex);
+          const pair = candidates[idx];
+          mergeOverlay.querySelector('#mergeKeepSelect').value = pair.a.id;
+          mergeOverlay.querySelector('#mergeAwaySelect').value = pair.b.id;
+          mergeOverlay.querySelector('#mergeConfirmBtn').scrollIntoView({ behavior:'smooth', block:'nearest' });
+        });
+      });
+    }
+    renderDuplicateSuggestions();
+
     mergeOverlay.querySelector('#mergeConfirmBtn').addEventListener('click', async ()=>{
       const keepId = mergeOverlay.querySelector('#mergeKeepSelect').value;
       const awayId = mergeOverlay.querySelector('#mergeAwaySelect').value;
@@ -3999,9 +4090,16 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
       const { error } = await sb.rpc('merge_customers', { p_keep_id: keepId, p_merge_id: awayId });
       if(error){ toast('تعذر تنفيذ الدمج'); btn.disabled = false; return; }
       toast('تم دمج العملاء بنجاح');
-      mergeOverlay.remove();
       await loadCustomers();
       renderCustomers();
+      // تحديث قوائم الاختيار والتكرارات المتبقية للسماح بدمج عدة حالات متتالية دون إعادة فتح النافذة
+      const refreshedOptions = allCustomers.map(c=> `<option value="${c.id}">${escapeHtml(c.name)} — ${escapeHtml(c.phone)}</option>`).join('');
+      mergeOverlay.querySelector('#mergeKeepSelect').innerHTML = refreshedOptions;
+      mergeOverlay.querySelector('#mergeAwaySelect').innerHTML = refreshedOptions;
+      if(allCustomers.length > 1) mergeOverlay.querySelector('#mergeAwaySelect').selectedIndex = 1;
+      btn.disabled = false;
+      if(allCustomers.length < 2){ mergeOverlay.remove(); return; }
+      await renderDuplicateSuggestions();
     });
   }
 
@@ -4185,23 +4283,63 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
 
   overlay.querySelector('#customersSearchInput').addEventListener('input', renderCustomers);
 
-  overlay.querySelector('#customersExportBtn').addEventListener('click', ()=>{
+  overlay.querySelector('#customersExportBtn').addEventListener('click', async ()=>{
     const q = overlay.querySelector('#customersSearchInput').value.trim().toLowerCase();
     const list = q ? allCustomers.filter(c=> (c.name||'').toLowerCase().includes(q) || (c.phone||'').includes(q)) : allCustomers;
     if(!list.length){ toast('لا يوجد عملاء لتصديرهم'); return; }
-    const header = ['اسم العميل','رقم الهاتف','العنوان','تاريخ التسجيل'];
-    const rows = [header];
-    list.forEach(c=>{
-      const d = c.created_at ? new Date(c.created_at).toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' }) : '';
-      rows.push([c.name || '', c.phone || '', c.address || '', d]);
-    });
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = [{ wch:22 },{ wch:16 },{ wch:30 },{ wch:20 }];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'العملاء');
-    const dateTag = new Date().toISOString().slice(0,10);
-    XLSX.writeFile(wb, `${restaurant.slug || 'customers'}-عملاء-${dateTag}.xlsx`);
-    toast(`تم تصدير ${list.length} عميل بنجاح`);
+    const exportBtn = overlay.querySelector('#customersExportBtn');
+    const originalLabel = exportBtn.textContent;
+    exportBtn.disabled = true;
+    exportBtn.textContent = '⏳ جارٍ التجهيز...';
+    try{
+      // جلب جميع الأرقام والعناوين المسجلة لكل عميل (وليس الرقم والعنوان الرئيسي فقط)
+      const ids = list.map(c=> c.id);
+      const [{ data: allPhones }, { data: allAddresses }] = await Promise.all([
+        sb.from('customer_phones').select('customer_id,label,phone,is_default').in('customer_id', ids).order('is_default', { ascending:false }).order('created_at', { ascending:true }),
+        sb.from('customer_addresses').select('customer_id,label,address,is_default').in('customer_id', ids).order('is_default', { ascending:false }).order('created_at', { ascending:true })
+      ]);
+      const phonesByCustomer = {};
+      (allPhones || []).forEach(p=>{
+        if(!phonesByCustomer[p.customer_id]) phonesByCustomer[p.customer_id] = [];
+        phonesByCustomer[p.customer_id].push(p);
+      });
+      const addressesByCustomer = {};
+      (allAddresses || []).forEach(a=>{
+        if(!addressesByCustomer[a.customer_id]) addressesByCustomer[a.customer_id] = [];
+        addressesByCustomer[a.customer_id].push(a);
+      });
+
+      const header = ['اسم العميل','الهاتف الرئيسي','أرقام الهاتف الإضافية','العنوان الرئيسي','العناوين الإضافية','تاريخ التسجيل'];
+      const rows = [header];
+      list.forEach(c=>{
+        const d = c.created_at ? new Date(c.created_at).toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' }) : '';
+        // الصفوف مرتبة بحيث يأتي الرئيسي أولًا، لذا يُؤخذ الأول كرئيسي والباقي كإضافي مع إظهار وصف كل رقم/عنوان إن وُجد
+        const phones = phonesByCustomer[c.id] || [];
+        const addresses = addressesByCustomer[c.id] || [];
+        const formatExtra = (arr, key)=> arr.slice(1).map(x=> x.label ? `${x.label}: ${x[key]}` : x[key]).join(' | ');
+        rows.push([
+          c.name || '',
+          phones.length ? phones[0].phone : (c.phone || ''),
+          formatExtra(phones, 'phone'),
+          addresses.length ? addresses[0].address : (c.address || ''),
+          formatExtra(addresses, 'address'),
+          d
+        ]);
+      });
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{ wch:22 },{ wch:16 },{ wch:30 },{ wch:30 },{ wch:40 },{ wch:20 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'العملاء');
+      const dateTag = new Date().toISOString().slice(0,10);
+      XLSX.writeFile(wb, `${restaurant.slug || 'customers'}-عملاء-${dateTag}.xlsx`);
+      toast(`تم تصدير ${list.length} عميل بنجاح`);
+    }catch(e){
+      console.error('customers export error:', e);
+      toast('تعذر تصدير بيانات العملاء، يرجى المحاولة مرة أخرى');
+    }finally{
+      exportBtn.disabled = false;
+      exportBtn.textContent = originalLabel;
+    }
   });
 
   overlay.querySelector('#customerAddBtn').addEventListener('click', async ()=>{
@@ -4253,14 +4391,34 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
       rows = rows.slice(1);
     }
 
+    // الأعمدة المدعومة: الاسم، الهاتف الرئيسي، أرقام إضافية، العنوان الرئيسي، عناوين إضافية
+    // الأعمدة الإضافية اختيارية لضمان التوافق مع الملفات المُصدَّرة سابقًا (اسم + هاتف فقط)
+    const splitMulti = (v)=> String(v ?? '').split('|').map(s=> s.trim()).filter(Boolean);
+    const parseLabelled = (entry)=>{
+      const sepIdx = entry.indexOf(':');
+      if(sepIdx === -1) return { label: null, value: entry.trim() };
+      return { label: entry.slice(0, sepIdx).trim() || null, value: entry.slice(sepIdx + 1).trim() };
+    };
+
     const byPhone = new Map();
     rows.forEach(r=>{
       const name = String(r[0] ?? '').trim();
       const phone = String(r[1] ?? '').replace(/[^\d]/g,'');
       if(!name || phone.length < 8) return;
-      byPhone.set(phone, { restaurant_id: restaurant.id, name, phone });
+      const extraPhones = splitMulti(r[2]).map(parseLabelled)
+        .map(p=> ({ label: p.label, phone: p.value.replace(/[^\d]/g,'') }))
+        .filter(p=> p.phone.length >= 8 && p.phone !== phone);
+      const mainAddress = String(r[3] ?? '').trim();
+      const extraAddresses = splitMulti(r[4]).map(parseLabelled)
+        .map(a=> ({ label: a.label, address: a.value }))
+        .filter(a=> a.address);
+      byPhone.set(phone, {
+        record: { restaurant_id: restaurant.id, name, phone, address: mainAddress || null },
+        extraPhones, mainAddress, extraAddresses
+      });
     });
-    const parsed = [...byPhone.values()];
+    const parsedEntries = [...byPhone.values()];
+    const parsed = parsedEntries.map(e=> e.record);
 
     if(parsed.length === 0){
       toast('لم يتم العثور على صفوف صالحة (اسم، رقم هاتف)');
@@ -4271,8 +4429,63 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
     const importBtn = overlay.querySelector('#customersImportBtn');
     importBtn.disabled = true;
     const { error } = await sb.from('customers').upsert(parsed, { onConflict: 'restaurant_id,phone' });
+    if(error){ importBtn.disabled = false; toast('حدث خطأ أثناء الاستيراد'); return; }
+
+    // إضافة الأرقام والعناوين المتعددة لكل عميل بعد حفظه (تُتجاهل أي قيمة مسجلة مسبقًا لتفادي التكرار)
+    try{
+      const importedPhones = parsed.map(p=> p.phone);
+      const { data: savedCustomers } = await sb.from('customers').select('id,phone').eq('restaurant_id', restaurant.id).in('phone', importedPhones);
+      const idByPhone = {};
+      (savedCustomers || []).forEach(c=> idByPhone[c.phone] = c.id);
+      const customerIds = Object.values(idByPhone);
+
+      const [{ data: existingPhones }, { data: existingAddresses }] = await Promise.all([
+        sb.from('customer_phones').select('customer_id,phone').in('customer_id', customerIds),
+        sb.from('customer_addresses').select('customer_id,address').in('customer_id', customerIds)
+      ]);
+      const existingPhoneSet = new Set((existingPhones || []).map(p=> `${p.customer_id}|${p.phone}`));
+      const existingAddressSet = new Set((existingAddresses || []).map(a=> `${a.customer_id}|${a.address}`));
+
+      const phoneRows = [];
+      const addressRows = [];
+      parsedEntries.forEach(entry=>{
+        const customerId = idByPhone[entry.record.phone];
+        if(!customerId) return;
+        // الرقم الرئيسي يُسجَّل كافتراضي إذا لم يكن للعميل أي رقم مسجل بالفعل
+        const hasAnyPhone = (existingPhones || []).some(p=> p.customer_id === customerId);
+        if(!hasAnyPhone && !existingPhoneSet.has(`${customerId}|${entry.record.phone}`)){
+          phoneRows.push({ customer_id: customerId, label: 'الرئيسي', phone: entry.record.phone, is_default: true });
+          existingPhoneSet.add(`${customerId}|${entry.record.phone}`);
+        }
+        entry.extraPhones.forEach(p=>{
+          const key = `${customerId}|${p.phone}`;
+          if(existingPhoneSet.has(key)) return;
+          existingPhoneSet.add(key);
+          phoneRows.push({ customer_id: customerId, label: p.label, phone: p.phone, is_default: false });
+        });
+
+        const hasAnyAddress = (existingAddresses || []).some(a=> a.customer_id === customerId);
+        if(entry.mainAddress && !hasAnyAddress && !existingAddressSet.has(`${customerId}|${entry.mainAddress}`)){
+          addressRows.push({ customer_id: customerId, label: 'الرئيسي', address: entry.mainAddress, is_default: true });
+          existingAddressSet.add(`${customerId}|${entry.mainAddress}`);
+        }
+        entry.extraAddresses.forEach(a=>{
+          const key = `${customerId}|${a.address}`;
+          if(existingAddressSet.has(key)) return;
+          existingAddressSet.add(key);
+          addressRows.push({ customer_id: customerId, label: a.label, address: a.address, is_default: false });
+        });
+      });
+
+      if(phoneRows.length) await sb.from('customer_phones').insert(phoneRows);
+      if(addressRows.length) await sb.from('customer_addresses').insert(addressRows);
+    }catch(err){
+      // فشل حفظ البيانات الإضافية لا يُلغي استيراد العملاء الأساسي الذي تم بنجاح
+      console.error('extra phones/addresses import error:', err);
+      toast('تم استيراد العملاء، لكن تعذر حفظ بعض الأرقام أو العناوين الإضافية');
+    }
+
     importBtn.disabled = false;
-    if(error){ toast('حدث خطأ أثناء الاستيراد'); return; }
     await loadCustomers();
     renderCustomers();
     await loadAndRenderPendingCustomers();
