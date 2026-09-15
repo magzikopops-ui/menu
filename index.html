@@ -3735,6 +3735,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
   }
 
   async function loadCustomers(){
+    extraPhonesCache = null; // إبطال الذاكرة المؤقتة لأرقام الهاتف الإضافية لأن قائمة العملاء تغيّرت
     const { data, error } = await sb.from('customers').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending:false });
     if(error){ allCustomers = []; return false; }
     allCustomers = data || [];
@@ -3957,9 +3958,44 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
 
   // دمج عميلين لهما نفس الهوية الفعلية في سجل واحد — الأرقام والعناوين تتوحّد تلقائيًا
   // كشف تلقائي للعملاء المرشّحين للدمج: نفس الاسم برقمين مختلفين، أو رقم هاتف واحد مسجّل لدى عميلين
+  // أدوات مشتركة لتطبيع الاسم/رقم الهاتف وكشف تطابق عميل موجود، تُستخدم في كشف التكرار الجماعي (شاشة الدمج)
+  // وأيضًا وقت تسجيل عميل جديد فعليًا (سواء من زر "إضافة عميل" اليدوي أو من قائمة "عملاء جدد من الطلبات")
+  const normalizeName = (n)=> String(n || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  const normalizePhone = (p)=> String(p || '').replace(/[^\d]/g,'').replace(/^(?:0020|20)/, '').replace(/^0/, '');
+  let extraPhonesCache = null; // customer_id -> [phone, ...] — تُعاد تعبئته عند كل loadCustomers()
+  async function getExtraPhonesMap(){
+    if(extraPhonesCache) return extraPhonesCache;
+    extraPhonesCache = {};
+    if(!allCustomers.length) return extraPhonesCache;
+    try{
+      const { data } = await sb.from('customer_phones').select('customer_id,phone').in('customer_id', allCustomers.map(c=> c.id));
+      (data || []).forEach(row=>{
+        if(!extraPhonesCache[row.customer_id]) extraPhonesCache[row.customer_id] = [];
+        extraPhonesCache[row.customer_id].push(row.phone);
+      });
+    }catch(e){ /* عند الفشل، يستمر الكشف بالأرقام الرئيسية فقط */ }
+    return extraPhonesCache;
+  }
+  // يبحث عن عميل موجود بالفعل يطابق الاسم أو رقم الهاتف (بما في ذلك الأرقام الإضافية)، لاستخدامه فور محاولة تسجيل عميل جديد
+  async function findExistingMatchFor(name, phone, excludeCustomerId){
+    const nPhone = normalizePhone(phone);
+    const nName = normalizeName(name);
+    const extraPhonesMap = await getExtraPhonesMap();
+    let nameMatch = null;
+    for(const c of allCustomers){
+      if(c.id === excludeCustomerId) continue;
+      const customerPhones = [c.phone, ...(extraPhonesMap[c.id] || [])].map(normalizePhone);
+      if(nPhone && customerPhones.includes(nPhone)){
+        return { customer: c, reason: 'نفس رقم الهاتف' };
+      }
+      if(!nameMatch && nName && normalizeName(c.name) === nName){
+        nameMatch = { customer: c, reason: 'نفس الاسم' };
+      }
+    }
+    return nameMatch;
+  }
+
   async function findDuplicateCandidates(){
-    const normalizeName = (n)=> String(n || '').trim().replace(/\s+/g, ' ').toLowerCase();
-    const normalizePhone = (p)=> String(p || '').replace(/[^\d]/g,'').replace(/^(?:0020|20)/, '').replace(/^0/, '');
     const pairs = new Map(); // "idA|idB" -> { a, b, reasons:Set }
     const addPair = (a, b, reason)=>{
       if(!a || !b || a.id === b.id) return;
@@ -3991,13 +4027,11 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
       if(!phoneOwners[p].some(x=> x.id === customer.id)) phoneOwners[p].push(customer);
     };
     allCustomers.forEach(c=> registerPhone(c, c.phone));
-    try{
-      const { data: extraPhones } = await sb.from('customer_phones').select('customer_id,phone').in('customer_id', allCustomers.map(c=> c.id));
-      (extraPhones || []).forEach(row=>{
-        const owner = allCustomers.find(c=> c.id === row.customer_id);
-        if(owner) registerPhone(owner, row.phone);
-      });
-    }catch(e){ /* في حال تعذّر جلب الأرقام الإضافية، يستمر الكشف بالأرقام الرئيسية فقط */ }
+    const extraPhonesMap = await getExtraPhonesMap();
+    Object.entries(extraPhonesMap).forEach(([customerId, phones])=>{
+      const owner = allCustomers.find(c=> c.id === customerId);
+      if(owner) phones.forEach(p=> registerPhone(owner, p));
+    });
     Object.values(phoneOwners).forEach(owners=>{
       for(let i=0; i<owners.length; i++){
         for(let j=i+1; j<owners.length; j++) addPair(owners[i], owners[j], 'نفس رقم الهاتف');
@@ -4214,16 +4248,41 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
     if(currentPending.length === 0){ section.style.display = 'none'; return; }
     section.style.display = 'block';
     countLabel.textContent = `(${currentPending.length})`;
-    pendingWrap.innerHTML = currentPending.map(p=> `
-      <div class="zone-row" data-phone="${escapeHtml(p.customer_phone)}" style="background:var(--paper-dim);">
+
+    // كشف فوري وقت العرض: هل هذا العميل المرشَّح يشبه عميلًا مسجَّلًا بالفعل (نفس رقم إضافي أو نفس الاسم)؟
+    // بدل ما ينتظر صاحب المتجر يكتشف التكرار بنفسه لاحقًا من شاشة الدمج
+    const pendingMatches = {};
+    for(const p of currentPending){
+      pendingMatches[p.customer_phone] = await findExistingMatchFor(p.customer_name, p.customer_phone);
+    }
+
+    pendingWrap.innerHTML = currentPending.map(p=>{
+      const match = pendingMatches[p.customer_phone];
+      return `
+      <div class="zone-row" data-phone="${escapeHtml(p.customer_phone)}" style="background:var(--paper-dim); flex-wrap:wrap;">
         <div style="flex:1; min-width:120px;">
           <span class="zone-name" style="display:block;">${escapeHtml(p.customer_name || 'بدون اسم')} <span style="font-size:10.5px; font-weight:400; color:var(--stone);">(${p.orders_count} طلب)</span></span>
           ${p.last_address ? `<span style="display:block; font-size:11.5px; color:var(--stone); margin-top:2px;">📍 ${escapeHtml(p.last_address)}</span>` : ''}
+          ${match ? `<span style="display:block; font-size:11.5px; color:var(--ember); margin-top:3px; font-weight:700;">⚠️ يُحتمل أنه العميل "${escapeHtml(match.customer.name)}" المسجَّل بالفعل (${escapeHtml(match.reason)})</span>` : ''}
         </div>
         <span class="zone-fee" style="direction:ltr;">${escapeHtml(p.customer_phone)}</span>
-        <button type="button" data-action="confirmPending" style="border-color:var(--basil); color:var(--basil);">✅ إضافة</button>
+        ${match
+          ? `<button type="button" data-action="mergeIntoExisting" data-existing-id="${match.customer.id}" style="border-color:var(--ember); color:var(--ember);">🔀 دمج مع "${escapeHtml(match.customer.name)}"</button>
+             <button type="button" data-action="confirmPending">➕ إضافة كعميل منفصل</button>`
+          : `<button type="button" data-action="confirmPending" style="border-color:var(--basil); color:var(--basil);">✅ إضافة</button>`}
         <button type="button" data-action="dismissPending">تجاهل</button>
-      </div>`).join('');
+      </div>`;
+    }).join('');
+
+    async function addPendingAsCustomer(p){
+      const { data: upserted, error } = await sb.from('customers').upsert(
+        { restaurant_id: restaurant.id, name: p.customer_name || 'بدون اسم', phone: p.customer_phone, address: p.last_address || null },
+        { onConflict: 'restaurant_id,phone' }
+      ).select('id').maybeSingle();
+      if(error) return { error };
+      if(upserted){ await ensureDefaultAddress(upserted.id, p.last_address); await ensureDefaultPhone(upserted.id, p.customer_phone); }
+      return { data: upserted };
+    }
 
     pendingWrap.querySelectorAll('[data-action="confirmPending"]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
@@ -4231,13 +4290,27 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
         const phone = row.dataset.phone;
         const p = currentPending.find(x=> x.customer_phone === phone);
         btn.disabled = true;
-        const { data: upserted, error } = await sb.from('customers').upsert(
-          { restaurant_id: restaurant.id, name: p.customer_name || 'بدون اسم', phone: p.customer_phone, address: p.last_address || null },
-          { onConflict: 'restaurant_id,phone' }
-        ).select('id').maybeSingle();
+        const { error } = await addPendingAsCustomer(p);
         if(error){ toast('تعذر إضافة العميل'); btn.disabled = false; return; }
-        if(upserted){ await ensureDefaultAddress(upserted.id, p.last_address); await ensureDefaultPhone(upserted.id, p.customer_phone); }
         toast('تمت إضافة العميل بنجاح');
+        await loadCustomers();
+        renderCustomers();
+        await loadAndRenderPendingCustomers();
+      });
+    });
+    // دمج تلقائي: يضيف العميل المرشَّح كعميل جديد مؤقتًا ثم يدمجه فورًا داخل العميل الموجود المطابَق، بضغطة واحدة
+    pendingWrap.querySelectorAll('[data-action="mergeIntoExisting"]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const row = btn.closest('.zone-row');
+        const phone = row.dataset.phone;
+        const p = currentPending.find(x=> x.customer_phone === phone);
+        const existingId = btn.dataset.existingId;
+        btn.disabled = true;
+        const { data: newCust, error } = await addPendingAsCustomer(p);
+        if(error || !newCust){ toast('تعذر تنفيذ الدمج'); btn.disabled = false; return; }
+        const { error: mergeErr } = await sb.rpc('merge_customers', { p_keep_id: existingId, p_merge_id: newCust.id });
+        if(mergeErr){ toast('أُضيف العميل لكن تعذر دمجه تلقائيًا — يمكنك دمجه يدويًا من "🔀 دمج عملاء"'); }
+        else toast('تم الدمج مع العميل الموجود بنجاح');
         await loadCustomers();
         renderCustomers();
         await loadAndRenderPendingCustomers();
@@ -4351,6 +4424,9 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
     const address = addressInput.value.trim();
     if(!name){ nameInput.focus(); return; }
     if(phone.length < 8){ phoneInput.focus(); return; }
+    // كشف فوري وقت التسجيل: هل يوجد عميل مسجَّل بالفعل بنفس رقم الهاتف (بما في ذلك أرقامه الإضافية) أو بنفس الاسم؟
+    const match = await findExistingMatchFor(name, phone);
+    if(match && !confirm(`⚠️ يوجد بالفعل عميل مشابه: "${match.customer.name}" — ${match.customer.phone} (${match.reason}).\nهل تريد المتابعة وإضافته كعميل منفصل رغم ذلك؟`)) return;
     const btn = overlay.querySelector('#customerAddBtn');
     btn.disabled = true;
     const { data: upserted, error } = await sb.from('customers').upsert({ restaurant_id: restaurant.id, name, phone, address: address || null }, { onConflict: 'restaurant_id,phone' }).select('id').maybeSingle();
@@ -4782,7 +4858,10 @@ async function openOrdersOverlay(){
       select.addEventListener('change', async ()=>{
         const newStatus = select.value;
         select.disabled = true;
-        const { error: updErr } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
+        // تسجيل وقت التسليم الفعلي عند الوصول لحالة "تم التسليم" فقط — يُستخدم لاحقًا لحساب متوسط وقت التجهيز الحقيقي (الميزة الذكية لتقدير الوقت)
+        const updatePayload = { status: newStatus };
+        if(newStatus === 'delivered') updatePayload.delivered_at = new Date().toISOString();
+        const { error: updErr } = await sb.from('orders').update(updatePayload).eq('id', orderId);
         if(updErr){ toast('تعذر تحديث حالة الطلب'); select.disabled = false; return; }
         const orderObj = orders.find(o=> o.id === orderId);
         if(orderObj) orderObj.status = newStatus;
@@ -7018,6 +7097,16 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
       </span>
     </h3>
     <div id="salesTrendWrap"></div>
+    <h3 style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
+      <span>💰 هامش الربح</span>
+      <select id="profitPeriod" style="font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid var(--line); background:var(--paper-dim); color:var(--stone);">
+        <option value="7">آخر 7 أيام</option>
+        <option value="30" selected>آخر 30 يومًا</option>
+        <option value="90">آخر 90 يومًا</option>
+        <option value="0">كل الوقت</option>
+      </select>
+    </h3>
+    <div id="profitSummaryWrap" class="orders-empty">جارِ التحميل...</div>
     <h3 style="margin-top:20px;">تقرير المبيعات التفصيلي</h3>
     <div style="display:flex; gap:8px; align-items:end; flex-wrap:wrap; margin-bottom:10px;">
       <div style="display:flex; flex-direction:column; gap:3px;">
@@ -7091,6 +7180,66 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
       renderTrend(btn.dataset.metric);
     });
   });
+
+  // هامش الربح: يعتمد على سعر التكلفة الحالي المسجَّل لكل صنف (وليس سعر التكلفة وقت البيع نفسه، لأنه غير مُسجَّل تاريخيًا)
+  const profitWrap = overlay.querySelector('#profitSummaryWrap');
+  async function renderProfitSummary(days){
+    profitWrap.innerHTML = 'جارِ التحميل...';
+    let ordersQuery = sb.from('orders').select('id').eq('restaurant_id', restaurant.id).neq('status', 'cancelled');
+    if(days > 0){
+      ordersQuery = ordersQuery.gte('created_at', new Date(Date.now() - days*24*3600*1000).toISOString());
+    }
+    const { data: ordersInRange, error: ordersErr } = await ordersQuery;
+    if(ordersErr || !ordersInRange || !ordersInRange.length){
+      profitWrap.innerHTML = `<div class="orders-empty">لا توجد بيانات كافية في هذه الفترة</div>`;
+      return;
+    }
+    const orderIds = ordersInRange.map(o=> o.id);
+    // تُقسَّم على دفعات لتفادي تجاوز الحد الأقصى لطول الاستعلام مع عدد كبير من الطلبات
+    const chunkSize = 300;
+    const soldLines = [];
+    for(let i=0; i<orderIds.length; i+=chunkSize){
+      const chunk = orderIds.slice(i, i+chunkSize);
+      const { data } = await sb.from('order_items').select('item_id,quantity,price').in('order_id', chunk);
+      if(data) soldLines.push(...data);
+    }
+    const costByItemId = {};
+    items.forEach(it=>{ if(it.cost_price != null) costByItemId[it.id] = Number(it.cost_price); });
+    let revenue = 0, cost = 0, totalQty = 0, costedQty = 0;
+    soldLines.forEach(oi=>{
+      const qty = Number(oi.quantity || 0);
+      revenue += Number(oi.price || 0) * qty;
+      totalQty += qty;
+      const c = oi.item_id ? costByItemId[oi.item_id] : undefined;
+      if(c != null){ cost += c * qty; costedQty += qty; }
+    });
+    const profit = revenue - cost;
+    const marginPct = revenue > 0 ? (profit / revenue * 100) : 0;
+    const coverage = totalQty > 0 ? Math.round(costedQty / totalQty * 100) : 0;
+    profitWrap.innerHTML = `
+      <div class="orders-list">
+        <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="o-name" style="font-weight:700;">الإيراد</span>
+          <span class="o-time" style="text-align:left; margin:0;">${revenue.toFixed(2)} ${getRestaurantCurrency(restaurant)}</span>
+        </div>
+        <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="o-name" style="font-weight:700;">التكلفة</span>
+          <span class="o-time" style="text-align:left; margin:0;">${cost.toFixed(2)} ${getRestaurantCurrency(restaurant)}</span>
+        </div>
+        <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="o-name" style="font-weight:700;">صافي الربح</span>
+          <span class="o-time" style="text-align:left; margin:0; color:var(--basil); font-weight:700;">${profit.toFixed(2)} ${getRestaurantCurrency(restaurant)}</span>
+        </div>
+        <div class="order-row" style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="o-name" style="font-weight:700;">هامش الربح</span>
+          <span class="o-time" style="text-align:left; margin:0;">${marginPct.toFixed(1)}%</span>
+        </div>
+      </div>
+      ${coverage < 100 ? `<div class="orders-empty" style="text-align:right; padding-top:10px; font-size:11.5px;">⚠️ سعر التكلفة مسجَّل حاليًا لِـ ${coverage}% فقط من الكمية المباعة في هذه الفترة؛ الأصناف بلا سعر تكلفة مسجَّل غير محتسَبة ضمن التكلفة أعلاه. أضف سعر التكلفة من شاشة تعديل الصنف لزيادة دقة الحساب.</div>` : ''}
+    `;
+  }
+  renderProfitSummary(30);
+  overlay.querySelector('#profitPeriod').addEventListener('change', (e)=> renderProfitSummary(parseInt(e.target.value)));
 
   // تقرير المبيعات التفصيلي — فترة تاريخ مخصصة (من — إلى)
   const salesReportWrap = overlay.querySelector('#salesReportWrap');
@@ -10326,6 +10475,10 @@ function openItemModal(existing){
         <label>السعر قبل الخصم (اختياري) — اتركه فارغًا إذا لا يوجد خصم</label>
         <input type="number" id="itemOldPrice" step="0.01" value="${existing && existing.old_price != null && pricingType!=='sizes' ? existing.old_price : ''}" placeholder="0.00">
       </div>
+      <div class="field" id="costPriceFieldWrap">
+        <label>💰 سعر التكلفة (اختياري وخاص) — لحساب هامش الربح الفعلي في التقارير، ولا يظهر للعميل مطلقًا</label>
+        <input type="number" id="itemCostPrice" min="0" step="0.01" value="${existing && existing.cost_price != null ? existing.cost_price : ''}" placeholder="0.00">
+      </div>
       <div class="field" id="sizesFieldWrap">
         <label>الأحجام والأسعار</label>
         <div id="sizesRowsWrap"></div>
@@ -10513,6 +10666,12 @@ function openItemModal(existing){
 
     let price = 0;
     let old_price = null;
+    let cost_price = null;
+    const costPriceRaw = overlay.querySelector('#itemCostPrice').value.trim();
+    if(costPriceRaw !== ''){
+      const parsedCost = parseFloat(costPriceRaw);
+      if(!isNaN(parsedCost) && parsedCost >= 0) cost_price = parsedCost;
+    }
     let sizesToSave = [];
     const weight_sale_mode = pricing_type === 'weight' ? overlay.querySelector('#itemWeightSaleMode').value : 'both';
     let min_weight_grams = null;
@@ -10586,14 +10745,14 @@ function openItemModal(existing){
     }
     let itemId = existing ? existing.id : null;
     if(existing){
-      const { error } = await sb.from('items').update({ name, name_en, price, old_price, description, image_url: finalImageUrl, pricing_type, weight_sale_mode, min_weight_grams }).eq('id', existing.id);
+      const { error } = await sb.from('items').update({ name, name_en, price, old_price, cost_price, description, image_url: finalImageUrl, pricing_type, weight_sale_mode, min_weight_grams }).eq('id', existing.id);
       if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
       if(originalItemImageUrl && originalItemImageUrl !== finalImageUrl){
         await deleteStorageFileFromUrl(originalItemImageUrl); // امسح الصورة القديمة بعد نجاح الحفظ فقط
       }
     } else {
       const newPos = items.filter(i=>i.category_id===selectedCategoryId).length;
-      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, old_price, description, image_url: finalImageUrl, pricing_type, weight_sale_mode, min_weight_grams, position: newPos }).select().single();
+      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, old_price, cost_price, description, image_url: finalImageUrl, pricing_type, weight_sale_mode, min_weight_grams, position: newPos }).select().single();
       if(error){ toast('تعذر الإضافة'); btn.disabled=false; return; }
       itemId = data.id;
     }
@@ -12490,6 +12649,14 @@ async function loadPublic(slug){
           orderPaymentDetail = rest.instapay_account || null;
         }
       }
+      // تقدير وقت التجهيز الذكي: متوسط وقت التجهيز الفعلي لنفس ساعة اليوم من الطلبات السابقة، مع رجوع تدريجي للرقم الافتراضي اليدوي عند نقص البيانات
+      let smartPrepMinutes = rest.default_prep_minutes || 20;
+      try{
+        const cairoHour = Number(new Date().toLocaleString('en-US', { timeZone:'Africa/Cairo', hour:'2-digit', hour12:false }));
+        const { data: smartMinutesData } = await sb.rpc('get_smart_prep_minutes', { p_restaurant_id: rest.id, p_hour: cairoHour });
+        if(smartMinutesData) smartPrepMinutes = smartMinutesData;
+      }catch(e){ /* عند فشل الاستدعاء، يُستخدم الرقم الافتراضي اليدوي بدلًا منه */ }
+      const estimatedReadyAt = new Date(Date.now() + smartPrepMinutes*60000).toISOString();
       const orderPayload = {
         id: newOrderId,
         restaurant_id: rest.id, customer_name, customer_phone, secondary_phone,
@@ -12500,7 +12667,8 @@ async function loadPublic(slug){
         discount_amount: appliedCoupon ? discount : null,
         payment_method: orderPaymentMethod,
         payment_detail: orderPaymentDetail,
-        payment_status: isOnlinePayment ? 'unpaid' : null
+        payment_status: isOnlinePayment ? 'unpaid' : null,
+        estimated_ready_at: estimatedReadyAt
       };
       const { error } = await sb.from('orders').insert(orderPayload);
       if(error){
@@ -12569,11 +12737,11 @@ async function loadPublic(slug){
           openOrderChannel(orderChannels[0].id, orderMsgText);
         }
       }
-      showOrderSuccessModal(orderRow, orderChannels, orderMsgText, isOnlinePayment, paymentProofFile);
+      showOrderSuccessModal(orderRow, orderChannels, orderMsgText, isOnlinePayment, paymentProofFile, smartPrepMinutes);
     });
   }
 
-  function showOrderSuccessModal(orderRow, channels, orderMsgText, isOnlinePayment, paymentProofFile){
+  function showOrderSuccessModal(orderRow, channels, orderMsgText, isOnlinePayment, paymentProofFile, smartPrepMinutes){
     const orderId = orderRow.id;
     const orderNumberHtml = orderRow.order_number != null
       ? `<div class="orders-empty" style="padding:0 0 10px; font-size:20px; font-weight:800; color:var(--ember); font-family:var(--mono); direction:ltr;">#${orderRow.order_number}</div>`
@@ -12607,6 +12775,10 @@ async function loadPublic(slug){
         <h3>${lang==='en' ? 'Order sent! ✅' : 'تم إرسال طلبك بنجاح! ✅'}</h3>
         ${orderNumberHtml}
         <div class="orders-empty" style="padding:0 0 14px;">${statusMsg}</div>
+        <div class="insight-card" style="text-align:${lang==='en' ? 'left' : 'right'};">
+          <span class="insight-icon">⏱️</span>
+          <span>${lang==='en' ? `Estimated preparation time: around ${smartPrepMinutes} minutes` : `الوقت المتوقع للتجهيز: نحو ${smartPrepMinutes} دقيقة`}</span>
+        </div>
         ${isOnlinePayment ? `<div class="insight-card warning" style="text-align:${lang==='en' ? 'left' : 'right'};">
           <span class="insight-icon">💳</span>
           <span>${lang==='en' ? 'Please complete the transfer if you haven\'t already. Your order will be confirmed once the payment is verified.' : 'برجاء إتمام التحويل إن لم يكن قد تم بعد. سيتم تأكيد طلبك بعد التحقق من الدفع.'}</span>
