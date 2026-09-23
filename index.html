@@ -5302,6 +5302,8 @@ async function openAdminPanel(){
             <option value="sub_expiry_asc">الأقرب لانتهاء الاشتراك</option>
             <option value="name_asc">الاسم (أ-ي)</option>
           </select>
+          <button type="button" class="btn-export-sm" id="adminRefreshBtn" title="تحديث أرقام الزيارات والطلبات الآن">🔄 تحديث</button>
+          <span id="adminRefreshedAt" style="align-self:center; font-size:11px; opacity:.6;"></span>
           <button type="button" class="btn-export-sm" id="adminExportExcelBtn">📥 تصدير Excel</button>
         </div>
         <div class="admin-table-wrap" id="adminTableWrap"><div class="orders-empty">جارِ التحميل...</div></div>
@@ -5419,6 +5421,29 @@ async function openAdminPanel(){
   document.body.appendChild(overlay);
   overlay.querySelector('#adminCloseBtn').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+
+  // تحديث تلقائي لأرقام الزيارات/الطلبات (اليوم/أمس) كل 60 ثانية طالما اللوحة مفتوحة وتبويب المطاعم هو الظاهر،
+  // بالإضافة لزر تحديث يدوي — حتى لا تظل الأرقام ثابتة على قيمتها وقت فتح اللوحة فقط.
+  // refreshStatsOnly الفعلية تُعرَّف داخل loadRestaurantsTab وتُسنَد لهذا المتغير عند كل تحميل للتبويب
+  let refreshStatsFn = null;
+  const adminRefreshBtnEl = overlay.querySelector('#adminRefreshBtn');
+  const adminRefreshedAtEl = overlay.querySelector('#adminRefreshedAt');
+  function stampAdminRefreshedNow(){
+    if(adminRefreshedAtEl) adminRefreshedAtEl.textContent = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' });
+  }
+  if(adminRefreshBtnEl){
+    adminRefreshBtnEl.addEventListener('click', async ()=>{
+      if(!refreshStatsFn) return;
+      adminRefreshBtnEl.disabled = true;
+      await refreshStatsFn();
+      adminRefreshBtnEl.disabled = false;
+    });
+  }
+  const adminAutoRefreshInterval = setInterval(()=>{
+    if(!document.body.contains(overlay)){ clearInterval(adminAutoRefreshInterval); return; }
+    const restaurantsTabActive = !tabPanels.restaurants.classList.contains('hidden');
+    if(restaurantsTabActive && refreshStatsFn) refreshStatsFn();
+  }, 60000);
 
   /* ---------------- تبديل التبويبات ---------------- */
   const tabPanels = {
@@ -5557,33 +5582,53 @@ async function openAdminPanel(){
     (emailRows || []).forEach(row=>{ emailByOwner[row.owner_id] = row.email; });
   }catch(e){}
 
-  // يجلب زيارات المنيو لكل المطاعم دفعة واحدة (آخر 30 يومًا فقط) ويجمّعها حسب المطعم
-  const visitsCutoff = new Date(); visitsCutoff.setDate(visitsCutoff.getDate() - 30);
-  const visitsCutoffStr = visitsCutoff.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
-  const visitsByRestaurant = {};
-  try{
-    const { data: visitRows } = await sb.from('menu_visits_daily').select('*')
-      .in('restaurant_id', allRestaurants.map(r=> r.id))
-      .gte('day', visitsCutoffStr)
-      .order('day', { ascending:false });
-    (visitRows || []).forEach(v=>{
-      if(!visitsByRestaurant[v.restaurant_id]) visitsByRestaurant[v.restaurant_id] = [];
-      visitsByRestaurant[v.restaurant_id].push(v);
-    });
-  }catch(e){}
+  // يجلب زيارات المنيو وطلبات كل المطاعم دفعة واحدة (آخر 30 يومًا فقط) ويجمّعها حسب المطعم.
+  // دالة قابلة لإعادة الاستدعاء دوريًا حتى تبقى أرقام "اليوم/أمس" في القائمة محدّثة دون الحاجة لإغلاق اللوحة وإعادة فتحها
+  let visitsByRestaurant = {};
+  let ordersByRestaurant = {};
+  async function fetchVisitsAndOrders(){
+    const visitsCutoff = new Date(); visitsCutoff.setDate(visitsCutoff.getDate() - 30);
+    const visitsCutoffStr = visitsCutoff.toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+    const newVisitsByRestaurant = {};
+    try{
+      const { data: visitRows } = await sb.from('menu_visits_daily').select('*')
+        .in('restaurant_id', allRestaurants.map(r=> r.id))
+        .gte('day', visitsCutoffStr)
+        .order('day', { ascending:false });
+      (visitRows || []).forEach(v=>{
+        if(!newVisitsByRestaurant[v.restaurant_id]) newVisitsByRestaurant[v.restaurant_id] = [];
+        newVisitsByRestaurant[v.restaurant_id].push(v);
+      });
+    }catch(e){}
+    visitsByRestaurant = newVisitsByRestaurant;
 
-  // يجلب طلبات كل المطاعم دفعة واحدة (آخر 30 يومًا فقط) ويجمّعها حسب المطعم
-  // ملحوظة: يجب أن يمر عبر RPC بصلاحية أدمن (admin_list_recent_orders) لأن جدول orders محمي بـ RLS
-  // يسمح لصاحب المطعم فقط برؤية طلباته — الاستعلام المباشر كان يُرجع نتيجة فارغة لغير حساب الأدمن نفسه
-  const ordersCutoffDate = new Date(); ordersCutoffDate.setDate(ordersCutoffDate.getDate() - 30);
-  const ordersByRestaurant = {};
-  try{
-    const { data: orderRows } = await sb.rpc('admin_list_recent_orders', { p_since: ordersCutoffDate.toISOString() });
-    (orderRows || []).forEach(o=>{
-      if(!ordersByRestaurant[o.restaurant_id]) ordersByRestaurant[o.restaurant_id] = [];
-      ordersByRestaurant[o.restaurant_id].push(o);
+    // ملحوظة: يجب أن يمر عبر RPC بصلاحية أدمن (admin_list_recent_orders) لأن جدول orders محمي بـ RLS
+    // يسمح لصاحب المطعم فقط برؤية طلباته — الاستعلام المباشر كان يُرجع نتيجة فارغة لغير حساب الأدمن نفسه
+    const ordersCutoffDate = new Date(); ordersCutoffDate.setDate(ordersCutoffDate.getDate() - 30);
+    const newOrdersByRestaurant = {};
+    try{
+      const { data: orderRows } = await sb.rpc('admin_list_recent_orders', { p_since: ordersCutoffDate.toISOString() });
+      (orderRows || []).forEach(o=>{
+        if(!newOrdersByRestaurant[o.restaurant_id]) newOrdersByRestaurant[o.restaurant_id] = [];
+        newOrdersByRestaurant[o.restaurant_id].push(o);
+      });
+    }catch(e){}
+    ordersByRestaurant = newOrdersByRestaurant;
+  }
+  await fetchVisitsAndOrders();
+
+  // يعيد جلب أرقام الزيارات/الطلبات فقط، ثم يحدّث سطور الإحصائيات داخل كل صف ظاهر حاليًا في الجدول
+  // — بدون إعادة رسم الصفوف نفسها، حتى لا تُفقد حالة الفتح/الطي ولا تتكرر مستمعات الأحداث
+  async function refreshStatsOnly(){
+    await fetchVisitsAndOrders();
+    wrap.querySelectorAll('.admin-r-meta-block[data-meta-for]').forEach(block=>{
+      const r = allRestaurants.find(x=> x.id === block.dataset.metaFor);
+      if(r) block.innerHTML = statsMetaHtml(r);
     });
-  }catch(e){}
+    stampAdminRefreshedNow();
+  }
+  refreshStatsFn = refreshStatsOnly;
+
 
   function demoStatusHtml(r){
     if(!r.demo_days){ return ''; }
@@ -5649,6 +5694,18 @@ async function openAdminPanel(){
     return { today, yesterday, week: sumSince(7), month: sumSince(30), unseen };
   }
 
+  // يبني سطور إحصائيات الزيارات/الطلبات (اليوم/أمس/آخر 7 أيام) — دالة منفصلة حتى يمكن إعادة توليدها
+  // وحدها عند التحديث التلقائي دون إعادة رسم الصف كله أو فقدان حالة الفتح/الطي أو مستمعي الأحداث
+  function statsMetaHtml(r){
+    const visits = visitsSummaryFor(r.id);
+    const orders = ordersSummaryFor(r.id);
+    return `
+      <div class="admin-r-meta" style="margin-top:2px;">👁️ زيارات اليوم: ${visits.today} · أمس: ${visits.yesterday} · آخر 7 أيام: ${visits.week}</div>
+      <div class="admin-r-meta" style="margin-top:2px;">🧾 طلبات اليوم: ${orders.today} · أمس: ${orders.yesterday} · آخر 7 أيام: ${orders.week}</div>
+      ${orders.unseen > 0 ? `<div class="admin-r-meta" style="margin-top:2px; color:#e08a78;">👀 طلبات لم يفتحها المحل بعد (آخر 30 يوم): ${orders.unseen}</div>` : ''}
+      ${visits.suspendedWeek > 0 ? `<div class="admin-r-meta" style="margin-top:2px; color:#e08a78;">⚠️ محاولات دخول على منيو معلّق (آخر 7 أيام): ${visits.suspendedWeek}</div>` : ''}`;
+  }
+
   function rowHtml(r, idx){
     const created = new Date(r.created_at).toLocaleDateString('ar-EG', { day:'numeric', month:'short', year:'numeric' });
     const ownerEmail = emailByOwner[r.owner_id] || '—';
@@ -5671,10 +5728,7 @@ async function openAdminPanel(){
               <div class="admin-r-meta">/${escapeHtml(r.slug)} · انضم ${created}</div>
               ${siblingBranches.length ? `<div class="admin-r-meta" style="margin-top:2px; color:#8a6d3b;">🏢 فرع من ضمن حساب واحد اشتراكه مشترك مع: ${siblingBranches.map(s=> escapeHtml(s.name)).join('، ')} — أي تعديل هنا بيأثر عليهم كلهم</div>` : ''}
               <div class="admin-r-meta" style="direction:ltr; text-align:right; margin-top:2px;">✉️ ${escapeHtml(ownerEmail)}</div>
-              <div class="admin-r-meta" style="margin-top:2px;">👁️ زيارات اليوم: ${visits.today} · أمس: ${visits.yesterday} · آخر 7 أيام: ${visits.week}</div>
-              <div class="admin-r-meta" style="margin-top:2px;">🧾 طلبات اليوم: ${orders.today} · أمس: ${orders.yesterday} · آخر 7 أيام: ${orders.week}</div>
-              ${orders.unseen > 0 ? `<div class="admin-r-meta" style="margin-top:2px; color:#e08a78;">👀 طلبات لم يفتحها المحل بعد (آخر 30 يوم): ${orders.unseen}</div>` : ''}
-              ${visits.suspendedWeek > 0 ? `<div class="admin-r-meta" style="margin-top:2px; color:#e08a78;">⚠️ محاولات دخول على منيو معلّق (آخر 7 أيام): ${visits.suspendedWeek}</div>` : ''}
+              <div class="admin-r-meta-block" data-meta-for="${r.id}">${statsMetaHtml(r)}</div>
             </div>
           </div>
           <div class="admin-card-actions">
@@ -5855,6 +5909,7 @@ async function openAdminPanel(){
   }
 
   wrap.innerHTML = allRestaurants.map((r, idx)=>rowHtml(r, idx)).join('');
+  stampAdminRefreshedNow();
 
   function bindRowEvents(){
   wrap.querySelectorAll('.admin-reset-pw-btn').forEach(btn=>{
