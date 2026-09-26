@@ -793,6 +793,25 @@ body.pub-design-dark .pub-tab.active{ background:linear-gradient(135deg, var(--e
 body.pub-design-dark .cart-badge{ background:#2A2825; }
 body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
 
+/* تصميم "الأقسام الجانبية" — قائمة أقسام ثابتة بجانب المنتجات بدل التبويبات الأفقية */
+body.pub-design-sidebar{ --ember:#9E1B24; --ember-dark:#6E1218; }
+body.pub-design-sidebar .pub-tab.active{ background:var(--ember); }
+@media (min-width:760px){
+  body.pub-design-sidebar #publicScreen{ max-width:1080px; margin:0 auto; }
+  body.pub-design-sidebar .pub-topbar,
+  body.pub-design-sidebar .pub-logo-wrap,
+  body.pub-design-sidebar .pub-footer{ max-width:none; }
+  body.pub-design-sidebar #pubClosedBanner,
+  body.pub-design-sidebar #pubRepeatOrderBtn{ max-width:none !important; }
+  body.pub-design-sidebar .pub-tabs-wrap{ position:sticky; top:0; float:right; width:210px; background:transparent; padding:10px 0 40px; margin:0; z-index:15; max-width:none; }
+  body.pub-design-sidebar .pub-search{ max-width:none; padding:0 0 12px; }
+  body.pub-design-sidebar .pub-tabs{ flex-direction:column; overflow:visible; max-width:none; padding:0; margin:0; gap:6px; }
+  body.pub-design-sidebar .pub-tab{ width:100%; justify-content:space-between; border-radius:8px; }
+  body.pub-design-sidebar .pub-body{ max-width:none; margin:0; padding:4px 20px 60px; margin-right:230px; overflow:hidden; }
+  body.pub-design-sidebar .pub-cat-heading{ max-width:none; }
+}
+body.pub-design-sidebar .pub-item{ border-radius:10px; }
+
 .design-picker-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:2px 0 4px; }
 @media (max-width:460px){ .design-picker-grid{ grid-template-columns:repeat(2,1fr); gap:10px; } }
 @media (max-width:340px){ .design-picker-grid{ grid-template-columns:1fr; } }
@@ -1117,7 +1136,7 @@ body.pub-design-dark .pub-more-menu{ background:#2A2825; border-color:#3A352D; }
       <div class="pub-icon-btn hidden" id="pubInfoBtn" title="معلومات المطعم">
         <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 12 2.5a7 7 0 0 1 7 7C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg>
       </div>
-      <div class="pub-icon-btn" id="pubDesignBtn" title="تغيير شكل المنيو">
+      <div class="pub-icon-btn hidden" id="pubDesignBtn" title="تغيير شكل المنيو">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="8.5" cy="10" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.3" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15" r="1.3" fill="currentColor" stroke="none"/><path d="M12 3a9 9 0 0 0 0 18c1.1 0 1.6-.9 1.1-1.8-.2-.4-.1-.9.3-1.1.3-.2.7-.2 1 0 1 .6 2.3.2 2.7-.9A9 9 0 0 0 12 3z"/></svg>
       </div>
       <div class="pub-more-wrap">
@@ -8492,6 +8511,16 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
   let pendingLogo = restaurant.logo_url || null;
   const originalLogoUrl = restaurant.logo_url || null;
   let pendingBizType = restaurant.business_type === 'store' ? 'store' : 'restaurant';
+  let pendingMenuDesign = restaurant.menu_design || 'classic';
+  const RS_DESIGN_OPTIONS = [
+    { id:'classic', nameAr:'كلاسيكي' },
+    { id:'grid', nameAr:'شبكة عصرية' },
+    { id:'dark', nameAr:'داكن أنيق' },
+    { id:'luxury', nameAr:'أنيق فاخر' },
+    { id:'minimal', nameAr:'بسيط مرتب' },
+    { id:'showcase', nameAr:'أقسام عرض' },
+    { id:'sidebar', nameAr:'أقسام جانبية' }
+  ];
   const t = () => BIZ_TERMS[pendingBizType];
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
@@ -8641,6 +8670,17 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
         ${restaurant.restriction_notif_settings_disabled ? `<small style="color:var(--stone); margin-top:4px; display:block;">🔒 رقم استلام إشعارات الطلبات مقفول من الإدارة.</small>` : ''}
       </div>
       <div class="field">
+        <label>شكل المنيو</label>
+        <small>اختر الشكل الثابت الذي سيظهر لكل زوار المنيو (يمكن تغييره في أي وقت من هنا).</small>
+        <div class="design-picker-grid" id="rsDesignPickerGrid" style="margin-top:8px;">
+          ${RS_DESIGN_OPTIONS.map(d=>`
+            <div class="design-card${d.id===pendingMenuDesign ? ' selected' : ''}" data-rs-design-id="${d.id}" style="padding:14px 6px;">
+              <div class="design-card-check">✓</div>
+              <div class="design-card-name" style="font-size:13px;">${d.nameAr}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="field">
         <label>الصيانة</label>
         <small>أدوات صيانة دورية، لا حاجة لاستخدامها كثيرًا</small>
         <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
@@ -8655,6 +8695,13 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     </div>`;
   document.body.appendChild(overlay);
   wireEnterToConfirm(overlay, overlay.querySelector('#rsConfirm'));
+
+  overlay.querySelectorAll('#rsDesignPickerGrid .design-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      pendingMenuDesign = card.dataset.rsDesignId;
+      overlay.querySelectorAll('#rsDesignPickerGrid .design-card').forEach(c=> c.classList.toggle('selected', c.dataset.rsDesignId===pendingMenuDesign));
+    });
+  });
 
   // إدارة قائمة المحافظ الإلكترونية (أكثر من محفظة لكل متجر)
   let pendingWallets = (Array.isArray(restaurant.wallets) && restaurant.wallets.length)
@@ -8919,7 +8966,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
         return;
       }
     }
-    const { data, error } = await sb.from('restaurants').update({ logo_url: finalLogoUrl, name, name_en, phone, messenger_username, telegram_username, address, country_code, currency_label, opening_time, closing_time, min_delivery_order, min_delivery_order_online, default_delivery_fee_mode, default_delivery_fee_amount, default_delivery_zone_id, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes, accept_online_payment, wallets, wallet_label: wallets[0] ? wallets[0].label : null, wallet_number: wallets[0] ? wallets[0].number : null, instapay_account }).eq('id', restaurant.id).select().single();
+    const { data, error } = await sb.from('restaurants').update({ logo_url: finalLogoUrl, name, name_en, phone, messenger_username, telegram_username, address, country_code, currency_label, opening_time, closing_time, min_delivery_order, min_delivery_order_online, default_delivery_fee_mode, default_delivery_fee_amount, default_delivery_zone_id, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes, accept_online_payment, wallets, wallet_label: wallets[0] ? wallets[0].label : null, wallet_number: wallets[0] ? wallets[0].number : null, instapay_account, menu_design: pendingMenuDesign }).eq('id', restaurant.id).select().single();
     if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     restaurant = data;
     if(originalLogoUrl && originalLogoUrl !== finalLogoUrl){
@@ -10446,7 +10493,7 @@ async function collectRestaurantBackup(restaurantId){
     'default_prep_minutes','accept_online_payment','instapay_account','wallets','wallet_label','wallet_number',
     'custom_ad_enabled','custom_ad_icon','custom_ad_title','custom_ad_title_en','custom_ad_desc','custom_ad_desc_en',
     'custom_ad_cta','custom_ad_cta_en','custom_ad_url','default_delivery_fee_mode','default_delivery_fee_amount',
-    'default_delivery_zone_id','notification_phone','notification_apikey','country_code','currency_label'];
+    'default_delivery_zone_id','notification_phone','notification_apikey','country_code','currency_label','menu_design'];
   const restaurantSettings = {};
   settingsFields.forEach(f=> restaurantSettings[f] = r[f] !== undefined ? r[f] : null);
 
@@ -11326,27 +11373,24 @@ async function loadPublic(slug){
   let weightInputMode = {}; // item_id -> 'weight' | 'price' (لأصناف البيع بالوزن)
   let isRestaurantOpenNow = true;
   const CART_STORAGE_KEY = `menuCart_${rest.id}`;
-  const DESIGN_KEY = `menuDesign_${rest.id}`;
   const MENU_DESIGNS = [
     { id:'classic', nameAr:'كلاسيكي', nameEn:'Classic', bodyClass:'', bg:'#F6F1E4', card:'#ffffff', accent:'#B8390E', line:'#E4DCC7', layout:'list' },
     { id:'grid', nameAr:'شبكة عصرية', nameEn:'Modern Grid', bodyClass:'pub-design-grid', bg:'#F6F1E4', card:'#ffffff', accent:'#1858C9', line:'#E4DCC7', layout:'grid' },
     { id:'dark', nameAr:'داكن أنيق', nameEn:'Elegant Dark', bodyClass:'pub-design-dark', bg:'#1C1A17', card:'#2A2825', accent:'#D9A441', line:'#3A352D', layout:'list' },
     { id:'luxury', nameAr:'أنيق فاخر', nameEn:'Luxury', bodyClass:'pub-design-luxury', bg:'#F6F1E4', card:'#ffffff', accent:'#7A2048', line:'#E4DCC7', layout:'list' },
     { id:'minimal', nameAr:'بسيط مرتب', nameEn:'Clean Minimal', bodyClass:'pub-design-minimal', bg:'#F6F1E4', card:'#ffffff', accent:'#127475', line:'#E4DCC7', layout:'list' },
-    { id:'showcase', nameAr:'أقسام عرض', nameEn:'Showcase Rows', bodyClass:'pub-design-showcase', bg:'#F3F0FA', card:'#ffffff', accent:'#5B3E8E', line:'#E4DCC7', layout:'shelf' }
+    { id:'showcase', nameAr:'أقسام عرض', nameEn:'Showcase Rows', bodyClass:'pub-design-showcase', bg:'#F3F0FA', card:'#ffffff', accent:'#5B3E8E', line:'#E4DCC7', layout:'shelf' },
+    { id:'sidebar', nameAr:'أقسام جانبية', nameEn:'Sidebar Menu', bodyClass:'pub-design-sidebar', bg:'#F6F1E4', card:'#ffffff', accent:'#9E1B24', line:'#E4DCC7', layout:'list' }
   ];
+  // شكل المنيو أصبح إعدادًا ثابتًا يحدده صاحب المطعم من لوحة التحكم (وليس اختيارًا مؤقتًا لكل زائر)
   function getMenuDesignId(){
-    try{ return localStorage.getItem(DESIGN_KEY) || 'classic'; }catch(e){ return 'classic'; }
+    return (rest && rest.menu_design) || 'classic';
   }
   function applyMenuDesign(){
     const id = getMenuDesignId();
     MENU_DESIGNS.forEach(d=>{ if(d.bodyClass) document.body.classList.remove(d.bodyClass); });
     const d = MENU_DESIGNS.find(x=>x.id===id) || MENU_DESIGNS[0];
     if(d.bodyClass) document.body.classList.add(d.bodyClass);
-  }
-  function setMenuDesign(id){
-    try{ localStorage.setItem(DESIGN_KEY, id); }catch(e){}
-    applyMenuDesign();
   }
 
   function saveCart(){
@@ -12129,55 +12173,6 @@ async function loadPublic(slug){
   });
 
   applyMenuDesign();
-  const designBtn = document.getElementById('pubDesignBtn');
-  if(designBtn) designBtn.addEventListener('click', ()=> openDesignPickerModal());
-
-  function openDesignPickerModal(){
-    const overlay = document.createElement('div');
-    overlay.className = 'overlay';
-    const currentId = getMenuDesignId();
-    overlay.innerHTML = `
-      <div class="modal">
-        <h3>${lang==='en' ? 'Choose menu design' : 'اختر شكل المنيو'}</h3>
-        <p style="margin:0 0 14px; color:var(--stone); font-size:13px;">${lang==='en' ? 'Pick the look you like best while browsing.' : 'اختر الشكل الذي يعجبك أثناء اختيار طلبك.'}</p>
-        <div class="design-picker-grid" id="designPickerGrid">
-          ${MENU_DESIGNS.map(d=>{
-            let previewInner, previewCls = '';
-            if(d.layout === 'grid'){
-              previewInner = `<div class="dp-block" style="background:${d.card}; border:1px solid ${d.line};"></div><div class="dp-block" style="background:${d.card}; border:1px solid ${d.line};"></div>`;
-              previewCls = ' dp-grid';
-            } else if(d.layout === 'shelf'){
-              previewInner = `<div class="dp-block" style="background:${d.card}; border:2px solid ${d.accent}; flex:0 0 40%;"></div><div class="dp-block" style="background:${d.card}; border:1px solid ${d.line}; flex:0 0 40%;"></div><div class="dp-block" style="background:${d.card}; border:1px solid ${d.line}; flex:0 0 40%;"></div>`;
-              previewCls = ' dp-grid';
-            } else {
-              previewInner = `<div class="dp-row" style="background:${d.card}; border:1px solid ${d.line};"></div><div class="dp-row" style="background:${d.card}; border:1px solid ${d.line};"></div><div class="dp-row" style="background:${d.card}; border:1px solid ${d.line};"></div>`;
-            }
-            return `
-            <div class="design-card${d.id===currentId ? ' selected' : ''}" data-design-id="${d.id}">
-              <div class="design-card-check">✓</div>
-              <div class="design-card-preview${previewCls}" style="background:${d.bg}; ${d.layout==='shelf' ? 'overflow:hidden;' : ''}">${previewInner}</div>
-              <div class="design-card-name" style="color:${d.accent};">${lang==='en' ? d.nameEn : d.nameAr}</div>
-            </div>`;
-          }).join('')}
-        </div>
-        <div class="modal-actions">
-          <button class="btn-cancel" id="designPickerCloseBtn">${lang==='en' ? 'Close' : 'إغلاق'}</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.querySelectorAll('.design-card').forEach(card=>{
-      card.addEventListener('click', ()=>{
-        const id = card.dataset.designId;
-        setMenuDesign(id);
-        overlay.querySelectorAll('.design-card').forEach(c=> c.classList.toggle('selected', c.dataset.designId===id));
-        const d = MENU_DESIGNS.find(x=>x.id===id);
-        toast(lang==='en' ? `Design changed: ${d.nameEn}` : `تم تغيير الشكل: ${d.nameAr}`);
-        renderPublicBody();
-      });
-    });
-    overlay.querySelector('#designPickerCloseBtn').addEventListener('click', ()=> overlay.remove());
-    overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
-  }
 
   const moreBtn = document.getElementById('pubMoreBtn');
   const moreMenu = document.getElementById('pubMoreMenu');
