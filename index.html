@@ -762,16 +762,20 @@ body.pub-design-luxury .add-to-cart-btn{ border-radius:24px; }
 @media (max-width:560px){ body.pub-design-luxury .pub-item{ padding:12px; border-radius:12px; } body.pub-design-luxury .pub-item .name-primary{ font-size:16.5px; } }
 /* تفاعل مختلف لـ"أنيق فاخر": لوحة الإضافة مش ظاهرة طول الوقت — تتكشف بسحبة على الصف (أو ضغطة) بدل ما تكون زرار ثابت جنب كل صنف */
 body.pub-design-luxury .pub-item{ position:relative; overflow:hidden; padding:0; }
-body.pub-design-luxury .pub-item-front{ display:flex; align-items:center; gap:12px; padding:16px; background:inherit; border-radius:16px; position:relative; z-index:2; transform:translateX(0); transition:transform .28s cubic-bezier(.4,0,.2,1); touch-action:pan-y; }
+body.pub-design-luxury .pub-item-front{ display:flex; align-items:center; gap:12px; padding:16px; background:inherit; border-radius:16px; position:relative; z-index:2; flex:1 1 auto; width:100%; min-width:0; box-sizing:border-box; transform:translateX(0); transition:transform .28s cubic-bezier(.4,0,.2,1); touch-action:pan-y; }
 body.pub-design-luxury .pub-item-front::after{ content:'‹'; position:absolute; inset-inline-end:6px; top:50%; transform:translateY(-50%); color:var(--stone); font-size:20px; opacity:.6; }
 body.pub-design-luxury .pub-item .chevron{ display:none; }
 body.pub-design-luxury .pub-item .desc-expand{ display:none !important; }
-body.pub-design-luxury .pub-item.swipe-open .pub-item-front{ transform:translateX(-108px); }
-body.pub-design-luxury .pub-item > .item-control{ position:absolute; inset-inline-end:0; top:0; bottom:0; width:108px; display:flex; align-items:center; justify-content:center; padding:10px; background:linear-gradient(135deg, var(--ember), var(--ember-dark)); z-index:1; }
-body.pub-design-luxury .pub-item .item-control .add-to-cart-btn{ background:#fff; color:var(--ember-dark); border-radius:20px; }
+body.pub-design-luxury .pub-item.swipe-open .pub-item-front{ transform:translateX(108px); }
+body.pub-design-luxury .pub-item > .item-control{ position:absolute; inset-inline-end:0; top:0; bottom:0; width:108px; display:flex; align-items:center; justify-content:center; flex-direction:column; flex-wrap:nowrap; gap:6px; padding:10px; margin:0; background:linear-gradient(135deg, var(--ember), var(--ember-dark)); z-index:1; box-sizing:border-box; }
+body.pub-design-luxury .pub-item .item-control .add-to-cart-btn{ background:#fff; color:var(--ember-dark); border-radius:20px; width:100%; flex:none; }
+body.pub-design-luxury .pub-item .item-control .qty-stepper{ width:auto; justify-content:center; margin-top:0; }
 body.pub-design-luxury .pub-item .item-control .qty-stepper .qty-btn{ background:#fff; color:var(--ember-dark); }
 body.pub-design-luxury .pub-item .item-control .qty-val{ color:#fff; font-weight:800; }
-body.pub-design-luxury .pub-item .item-control .variant-select{ font-size:10.5px; }
+body.pub-design-luxury .pub-item .item-control .variant-select{ font-size:10.5px; width:100%; flex:none; padding:4px; }
+@media (max-width:560px){
+  body.pub-design-luxury .pub-item .item-control{ width:96px; }
+}
 
 body.pub-design-minimal{ --paper:#EFF7F6; --paper-dim:#E3F0EE; --ember:#127475; --ember-dark:#0B5457; --basil:#E8734A; --basil-dark:#C85A34; }
 body.pub-design-minimal .pub-body{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:6px 14px; }
@@ -12377,18 +12381,18 @@ async function loadPublic(slug){
       if(e.target.closest('.item-control')) return;
       setOpen(!row.classList.contains('swipe-open'));
     });
-    // سحب حقيقي باللمس بيكشف اللوحة تدريجيًا مع حركة الإصبع
+    // سحب حقيقي باللمس بيكشف اللوحة تدريجيًا مع حركة الإصبع (اللوحة على يسار الصف، فبيتكشف بسحب المحتوى لليمين)
     front.addEventListener('touchstart', (e)=>{
       dragging = true; moved = false;
       startX = e.touches[0].clientX;
-      currentX = row.classList.contains('swipe-open') ? -REVEAL : 0;
+      currentX = row.classList.contains('swipe-open') ? REVEAL : 0;
     }, { passive:true });
     front.addEventListener('touchmove', (e)=>{
       if(!dragging) return;
       const delta = e.touches[0].clientX - startX;
       if(Math.abs(delta) > 6) moved = true;
       let next = currentX + delta;
-      next = Math.max(-REVEAL, Math.min(0, next));
+      next = Math.max(0, Math.min(REVEAL, next));
       front.style.transform = `translateX(${next}px)`;
     }, { passive:true });
     front.addEventListener('touchend', ()=>{
@@ -12398,7 +12402,7 @@ async function loadPublic(slug){
       const transform = front.style.transform;
       const match = /translateX\((-?\d+(?:\.\d+)?)px\)/.exec(transform);
       const val = match ? parseFloat(match[1]) : 0;
-      setOpen(val < -REVEAL/2);
+      setOpen(val > REVEAL/2);
     });
   }
 
