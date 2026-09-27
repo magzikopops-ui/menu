@@ -823,6 +823,45 @@ body.pub-design-aurora .pub-tab{ border-radius:12px; }
 body.pub-design-aurora .pub-tab.active{ background:linear-gradient(135deg, var(--ember), var(--ember-dark)); }
 body.pub-design-aurora .add-to-cart-btn{ border-radius:12px; }
 
+/* تصميم "نيون الشارع" — هوية مختلفة تمامًا: خلفية داكنة، ألوان نيون (ليموني/فوشيا)، وكروت أصناف على شكل بوستر صور بدل الصفوف التقليدية */
+body.pub-design-neon{ --paper:#0A0A0D; --paper-dim:#16161A; --ink:#F5F5F0; --line:#28282E; --stone:#8C8C94; --stone-light:#3A3A40; --ember:#D4FF3F; --ember-dark:#A9D400; --basil:#FF3DA6; --basil-dark:#D42E93; }
+body.pub-design-neon{ background:var(--paper); }
+body.pub-design-neon .pub-item, body.pub-design-neon .modal, body.pub-design-neon .pub-lang-btn, body.pub-design-neon .pub-icon-btn,
+body.pub-design-neon .pub-search input, body.pub-design-neon .qty-btn, body.pub-design-neon .design-card,
+body.pub-design-neon .variant-select, body.pub-design-neon select, body.pub-design-neon input, body.pub-design-neon textarea,
+body.pub-design-neon .cart-badge, body.pub-design-neon #pubRepeatOrderBtn{ background:var(--paper-dim); border-color:var(--line); color:var(--ink); }
+body.pub-design-neon .variant-select option, body.pub-design-neon select option{ background:var(--paper-dim); color:var(--ink); }
+body.pub-design-neon .pub-topbar{ border-bottom:3px solid var(--ember); padding-bottom:16px; }
+body.pub-design-neon .pub-icon-btn.about-btn{ background:var(--ember); border-color:var(--ember); color:#0A0A0D; }
+body.pub-design-neon .pub-logo-wrap img{ background:#fff; border-radius:12px; padding:8px; }
+body.pub-design-neon .pub-logo-wrap .name-fallback, body.pub-design-neon .pub-logo-wrap .pub-rest-name{ text-transform:uppercase; letter-spacing:1px; text-shadow:0 0 16px rgba(212,255,63,.35); }
+body.pub-design-neon .pub-search input{ border-radius:999px; border-width:1.5px; }
+body.pub-design-neon .pub-search input:focus{ outline:none; border-color:var(--ember); box-shadow:0 0 0 3px rgba(212,255,63,.18); }
+body.pub-design-neon .pub-tabs-wrap{ background:var(--paper); }
+body.pub-design-neon .pub-tab{ border-radius:7px; text-transform:uppercase; font-size:12px; letter-spacing:.5px; box-shadow:none; }
+body.pub-design-neon .pub-tab:hover{ border-color:var(--ember); }
+body.pub-design-neon .pub-tab.active{ background:var(--ember); color:#0A0A0D; border-color:var(--ember); box-shadow:0 0 18px rgba(212,255,63,.5); }
+body.pub-design-neon .pub-tab .pub-tab-count{ background:rgba(0,0,0,.4); color:var(--ember); }
+body.pub-design-neon .pub-tab.active .pub-tab-count{ background:rgba(0,0,0,.15); color:#0A0A0D; }
+body.pub-design-neon .pub-cat-heading{ text-transform:uppercase; letter-spacing:1px; font-size:24px; border-bottom:none; margin:36px 2px 18px; }
+body.pub-design-neon .pub-cat-heading::after{ content:''; display:block; width:56px; height:6px; background:var(--ember); margin-top:9px; transform:skewX(-20deg); box-shadow:0 0 12px rgba(212,255,63,.55); }
+body.pub-design-neon #pubBody{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+body.pub-design-neon .pub-cat-heading, body.pub-design-neon .pub-empty{ grid-column:1/-1; }
+body.pub-design-neon .pub-item{ position:relative; flex-direction:column; align-items:stretch; padding:0; overflow:hidden; margin-bottom:0; gap:0; border-radius:18px 6px 18px 6px; min-height:0; }
+body.pub-design-neon .pub-item img, body.pub-design-neon .pub-item .no-img{ width:100%; height:118px; border-radius:0; }
+body.pub-design-neon .pub-item .no-img{ font-size:28px; }
+body.pub-design-neon .pub-item .chevron{ position:absolute; top:8px; inset-inline-start:8px; width:24px; height:24px; background:rgba(0,0,0,.55); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--ember); z-index:3; font-size:12px; }
+body.pub-design-neon .pub-item .info{ padding:10px 12px 2px; }
+body.pub-design-neon .pub-item .name-primary{ font-size:14px; }
+body.pub-design-neon .pub-item .name-secondary{ font-size:11px; }
+body.pub-design-neon .pub-item .price{ background:var(--ember); color:#0A0A0D; padding:2px 9px; border-radius:6px; font-size:12.5px; margin-top:6px; }
+body.pub-design-neon .pub-item .price .old-price{ color:rgba(10,10,13,.55); }
+body.pub-design-neon .pub-item .desc-expand{ display:none !important; }
+body.pub-design-neon .pub-item .item-control{ width:auto; align-self:stretch; padding:8px 12px 12px; }
+body.pub-design-neon .add-to-cart-btn{ background:var(--basil); border-radius:8px; text-transform:uppercase; font-size:11.5px; letter-spacing:.4px; }
+body.pub-design-neon .add-to-cart-btn:hover{ background:var(--basil-dark); }
+@media (max-width:380px){ body.pub-design-neon #pubBody{ grid-template-columns:1fr; } body.pub-design-neon .pub-item{ flex-direction:row; border-radius:14px; } body.pub-design-neon .pub-item img, body.pub-design-neon .pub-item .no-img{ width:96px; height:auto; align-self:stretch; } }
+
 /* وضع داكن اختياري يفعّله الزائر بنفسه فوق أي شكل مختار — يغيّر الحيادي فقط ويحافظ على لون العلامة الخاص بالتصميم */
 body.pub-user-dark{ --paper:#17151C; --paper-dim:#211E29; --ink:#F0ECE0; --line:#37333F; --stone:#9C96A8; --stone-light:#37333F; }
 body.pub-user-dark .pub-item, body.pub-user-dark .modal, body.pub-user-dark .pub-lang-btn, body.pub-user-dark .pub-icon-btn,
@@ -8541,7 +8580,8 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     { id:'minimal', nameAr:'بسيط مرتب' },
     { id:'showcase', nameAr:'أقسام عرض' },
     { id:'sidebar', nameAr:'أقسام جانبية' },
-    { id:'aurora', nameAr:'أورورا نابض (ألوان مختلفة تمامًا)' }
+    { id:'aurora', nameAr:'أورورا نابض (ألوان مختلفة تمامًا)' },
+    { id:'neon', nameAr:'نيون الشارع (تصميم مختلف كليًا)' }
   ];
   const t = () => BIZ_TERMS[pendingBizType];
   const overlay = document.createElement('div');
@@ -11403,7 +11443,8 @@ async function loadPublic(slug){
     { id:'minimal', nameAr:'بسيط مرتب', nameEn:'Clean Minimal', bodyClass:'pub-design-minimal', bg:'#F6F1E4', card:'#ffffff', accent:'#127475', line:'#E4DCC7', layout:'list' },
     { id:'showcase', nameAr:'أقسام عرض', nameEn:'Showcase Rows', bodyClass:'pub-design-showcase', bg:'#F3F0FA', card:'#ffffff', accent:'#5B3E8E', line:'#E4DCC7', layout:'shelf' },
     { id:'sidebar', nameAr:'أقسام جانبية', nameEn:'Sidebar Menu', bodyClass:'pub-design-sidebar', bg:'#F6F1E4', card:'#ffffff', accent:'#9E1B24', line:'#E4DCC7', layout:'list' },
-    { id:'aurora', nameAr:'أورورا نابض', nameEn:'Aurora', bodyClass:'pub-design-aurora', bg:'#F4F1FC', card:'#ffffff', accent:'#7C3AED', line:'#DAD0F0', layout:'list' }
+    { id:'aurora', nameAr:'أورورا نابض', nameEn:'Aurora', bodyClass:'pub-design-aurora', bg:'#F4F1FC', card:'#ffffff', accent:'#7C3AED', line:'#DAD0F0', layout:'list' },
+    { id:'neon', nameAr:'نيون الشارع', nameEn:'Neon Street', bodyClass:'pub-design-neon', bg:'#0A0A0D', card:'#16161A', accent:'#D4FF3F', line:'#28282E', layout:'grid' }
   ];
   // شكل المنيو أصبح إعدادًا ثابتًا يحدده صاحب المطعم من لوحة التحكم (وليس اختيارًا مؤقتًا لكل زائر)
   function getMenuDesignId(){
