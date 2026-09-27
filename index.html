@@ -275,6 +275,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .pub-cat-heading{ font-family:var(--display); font-size:19px; color:var(--ink); margin:26px 2px 12px; padding-bottom:8px; border-bottom:2px solid var(--ember); letter-spacing:.3px; }
 .pub-body{ max-width:640px; margin:0 auto; padding:4px 20px 60px; }
 .pub-item{ display:flex; align-items:center; gap:12px; padding:14px 12px; border:1px solid var(--line); border-radius:10px; margin-bottom:10px; background:#fff; }
+.pub-item-front{ display:contents; }
 .pub-item .chevron{ color:var(--stone); font-size:13px; flex-shrink:0; cursor:pointer; user-select:none; }
 .pub-item .info{ flex:1; min-width:0; }
 .pub-item .item-control{ flex-shrink:0; width:104px; display:flex; flex-direction:column; align-items:stretch; justify-content:center; gap:6px; align-self:center; }
@@ -736,6 +737,19 @@ body.pub-design-dark .pub-side-ad-right{ background:linear-gradient(160deg, #2E3
 body.pub-design-dark .pub-side-ad-right[data-active="quran"]{ background:linear-gradient(160deg, #2D3A2C 0%, #222C21 100%); }
 body.pub-design-dark .pub-side-ad-left[data-active="sentence"]{ background:linear-gradient(165deg, #3A342B 0%, #2C2721 100%); }
 body.pub-design-dark .pub-side-ad::after{ background:radial-gradient(circle at 30% 15%, rgba(255,255,255,.06), transparent 55%); }
+/* تفاعل مختلف لـ"داكن أنيق": الضغط على الصف يفتح نافذة تفاصيل سريعة بدل الشرح المطوي داخل الصف */
+body.pub-design-dark .pub-item{ cursor:pointer; }
+body.pub-design-dark .pub-item > .item-control{ display:none; }
+body.pub-design-dark .pub-item .chevron{ display:flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:#332C22; color:var(--ember); font-size:14px; }
+body.pub-design-dark .pub-item .chevron::before{ content:'ⓘ'; }
+body.pub-design-dark .pub-item .desc-expand{ display:none !important; }
+.dark-quickview-modal{ padding:0; overflow-y:auto; position:relative; }
+.dark-quickview-modal .pub-item-front{ display:flex; flex-direction:column; padding:22px 22px 0; gap:8px; }
+.dark-quickview-modal .pub-item-front .chevron{ display:none; }
+.dark-quickview-modal .pub-item-front img, .dark-quickview-modal .pub-item-front .no-img{ width:100%; height:170px; border-radius:12px; }
+.dark-quickview-modal .pub-item-front .desc-expand{ display:block !important; }
+.dark-quickview-modal .item-control{ padding:18px 22px 22px; width:auto; }
+.dark-quickview-close{ position:absolute; top:12px; inset-inline-end:12px; width:32px; height:32px; border-radius:50%; border:none; background:rgba(0,0,0,.35); color:#fff; font-size:14px; cursor:pointer; }
 
 body.pub-design-luxury{ --paper:#F8EFF2; --paper-dim:#F0E1E7; --ember:#7A2048; --ember-dark:#5C1836; --basil:#B8860B; --basil-dark:#8F6A08; }
 body.pub-design-luxury .pub-item{ padding:16px; border-radius:16px; border:none; box-shadow:0 4px 16px rgba(32,31,29,.09); margin-bottom:16px; }
@@ -746,6 +760,18 @@ body.pub-design-luxury .pub-cat-heading{ font-size:22px; border-bottom-width:3px
 body.pub-design-luxury .pub-tab.active{ background:linear-gradient(135deg, var(--ember), var(--ember-dark)); }
 body.pub-design-luxury .add-to-cart-btn{ border-radius:24px; }
 @media (max-width:560px){ body.pub-design-luxury .pub-item{ padding:12px; border-radius:12px; } body.pub-design-luxury .pub-item .name-primary{ font-size:16.5px; } }
+/* تفاعل مختلف لـ"أنيق فاخر": لوحة الإضافة مش ظاهرة طول الوقت — تتكشف بسحبة على الصف (أو ضغطة) بدل ما تكون زرار ثابت جنب كل صنف */
+body.pub-design-luxury .pub-item{ position:relative; overflow:hidden; padding:0; }
+body.pub-design-luxury .pub-item-front{ display:flex; align-items:center; gap:12px; padding:16px; background:inherit; border-radius:16px; position:relative; z-index:2; transform:translateX(0); transition:transform .28s cubic-bezier(.4,0,.2,1); touch-action:pan-y; }
+body.pub-design-luxury .pub-item-front::after{ content:'‹'; position:absolute; inset-inline-end:6px; top:50%; transform:translateY(-50%); color:var(--stone); font-size:20px; opacity:.6; }
+body.pub-design-luxury .pub-item .chevron{ display:none; }
+body.pub-design-luxury .pub-item .desc-expand{ display:none !important; }
+body.pub-design-luxury .pub-item.swipe-open .pub-item-front{ transform:translateX(-108px); }
+body.pub-design-luxury .pub-item > .item-control{ position:absolute; inset-inline-end:0; top:0; bottom:0; width:108px; display:flex; align-items:center; justify-content:center; padding:10px; background:linear-gradient(135deg, var(--ember), var(--ember-dark)); z-index:1; }
+body.pub-design-luxury .pub-item .item-control .add-to-cart-btn{ background:#fff; color:var(--ember-dark); border-radius:20px; }
+body.pub-design-luxury .pub-item .item-control .qty-stepper .qty-btn{ background:#fff; color:var(--ember-dark); }
+body.pub-design-luxury .pub-item .item-control .qty-val{ color:#fff; font-weight:800; }
+body.pub-design-luxury .pub-item .item-control .variant-select{ font-size:10.5px; }
 
 body.pub-design-minimal{ --paper:#EFF7F6; --paper-dim:#E3F0EE; --ember:#127475; --ember-dark:#0B5457; --basil:#E8734A; --basil-dark:#C85A34; }
 body.pub-design-minimal .pub-body{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:6px 14px; }
@@ -777,9 +803,9 @@ body.pub-design-showcase .pub-cat-shelf .pub-item .item-control{ width:auto; ali
 body.pub-design-showcase .shelf-wrap{ position:relative; }
 body.pub-design-showcase .shelf-arrow{ display:none; position:absolute; top:calc(50% - 8px); transform:translateY(-50%); width:34px; height:34px; border-radius:50%; border:1px solid var(--line); background:#fff; color:var(--ink); font-size:19px; font-weight:800; line-height:1; cursor:pointer; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(32,31,29,.18); z-index:5; padding:0; }
 body.pub-design-showcase .shelf-arrow:hover{ color:var(--ember); border-color:var(--ember); }
-body.pub-design-showcase .shelf-arrow-left{ left:-6px; }
-body.pub-design-showcase .shelf-arrow-right{ right:-6px; }
-@media (hover:hover) and (pointer:fine){ body.pub-design-showcase .shelf-arrow{ display:flex; } }
+body.pub-design-showcase .shelf-arrow-left{ left:2px; }
+body.pub-design-showcase .shelf-arrow-right{ right:2px; }
+@media (hover:hover) and (pointer:fine){ body.pub-design-showcase .shelf-arrow{ display:flex; } body.pub-design-showcase .pub-cat-shelf{ padding:2px 38px 16px; } }
 body.pub-design-showcase #pubBody:not(.shelf-mode){ display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:12px; align-items:start; }
 body.pub-design-showcase #pubBody:not(.shelf-mode) .pub-cat-heading{ grid-column:1/-1; }
 body.pub-design-showcase #pubBody:not(.shelf-mode) .pub-empty{ grid-column:1/-1; }
@@ -811,6 +837,17 @@ body.pub-design-sidebar .pub-tab.active{ background:var(--ember); }
   body.pub-design-sidebar .pub-cat-heading{ max-width:none; }
 }
 body.pub-design-sidebar .pub-item{ border-radius:10px; }
+/* تفاعل مختلف لـ"الأقسام الجانبية" على الموبايل: بدل التبويبات الأفقية، الأقسام تتحول لقوائم قابلة للطي — قسم واحد مفتوح في كل مرة */
+@media (max-width:759px){
+  body.pub-design-sidebar.accordion-mode .pub-tabs-wrap{ display:none; }
+  body.pub-design-sidebar .pub-cat-group{ border:1px solid var(--line); border-radius:12px; margin-bottom:12px; overflow:hidden; background:#fff; }
+  body.pub-design-sidebar .pub-cat-group .pub-cat-heading{ margin:0; padding:14px 16px; border-bottom:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:var(--paper-dim); }
+  body.pub-design-sidebar .pub-cat-group .pub-cat-heading::after{ content:'+'; font-size:20px; font-weight:700; color:var(--ember); }
+  body.pub-design-sidebar .pub-cat-group.open .pub-cat-heading::after{ content:'−'; }
+  body.pub-design-sidebar .pub-cat-group .pub-cat-items{ max-height:0; overflow:hidden; padding:0 12px; transition:max-height .25s ease; }
+  body.pub-design-sidebar .pub-cat-group.open .pub-cat-items{ max-height:4000px; padding:12px; }
+  body.pub-design-sidebar .pub-cat-group .pub-item:last-child{ margin-bottom:0; }
+}
 
 /* تصميم "أورورا" — هوية لونية مختلفة تمامًا (بنفسجي بارد بدل الألوان الدافئة) */
 body.pub-design-aurora{ --paper:#F4F1FC; --paper-dim:#EAE4F9; --ink:#241B3A; --line:#DAD0F0; --stone:#8D82A8; --stone-light:#E4DCF7; --ember:#7C3AED; --ember-dark:#5B21B6; --basil:#7C3AED; --basil-dark:#5B21B6; }
@@ -822,6 +859,16 @@ body.pub-design-aurora .pub-cat-heading::before{ content:""; position:absolute; 
 body.pub-design-aurora .pub-tab{ border-radius:12px; }
 body.pub-design-aurora .pub-tab.active{ background:linear-gradient(135deg, var(--ember), var(--ember-dark)); }
 body.pub-design-aurora .add-to-cart-btn{ border-radius:12px; }
+/* تفاعل مختلف لـ"أورورا": مفيش زرار إضافة منفصل للأصناف البسيطة — الكارت كله قابل للضغط ويضيف للسلة مباشرة */
+body.pub-design-aurora .pub-item{ cursor:pointer; transition:transform .12s ease, box-shadow .12s ease; }
+body.pub-design-aurora .pub-item:active{ transform:scale(.97); }
+body.pub-design-aurora .pub-item .chevron{ display:none; }
+body.pub-design-aurora .pub-item .desc-expand{ display:-webkit-box !important; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-top:4px; }
+body.pub-design-aurora .pub-item:has(> .item-control > .add-to-cart-btn[data-action="add"]) > .item-control,
+body.pub-design-aurora .pub-item:has(> .item-control > .add-to-cart-btn[data-action="addUnit"]) > .item-control{ display:none; }
+body.pub-design-aurora .pub-item:has(> .item-control > .add-to-cart-btn[data-action="add"])::after,
+body.pub-design-aurora .pub-item:has(> .item-control > .add-to-cart-btn[data-action="addUnit"])::after{ content:'+'; position:absolute; inset-inline-end:14px; bottom:14px; width:28px; height:28px; border-radius:50%; background:var(--ember); color:#fff; display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:800; }
+body.pub-design-aurora .pub-item{ position:relative; }
 
 /* تصميم "أخضر طازج" — هوية مختلفة تمامًا: خلفية داكنة أنيقة بألوان مألوفة للمطاعم (أخضر طازج + كهرماني دافئ)، وكروت أصناف على شكل بوستر صور بدل الصفوف التقليدية */
 body.pub-design-fresh{ --paper:#16221D; --paper-dim:#1F2F28; --ink:#EFF5F1; --line:#33473F; --stone:#88A296; --stone-light:#3A4F46; --ember:#3FAE6B; --ember-dark:#2C8C53; --basil:#E8912E; --basil-dark:#C97418; }
@@ -11947,14 +11994,16 @@ async function loadPublic(slug){
       }
       return `${headerHtml}
       <div class="pub-item" data-id="${i.id}">
-        <span class="chevron" data-action="toggle">${i.description ? '▾' : ''}</span>
-        ${i.image_url ? `<img src="${i.image_url}" data-cache-src="${i.image_url}" loading="lazy" decoding="async">` : `<div class="no-img">${biz(rest.business_type,'placeholderIcon')}</div>`}
-        <div class="info">
-          <div class="name-primary">${escapeHtml(tName(i.name, i.name_en))}${topItemIds.has(i.id) ? ` <span title="${lang==='en' ? 'Bestseller' : 'الأكثر طلبًا'}">🔥</span>` : ''}</div>
-          ${secondaryName(i.name, i.name_en) ? `<div class="name-secondary">${escapeHtml(secondaryName(i.name, i.name_en))}</div>` : ''}
-          <div class="price">${priceLine}</div>
-          ${i.description ? `<div class="desc-expand">${escapeHtml(i.description)}</div>` : ''}
-          ${cartLinesHtml ? `<div class="variant-cart-lines">${cartLinesHtml}</div>` : ''}
+        <div class="pub-item-front">
+          <span class="chevron" data-action="toggle">${i.description ? '▾' : ''}</span>
+          ${i.image_url ? `<img src="${i.image_url}" data-cache-src="${i.image_url}" loading="lazy" decoding="async">` : `<div class="no-img">${biz(rest.business_type,'placeholderIcon')}</div>`}
+          <div class="info">
+            <div class="name-primary">${escapeHtml(tName(i.name, i.name_en))}${topItemIds.has(i.id) ? ` <span title="${lang==='en' ? 'Bestseller' : 'الأكثر طلبًا'}">🔥</span>` : ''}</div>
+            ${secondaryName(i.name, i.name_en) ? `<div class="name-secondary">${escapeHtml(secondaryName(i.name, i.name_en))}</div>` : ''}
+            <div class="price">${priceLine}</div>
+            ${i.description ? `<div class="desc-expand">${escapeHtml(i.description)}</div>` : ''}
+            ${cartLinesHtml ? `<div class="variant-cart-lines">${cartLinesHtml}</div>` : ''}
+          </div>
         </div>
         <div class="item-control">${controlHtml}</div>
       </div>`;
@@ -12003,6 +12052,44 @@ async function loadPublic(slug){
       });
       body.innerHTML = '';
       body.appendChild(frag);
+    }
+
+    // تصميم "الأقسام الجانبية" على الموبايل: بدل التبويبات الأفقية، الأقسام تتحول لقوائم قابلة للطي (أكورديون) — قسم واحد مفتوح في كل مرة
+    const isSidebarAccordion = document.body.classList.contains('pub-design-sidebar') && window.innerWidth < 760 && activeCat === 'ALL' && !searchTerm;
+    body.classList.toggle('accordion-mode', isSidebarAccordion);
+    if(isSidebarAccordion){
+      const kids = Array.from(body.children);
+      const frag = document.createDocumentFragment();
+      let currentGroup = null;
+      let currentList = null;
+      let groupIndex = 0;
+      kids.forEach(el=>{
+        if(el.classList.contains('pub-cat-heading')){
+          groupIndex++;
+          currentGroup = document.createElement('div');
+          currentGroup.className = 'pub-cat-group' + (groupIndex === 1 ? ' open' : '');
+          el.setAttribute('data-action', 'toggleCatGroup');
+          currentGroup.appendChild(el);
+          currentList = document.createElement('div');
+          currentList.className = 'pub-cat-items';
+          currentGroup.appendChild(currentList);
+          frag.appendChild(currentGroup);
+        } else if(el.classList.contains('pub-item') && currentList){
+          currentList.appendChild(el);
+        } else {
+          frag.appendChild(el);
+        }
+      });
+      body.innerHTML = '';
+      body.appendChild(frag);
+      body.querySelectorAll('.pub-cat-group > .pub-cat-heading').forEach(h=>{
+        h.addEventListener('click', ()=>{
+          const grp = h.closest('.pub-cat-group');
+          const wasOpen = grp.classList.contains('open');
+          body.querySelectorAll('.pub-cat-group.open').forEach(g=> g.classList.remove('open'));
+          if(!wasOpen) grp.classList.add('open');
+        });
+      });
     }
 
     // منتقي الإضافات/المتغيرات — يعرض كل الأقسام المرتبطة بالصنف (مجموعات + إضافات خاصة به):
@@ -12212,14 +12299,104 @@ async function loadPublic(slug){
         addToCartRespectingAddons(item, baseKey, sizeObj.size_name, Number(sizeObj.price), null, card ? (card.querySelector('img') || card) : btn);
       });
     });
+    const isDarkDesign = document.body.classList.contains('pub-design-dark');
+    const isAuroraDesign = document.body.classList.contains('pub-design-aurora');
+    const isLuxuryDesign = document.body.classList.contains('pub-design-luxury');
     body.querySelectorAll('.pub-item').forEach(row=>{
       const chevron = row.querySelector('[data-action="toggle"]');
-      if(chevron && chevron.textContent){
+      if(isDarkDesign){
+        // "داكن أنيق": بدل الشرح المطوي جوه الصف، الضغط على الصف بيفتح نافذة تفاصيل سريعة (Quick View) فيها الصورة والوصف وعناصر التحكم نفسها
+        row.addEventListener('click', (e)=>{
+          if(e.target.closest('.item-control') || e.target.closest('.variant-cart-lines')) return;
+          openDarkQuickView(row);
+        });
+      } else if(isAuroraDesign){
+        // "أورورا": مفيش زرار إضافة منفصل للأصناف البسيطة — الضغط في أي مكان في الكارت بيضيفها للسلة على طول
+        row.addEventListener('click', (e)=>{
+          if(e.target.closest('.item-control') || e.target.closest('.variant-cart-lines')) return;
+          const primaryBtn = row.querySelector('.item-control .add-to-cart-btn, .item-control .qty-btn[data-action="inc"]');
+          if(primaryBtn) primaryBtn.click();
+        });
+      } else if(isLuxuryDesign){
+        // "أنيق فاخر": اسحب الصف لليسار عشان تظهر لوحة الإضافة السريعة بدل ما تكون ظاهرة طول الوقت
+        wireLuxurySwipe(row);
+      } else if(chevron && chevron.textContent){
         row.addEventListener('click', ()=> row.classList.toggle('expanded'));
       }
     });
     body.querySelectorAll('.variant-select').forEach(sel=>{
       sel.addEventListener('click', (e)=> e.stopPropagation());
+    });
+  }
+
+  // "داكن أنيق": نافذة تفاصيل سريعة — بتنقل عنصر التحكم الحقيقي (بكل مستمعاته) جوه المودال بدل ما تستنسخه، وترجعه مكانه لما تتقفل
+  function openDarkQuickView(row){
+    const control = row.querySelector('.item-control');
+    const front = row.querySelector('.pub-item-front');
+    if(!control || !front) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay dark-quickview-overlay';
+    const modal = document.createElement('div');
+    modal.className = 'modal dark-quickview-modal';
+    const frontClone = front.cloneNode(true);
+    frontClone.querySelectorAll('.item-control').forEach(n=> n.remove());
+    modal.appendChild(frontClone);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    modal.appendChild(control);
+    control.classList.add('in-quickview');
+    function close(){
+      control.classList.remove('in-quickview');
+      row.appendChild(control);
+      overlay.remove();
+    }
+    overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'dark-quickview-close';
+    closeBtn.setAttribute('aria-label', lang==='en' ? 'Close' : 'إغلاق');
+    closeBtn.textContent = '✕';
+    closeBtn.addEventListener('click', close);
+    modal.appendChild(closeBtn);
+  }
+
+  // "أنيق فاخر": سحب الصف يكشف لوحة الإضافة السريعة بدل زرار ثابت — مع دعم اللمس والماوس
+  function wireLuxurySwipe(row){
+    const front = row.querySelector('.pub-item-front');
+    if(!front) return;
+    const REVEAL = 108;
+    let startX = 0, currentX = 0, dragging = false, moved = false;
+    function setOpen(open){
+      row.classList.toggle('swipe-open', open);
+      front.style.transform = '';
+    }
+    // نقرة عادية (بدون سحب فعلي) بتفتح/تقفل اللوحة — ده اللي بيشتغل على شاشات الكمبيوتر بالماوس
+    front.addEventListener('click', (e)=>{
+      if(e.target.closest('.item-control')) return;
+      setOpen(!row.classList.contains('swipe-open'));
+    });
+    // سحب حقيقي باللمس بيكشف اللوحة تدريجيًا مع حركة الإصبع
+    front.addEventListener('touchstart', (e)=>{
+      dragging = true; moved = false;
+      startX = e.touches[0].clientX;
+      currentX = row.classList.contains('swipe-open') ? -REVEAL : 0;
+    }, { passive:true });
+    front.addEventListener('touchmove', (e)=>{
+      if(!dragging) return;
+      const delta = e.touches[0].clientX - startX;
+      if(Math.abs(delta) > 6) moved = true;
+      let next = currentX + delta;
+      next = Math.max(-REVEAL, Math.min(0, next));
+      front.style.transform = `translateX(${next}px)`;
+    }, { passive:true });
+    front.addEventListener('touchend', ()=>{
+      if(!dragging) return;
+      dragging = false;
+      if(!moved){ front.style.transform = ''; return; } // نقرة بسيطة: نسيب حدث click يتصرف فيها لوحده
+      const transform = front.style.transform;
+      const match = /translateX\((-?\d+(?:\.\d+)?)px\)/.exec(transform);
+      const val = match ? parseFloat(match[1]) : 0;
+      setOpen(val < -REVEAL/2);
     });
   }
 
