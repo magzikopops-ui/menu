@@ -12342,7 +12342,9 @@ async function loadPublic(slug){
     frontClone.querySelectorAll('.item-control').forEach(n=> n.remove());
     modal.appendChild(frontClone);
     overlay.appendChild(modal);
-    document.body.appendChild(overlay);
+    // بيتحط جوه حاوية #pubBody نفسها (مش document.body) عشان أي كود بيدور على عناصر التحكم بالـ ID
+    // بتاع الصنف (زي اختيار الوزن أو الحجم) يفضل لاقيها، لأنه بيدور جوه الحاوية دي بالظبط
+    document.getElementById('pubBody').appendChild(overlay);
     modal.appendChild(control);
     control.classList.add('in-quickview');
     function close(){
