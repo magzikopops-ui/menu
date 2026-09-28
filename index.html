@@ -963,7 +963,7 @@ body.pub-design-poster .add-to-cart-btn:hover{ background:var(--basil-dark); }
 .offers-prices small{ display:block; font-size:11px; font-weight:700; line-height:1.2; margin-bottom:2px; }
 .offers-old{ padding:6px 12px; border-radius:10px; border:1.5px dashed var(--stone); background:transparent; }
 .offers-old small{ color:var(--stone); }
-.offers-old s{ font-size:20px; font-weight:800; color:var(--stone); text-decoration-thickness:3px; text-decoration-color:#D93025; }
+.offers-old s{ font-size:20px; font-weight:700; color:var(--ink); opacity:.85; text-decoration-thickness:1.5px; text-decoration-color:rgba(217,48,37,.8); }
 .offers-now{ padding:6px 14px; border-radius:10px; background:var(--ember); box-shadow:0 4px 12px rgba(0,0,0,.18); }
 .offers-now small{ color:rgba(255,255,255,.88); }
 .offers-now b{ display:block; font-size:24px; font-weight:900; line-height:1.15; color:#fff; white-space:nowrap; }
@@ -13635,7 +13635,7 @@ async function loadPublic(slug){
                 </div>
               </div>`).join('')}
           </div>
-          <button type="button" class="offers-go">${en ? 'View offers' : 'استعرض العروض'}</button>
+          <button type="button" class="offers-go">${en ? 'Browse offers' : 'تصفّح العروض'}</button>
           <button type="button" class="offers-later">${en ? 'Maybe later' : 'ليس الآن'}</button>
         </div>`;
       document.body.appendChild(overlay);
