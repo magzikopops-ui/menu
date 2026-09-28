@@ -945,6 +945,26 @@ body.pub-design-poster .pub-item .item-control .qty-stepper{ width:100%; justify
 body.pub-design-poster .add-to-cart-btn{ background:var(--basil); }
 body.pub-design-poster .add-to-cart-btn:hover{ background:var(--basil-dark); }
 
+/* نافذة تنبيه العروض عند فتح المنيو: مرة واحدة في اليوم، تتحرك حركة خفيفة، ويمكن إغلاقها */
+.offers-popup{ position:relative; text-align:center; padding:28px 22px 18px; animation:offersIn .55s cubic-bezier(.2,1.3,.4,1) both, offersFloat 4s ease-in-out .7s infinite; }
+@keyframes offersIn{ from{ opacity:0; transform:translateY(46px) scale(.9); } to{ opacity:1; transform:none; } }
+@keyframes offersFloat{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
+.offers-icon{ font-size:46px; display:inline-block; transform-origin:50% 85%; animation:offersWiggle 2.6s ease-in-out .9s infinite; }
+@keyframes offersWiggle{ 0%,68%,100%{ transform:rotate(0) scale(1); } 73%{ transform:rotate(-14deg) scale(1.12); } 79%{ transform:rotate(12deg) scale(1.12); } 85%{ transform:rotate(-8deg); } 91%{ transform:rotate(5deg); } }
+.offers-popup h3{ margin:6px 0 4px; font-size:21px; color:var(--ink); }
+.offers-popup .offers-sub{ margin:0; color:var(--stone); font-size:14px; }
+.offers-close{ position:absolute; top:10px; inset-inline-end:10px; width:32px; height:32px; border-radius:50%; border:none; background:var(--paper-dim); color:var(--ink); font-size:14px; cursor:pointer; }
+.offers-list{ margin:16px 0 14px; display:flex; flex-direction:column; gap:8px; text-align:start; }
+.offers-row{ display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:10px; background:var(--paper-dim); font-size:14px; color:var(--ink); }
+.offers-row .offers-name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
+.offers-row s{ color:var(--stone); font-size:12px; }
+.offers-row .offers-new{ font-weight:800; color:var(--ember); white-space:nowrap; }
+.offers-go{ width:100%; padding:13px; border:none; border-radius:12px; background:var(--ember); color:#fff; font-weight:800; font-size:15px; font-family:inherit; cursor:pointer; }
+.offers-later{ margin-top:8px; padding:6px 10px; border:none; background:none; color:var(--stone); text-decoration:underline; font-family:inherit; font-size:13px; cursor:pointer; }
+.pub-item.offer-flash{ animation:offerFlash .8s ease 3; }
+@keyframes offerFlash{ 0%,100%{ box-shadow:0 0 0 0 rgba(240,83,58,0); } 50%{ box-shadow:0 0 0 7px rgba(240,83,58,.4); } }
+@media (prefers-reduced-motion: reduce){ .offers-popup, .offers-icon, .pub-item.offer-flash{ animation:none; } }
+
 /* وضع داكن اختياري يفعّله الزائر بنفسه فوق أي شكل مختار — يغيّر الحيادي فقط ويحافظ على لون العلامة الخاص بالتصميم */
 body.pub-user-dark{ --paper:#17151C; --paper-dim:#211E29; --ink:#F0ECE0; --line:#37333F; --stone:#9C96A8; --stone-light:#37333F; }
 body.pub-user-dark .pub-item, body.pub-user-dark .modal, body.pub-user-dark .pub-lang-btn, body.pub-user-dark .pub-icon-btn,
@@ -13565,6 +13585,68 @@ async function loadPublic(slug){
 
   loadCart();
   renderPublicBody();
+
+  // تنبيه العروض: لو فيه أصناف عليها خصم (السعر القديم أعلى من الحالي) يظهر بوب أب مرة واحدة في اليوم عند فتح المنيو
+  // للتجربة أضف ?offers=1 لرابط المنيو عشان يظهر حتى لو اتعرض النهارده
+  function showOffersPopupOnce(){
+    const force = new URLSearchParams(location.search).get('offers') === '1';
+    const offers = pubItems
+      .filter(i=> i.old_price != null && Number(i.old_price) > Number(i.price) && Number(i.price) > 0)
+      .map(i=> ({ item:i, pct: Math.round((1 - Number(i.price)/Number(i.old_price))*100) }))
+      .filter(o=> o.pct > 0)
+      .sort((a,b)=> b.pct - a.pct);
+    if(!offers.length) return;
+    const key = `offersPopup_${rest.id}`;
+    const today = new Date().toLocaleDateString('en-CA');
+    try{ if(!force && localStorage.getItem(key) === today) return; }catch(e){}
+    setTimeout(()=>{
+      if(document.querySelector('.overlay')) return;
+      try{ localStorage.setItem(key, today); }catch(e){}
+      const en = lang === 'en';
+      const n = offers.length;
+      const countTxt = en ? `${n} item${n>1?'s':''} on sale right now` : (n===1 ? 'صنف واحد عليه خصم' : n===2 ? 'صنفان عليهما خصم' : n<=10 ? `${n} أصناف عليها خصم` : `${n} صنف عليها خصم`);
+      const cur = getRestaurantCurrency(rest);
+      const overlay = document.createElement('div');
+      overlay.className = 'overlay offers-overlay';
+      overlay.innerHTML = `
+        <div class="modal offers-popup" role="dialog" aria-modal="true">
+          <button type="button" class="offers-close" aria-label="${en ? 'Close' : 'إغلاق'}">✕</button>
+          <div class="offers-icon">🔥</div>
+          <h3>${en ? "Today's offers!" : 'عروض اليوم!'}</h3>
+          <p class="offers-sub">${countTxt}</p>
+          <div class="offers-list">
+            ${offers.slice(0,3).map(o=>`
+              <div class="offers-row">
+                <span class="offers-name">${escapeHtml(tName(o.item.name, o.item.name_en))}</span>
+                <s>${Number(o.item.old_price).toFixed(2)}</s>
+                <span class="offers-new">${cur} ${Number(o.item.price).toFixed(2)}</span>
+                <span class="discount-badge">-${o.pct}%</span>
+              </div>`).join('')}
+          </div>
+          <button type="button" class="offers-go">${en ? 'View offers' : 'شاهد العروض'}</button>
+          <button type="button" class="offers-later">${en ? 'Maybe later' : 'لاحقًا'}</button>
+        </div>`;
+      document.body.appendChild(overlay);
+      function close(){ overlay.remove(); document.removeEventListener('keydown', onKey); }
+      function onKey(e){ if(e.key === 'Escape') close(); }
+      document.addEventListener('keydown', onKey);
+      overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+      overlay.querySelector('.offers-close').addEventListener('click', close);
+      overlay.querySelector('.offers-later').addEventListener('click', close);
+      overlay.querySelector('.offers-go').addEventListener('click', ()=>{
+        close();
+        const targetId = offers[0].item.id;
+        const row = Array.from(document.querySelectorAll('#pubBody .pub-item')).find(r=> r.dataset.id === targetId);
+        if(!row) return;
+        const grp = row.closest('.pub-cat-group');
+        if(grp){ document.querySelectorAll('#pubBody .pub-cat-group.open').forEach(g=> g.classList.remove('open')); grp.classList.add('open'); }
+        row.scrollIntoView({ behavior:'smooth', block:'center' });
+        row.classList.add('offer-flash');
+        setTimeout(()=> row.classList.remove('offer-flash'), 2600);
+      });
+    }, 900);
+  }
+  showOffersPopupOnce();
 
   // المفتاح العام لتفعيل/إيقاف كل الإعلانات الجانبية (تتحكم فيه من لوحة السوبر أدمن)
   sb.from('app_settings').select('ads_enabled').eq('id', true).maybeSingle().then(({ data: settingsRow })=>{
