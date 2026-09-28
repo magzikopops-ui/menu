@@ -956,10 +956,17 @@ body.pub-design-poster .add-to-cart-btn:hover{ background:var(--basil-dark); }
 .offers-close{ position:absolute; top:10px; inset-inline-end:10px; width:32px; height:32px; border-radius:50%; border:none; background:var(--paper-dim); color:var(--ink); font-size:14px; cursor:pointer; }
 .offers-list{ margin:16px 0 14px; display:flex; flex-direction:column; gap:8px; text-align:start; }
 .offers-row{ display:flex; align-items:center; gap:12px; padding:8px; border-radius:14px; background:var(--paper-dim); font-size:14px; color:var(--ink); }
-.offers-thumb{ width:64px; height:64px; border-radius:12px; object-fit:cover; flex-shrink:0; background:var(--stone-light); }
+.offers-thumb{ width:76px; height:76px; border-radius:12px; object-fit:cover; flex-shrink:0; background:var(--stone-light); }
 .offers-thumb-empty{ display:flex; align-items:center; justify-content:center; font-size:26px; }
 .offers-info{ flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
-.offers-prices{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.offers-prices{ display:flex; align-items:stretch; flex-wrap:wrap; gap:8px; margin-top:2px; }
+.offers-prices small{ display:block; font-size:11px; font-weight:700; line-height:1.2; margin-bottom:2px; }
+.offers-old{ padding:6px 12px; border-radius:10px; border:1.5px dashed var(--stone); background:transparent; }
+.offers-old small{ color:var(--stone); }
+.offers-old s{ font-size:20px; font-weight:800; color:var(--stone); text-decoration-thickness:3px; text-decoration-color:#D93025; }
+.offers-now{ padding:6px 14px; border-radius:10px; background:var(--ember); box-shadow:0 4px 12px rgba(0,0,0,.18); }
+.offers-now small{ color:rgba(255,255,255,.88); }
+.offers-now b{ display:block; font-size:24px; font-weight:900; line-height:1.15; color:#fff; white-space:nowrap; }
 .offers-row .offers-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:800; font-size:15px; }
 .offers-row s{ color:var(--stone); font-size:12px; }
 .offers-row .offers-new{ font-weight:800; color:var(--ember); white-space:nowrap; }
@@ -13608,7 +13615,7 @@ async function loadPublic(slug){
       try{ localStorage.setItem(key, today); }catch(e){}
       const en = lang === 'en';
       const n = offers.length;
-      const countTxt = en ? `${n} item${n>1?'s':''} on sale right now` : (n===1 ? 'صنف واحد عليه خصم' : n===2 ? 'صنفان عليهما خصم' : n<=10 ? `${n} أصناف عليها خصم` : `${n} صنف عليها خصم`);
+      const countTxt = n === 1 ? '' : en ? `${n} items on sale right now` : (n===2 ? 'يتوفر صنفان بأسعار مخفّضة' : n<=10 ? `تتوفر ${n} أصناف بأسعار مخفّضة` : `يتوفر ${n} صنفًا بأسعار مخفّضة`);
       const cur = getRestaurantCurrency(rest);
       const overlay = document.createElement('div');
       overlay.className = 'overlay offers-overlay';
@@ -13616,20 +13623,20 @@ async function loadPublic(slug){
         <div class="modal offers-popup" role="dialog" aria-modal="true">
           <button type="button" class="offers-close" aria-label="${en ? 'Close' : 'إغلاق'}">✕</button>
           <div class="offers-icon">🔥</div>
-          <h3>${en ? "Today's offers!" : 'عروض اليوم!'}</h3>
-          <p class="offers-sub">${countTxt}</p>
+          <h3>${en ? "Today's offers" : 'عروض اليوم'}</h3>
+          ${countTxt ? `<p class="offers-sub">${countTxt}</p>` : ''}
           <div class="offers-list">
             ${offers.slice(0,3).map(o=>`
               <div class="offers-row">
                 ${o.item.image_url ? `<img class="offers-thumb" src="${escapeHtml(o.item.image_url)}" alt="" loading="lazy">` : `<div class="offers-thumb offers-thumb-empty">🍽️</div>`}
                 <div class="offers-info">
                   <span class="offers-name">${escapeHtml(tName(o.item.name, o.item.name_en))}</span>
-                  <span class="offers-prices"><s>${Number(o.item.old_price).toFixed(2)}</s><span class="offers-new">${cur} ${Number(o.item.price).toFixed(2)}</span><span class="discount-badge">-${o.pct}%</span></span>
+                  <span class="offers-prices"><span class="offers-old"><small>${en ? 'Was' : 'كان'}</small><s>${Number(o.item.old_price).toFixed(2)}</s></span><span class="offers-now"><small>${en ? 'Now' : 'الآن'}</small><b>${cur} ${Number(o.item.price).toFixed(2)}${o.item.pricing_type === 'weight' ? (en ? ' / kg' : ' / كجم') : ''}</b></span></span>
                 </div>
               </div>`).join('')}
           </div>
-          <button type="button" class="offers-go">${en ? 'View offers' : 'شاهد العروض'}</button>
-          <button type="button" class="offers-later">${en ? 'Maybe later' : 'لاحقًا'}</button>
+          <button type="button" class="offers-go">${en ? 'View offers' : 'استعرض العروض'}</button>
+          <button type="button" class="offers-later">${en ? 'Maybe later' : 'ليس الآن'}</button>
         </div>`;
       document.body.appendChild(overlay);
       function close(){ overlay.remove(); document.removeEventListener('keydown', onKey); }
