@@ -976,6 +976,39 @@ body.pub-design-poster .add-to-cart-btn:hover{ background:var(--basil-dark); }
 @keyframes offerFlash{ 0%,100%{ box-shadow:0 0 0 0 rgba(240,83,58,0); } 50%{ box-shadow:0 0 0 7px rgba(240,83,58,.4); } }
 @media (prefers-reduced-motion: reduce){ .offers-popup, .offers-icon, .pub-item.offer-flash{ animation:none; } }
 
+/* تصميم "لوحة المنتجات" (board): كروت في عمودين، الاسم والسعر مكتوبين فوق الصورة نفسها بتدرّج غامق أسفلها — خلفية كراميلي دافئة تناسب متاجر ومطاعم البيتزا/المخبوزات */
+body.pub-design-board{ --paper:#FBF1E2; --paper-dim:#F3E4CB; --ink:#3B2417; --line:#E7D2AC; --stone:#8A6B49; --stone-light:#EFDDBB; --ember:#C1531F; --ember-dark:#9C4118; --basil:#A64B2A; --basil-dark:#7D3A20; background:var(--paper); }
+body.pub-design-board .pub-search input{ border-radius:14px; border-width:1.5px; background:#fff; }
+body.pub-design-board .pub-search input:focus{ outline:none; border-color:var(--ember); box-shadow:0 0 0 3px rgba(193,83,31,.16); }
+body.pub-design-board .pub-tab{ border-radius:10px; background:#fff; border-color:var(--line); }
+body.pub-design-board .pub-tab.active{ background:var(--ember); color:#fff; border-color:var(--ember); }
+body.pub-design-board .pub-tab.active .pub-tab-count{ background:rgba(255,255,255,.28); color:#fff; }
+body.pub-design-board .pub-cat-heading{ font-size:21px; border-bottom:3px solid var(--ember); display:inline-block; padding-bottom:6px; margin:26px 0 16px; }
+body.pub-design-board #pubBody{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+body.pub-design-board .pub-cat-heading{ grid-column:1/-1; }
+body.pub-design-board .pub-empty{ grid-column:1/-1; }
+body.pub-design-board .pub-item{ position:relative; flex-direction:column; align-items:stretch; gap:0; padding:0; overflow:hidden; margin-bottom:0; border:none; border-radius:16px; background:#fff; box-shadow:0 6px 16px rgba(59,36,23,.14); }
+body.pub-design-board .pub-item .pub-item-front{ display:contents; }
+body.pub-design-board .pub-item img, body.pub-design-board .pub-item .no-img{ width:100%; height:auto; aspect-ratio:1/1; border-radius:0; }
+body.pub-design-board .pub-item .no-img{ font-size:34px; }
+body.pub-design-board .pub-item .info{ position:relative; }
+body.pub-design-board .pub-item .info::before{ content:''; position:absolute; inset-inline:0; bottom:100%; height:64px; background:linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,0)); pointer-events:none; }
+body.pub-design-board .pub-item .name-primary{ position:absolute; bottom:100%; inset-inline:10px; margin-bottom:6px; color:#fff; font-size:14.5px; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,.5); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+body.pub-design-board .pub-item .name-secondary{ display:none; }
+body.pub-design-board .pub-item .chevron{ position:absolute; top:8px; inset-inline-start:8px; z-index:3; width:26px; height:26px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.85); color:var(--ink); border-radius:50%; font-size:12px; }
+body.pub-design-board .pub-item .chevron:empty{ display:none; }
+body.pub-design-board .pub-item .price{ padding:9px 10px 3px; font-size:14.5px; font-weight:800; color:var(--ember); }
+body.pub-design-board .pub-item .price .old-price{ font-size:11px; }
+body.pub-design-board .pub-item .desc-expand{ padding:0 10px; font-size:12.5px; color:var(--stone); }
+body.pub-design-board .pub-item .variant-cart-lines{ padding:0 10px; }
+body.pub-design-board .pub-item .item-control{ width:100%; flex-direction:column; align-items:stretch; gap:6px; padding:8px 10px 10px; box-sizing:border-box; margin-top:0; }
+body.pub-design-board .pub-item .item-control .variant-select{ width:100%; font-size:11.5px; }
+body.pub-design-board .pub-item .item-control .add-to-cart-btn{ width:100%; padding:9px; border-radius:10px; font-size:13px; }
+body.pub-design-board .pub-item .item-control .qty-stepper{ width:100%; justify-content:space-between; margin-top:0; }
+body.pub-design-board .add-to-cart-btn{ background:var(--basil); }
+body.pub-design-board .add-to-cart-btn:hover{ background:var(--basil-dark); }
+@media (max-width:380px){ body.pub-design-board #pubBody{ gap:10px; } body.pub-design-board .pub-item .name-primary{ font-size:13px; } }
+
 /* وضع داكن اختياري يفعّله الزائر بنفسه فوق أي شكل مختار — يغيّر الحيادي فقط ويحافظ على لون العلامة الخاص بالتصميم */
 body.pub-user-dark{ --paper:#17151C; --paper-dim:#211E29; --ink:#F0ECE0; --line:#37333F; --stone:#9C96A8; --stone-light:#37333F; }
 body.pub-user-dark .pub-item, body.pub-user-dark .modal, body.pub-user-dark .pub-lang-btn, body.pub-user-dark .pub-icon-btn,
@@ -8700,7 +8733,8 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     { id:'sidebar', nameAr:'أقسام جانبية' },
     { id:'aurora', nameAr:'أورورا نابض (ألوان مختلفة تمامًا)' },
     { id:'fresh', nameAr:'أخضر طازج (تصميم مختلف كليًا)' },
-    { id:'poster', nameAr:'معرض الصور (صور كبيرة)' }
+    { id:'poster', nameAr:'معرض الصور (صور كبيرة)' },
+    { id:'board', nameAr:'لوحة المنتجات (الاسم فوق الصورة)' }
   ];
   const t = () => BIZ_TERMS[pendingBizType];
   const overlay = document.createElement('div');
@@ -11564,7 +11598,8 @@ async function loadPublic(slug){
     { id:'sidebar', nameAr:'أقسام جانبية', nameEn:'Sidebar Menu', bodyClass:'pub-design-sidebar', bg:'#F6F1E4', card:'#ffffff', accent:'#9E1B24', line:'#E4DCC7', layout:'list' },
     { id:'aurora', nameAr:'أورورا نابض', nameEn:'Aurora', bodyClass:'pub-design-aurora', bg:'#F4F1FC', card:'#ffffff', accent:'#7C3AED', line:'#DAD0F0', layout:'list' },
     { id:'fresh', nameAr:'أخضر طازج', nameEn:'Fresh Green', bodyClass:'pub-design-fresh', bg:'#16221D', card:'#1F2F28', accent:'#3FAE6B', line:'#33473F', layout:'grid' },
-    { id:'poster', nameAr:'معرض الصور', nameEn:'Photo Gallery', bodyClass:'pub-design-poster', bg:'#EAF2FA', card:'#ffffff', accent:'#F0533A', line:'#C9DAEA', layout:'cards' }
+    { id:'poster', nameAr:'معرض الصور', nameEn:'Photo Gallery', bodyClass:'pub-design-poster', bg:'#EAF2FA', card:'#ffffff', accent:'#F0533A', line:'#C9DAEA', layout:'cards' },
+    { id:'board', nameAr:'لوحة المنتجات', nameEn:'Product Board', bodyClass:'pub-design-board', bg:'#FBF1E2', card:'#ffffff', accent:'#C1531F', line:'#E7D2AC', layout:'grid' }
   ];
   // شكل المنيو أصبح إعدادًا ثابتًا يحدده صاحب المطعم من لوحة التحكم (وليس اختيارًا مؤقتًا لكل زائر)
   var previewDesignId = null; // معاينة مؤقتة للمالك بالاختصار T — مش بتتحفظ
