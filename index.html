@@ -1009,6 +1009,39 @@ body.pub-design-board .add-to-cart-btn{ background:var(--basil); }
 body.pub-design-board .add-to-cart-btn:hover{ background:var(--basil-dark); }
 @media (max-width:380px){ body.pub-design-board #pubBody{ gap:10px; } body.pub-design-board .pub-item .name-primary{ font-size:13px; } }
 
+/* تصميم "القائمة المرقّمة" (ledger): سطر أنيق لكل صنف برقم متسلسل وخط منقّط يصل الاسم بالسعر، زي قوائم المطاعم الراقية — خلفية كحلية داكنة بلمسة ذهبية */
+body.pub-design-ledger{ --paper:#171B33; --paper-dim:#1F2544; --ink:#F3EFE2; --line:#3B416A; --stone:#9AA0C4; --stone-light:#262C4E; --ember:#D8B25C; --ember-dark:#B8933E; --basil:#D8B25C; --basil-dark:#B8933E; background:var(--paper); }
+body.pub-design-ledger, body.pub-design-ledger input, body.pub-design-ledger select{ font-family:'Georgia','Amiri',serif; }
+body.pub-design-ledger .pub-search input{ background:var(--paper-dim); color:var(--ink); border-color:var(--line); border-radius:8px; }
+body.pub-design-ledger .pub-search input::placeholder{ color:var(--stone); }
+body.pub-design-ledger .pub-search input:focus{ outline:none; border-color:var(--ember); }
+body.pub-design-ledger .pub-tab{ background:var(--paper-dim); color:var(--ink); border-color:var(--line); border-radius:8px; }
+body.pub-design-ledger .pub-tab.active{ background:var(--ember); color:#171B33; border-color:var(--ember); }
+body.pub-design-ledger .pub-tab.active .pub-tab-count{ background:rgba(0,0,0,.25); color:#171B33; }
+body.pub-design-ledger .pub-cat-heading{ counter-reset:ledgerItem; text-align:center; border-bottom:none; font-size:22px; letter-spacing:1px; position:relative; margin:32px 0 20px; }
+body.pub-design-ledger .pub-cat-heading::before, body.pub-design-ledger .pub-cat-heading::after{ content:''; position:absolute; top:50%; width:60px; height:1px; background:var(--ember); opacity:.6; }
+body.pub-design-ledger .pub-cat-heading::before{ inset-inline-start:calc(50% - 130px); }
+body.pub-design-ledger .pub-cat-heading::after{ inset-inline-end:calc(50% - 130px); }
+body.pub-design-ledger .pub-item{ counter-increment:ledgerItem; position:relative; flex-wrap:wrap; align-items:center; gap:10px; padding:14px 6px; border:none; border-bottom:1px dashed var(--line); border-radius:0; background:transparent; margin-bottom:0; }
+body.pub-design-ledger .pub-item .chevron{ order:-1; color:var(--ember); font-size:12px; width:18px; }
+body.pub-design-ledger .pub-item .chevron:empty{ visibility:hidden; }
+body.pub-design-ledger .pub-item img, body.pub-design-ledger .pub-item .no-img{ width:52px; height:52px; border-radius:50%; border:2px solid var(--ember); }
+body.pub-design-ledger .pub-item .info{ flex:1; min-width:0; display:flex; align-items:baseline; flex-wrap:wrap; gap:0; }
+body.pub-design-ledger .pub-item .name-primary{ font-size:16.5px; font-weight:700; color:var(--ink); white-space:nowrap; }
+body.pub-design-ledger .pub-item .name-primary::before{ content:counter(ledgerItem, decimal-leading-zero) ' '; color:var(--ember); font-size:12px; font-weight:400; margin-inline-end:6px; }
+body.pub-design-ledger .pub-item .name-secondary{ order:5; width:100%; font-style:italic; }
+body.pub-design-ledger .pub-item .info::after{ content:''; flex:1 1 24px; align-self:end; margin:0 8px 5px; border-bottom:2px dotted var(--stone); min-width:16px; }
+body.pub-design-ledger .pub-item .price{ order:4; font-size:16.5px; font-weight:800; color:var(--ember); }
+body.pub-design-ledger .pub-item .price .old-price{ color:var(--stone); }
+body.pub-design-ledger .pub-item .desc-expand{ width:100%; font-style:italic; color:var(--stone); font-size:13px; padding-inline-start:62px; }
+body.pub-design-ledger .pub-item .variant-cart-lines{ width:100%; padding-inline-start:62px; }
+body.pub-design-ledger .pub-item .item-control{ width:100%; flex-direction:row; flex-wrap:wrap; margin-top:4px; padding-inline-start:62px; box-sizing:border-box; }
+body.pub-design-ledger .pub-item .item-control .variant-select{ background:var(--paper-dim); color:var(--ink); border:1.5px solid var(--line); color-scheme:dark; flex:1 1 110px; width:auto; }
+body.pub-design-ledger .pub-item .item-control .add-to-cart-btn{ background:var(--ember); color:#171B33; font-weight:800; flex:1 1 100px; width:auto; }
+body.pub-design-ledger .pub-item .item-control .qty-stepper .qty-btn{ background:var(--paper-dim); color:var(--ink); border:1px solid var(--line); }
+body.pub-design-ledger .discount-badge{ background:var(--ember); color:#171B33; }
+@media (max-width:480px){ body.pub-design-ledger .pub-item .name-primary{ white-space:normal; } body.pub-design-ledger .pub-item .desc-expand, body.pub-design-ledger .pub-item .item-control, body.pub-design-ledger .pub-item .variant-cart-lines{ padding-inline-start:0; } }
+
 /* وضع داكن اختياري يفعّله الزائر بنفسه فوق أي شكل مختار — يغيّر الحيادي فقط ويحافظ على لون العلامة الخاص بالتصميم */
 body.pub-user-dark{ --paper:#17151C; --paper-dim:#211E29; --ink:#F0ECE0; --line:#37333F; --stone:#9C96A8; --stone-light:#37333F; }
 body.pub-user-dark .pub-item, body.pub-user-dark .modal, body.pub-user-dark .pub-lang-btn, body.pub-user-dark .pub-icon-btn,
@@ -8734,7 +8767,8 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     { id:'aurora', nameAr:'أورورا نابض (ألوان مختلفة تمامًا)' },
     { id:'fresh', nameAr:'أخضر طازج (تصميم مختلف كليًا)' },
     { id:'poster', nameAr:'معرض الصور (صور كبيرة)' },
-    { id:'board', nameAr:'لوحة المنتجات (الاسم فوق الصورة)' }
+    { id:'board', nameAr:'لوحة المنتجات (الاسم فوق الصورة)' },
+    { id:'ledger', nameAr:'القائمة المرقّمة (أنيقة بخط منقّط)' }
   ];
   const t = () => BIZ_TERMS[pendingBizType];
   const overlay = document.createElement('div');
@@ -11599,7 +11633,8 @@ async function loadPublic(slug){
     { id:'aurora', nameAr:'أورورا نابض', nameEn:'Aurora', bodyClass:'pub-design-aurora', bg:'#F4F1FC', card:'#ffffff', accent:'#7C3AED', line:'#DAD0F0', layout:'list' },
     { id:'fresh', nameAr:'أخضر طازج', nameEn:'Fresh Green', bodyClass:'pub-design-fresh', bg:'#16221D', card:'#1F2F28', accent:'#3FAE6B', line:'#33473F', layout:'grid' },
     { id:'poster', nameAr:'معرض الصور', nameEn:'Photo Gallery', bodyClass:'pub-design-poster', bg:'#EAF2FA', card:'#ffffff', accent:'#F0533A', line:'#C9DAEA', layout:'cards' },
-    { id:'board', nameAr:'لوحة المنتجات', nameEn:'Product Board', bodyClass:'pub-design-board', bg:'#FBF1E2', card:'#ffffff', accent:'#C1531F', line:'#E7D2AC', layout:'grid' }
+    { id:'board', nameAr:'لوحة المنتجات', nameEn:'Product Board', bodyClass:'pub-design-board', bg:'#FBF1E2', card:'#ffffff', accent:'#C1531F', line:'#E7D2AC', layout:'grid' },
+    { id:'ledger', nameAr:'القائمة المرقّمة', nameEn:'Numbered Ledger', bodyClass:'pub-design-ledger', bg:'#171B33', card:'#1F2544', accent:'#D8B25C', line:'#3B416A', layout:'list' }
   ];
   // شكل المنيو أصبح إعدادًا ثابتًا يحدده صاحب المطعم من لوحة التحكم (وليس اختيارًا مؤقتًا لكل زائر)
   var previewDesignId = null; // معاينة مؤقتة للمالك بالاختصار T — مش بتتحفظ
