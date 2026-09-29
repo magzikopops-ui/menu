@@ -1070,6 +1070,35 @@ body.pub-design-catalog .add-to-cart-btn{ background:var(--ink); }
 body.pub-design-catalog .add-to-cart-btn:hover{ background:var(--ember); }
 @media (max-width:480px){ body.pub-design-catalog .pub-item{ flex-wrap:wrap; } body.pub-design-catalog .pub-item .item-control{ width:100%; align-items:stretch; margin-top:8px; } }
 
+/* تصميم "فاتورة السوق" (receipt): شكل ورق الكاشير — خط مونوسبيس، حواف مسنّنة زي شريط الإيصال، خلفية رمادية وورق أبيض بلمسة حمراء */
+body.pub-design-receipt{ --paper:#E7E7E5; --paper-dim:#FFFFFF; --ink:#1A1A1A; --line:#BFBFBC; --stone:#6E6E6B; --stone-light:#F0F0EE; --ember:#C81E1E; --ember-dark:#9E1717; --basil:#1A1A1A; --basil-dark:#000000; background:var(--paper); }
+body.pub-design-receipt, body.pub-design-receipt input, body.pub-design-receipt select, body.pub-design-receipt button{ font-family:'Courier New', 'Consolas', monospace; }
+body.pub-design-receipt .pub-body{ background:var(--paper-dim); box-shadow:0 4px 18px rgba(0,0,0,.14); padding-top:20px; padding-bottom:20px; position:relative; }
+body.pub-design-receipt .pub-body::before, body.pub-design-receipt .pub-body::after{ content:''; position:absolute; inset-inline:0; height:12px; background:radial-gradient(circle at 10px 6px, var(--paper) 7px, transparent 7.5px) repeat-x; background-size:20px 14px; }
+body.pub-design-receipt .pub-body::before{ top:-1px; }
+body.pub-design-receipt .pub-body::after{ bottom:-1px; }
+body.pub-design-receipt .pub-search{ padding-inline:20px; }
+body.pub-design-receipt .pub-search input{ border-radius:0; border:1.5px dashed var(--ink); background:#fff; }
+body.pub-design-receipt .pub-tabs-wrap{ padding-inline:20px; }
+body.pub-design-receipt .pub-tab{ border-radius:0; border:1.5px solid var(--ink); background:#fff; }
+body.pub-design-receipt .pub-tab.active{ background:var(--ink); color:#fff; }
+body.pub-design-receipt .pub-cat-heading{ text-align:center; text-transform:uppercase; letter-spacing:3px; font-size:15px; border-bottom:none; margin:26px 20px 14px; padding-bottom:10px; border-bottom:2px dashed var(--ink); }
+body.pub-design-receipt .pub-item{ border:none; border-bottom:1px dashed var(--line); border-radius:0; background:transparent; margin:0 20px; padding:12px 0; }
+body.pub-design-receipt .pub-item img, body.pub-design-receipt .pub-item .no-img{ width:44px; height:44px; border-radius:0; border:1.5px solid var(--ink); filter:grayscale(.15) contrast(1.05); }
+body.pub-design-receipt .pub-item .chevron{ font-size:11px; color:var(--stone); }
+body.pub-design-receipt .pub-item .name-primary{ font-size:14.5px; font-weight:700; letter-spacing:.3px; }
+body.pub-design-receipt .pub-item .name-primary::before{ content:'» '; color:var(--ember); }
+body.pub-design-receipt .pub-item .name-secondary{ font-size:11.5px; color:var(--stone); }
+body.pub-design-receipt .pub-item .price{ font-weight:800; color:var(--ember); font-size:15px; }
+body.pub-design-receipt .pub-item .price .old-price{ color:var(--stone); }
+body.pub-design-receipt .pub-item .desc-expand{ color:var(--stone); font-size:12.5px; }
+body.pub-design-receipt .pub-item .item-control .variant-select{ border:1.5px dashed var(--ink); border-radius:0; background:#fff; }
+body.pub-design-receipt .pub-item .item-control .add-to-cart-btn{ border:2px dashed var(--ember); border-radius:0; background:transparent; color:var(--ember); font-weight:800; transform:rotate(-2deg); }
+body.pub-design-receipt .pub-item .item-control .add-to-cart-btn:hover{ background:var(--ember); color:#fff; }
+body.pub-design-receipt .pub-item .item-control .qty-stepper .qty-btn{ border-radius:0; border:1px solid var(--ink); background:#fff; }
+body.pub-design-receipt .discount-badge{ background:var(--ember); color:#fff; border-radius:0; }
+body.pub-design-receipt .add-to-cart-btn{ border-radius:0; }
+
 /* وضع داكن اختياري يفعّله الزائر بنفسه فوق أي شكل مختار — يغيّر الحيادي فقط ويحافظ على لون العلامة الخاص بالتصميم */
 body.pub-user-dark{ --paper:#17151C; --paper-dim:#211E29; --ink:#F0ECE0; --line:#37333F; --stone:#9C96A8; --stone-light:#37333F; }
 body.pub-user-dark .pub-item, body.pub-user-dark .modal, body.pub-user-dark .pub-lang-btn, body.pub-user-dark .pub-icon-btn,
@@ -8797,7 +8826,8 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     { id:'poster', nameAr:'معرض الصور (صور كبيرة)' },
     { id:'board', nameAr:'لوحة المنتجات (الاسم فوق الصورة)' },
     { id:'ledger', nameAr:'القائمة المرقّمة (أنيقة بخط منقّط)' },
-    { id:'catalog', nameAr:'الكتالوج الحديث (بدون صور، نصي وسريع)' }
+    { id:'catalog', nameAr:'الكتالوج الحديث (بدون صور، نصي وسريع)' },
+    { id:'receipt', nameAr:'فاتورة السوق (شكل إيصال الكاشير)' }
   ];
   const t = () => BIZ_TERMS[pendingBizType];
   const overlay = document.createElement('div');
@@ -11664,7 +11694,8 @@ async function loadPublic(slug){
     { id:'poster', nameAr:'معرض الصور', nameEn:'Photo Gallery', bodyClass:'pub-design-poster', bg:'#EAF2FA', card:'#ffffff', accent:'#F0533A', line:'#C9DAEA', layout:'cards' },
     { id:'board', nameAr:'لوحة المنتجات', nameEn:'Product Board', bodyClass:'pub-design-board', bg:'#FBF1E2', card:'#ffffff', accent:'#C1531F', line:'#E7D2AC', layout:'grid' },
     { id:'ledger', nameAr:'القائمة المرقّمة', nameEn:'Numbered Ledger', bodyClass:'pub-design-ledger', bg:'#171B33', card:'#1F2544', accent:'#D8B25C', line:'#3B416A', layout:'list' },
-    { id:'catalog', nameAr:'الكتالوج الحديث', nameEn:'Modern Catalog', bodyClass:'pub-design-catalog', bg:'#F6F6F4', card:'#ffffff', accent:'#4F46E5', line:'#DCDCD6', layout:'list' }
+    { id:'catalog', nameAr:'الكتالوج الحديث', nameEn:'Modern Catalog', bodyClass:'pub-design-catalog', bg:'#F6F6F4', card:'#ffffff', accent:'#4F46E5', line:'#DCDCD6', layout:'list' },
+    { id:'receipt', nameAr:'فاتورة السوق', nameEn:'Market Receipt', bodyClass:'pub-design-receipt', bg:'#E7E7E5', card:'#ffffff', accent:'#C81E1E', line:'#BFBFBC', layout:'list' }
   ];
   // شكل المنيو أصبح إعدادًا ثابتًا يحدده صاحب المطعم من لوحة التحكم (وليس اختيارًا مؤقتًا لكل زائر)
   var previewDesignId = null; // معاينة مؤقتة للمالك بالاختصار T — مش بتتحفظ
