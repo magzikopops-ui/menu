@@ -1533,6 +1533,7 @@ body.pub-user-dark .pub-logo-wrap img{ background:#F0ECE0; border-radius:12px; p
         <button type="button" class="link-btn dash-menu-trigger">⚙️ الإعدادات <span class="caret">▾</span></button>
         <div class="dash-menu-dropdown">
           <button class="link-btn" id="restaurantSettingsBtn">إعدادات المطعم</button>
+          <button class="link-btn" id="menuDesignBtn">🎨 شكل المنيو</button>
           <button class="link-btn" id="backupBtn">📦 النسخ الاحتياطي</button>
           <button class="link-btn" id="staffBtn">👤 حسابات الكاشير</button>
           <button class="link-btn" id="subscriptionBtn">💳 الاشتراك</button>
@@ -9035,23 +9036,9 @@ async function openSubscriptionModal(){
 
 document.getElementById('subscriptionBtn').addEventListener('click', openSubscriptionModal);
 
-document.getElementById('backupBtn').addEventListener('click', ()=>{
-  openBackupModal();
-});
-document.getElementById('staffBtn').addEventListener('click', ()=>{
-  openStaffModal();
-});
-document.getElementById('restaurantSettingsBtn').addEventListener('click', async ()=>{
+function openMenuDesignModal(){
   if(restaurant.restriction_settings_disabled){ toast('إعدادات المطعم غير متاحة في نسختك الحالية'); return; }
-  const { data: settingsZones } = await sb.from('delivery_zones').select('*').eq('restaurant_id', restaurant.id).order('area_name');
-  const pendingZonesList = settingsZones || [];
-  let pendingDefaultFeeMode = restaurant.default_delivery_fee_mode || 'none';
-  let pendingDefaultZoneId = restaurant.default_delivery_zone_id || '';
-  let pendingLogo = restaurant.logo_url || null;
-  const originalLogoUrl = restaurant.logo_url || null;
-  let pendingBizType = restaurant.business_type === 'store' ? 'store' : 'restaurant';
-  let pendingMenuDesign = restaurant.menu_design || 'classic';
-  const RS_DESIGN_OPTIONS = [
+  const MENU_DESIGN_OPTIONS = [
     { id:'classic', nameAr:'كلاسيكي' },
     { id:'grid', nameAr:'شبكة عصرية' },
     { id:'dark', nameAr:'داكن أنيق' },
@@ -9074,6 +9061,63 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     { id:'filmstrip', nameAr:'شريط السينما (تصميم إبداعي)' },
     { id:'candy', nameAr:'لفافة الحلوى (تصميم إبداعي)' }
   ];
+  let pendingDesign = restaurant.menu_design || 'classic';
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>🎨 شكل المنيو</h3>
+      <div class="field">
+        <small>اختر الشكل الذي سيظهر لكل زوار المنيو، ويمكنك تغييره في أي وقت من هنا.</small>
+        <div class="design-picker-grid" id="menuDesignPickerGrid" style="margin-top:8px;">
+          ${MENU_DESIGN_OPTIONS.map(d=>`
+            <div class="design-card${d.id===pendingDesign ? ' selected' : ''}" data-design-id="${d.id}" style="padding:14px 6px;">
+              <div class="design-card-check">✓</div>
+              <div class="design-card-name" style="font-size:13px;">${d.nameAr}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="mdCancel">إلغاء</button>
+        <button class="btn-confirm" id="mdConfirm">حفظ</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelectorAll('#menuDesignPickerGrid .design-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      pendingDesign = card.dataset.designId;
+      overlay.querySelectorAll('#menuDesignPickerGrid .design-card').forEach(c=> c.classList.toggle('selected', c.dataset.designId===pendingDesign));
+    });
+  });
+  overlay.querySelector('#mdCancel').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#mdConfirm').addEventListener('click', async ()=>{
+    const btn = overlay.querySelector('#mdConfirm');
+    btn.disabled = true;
+    const { data, error } = await sb.from('restaurants').update({ menu_design: pendingDesign }).eq('id', restaurant.id).select().single();
+    if(error){ toast('تعذر الحفظ'); btn.disabled = false; return; }
+    restaurant = data;
+    toast('تم حفظ شكل المنيو');
+    overlay.remove();
+  });
+}
+document.getElementById('menuDesignBtn').addEventListener('click', openMenuDesignModal);
+
+document.getElementById('backupBtn').addEventListener('click', ()=>{
+  openBackupModal();
+});
+document.getElementById('staffBtn').addEventListener('click', ()=>{
+  openStaffModal();
+});
+document.getElementById('restaurantSettingsBtn').addEventListener('click', async ()=>{
+  if(restaurant.restriction_settings_disabled){ toast('إعدادات المطعم غير متاحة في نسختك الحالية'); return; }
+  const { data: settingsZones } = await sb.from('delivery_zones').select('*').eq('restaurant_id', restaurant.id).order('area_name');
+  const pendingZonesList = settingsZones || [];
+  let pendingDefaultFeeMode = restaurant.default_delivery_fee_mode || 'none';
+  let pendingDefaultZoneId = restaurant.default_delivery_zone_id || '';
+  let pendingLogo = restaurant.logo_url || null;
+  const originalLogoUrl = restaurant.logo_url || null;
+  let pendingBizType = restaurant.business_type === 'store' ? 'store' : 'restaurant';
   const t = () => BIZ_TERMS[pendingBizType];
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
@@ -9223,17 +9267,6 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
         ${restaurant.restriction_notif_settings_disabled ? `<small style="color:var(--stone); margin-top:4px; display:block;">🔒 رقم استلام إشعارات الطلبات مقفول من الإدارة.</small>` : ''}
       </div>
       <div class="field">
-        <label>شكل المنيو</label>
-        <small>اختر الشكل الثابت الذي سيظهر لكل زوار المنيو (يمكن تغييره في أي وقت من هنا).</small>
-        <div class="design-picker-grid" id="rsDesignPickerGrid" style="margin-top:8px;">
-          ${RS_DESIGN_OPTIONS.map(d=>`
-            <div class="design-card${d.id===pendingMenuDesign ? ' selected' : ''}" data-rs-design-id="${d.id}" style="padding:14px 6px;">
-              <div class="design-card-check">✓</div>
-              <div class="design-card-name" style="font-size:13px;">${d.nameAr}</div>
-            </div>`).join('')}
-        </div>
-      </div>
-      <div class="field">
         <label>الصيانة</label>
         <small>أدوات صيانة دورية، لا حاجة لاستخدامها كثيرًا</small>
         <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
@@ -9248,13 +9281,6 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     </div>`;
   document.body.appendChild(overlay);
   wireEnterToConfirm(overlay, overlay.querySelector('#rsConfirm'));
-
-  overlay.querySelectorAll('#rsDesignPickerGrid .design-card').forEach(card=>{
-    card.addEventListener('click', ()=>{
-      pendingMenuDesign = card.dataset.rsDesignId;
-      overlay.querySelectorAll('#rsDesignPickerGrid .design-card').forEach(c=> c.classList.toggle('selected', c.dataset.rsDesignId===pendingMenuDesign));
-    });
-  });
 
   // إدارة قائمة المحافظ الإلكترونية (أكثر من محفظة لكل متجر)
   let pendingWallets = (Array.isArray(restaurant.wallets) && restaurant.wallets.length)
@@ -9519,7 +9545,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
         return;
       }
     }
-    const { data, error } = await sb.from('restaurants').update({ logo_url: finalLogoUrl, name, name_en, phone, messenger_username, telegram_username, address, country_code, currency_label, opening_time, closing_time, min_delivery_order, min_delivery_order_online, default_delivery_fee_mode, default_delivery_fee_amount, default_delivery_zone_id, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes, accept_online_payment, wallets, wallet_label: wallets[0] ? wallets[0].label : null, wallet_number: wallets[0] ? wallets[0].number : null, instapay_account, menu_design: pendingMenuDesign }).eq('id', restaurant.id).select().single();
+    const { data, error } = await sb.from('restaurants').update({ logo_url: finalLogoUrl, name, name_en, phone, messenger_username, telegram_username, address, country_code, currency_label, opening_time, closing_time, min_delivery_order, min_delivery_order_online, default_delivery_fee_mode, default_delivery_fee_amount, default_delivery_zone_id, notification_phone, notification_apikey, business_type: pendingBizType, default_prep_minutes, accept_online_payment, wallets, wallet_label: wallets[0] ? wallets[0].label : null, wallet_number: wallets[0] ? wallets[0].number : null, instapay_account }).eq('id', restaurant.id).select().single();
     if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
     restaurant = data;
     if(originalLogoUrl && originalLogoUrl !== finalLogoUrl){
