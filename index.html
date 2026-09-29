@@ -1042,6 +1042,34 @@ body.pub-design-ledger .pub-item .item-control .qty-stepper .qty-btn{ background
 body.pub-design-ledger .discount-badge{ background:var(--ember); color:#171B33; }
 @media (max-width:480px){ body.pub-design-ledger .pub-item .name-primary{ white-space:normal; } body.pub-design-ledger .pub-item .desc-expand, body.pub-design-ledger .pub-item .item-control, body.pub-design-ledger .pub-item .variant-cart-lines{ padding-inline-start:0; } }
 
+/* تصميم "الكتالوج الحديث" (catalog): قائمة نصية نظيفة بدون صور للأصناف، خطوط عريضة وسعر في شارة ملوّنة — مناسب لمتاجر السوبرماركت والبقالة والمطاعم اللي مركزة على السرعة والوضوح */
+body.pub-design-catalog{ --paper:#F6F6F4; --paper-dim:#ECECE8; --ink:#15151A; --line:#DCDCD6; --stone:#6B6B70; --stone-light:#E4E4DF; --ember:#4F46E5; --ember-dark:#3B32C7; --basil:#15151A; --basil-dark:#000000; background:var(--paper); }
+body.pub-design-catalog .pub-search input{ border-radius:10px; border-width:2px; background:#fff; font-weight:600; }
+body.pub-design-catalog .pub-search input:focus{ outline:none; border-color:var(--ember); }
+body.pub-design-catalog .pub-tab{ border-radius:8px; border-width:2px; font-weight:700; }
+body.pub-design-catalog .pub-tab.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+body.pub-design-catalog .pub-tab.active .pub-tab-count{ background:var(--ember); color:#fff; }
+body.pub-design-catalog .pub-cat-heading{ display:flex; align-items:center; gap:10px; font-size:22px; font-weight:900; border-bottom:3px solid var(--ink); padding-bottom:8px; margin:30px 0 4px; }
+body.pub-design-catalog .pub-cat-heading::before{ content:''; width:14px; height:14px; border-radius:3px; background:var(--ember); flex-shrink:0; }
+body.pub-design-catalog .pub-item{ border:none; border-bottom:1px solid var(--line); border-radius:0; background:transparent; margin-bottom:0; padding:14px 8px; }
+body.pub-design-catalog .pub-item:nth-child(even){ background:var(--paper-dim); }
+body.pub-design-catalog .pub-item img, body.pub-design-catalog .pub-item .no-img{ display:none; }
+body.pub-design-catalog .pub-item .chevron{ width:22px; height:22px; border-radius:6px; background:var(--paper-dim); color:var(--ink); font-size:11px; display:flex; align-items:center; justify-content:center; }
+body.pub-design-catalog .pub-item.expanded .chevron{ background:var(--ink); color:#fff; }
+body.pub-design-catalog .pub-item .name-primary{ font-size:16.5px; font-weight:800; color:var(--ink); }
+body.pub-design-catalog .pub-item .name-secondary{ font-size:12.5px; color:var(--stone); font-weight:600; }
+body.pub-design-catalog .pub-item .price{ background:var(--ember); color:#fff; font-weight:800; font-size:14px; padding:5px 13px; border-radius:8px; display:inline-block; }
+body.pub-design-catalog .pub-item .price .old-price{ color:rgba(255,255,255,.75); }
+body.pub-design-catalog .pub-item .desc-expand{ color:var(--stone); font-size:13.5px; border-inline-start:3px solid var(--ember); padding-inline-start:10px; margin-top:6px; }
+body.pub-design-catalog .pub-item .item-control{ flex-shrink:0; align-items:flex-end; gap:6px; }
+body.pub-design-catalog .pub-item .item-control .variant-select{ border:2px solid var(--line); border-radius:8px; font-weight:700; }
+body.pub-design-catalog .pub-item .item-control .add-to-cart-btn{ border-radius:8px; font-weight:800; }
+body.pub-design-catalog .pub-item .item-control .qty-stepper .qty-btn{ border-radius:7px; }
+body.pub-design-catalog .discount-badge{ background:var(--ink); color:#fff; }
+body.pub-design-catalog .add-to-cart-btn{ background:var(--ink); }
+body.pub-design-catalog .add-to-cart-btn:hover{ background:var(--ember); }
+@media (max-width:480px){ body.pub-design-catalog .pub-item{ flex-wrap:wrap; } body.pub-design-catalog .pub-item .item-control{ width:100%; align-items:stretch; margin-top:8px; } }
+
 /* وضع داكن اختياري يفعّله الزائر بنفسه فوق أي شكل مختار — يغيّر الحيادي فقط ويحافظ على لون العلامة الخاص بالتصميم */
 body.pub-user-dark{ --paper:#17151C; --paper-dim:#211E29; --ink:#F0ECE0; --line:#37333F; --stone:#9C96A8; --stone-light:#37333F; }
 body.pub-user-dark .pub-item, body.pub-user-dark .modal, body.pub-user-dark .pub-lang-btn, body.pub-user-dark .pub-icon-btn,
@@ -8768,7 +8796,8 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     { id:'fresh', nameAr:'أخضر طازج (تصميم مختلف كليًا)' },
     { id:'poster', nameAr:'معرض الصور (صور كبيرة)' },
     { id:'board', nameAr:'لوحة المنتجات (الاسم فوق الصورة)' },
-    { id:'ledger', nameAr:'القائمة المرقّمة (أنيقة بخط منقّط)' }
+    { id:'ledger', nameAr:'القائمة المرقّمة (أنيقة بخط منقّط)' },
+    { id:'catalog', nameAr:'الكتالوج الحديث (بدون صور، نصي وسريع)' }
   ];
   const t = () => BIZ_TERMS[pendingBizType];
   const overlay = document.createElement('div');
@@ -11634,7 +11663,8 @@ async function loadPublic(slug){
     { id:'fresh', nameAr:'أخضر طازج', nameEn:'Fresh Green', bodyClass:'pub-design-fresh', bg:'#16221D', card:'#1F2F28', accent:'#3FAE6B', line:'#33473F', layout:'grid' },
     { id:'poster', nameAr:'معرض الصور', nameEn:'Photo Gallery', bodyClass:'pub-design-poster', bg:'#EAF2FA', card:'#ffffff', accent:'#F0533A', line:'#C9DAEA', layout:'cards' },
     { id:'board', nameAr:'لوحة المنتجات', nameEn:'Product Board', bodyClass:'pub-design-board', bg:'#FBF1E2', card:'#ffffff', accent:'#C1531F', line:'#E7D2AC', layout:'grid' },
-    { id:'ledger', nameAr:'القائمة المرقّمة', nameEn:'Numbered Ledger', bodyClass:'pub-design-ledger', bg:'#171B33', card:'#1F2544', accent:'#D8B25C', line:'#3B416A', layout:'list' }
+    { id:'ledger', nameAr:'القائمة المرقّمة', nameEn:'Numbered Ledger', bodyClass:'pub-design-ledger', bg:'#171B33', card:'#1F2544', accent:'#D8B25C', line:'#3B416A', layout:'list' },
+    { id:'catalog', nameAr:'الكتالوج الحديث', nameEn:'Modern Catalog', bodyClass:'pub-design-catalog', bg:'#F6F6F4', card:'#ffffff', accent:'#4F46E5', line:'#DCDCD6', layout:'list' }
   ];
   // شكل المنيو أصبح إعدادًا ثابتًا يحدده صاحب المطعم من لوحة التحكم (وليس اختيارًا مؤقتًا لكل زائر)
   var previewDesignId = null; // معاينة مؤقتة للمالك بالاختصار T — مش بتتحفظ
