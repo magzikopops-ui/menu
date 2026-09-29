@@ -1203,6 +1203,70 @@ body.pub-design-cork .add-to-cart-btn{ background:var(--ember); }
 body.pub-design-cork .add-to-cart-btn:hover{ background:var(--ember-dark); }
 @media (max-width:380px){ body.pub-design-cork #pubBody{ gap:22px 12px; } body.pub-design-cork .pub-item .name-primary{ font-size:17px; } }
 
+/* تصميم "قصاصة الجريدة" (newsprint): فكرة إبداعية — كل صنف يظهر كقصاصة مجلة/جريدة ممزوقة الحواف، وعنوانه بخط عريض زي مانشيت، والسعر ختم حبر أحمر مايل */
+body.pub-design-newsprint{ --paper:#EDEAE3; --paper-dim:#E2DDD2; --ink:#201D19; --line:#CFC9BC; --stone:#6E675B; --stone-light:#E6E1D6; --ember:#B3261E; --ember-dark:#8C1D17; --basil:#201D19; --basil-dark:#000000;
+  background-color:var(--paper);
+  background-image:radial-gradient(rgba(0,0,0,.045) 1px, transparent 1px);
+  background-size:8px 8px;
+}
+body.pub-design-newsprint, body.pub-design-newsprint input, body.pub-design-newsprint select{ font-family:Georgia,'Times New Roman',serif; }
+body.pub-design-newsprint .pub-search input{ border-radius:0; border:2px solid var(--ink); background:#fff; }
+body.pub-design-newsprint .pub-tab{ border-radius:0; border:2px solid var(--ink); background:#fff; }
+body.pub-design-newsprint .pub-tab.active{ background:var(--ink); color:#fff; }
+body.pub-design-newsprint .pub-cat-heading{ text-align:center; font-size:26px; font-weight:900; text-transform:uppercase; letter-spacing:2px; border-top:3px solid var(--ink); border-bottom:3px solid var(--ink); padding:8px 0; margin:30px 0 22px; }
+body.pub-design-newsprint .pub-item{ position:relative; flex-direction:column; align-items:stretch; gap:0; background:#FAF8F2; border:none; padding:12px 12px 16px; margin-bottom:26px; box-shadow:0 6px 14px rgba(0,0,0,.16); transition:transform .2s ease;
+  clip-path:polygon(0% 2%,3% 0%,9% 1.5%,16% 0%,24% 1%,33% 0%,42% 1.5%,51% 0%,60% 1%,69% 0%,78% 1.5%,87% 0%,94% 1%,100% 0%,100% 98%,96% 100%,89% 98.5%,80% 100%,71% 98.5%,62% 100%,53% 98.5%,44% 100%,35% 98.5%,26% 100%,17% 98.5%,8% 100%,0% 98.5%);
+}
+body.pub-design-newsprint .pub-item:nth-child(odd){ transform:rotate(-1deg); }
+body.pub-design-newsprint .pub-item:nth-child(even){ transform:rotate(.8deg); }
+body.pub-design-newsprint .pub-item:hover{ transform:rotate(0); z-index:2; }
+body.pub-design-newsprint .pub-item-front{ display:contents; }
+body.pub-design-newsprint .pub-item img, body.pub-design-newsprint .pub-item .no-img{ width:100%; height:auto; aspect-ratio:16/10; filter:grayscale(.5) contrast(1.05); border-radius:0; }
+body.pub-design-newsprint .pub-item .no-img{ font-size:30px; }
+body.pub-design-newsprint .pub-item .chevron{ position:absolute; top:6px; inset-inline-start:6px; z-index:2; width:20px; height:20px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.85); font-size:10px; }
+body.pub-design-newsprint .pub-item .chevron:empty{ visibility:hidden; }
+body.pub-design-newsprint .pub-item .info{ padding-top:10px; position:relative; }
+body.pub-design-newsprint .pub-item .name-primary{ font-size:18px; font-weight:900; line-height:1.25; border-bottom:1px solid var(--line); padding-bottom:6px; }
+body.pub-design-newsprint .pub-item .name-secondary{ font-size:11.5px; font-style:italic; color:var(--stone); }
+body.pub-design-newsprint .pub-item .price{ position:absolute; top:-38px; inset-inline-end:6px; width:58px; height:58px; border-radius:50%; border:2.5px dashed var(--ember); color:var(--ember); background:rgba(255,255,255,.75); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; text-align:center; line-height:1.15; transform:rotate(-11deg); mix-blend-mode:multiply; }
+body.pub-design-newsprint .pub-item .price .old-price{ color:var(--stone); display:block; font-size:9px; }
+body.pub-design-newsprint .pub-item .desc-expand{ font-size:13px; color:var(--stone); margin-top:8px; font-style:italic; }
+body.pub-design-newsprint .pub-item .item-control{ width:100%; margin-top:10px; }
+body.pub-design-newsprint .pub-item .item-control .variant-select{ border-radius:0; border:1.5px solid var(--ink); }
+body.pub-design-newsprint .pub-item .item-control .add-to-cart-btn{ border-radius:0; font-weight:800; }
+body.pub-design-newsprint .discount-badge{ background:var(--ember); border-radius:0; }
+body.pub-design-newsprint .add-to-cart-btn{ background:var(--ink); }
+body.pub-design-newsprint .add-to-cart-btn:hover{ background:var(--ember); }
+
+/* تصميم "تذكرة السفر" (ticket): فكرة إبداعية — كل صنف بطاقة زي تذكرة الطيران، بجذع جانبي منفصل بخط متقطع وسعر مكتوب رأسي زي كعب التذكرة، مع خطوط باركود زخرفية */
+body.pub-design-ticket{ --paper:#FFF9F0; --paper-dim:#F3EAD8; --ink:#1B3B5F; --line:#D8CBAE; --stone:#7C8A9A; --stone-light:#EAF1F8; --ember:#E8792E; --ember-dark:#C4601C; --basil:#1B3B5F; --basil-dark:#0F253D; background:var(--paper); }
+body.pub-design-ticket .pub-search input{ border-radius:12px; background:#fff; border:2px solid var(--line); }
+body.pub-design-ticket .pub-search input:focus{ outline:none; border-color:var(--ember); }
+body.pub-design-ticket .pub-tab{ border-radius:12px 12px 0 0; background:#fff; border-bottom:3px solid transparent; }
+body.pub-design-ticket .pub-tab.active{ border-bottom-color:var(--ember); color:var(--ember); }
+body.pub-design-ticket .pub-cat-heading{ font-size:20px; font-weight:800; color:var(--ink); border-bottom:none; display:flex; align-items:center; gap:10px; margin:28px 0 16px; }
+body.pub-design-ticket .pub-cat-heading::after{ content:''; flex:1; height:2px; background:repeating-linear-gradient(to left, var(--line) 0 6px, transparent 6px 12px); }
+body.pub-design-ticket .pub-item{ position:relative; padding:0; border:none; border-radius:14px; background:#fff; overflow:hidden; box-shadow:0 6px 16px rgba(27,59,95,.14); align-items:stretch; flex-wrap:wrap; }
+body.pub-design-ticket .pub-item-front{ display:flex; align-items:center; gap:12px; padding:14px; flex:1; min-width:0; }
+body.pub-design-ticket .pub-item img, body.pub-design-ticket .pub-item .no-img{ width:64px; height:64px; border-radius:10px; }
+body.pub-design-ticket .pub-item .chevron{ color:var(--ember); }
+body.pub-design-ticket .pub-item .name-primary{ font-weight:800; color:var(--ink); }
+body.pub-design-ticket .pub-item .name-secondary{ color:var(--stone); font-size:12px; }
+body.pub-design-ticket .pub-item .desc-expand{ color:var(--stone); font-size:13px; }
+body.pub-design-ticket .pub-item .price{ display:none; }
+body.pub-design-ticket .pub-item .item-control{ width:100%; flex:1 0 100%; margin-top:0; padding:0 14px 14px; box-sizing:border-box; }
+body.pub-design-ticket .pub-item .item-control .variant-select{ border-color:var(--line); }
+body.pub-design-ticket .pub-item .item-control .add-to-cart-btn{ background:var(--ember); }
+body.pub-design-ticket .pub-item .item-control .add-to-cart-btn:hover{ background:var(--ember-dark); }
+body.pub-design-ticket .ticket-stub{ flex-shrink:0; width:62px; position:relative; background:var(--stone-light); border-inline-start:2px dashed var(--line); display:flex; align-items:center; justify-content:center; }
+body.pub-design-ticket .ticket-stub::before, body.pub-design-ticket .ticket-stub::after{ content:''; position:absolute; inset-inline-start:-9px; width:18px; height:18px; border-radius:50%; background:var(--paper); }
+body.pub-design-ticket .ticket-stub::before{ top:-9px; }
+body.pub-design-ticket .ticket-stub::after{ bottom:-9px; }
+body.pub-design-ticket .ticket-stub .stub-price{ writing-mode:vertical-rl; transform:rotate(180deg); font-weight:900; color:var(--ember); font-size:15px; white-space:nowrap; }
+body.pub-design-ticket .ticket-stub .stub-price .old-price{ color:var(--stone); font-size:10px; }
+body.pub-design-ticket .ticket-stub .stub-barcode{ position:absolute; bottom:8px; width:16px; height:26px; background:repeating-linear-gradient(to bottom, var(--ink) 0 2px, transparent 2px 4px); opacity:.55; }
+body.pub-design-ticket .discount-badge{ position:static; display:block; margin-top:4px; background:var(--ink); }
+
 /* وضع داكن اختياري يفعّله الزائر بنفسه فوق أي شكل مختار — يغيّر الحيادي فقط ويحافظ على لون العلامة الخاص بالتصميم */
 body.pub-user-dark{ --paper:#17151C; --paper-dim:#211E29; --ink:#F0ECE0; --line:#37333F; --stone:#9C96A8; --stone-light:#37333F; }
 body.pub-user-dark .pub-item, body.pub-user-dark .modal, body.pub-user-dark .pub-lang-btn, body.pub-user-dark .pub-icon-btn,
@@ -8934,7 +8998,9 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     { id:'receipt', nameAr:'فاتورة السوق (شكل إيصال الكاشير)' },
     { id:'zoom', nameAr:'معاينة مكبّرة (الصورة تكبر عند تمرير الماوس)' },
     { id:'badge', nameAr:'شارة الصنف الدائرية (تصميم إبداعي)' },
-    { id:'cork', nameAr:'بولارويد اللوحة الفلينية (تصميم إبداعي)' }
+    { id:'cork', nameAr:'بولارويد اللوحة الفلينية (تصميم إبداعي)' },
+    { id:'newsprint', nameAr:'قصاصة الجريدة (تصميم إبداعي)' },
+    { id:'ticket', nameAr:'تذكرة السفر (تصميم إبداعي)' }
   ];
   const t = () => BIZ_TERMS[pendingBizType];
   const overlay = document.createElement('div');
@@ -11805,7 +11871,9 @@ async function loadPublic(slug){
     { id:'receipt', nameAr:'فاتورة السوق', nameEn:'Market Receipt', bodyClass:'pub-design-receipt', bg:'#E7E7E5', card:'#ffffff', accent:'#C81E1E', line:'#BFBFBC', layout:'list' },
     { id:'zoom', nameAr:'معاينة مكبّرة', nameEn:'Hover Zoom', bodyClass:'pub-design-zoom', bg:'#EDEFF2', card:'#ffffff', accent:'#FF6B57', line:'#D2D7DE', layout:'list' },
     { id:'badge', nameAr:'شارة الصنف الدائرية', nameEn:'Circular Badge', bodyClass:'pub-design-badge', bg:'#FFF7E1', card:'#ffffff', accent:'#7B5EA7', line:'#F0DFA3', layout:'grid' },
-    { id:'cork', nameAr:'بولارويد اللوحة الفلينية', nameEn:'Corkboard Polaroid', bodyClass:'pub-design-cork', bg:'#C9A778', card:'#fdfdfb', accent:'#2A9D8F', line:'#A98653', layout:'grid' }
+    { id:'cork', nameAr:'بولارويد اللوحة الفلينية', nameEn:'Corkboard Polaroid', bodyClass:'pub-design-cork', bg:'#C9A778', card:'#fdfdfb', accent:'#2A9D8F', line:'#A98653', layout:'grid' },
+    { id:'newsprint', nameAr:'قصاصة الجريدة', nameEn:'Newsprint Clipping', bodyClass:'pub-design-newsprint', bg:'#EDEAE3', card:'#FAF8F2', accent:'#B3261E', line:'#CFC9BC', layout:'grid' },
+    { id:'ticket', nameAr:'تذكرة السفر', nameEn:'Travel Ticket', bodyClass:'pub-design-ticket', bg:'#FFF9F0', card:'#ffffff', accent:'#E8792E', line:'#D8CBAE', layout:'list' }
   ];
   // شكل المنيو أصبح إعدادًا ثابتًا يحدده صاحب المطعم من لوحة التحكم (وليس اختيارًا مؤقتًا لكل زائر)
   var previewDesignId = null; // معاينة مؤقتة للمالك بالاختصار T — مش بتتحفظ
@@ -12612,6 +12680,20 @@ async function loadPublic(slug){
         addToCartRespectingAddons(item, baseKey, sizeObj.size_name, Number(sizeObj.price), null, card ? (card.querySelector('img') || card) : btn);
       });
     });
+    const isTicketDesign = document.body.classList.contains('pub-design-ticket');
+    if(isTicketDesign){
+      body.querySelectorAll('.pub-item').forEach(row=>{
+        if(row.querySelector(':scope > .ticket-stub')) return;
+        const priceEl = row.querySelector('.price');
+        if(!priceEl) return;
+        const stub = document.createElement('div');
+        stub.className = 'ticket-stub';
+        stub.innerHTML = `<span class="stub-price">${priceEl.innerHTML}</span><span class="stub-barcode"></span>`;
+        const front = row.querySelector(':scope > .pub-item-front');
+        if(front && front.nextSibling) front.parentNode.insertBefore(stub, front.nextSibling);
+        else row.appendChild(stub);
+      });
+    }
     const isDarkDesign = document.body.classList.contains('pub-design-dark');
     const isAuroraDesign = document.body.classList.contains('pub-design-aurora');
     const isLuxuryDesign = document.body.classList.contains('pub-design-luxury');
