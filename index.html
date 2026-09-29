@@ -1267,6 +1267,76 @@ body.pub-design-ticket .ticket-stub .stub-price .old-price{ color:var(--stone); 
 body.pub-design-ticket .ticket-stub .stub-barcode{ position:absolute; bottom:8px; width:16px; height:26px; background:repeating-linear-gradient(to bottom, var(--ink) 0 2px, transparent 2px 4px); opacity:.55; }
 body.pub-design-ticket .discount-badge{ position:static; display:block; margin-top:4px; background:var(--ink); }
 
+/* تصميم "شريط السينما" (filmstrip): فكرة إبداعية — كل صنف كارت أسود زي كادر فيلم سينمائي، حواف مثقّبة فوق وتحت زي شريط الفيلم الحقيقي، والسعر شارة حمراء متوهجة زي لافتة السينما */
+body.pub-design-filmstrip{ --paper:#0D0D0D; --paper-dim:#1A1A1A; --ink:#F5F5F5; --line:#333333; --stone:#9A9A9A; --stone-light:#262626; --ember:#E50914; --ember-dark:#B00610; --basil:#F5F5F5; --basil-dark:#cccccc; background:var(--paper); }
+body.pub-design-filmstrip .pub-search input{ background:#1a1a1a; color:#fff; border:1.5px solid #333; border-radius:6px; }
+body.pub-design-filmstrip .pub-search input::placeholder{ color:#777; }
+body.pub-design-filmstrip .pub-search input:focus{ outline:none; border-color:var(--ember); }
+body.pub-design-filmstrip .pub-tab{ background:#1a1a1a; color:#ccc; border:1.5px solid #333; border-radius:6px; }
+body.pub-design-filmstrip .pub-tab.active{ background:var(--ember); color:#fff; border-color:var(--ember); }
+body.pub-design-filmstrip .pub-tab.active .pub-tab-count{ background:rgba(255,255,255,.25); color:#fff; }
+body.pub-design-filmstrip .pub-cat-heading{ color:#fff; text-align:center; font-size:23px; font-weight:900; text-transform:uppercase; letter-spacing:4px; border-bottom:none; margin:34px 0 20px; text-shadow:0 0 14px rgba(229,9,20,.55); }
+body.pub-design-filmstrip #pubBody{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px 12px; }
+body.pub-design-filmstrip .pub-cat-heading, body.pub-design-filmstrip .pub-empty{ grid-column:1/-1; }
+body.pub-design-filmstrip .pub-item{ position:relative; flex-direction:column; align-items:stretch; gap:0; background:#161616; border:none; border-radius:6px; padding:16px 12px 12px; margin-bottom:0; box-shadow:0 10px 22px rgba(0,0,0,.55); }
+body.pub-design-filmstrip .pub-item::before, body.pub-design-filmstrip .pub-item::after{ content:''; position:absolute; inset-inline:8px; height:7px; background-color:#3a3a3a; background-image:linear-gradient(to right, transparent 0 5px, #000 5px 12px); background-size:16px 100%; border-radius:2px; }
+body.pub-design-filmstrip .pub-item::before{ top:4px; }
+body.pub-design-filmstrip .pub-item::after{ bottom:4px; }
+body.pub-design-filmstrip .pub-item-front{ display:contents; }
+body.pub-design-filmstrip .pub-item img, body.pub-design-filmstrip .pub-item .no-img{ width:100%; height:auto; aspect-ratio:16/10; border-radius:2px; margin-top:8px; filter:brightness(.94) contrast(1.06); }
+body.pub-design-filmstrip .pub-item .no-img{ font-size:26px; }
+body.pub-design-filmstrip .pub-item .chevron{ position:absolute; top:16px; inset-inline-start:12px; z-index:2; width:20px; height:20px; border-radius:50%; background:rgba(0,0,0,.65); color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+body.pub-design-filmstrip .pub-item .chevron:empty{ visibility:hidden; }
+body.pub-design-filmstrip .pub-item .info{ padding-top:9px; }
+body.pub-design-filmstrip .pub-item .name-primary{ color:#fff; font-weight:800; font-size:14.5px; line-height:1.3; }
+body.pub-design-filmstrip .pub-item .name-secondary{ color:#999; font-size:11px; }
+body.pub-design-filmstrip .pub-item .price{ position:absolute; top:13px; inset-inline-end:12px; background:var(--ember); color:#fff; font-weight:900; font-size:11px; padding:5px 10px; border-radius:4px; box-shadow:0 0 12px rgba(229,9,20,.65); }
+body.pub-design-filmstrip .pub-item .price .old-price{ color:rgba(255,255,255,.7); }
+body.pub-design-filmstrip .pub-item .desc-expand{ color:#999; font-size:12px; margin-top:6px; }
+body.pub-design-filmstrip .pub-item .variant-cart-lines{ width:100%; }
+body.pub-design-filmstrip .pub-item .item-control{ width:100%; flex-direction:column; gap:6px; margin-top:9px; }
+body.pub-design-filmstrip .pub-item .item-control .variant-select{ width:100%; background:#1a1a1a; color:#fff; border:1.5px solid #333; color-scheme:dark; }
+body.pub-design-filmstrip .pub-item .item-control .add-to-cart-btn{ width:100%; font-weight:800; }
+body.pub-design-filmstrip .pub-item .item-control .qty-stepper .qty-btn{ background:#1a1a1a; color:#fff; border:1px solid #333; }
+body.pub-design-filmstrip .discount-badge{ background:#fff; color:#000; }
+body.pub-design-filmstrip .add-to-cart-btn{ background:var(--ember); }
+body.pub-design-filmstrip .add-to-cart-btn:hover{ background:var(--ember-dark); }
+
+/* تصميم "لفافة الحلوى" (candy): فكرة إبداعية — كل صنف كارت شكله لفافة حلوى ملفوفة الطرفين، صورة دائرية زي حبة الحلوى، وسعر زي "الملصق" — مناسب لمحلات الحلويات والآيس كريم والمخبوزات */
+body.pub-design-candy{ --paper:#FFE9F5; --paper-dim:#FFD8EC; --ink:#3A1030; --line:#FFC2E2; --stone:#9C6E8D; --stone-light:#FFEFF8; --ember:#FF3D81; --ember-dark:#DB2569; --basil:#00B8A0; --basil-dark:#039485; background:linear-gradient(160deg,#FFE9F5,#E4F9F6); }
+body.pub-design-candy .pub-search input{ border-radius:999px; border:2px solid var(--ember); background:#fff; }
+body.pub-design-candy .pub-search input:focus{ outline:none; box-shadow:0 0 0 3px rgba(255,61,129,.18); }
+body.pub-design-candy .pub-tab{ border-radius:999px; border:2px solid var(--ember); background:#fff; color:var(--ink); }
+body.pub-design-candy .pub-tab.active{ background:var(--ember); color:#fff; border-color:var(--ember); }
+body.pub-design-candy .pub-tab.active .pub-tab-count{ background:rgba(255,255,255,.3); color:#fff; }
+body.pub-design-candy .pub-cat-heading{ text-align:center; font-size:23px; font-weight:900; color:var(--ember); border-bottom:none; margin:32px 0 30px; }
+body.pub-design-candy #pubBody{ display:grid; grid-template-columns:repeat(2,1fr); gap:30px 26px; }
+body.pub-design-candy .pub-cat-heading, body.pub-design-candy .pub-empty{ grid-column:1/-1; }
+body.pub-design-candy .pub-item{ position:relative; flex-direction:column; align-items:center; text-align:center; gap:4px; background:#fff; border:none; border-radius:20px; padding:18px 10px 14px; box-shadow:0 7px 0 var(--stone-light), 0 9px 18px rgba(58,16,48,.14); }
+body.pub-design-candy .pub-item::before, body.pub-design-candy .pub-item::after{ content:''; position:absolute; top:50%; width:0; height:0; border-top:18px solid transparent; border-bottom:18px solid transparent; filter:drop-shadow(0 3px 2px rgba(58,16,48,.12)); }
+body.pub-design-candy .pub-item::before{ inset-inline-start:-13px; border-inline-end:15px solid #fff; transform:translateY(-50%); }
+body.pub-design-candy .pub-item::after{ inset-inline-end:-13px; border-inline-start:15px solid #fff; transform:translateY(-50%); }
+body.pub-design-candy .pub-item-front{ display:contents; }
+body.pub-design-candy .pub-item img, body.pub-design-candy .pub-item .no-img{ width:64px; height:64px; border-radius:50%; border:4px solid var(--basil); margin:0 auto; }
+body.pub-design-candy .pub-item .no-img{ font-size:24px; display:flex; align-items:center; justify-content:center; }
+body.pub-design-candy .pub-item .chevron{ position:absolute; top:6px; inset-inline-end:6px; width:20px; height:20px; border-radius:50%; background:var(--stone-light); color:var(--ember); font-size:10px; display:flex; align-items:center; justify-content:center; }
+body.pub-design-candy .pub-item .chevron:empty{ visibility:hidden; }
+body.pub-design-candy .pub-item .info{ display:flex; flex-direction:column; align-items:center; }
+body.pub-design-candy .pub-item .name-primary{ font-size:14px; font-weight:800; color:var(--ink); margin-top:6px; }
+body.pub-design-candy .pub-item .name-secondary{ font-size:11px; color:var(--stone); }
+body.pub-design-candy .pub-item .price{ margin-top:6px; background:var(--ember); color:#fff; font-weight:800; font-size:12.5px; padding:4px 13px; border-radius:999px; }
+body.pub-design-candy .pub-item .price .old-price{ color:rgba(255,255,255,.75); }
+body.pub-design-candy .pub-item .desc-expand{ font-size:11.5px; color:var(--stone); margin-top:5px; }
+body.pub-design-candy .pub-item .variant-cart-lines{ width:100%; }
+body.pub-design-candy .pub-item .item-control{ width:100%; flex-direction:column; align-items:center; gap:6px; margin-top:9px; }
+body.pub-design-candy .pub-item .item-control .variant-select{ width:100%; font-size:11px; border-radius:10px; }
+body.pub-design-candy .pub-item .item-control .add-to-cart-btn{ width:100%; border-radius:999px; font-weight:800; background:var(--basil); }
+body.pub-design-candy .pub-item .item-control .add-to-cart-btn:hover{ background:var(--basil-dark); }
+body.pub-design-candy .pub-item .item-control .qty-stepper{ justify-content:center; }
+body.pub-design-candy .pub-item .item-control .qty-stepper .qty-btn{ border-radius:50%; background:var(--stone-light); }
+body.pub-design-candy .discount-badge{ background:var(--basil); }
+@media (max-width:380px){ body.pub-design-candy #pubBody{ gap:26px 18px; } }
+
 /* وضع داكن اختياري يفعّله الزائر بنفسه فوق أي شكل مختار — يغيّر الحيادي فقط ويحافظ على لون العلامة الخاص بالتصميم */
 body.pub-user-dark{ --paper:#17151C; --paper-dim:#211E29; --ink:#F0ECE0; --line:#37333F; --stone:#9C96A8; --stone-light:#37333F; }
 body.pub-user-dark .pub-item, body.pub-user-dark .modal, body.pub-user-dark .pub-lang-btn, body.pub-user-dark .pub-icon-btn,
@@ -9000,7 +9070,9 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     { id:'badge', nameAr:'شارة الصنف الدائرية (تصميم إبداعي)' },
     { id:'cork', nameAr:'بولارويد اللوحة الفلينية (تصميم إبداعي)' },
     { id:'newsprint', nameAr:'قصاصة الجريدة (تصميم إبداعي)' },
-    { id:'ticket', nameAr:'تذكرة السفر (تصميم إبداعي)' }
+    { id:'ticket', nameAr:'تذكرة السفر (تصميم إبداعي)' },
+    { id:'filmstrip', nameAr:'شريط السينما (تصميم إبداعي)' },
+    { id:'candy', nameAr:'لفافة الحلوى (تصميم إبداعي)' }
   ];
   const t = () => BIZ_TERMS[pendingBizType];
   const overlay = document.createElement('div');
@@ -11873,7 +11945,9 @@ async function loadPublic(slug){
     { id:'badge', nameAr:'شارة الصنف الدائرية', nameEn:'Circular Badge', bodyClass:'pub-design-badge', bg:'#FFF7E1', card:'#ffffff', accent:'#7B5EA7', line:'#F0DFA3', layout:'grid' },
     { id:'cork', nameAr:'بولارويد اللوحة الفلينية', nameEn:'Corkboard Polaroid', bodyClass:'pub-design-cork', bg:'#C9A778', card:'#fdfdfb', accent:'#2A9D8F', line:'#A98653', layout:'grid' },
     { id:'newsprint', nameAr:'قصاصة الجريدة', nameEn:'Newsprint Clipping', bodyClass:'pub-design-newsprint', bg:'#EDEAE3', card:'#FAF8F2', accent:'#B3261E', line:'#CFC9BC', layout:'grid' },
-    { id:'ticket', nameAr:'تذكرة السفر', nameEn:'Travel Ticket', bodyClass:'pub-design-ticket', bg:'#FFF9F0', card:'#ffffff', accent:'#E8792E', line:'#D8CBAE', layout:'list' }
+    { id:'ticket', nameAr:'تذكرة السفر', nameEn:'Travel Ticket', bodyClass:'pub-design-ticket', bg:'#FFF9F0', card:'#ffffff', accent:'#E8792E', line:'#D8CBAE', layout:'list' },
+    { id:'filmstrip', nameAr:'شريط السينما', nameEn:'Film Strip', bodyClass:'pub-design-filmstrip', bg:'#0D0D0D', card:'#161616', accent:'#E50914', line:'#333333', layout:'grid' },
+    { id:'candy', nameAr:'لفافة الحلوى', nameEn:'Candy Wrapper', bodyClass:'pub-design-candy', bg:'#FFE9F5', card:'#ffffff', accent:'#FF3D81', line:'#FFC2E2', layout:'grid' }
   ];
   // شكل المنيو أصبح إعدادًا ثابتًا يحدده صاحب المطعم من لوحة التحكم (وليس اختيارًا مؤقتًا لكل زائر)
   var previewDesignId = null; // معاينة مؤقتة للمالك بالاختصار T — مش بتتحفظ
