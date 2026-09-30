@@ -1703,6 +1703,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
     </div>
     <div class="topbar-actions">
       <button class="link-btn" id="viewOrdersBtn">📦 الطلبات <span id="newOrdersBadge" class="new-orders-badge hidden">0</span></button>
+      <button class="link-btn" id="abandonedCartsBtn">🛒 السلات المتروكة <span id="abandonedCartsBadge" class="new-orders-badge hidden">0</span></button>
 
       <div class="dash-menu-group" data-menu="menu-reports">
         <button type="button" class="link-btn dash-menu-trigger">📊 التقارير والإحصائيات <span class="caret">▾</span></button>
@@ -2947,7 +2948,7 @@ function maybeShowRenewSoonBanner(){
 
 function applyFeaturePlanUI(){
   const menuOnly = restaurant.feature_plan === 'menu_only';
-  ['viewOrdersBtn','deliveryZonesBtn','customersBtn'].forEach(id=>{
+  ['viewOrdersBtn','abandonedCartsBtn','deliveryZonesBtn','customersBtn'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.classList.toggle('hidden', menuOnly);
   });
@@ -2960,6 +2961,7 @@ function applyGranularRestrictionsUI(){
   const menuOnly = restaurant.feature_plan === 'menu_only';
   const restrictions = {
     viewOrdersBtn: restaurant.restriction_orders_disabled || menuOnly,
+    abandonedCartsBtn: restaurant.restriction_orders_disabled || menuOnly,
     viewStatsBtn: restaurant.restriction_stats_disabled,
     publicLinkSplitBtn: restaurant.restriction_share_disabled,
     showQrBtn: restaurant.restriction_share_disabled,
@@ -3039,6 +3041,7 @@ async function openDashboard(){
   subscribeToNewOrders();
   startOverdueCheckLoop();
   refreshNewOrdersCount();
+  startAbandonedBadgeLoop();
   setupNotificationPermission();
   show('dashboardScreen');
   document.getElementById('adminPanelBtn').classList.toggle('hidden', !isSuperAdmin);
@@ -3738,6 +3741,140 @@ async function refreshNewOrdersCount(){
   if(error) return;
   newOrdersCount = count || 0;
   updateNewOrdersBadge();
+}
+
+// ===== السلات المتروكة: عملاء أدخلوا رقمهم وملأوا السلة ولم يُكملوا الطلب =====
+const ABANDON_MIN_MINUTES = 20; // لا تظهر السلة إلا بعد هذه المدة من آخر نشاط (حتى لا نزعج عميلًا لا يزال يطلب)
+const ABANDON_DAYS = 7;         // نعرض سلات آخر 7 أيام فقط
+let abandonedBadgeTimer = null;
+
+function abandonedWindow(){
+  const now = Date.now();
+  return {
+    from: new Date(now - ABANDON_DAYS*86400000).toISOString(),
+    to: new Date(now - ABANDON_MIN_MINUTES*60000).toISOString()
+  };
+}
+function updateAbandonedBadge(n){
+  const b = document.getElementById('abandonedCartsBadge');
+  if(!b) return;
+  if(n > 0){ b.textContent = n > 99 ? '99+' : n; b.classList.remove('hidden'); } else { b.classList.add('hidden'); }
+}
+async function refreshAbandonedBadge(){
+  if(!restaurant) return;
+  try{
+    const w = abandonedWindow();
+    const { count, error } = await sb.from('abandoned_carts').select('id', { count:'exact', head:true })
+      .eq('restaurant_id', restaurant.id).is('recovered_at', null).is('reminded_at', null)
+      .gte('updated_at', w.from).lte('updated_at', w.to);
+    if(!error) updateAbandonedBadge(count || 0);
+  }catch(e){}
+}
+function startAbandonedBadgeLoop(){
+  if(abandonedBadgeTimer) clearInterval(abandonedBadgeTimer);
+  refreshAbandonedBadge();
+  abandonedBadgeTimer = setInterval(refreshAbandonedBadge, 5*60000);
+}
+function abandonedAgo(ts){
+  const mins = Math.max(1, Math.round((Date.now() - new Date(ts).getTime())/60000));
+  if(mins < 60) return mins === 1 ? 'منذ دقيقة' : (mins === 2 ? 'منذ دقيقتين' : (mins <= 10 ? `منذ ${mins} دقائق` : `منذ ${mins} دقيقة`));
+  const h = Math.round(mins/60);
+  if(h < 24) return h === 1 ? 'منذ ساعة' : (h === 2 ? 'منذ ساعتين' : `منذ ${h} ساعات`);
+  const d = Math.round(h/24);
+  return d === 1 ? 'منذ يوم' : (d === 2 ? 'منذ يومين' : `منذ ${d} أيام`);
+}
+function abandonedCartSummary(cartArr){
+  const lines = Array.isArray(cartArr) ? cartArr : [];
+  const shown = lines.slice(0, 3).map(l=> `${l.n}${l.v ? ' (' + l.v + ')' : ''}${Number(l.q) > 1 ? ' ×' + l.q : ''}`);
+  const more = lines.length - shown.length;
+  const moreTxt = more === 1 ? 'صنف آخر' : (more === 2 ? 'صنفان آخران' : (more <= 10 ? `${more} أصناف أخرى` : `${more} صنفًا آخر`));
+  return shown.join('، ') + (more > 0 ? ` و${moreTxt}` : '');
+}
+// رسالتان بصياغتين مختلفتين (واحدة بالاسم وواحدة بدونه) لتقليل فرصة اعتبار الرسائل المتكررة سبامًا
+function buildAbandonedCartWaMessage(row, variantIdx){
+  const link = `${location.origin}${location.pathname}?r=${restaurant.slug}`;
+  const cur = getRestaurantCurrency(restaurant);
+  const summary = abandonedCartSummary(row.cart);
+  const total = Number(row.subtotal).toFixed(2);
+  const rName = restaurant.name || 'المتجر';
+  if(row.customer_name && variantIdx % 2 === 0){
+    return `مرحبًا ${row.customer_name} 👋\nلاحظنا إنك أضفت ${summary} لسلتك في ${rName} ولسه ماكملتش الطلب 🛒\nإجمالي السلة: ${total} ${cur}\nتقدر تكمل طلبك بسهولة من هنا:\n${link}\nوإحنا في خدمتك لو محتاج أي مساعدة 🌟`;
+  }
+  return `أهلًا بك 🌟\nسلتك في ${rName} لسه منتظراك 🛒\n${summary} — الإجمالي ${total} ${cur}\nأكمل طلبك من هنا:\n${link}`;
+}
+
+async function openAbandonedCartsOverlay(){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3 style="margin:0 0 6px;">🛒 السلات المتروكة</h3>
+      <div style="font-size:12.5px; color:var(--stone); margin-bottom:10px; line-height:1.6;">
+        عملاء أدخلوا رقم هاتفهم وأضافوا أصنافًا للسلة ثم غادروا دون إتمام الطلب (آخر ${ABANDON_DAYS} أيام). اضغط لإرسال تذكير على واتساب — تُفتح الرسالة معبّأة وتضغط إرسال بنفسك.
+      </div>
+      <div id="abStats" style="font-size:12.5px; font-weight:700; color:var(--basil-dark); margin-bottom:8px;"></div>
+      <div id="abList" style="max-height:60vh; overflow-y:auto;"><div class="orders-empty">جارِ التحميل...</div></div>
+      <div class="modal-actions"><button class="btn-cancel" id="abClose">إغلاق</button></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = ()=>{ overlay.remove(); refreshAbandonedBadge(); };
+  overlay.querySelector('#abClose').addEventListener('click', close);
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
+
+  const w = abandonedWindow();
+  const [listRes, recRes] = await Promise.all([
+    sb.from('abandoned_carts').select('*').eq('restaurant_id', restaurant.id).is('recovered_at', null)
+      .gte('updated_at', w.from).lte('updated_at', w.to).order('updated_at', { ascending:false }).limit(200),
+    sb.from('abandoned_carts').select('id', { count:'exact', head:true }).eq('restaurant_id', restaurant.id).not('recovered_at', 'is', null).gte('recovered_at', w.from)
+  ]);
+  const listEl = overlay.querySelector('#abList');
+  if(listRes.error){ listEl.innerHTML = `<div class="orders-empty">تعذر تحميل السلات المتروكة</div>`; return; }
+  let rows = listRes.data || [];
+  const recovered = recRes.count || 0;
+  overlay.querySelector('#abStats').textContent = recovered > 0 ? `✅ عملاء أكملوا طلبهم بعد ترك السلة (آخر ${ABANDON_DAYS} أيام): ${recovered}` : '';
+  const cur = getRestaurantCurrency(restaurant);
+
+  function render(){
+    if(!rows.length){ listEl.innerHTML = `<div class="orders-empty">لا توجد سلات متروكة حاليًا 👌</div>`; return; }
+    listEl.innerHTML = rows.map((r, idx)=>`
+      <div class="ab-card" data-id="${r.id}" style="border:1.5px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; background:var(--paper-dim,#fff);">
+        <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:baseline;">
+          <strong>${escapeHtml(r.customer_name || 'عميل بدون اسم')}</strong>
+          <span style="font-family:var(--mono); direction:ltr; font-size:12.5px;">${escapeHtml(r.customer_phone)}</span>
+        </div>
+        <div style="font-size:13px; margin:6px 0; line-height:1.6;">${escapeHtml(abandonedCartSummary(r.cart))}</div>
+        <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; font-size:12px; color:var(--stone); margin-bottom:8px;">
+          <span>${abandonedAgo(r.updated_at)}</span>
+          <span style="font-family:var(--mono); direction:ltr; color:var(--ember); font-weight:700;">${Number(r.subtotal).toFixed(2)} ${escapeHtml(cur)}</span>
+          <span>${r.reminded_at ? '✅ تم التذكير ' + abandonedAgo(r.reminded_at) : 'لم يُرسل تذكير'}</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" data-ab="wa" style="flex:1; background:#25D366; color:#fff; border:none; border-radius:10px; padding:9px 10px; font-family:var(--body); font-weight:800; font-size:13px; cursor:pointer;">📲 ${r.reminded_at ? 'إعادة إرسال التذكير' : 'أرسل تذكير واتساب'}</button>
+          <button type="button" data-ab="del" title="حذف" style="background:none; border:1.5px solid var(--line); color:var(--danger); border-radius:10px; padding:9px 12px; cursor:pointer;">🗑</button>
+        </div>
+      </div>`).join('');
+    listEl.querySelectorAll('.ab-card').forEach(card=>{
+      const id = card.dataset.id;
+      const idx = rows.findIndex(x=>x.id===id);
+      const row = rows[idx];
+      card.querySelector('[data-ab="wa"]').addEventListener('click', async ()=>{
+        const digits = toEgyptWaDigits(row.customer_phone);
+        if(!digits){ toast('رقم الهاتف غير صالح'); return; }
+        window.open(`https://wa.me/${digits}?text=${encodeURIComponent(buildAbandonedCartWaMessage(row, idx))}`, '_blank');
+        const nowIso = new Date().toISOString();
+        const { error } = await sb.from('abandoned_carts').update({ reminded_at: nowIso }).eq('id', id);
+        if(!error){ row.reminded_at = nowIso; render(); }
+      });
+      card.querySelector('[data-ab="del"]').addEventListener('click', async ()=>{
+        if(!confirm('حذف هذه السلة من القائمة؟')) return;
+        const { error } = await sb.from('abandoned_carts').delete().eq('id', id);
+        if(error){ toast('تعذر الحذف'); return; }
+        rows = rows.filter(x=>x.id!==id);
+        render();
+      });
+    });
+  }
+  render();
 }
 
 function updateNotifPermBtn(btnId){
@@ -5895,6 +6032,7 @@ async function openOrdersOverlay(){
   renderList();
 }
 document.getElementById('viewOrdersBtn').addEventListener('click', openOrdersOverlay);
+document.getElementById('abandonedCartsBtn').addEventListener('click', openAbandonedCartsOverlay);
 
 const RECEIPT_WIDTH_KEY = 'menuReceiptWidth';
 function getSavedReceiptWidth(){
@@ -14057,8 +14195,39 @@ async function loadPublic(slug){
       return /^01[0125]\d{8}$/.test(p);
     }
 
-    overlay.querySelector('#ordCancel').addEventListener('click', ()=> overlay.remove());
-    overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+    // ===== تذكير السلة المتروكة: نحفظ نسخة من السلة (مع الرقم الصحيح) لو العميل ما أكملش الطلب، ليقدر صاحب المتجر يراسله على واتساب =====
+    let abandonedSyncOff = false; // يتحول true بعد نجاح الطلب فلا تُحفظ سلة جديدة
+    let lastAbandonSig = '';
+    function syncAbandonedCart(){
+      if(abandonedSyncOff || rest.feature_plan === 'menu_only') return;
+      const phoneEl = overlay.querySelector('#ordPhone');
+      if(!phoneEl) return;
+      const phone = phoneEl.value.trim();
+      if(!isValidEgyptPhone(phone)) return;
+      const lines = Object.values(cart);
+      if(!lines.length) return;
+      const payload = lines.map(c=>({ n: c.item.name, v: c.variantLabel || null, q: c.qty, p: Number(c.unitPrice) }));
+      const nameEl = overlay.querySelector('#ordName');
+      const name = nameEl ? nameEl.value.trim() : '';
+      const sig = phone + '|' + name + '|' + JSON.stringify(payload);
+      if(sig === lastAbandonSig) return; // لا إعادة إرسال لنفس البيانات
+      lastAbandonSig = sig;
+      try{
+        sb.rpc('save_abandoned_cart', { p_restaurant_id: rest.id, p_phone: phone, p_name: name, p_cart: payload, p_subtotal: cartSubtotal() }).then(()=>{}, ()=>{});
+      }catch(e){}
+    }
+    const abPhoneEl = overlay.querySelector('#ordPhone');
+    const abNameEl = overlay.querySelector('#ordName');
+    if(abPhoneEl){ abPhoneEl.addEventListener('blur', syncAbandonedCart); abPhoneEl.addEventListener('change', syncAbandonedCart); }
+    if(abNameEl){ abNameEl.addEventListener('blur', syncAbandonedCart); }
+    const abVisHandler = ()=>{
+      if(!document.body.contains(overlay)){ document.removeEventListener('visibilitychange', abVisHandler); return; }
+      if(document.visibilityState === 'hidden') syncAbandonedCart();
+    };
+    document.addEventListener('visibilitychange', abVisHandler);
+
+    overlay.querySelector('#ordCancel').addEventListener('click', ()=>{ syncAbandonedCart(); overlay.remove(); });
+    overlay.addEventListener('click', (e)=>{ if(e.target===overlay){ syncAbandonedCart(); overlay.remove(); } });
     overlay.querySelector('#ordConfirm').addEventListener('click', async ()=>{
       if(overlay.querySelector('#ordWebsite').value.trim()){
         return; // حقل فخ للبوتات — أي إنسان حقيقي مش هيلاقيه أو يملاه
@@ -14252,6 +14421,7 @@ async function loadPublic(slug){
         orderMsgText = buildOrderMessage({customer_name, customer_phone, secondary_phone, orderType, city, area, address, notes, fee, total});
       }
 
+      abandonedSyncOff = true; // الطلب اكتمل — السلة لم تعد متروكة (الـ trigger في قاعدة البيانات يعلّمها مُستردّة)
       cart = {};
       renderPublicBody();
       overlay.remove();
