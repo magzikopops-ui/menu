@@ -2474,6 +2474,12 @@ async function boot(){
   const wantSignup = params.get('signup');
   const tableParam = parseInt(params.get('table'), 10);
   window.dineInTable = (tableParam && tableParam > 0) ? tableParam : null; // رقم الطاولة لو الدخول جاي من مسح QR طاولة
+  const ratingCode = params.get('v'); // رابط تقييم قصير بعد التسليم: ?v=xxxxxxxx
+  if(ratingCode){
+    setFavicon('menu-favicon.png');
+    await loadRatingByCode(ratingCode);
+    return;
+  }
   if(trackId){
     setFavicon('menu-favicon.png');
     await loadOrderTracking(trackId);
@@ -5697,7 +5703,7 @@ async function openOrdersOverlay(){
   // رسائل واتساب جاهزة تُرسل للعميل عند تغيير حالة طلبه (ميزة PRO) — يفتح واتساب برسالة معبأة مسبقًا ليضغط صاحب المتجر إرسال فقط
   const STATUS_WA_MESSAGES = {
     preparing: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nطلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} الآن قيد التجهيز 👨‍🍳\nسيصلك قريبًا إن شاء الله.`,
-    delivered: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nطلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} تم تسليمه ✅\nنتمنالك بالهنا والشفا، ومنتظرين طلبك تاني 🌟`,
+    delivered: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nطلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} تم تسليمه ✅\nنتمنالك بالهنا والشفا، ومنتظرين طلبك تاني 🌟${o.rating_code ? `\n\nقيّم تجربتك في ثواني 👇\n${location.origin}${location.pathname}?v=${o.rating_code}` : ''}`,
     cancelled: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nنأسف، طلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} تم إلغاؤه ❌\nإذا كنت بحاجة لمزيد من التفاصيل أو ترغب في تقديم طلب جديد، فنحن في خدمتك.`,
   };
   function sendStatusWaToCustomer(o, newStatus){
@@ -5783,7 +5789,7 @@ async function openOrdersOverlay(){
       ? `<button type="button" class="btn-export-sm" data-action="markPaid" data-order-id="${o.id}" style="margin-top:6px;">✅ تأكيد استلام الدفع</button>`
       : '';
     const ratingBadgeHtml = o.rating_stars
-      ? `<span class="status-badge" style="background:#4a3a10; color:#f5d98a;" title="${o.rating_comment ? escapeHtml(o.rating_comment) : ''}">${'★'.repeat(o.rating_stars)}${'☆'.repeat(5-o.rating_stars)}</span>`
+      ? `<span class="status-badge" style="background:#4a3a10; color:#f5d98a;" title="${o.rating_comment ? escapeHtml(o.rating_comment) : ''}">${'★'.repeat(o.rating_stars)}${'☆'.repeat(5-o.rating_stars)}</span>${o.rating_comment ? `<span class="status-badge" style="background:#4a3a10; color:#f5d98a; white-space:normal; max-width:100%;">💬 ${escapeHtml(o.rating_comment)}</span>` : ''}`
       : '';
     const isActive = status === 'pending' || status === 'preparing';
     let prepHtml = '';
@@ -12027,7 +12033,7 @@ async function refreshTrackingData(orderId){
 }
 
 // يعرض واجهة التقييم بعد تسليم الطلب، أو النجوم التي قيّم بها العميل الطلب إن كان قد قيّمه من قبل
-function renderRatingWidget(orderId, row){
+function renderRatingWidget(orderId, row, code){
   const wrap = document.getElementById('trackRatingWrap');
   if(row.order_status !== 'delivered'){ wrap.innerHTML = ''; return; }
   if(row.rating_stars){
@@ -12069,7 +12075,9 @@ function renderRatingWidget(orderId, row){
     submitBtn.disabled = true;
     submitBtn.textContent = 'جاري الإرسال...';
     const comment = wrap.querySelector('#trackRatingComment').value.trim();
-    const { data: ok, error } = await sb.rpc('submit_order_rating', { p_order_id: orderId, p_stars: selectedStars, p_comment: comment });
+    const { data: ok, error } = code
+      ? await sb.rpc('submit_rating_by_code', { p_code: code, p_stars: selectedStars, p_comment: comment })
+      : await sb.rpc('submit_order_rating', { p_order_id: orderId, p_stars: selectedStars, p_comment: comment });
     if(error || !ok){
       toast('تعذر إرسال التقييم، يرجى المحاولة مرة أخرى');
       submitBtn.disabled = false;
@@ -12077,8 +12085,33 @@ function renderRatingWidget(orderId, row){
       return;
     }
     toast('شكرًا لتقييمك! 🙏');
-    refreshTrackingData(orderId);
+    if(code) loadRatingByCode(code); else refreshTrackingData(orderId);
   });
+}
+
+// صفحة تقييم مختصرة برابط قصير (?v=كود) — تعرض اسم المتجر وواجهة التقييم فقط، والتقييم يصل لصاحب المتجر وحده
+async function loadRatingByCode(code){
+  show('trackingScreen');
+  ['trackStatusWrap','trackPaymentReminderWrap','trackItemsWrap','trackContactWrap'].forEach(id=>{ document.getElementById(id).innerHTML = ''; });
+  document.getElementById('trackTotalWrap').textContent = '';
+  document.getElementById('trackUpdatedAt').parentElement.style.display = 'none';
+  const wrap = document.getElementById('trackRatingWrap');
+  const { data, error } = await sb.rpc('get_rating_by_code', { p_code: code });
+  const row = Array.isArray(data) ? data[0] : data;
+  if(error || !row){
+    document.getElementById('trackRestName').textContent = 'رابط التقييم غير صحيح';
+    document.getElementById('trackLogoWrap').innerHTML = '';
+    wrap.innerHTML = '';
+    return;
+  }
+  document.getElementById('trackLogoWrap').innerHTML = row.restaurant_logo
+    ? `<img src="${escapeHtml(row.restaurant_logo)}" style="max-height:56px; max-width:200px; object-fit:contain;">` : '';
+  document.getElementById('trackRestName').textContent = row.restaurant_name || '';
+  if(row.order_status !== 'delivered' && !row.rating_stars){
+    wrap.innerHTML = '<div class="orders-empty">التقييم متاح بعد تسليم طلبك 🙏</div>';
+    return;
+  }
+  renderRatingWidget(null, row, code);
 }
 
 // يبني نص الطلب كاملًا (كرسالة الطلب الأصلية) ليُرسل من شاشة التتبع إذا رغب العميل في التواصل بخصوص طلبه
