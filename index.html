@@ -268,6 +268,14 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .pub-logo-wrap .pub-rest-subname{ font-family:var(--body); font-size:14px; color:var(--stone); margin-top:4px; }
 .pub-search{ max-width:640px; margin:0 auto; padding:0 20px 10px; }
 .pub-search input{ width:100%; border:1.5px solid var(--line); border-radius:10px; padding:12px 16px; font-family:var(--body); font-size:14px; background:#fff; color:var(--ink); }
+.pub-filters{ display:flex; gap:8px; max-width:640px; margin:0 auto; padding:0 20px 10px; overflow-x:auto; scrollbar-width:none; }
+.pub-filters::-webkit-scrollbar{ display:none; }
+.pub-filters:empty{ display:none; }
+.pub-filter-chip{ flex:0 0 auto; border:1.5px solid var(--line); background:var(--paper-dim,#fff); color:var(--ink); border-radius:999px; padding:5px 13px; font-family:var(--body); font-weight:700; font-size:12.5px; cursor:pointer; white-space:nowrap; }
+.pub-filter-chip.active{ background:var(--ember); border-color:var(--ember); color:#fff; }
+.new-tag{ display:inline-block; background:var(--basil,#3F6247); color:#fff; font-family:var(--body); font-weight:800; font-size:10px; border-radius:5px; padding:1px 6px; margin-inline-start:4px; vertical-align:middle; }
+body.pub-design-sidebar .pub-filters{ max-width:none; padding:0 0 10px; flex-wrap:wrap; overflow:visible; }
+@media (max-width:560px){ .pub-filters{ padding-inline:14px; } }
 .pub-tabs-wrap{ position:sticky; top:0; z-index:20; background:var(--paper); padding-top:6px; margin-bottom:2px; }
 .pub-tabs-wrap.is-stuck{ box-shadow:0 6px 14px -8px rgba(32,31,29,.25); }
 .pub-tabs{ display:flex; gap:10px; overflow-x:auto; padding:4px 20px 16px; max-width:640px; margin:0 auto; scrollbar-width:none; -ms-overflow-style:none; scroll-behavior:smooth;
@@ -447,6 +455,19 @@ body.pub-mobile-ad-open .pub-order-btn{ bottom:calc(22px + 58px); }
 .cart-summary-row{ display:flex; justify-content:space-between; padding:6px 0; font-size:13.5px; color:var(--stone); }
 .cart-summary-row.total{ font-weight:800; color:var(--ink); font-size:15px; border-top:1.5px dashed var(--stone-light); margin-top:6px; padding-top:10px; }
 .cart-empty-note{ text-align:center; color:var(--stone); padding:24px; font-size:13.5px; }
+.cart-suggest{ margin-top:14px; padding-top:12px; border-top:1.5px dashed var(--stone-light); }
+.cart-suggest-title{ font-weight:800; font-size:13.5px; color:var(--ink); margin-bottom:8px; }
+.cart-suggest-row{ display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; scrollbar-width:thin; }
+.cart-suggest-card{ flex:0 0 118px; scroll-snap-align:start; border:1.5px solid var(--line); border-radius:12px; padding:8px; display:flex; flex-direction:column; gap:4px; text-align:center; color:var(--ink); }
+.cart-suggest-card img, .cart-suggest-card .cs-noimg{ width:100%; height:70px; object-fit:cover; border-radius:8px; background:var(--paper-dim); }
+.cart-suggest-card .cs-noimg{ display:flex; align-items:center; justify-content:center; font-size:26px; }
+.cart-suggest-card .cs-name{ font-weight:700; font-size:12.5px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:32px; }
+.cart-suggest-card .cs-price{ font-family:var(--mono); direction:ltr; color:var(--ember); font-weight:700; font-size:12px; }
+.cart-suggest-card .cs-add{ background:var(--basil); color:#fff; border:none; border-radius:14px; padding:7px 6px; font-family:var(--body); font-weight:700; font-size:12.5px; cursor:pointer; min-height:34px; }
+.pub-search{ position:relative; }
+.pub-search input{ padding-inline-end:40px; }
+.pub-search-clear{ position:absolute; inset-inline-end:30px; top:calc(50% - 5px); transform:translateY(-50%); background:none; border:none; color:var(--stone); font-size:22px; line-height:1; cursor:pointer; padding:4px 6px; }
+.pub-result-count{ flex:0 0 auto; margin-inline-start:auto; align-self:center; font-size:12px; font-weight:700; color:var(--stone); white-space:nowrap; }
 
 .orders-list{ display:flex; flex-direction:column; gap:14px; max-height:60vh; overflow-y:auto; }
 .order-row{ border:1.5px solid var(--line); border-radius:14px; padding:16px 16px 14px; position:relative; background:var(--paper); box-shadow:0 1px 3px rgba(32,31,29,.05); }
@@ -1904,8 +1925,10 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
   </div>
   <div class="pub-tabs-wrap" id="pubTabsWrap">
     <div class="pub-search">
-      <input type="text" id="pubSearchInput" placeholder="ابحث في القائمة...">
+      <input type="text" id="pubSearchInput" placeholder="ابحث في القائمة..." autocomplete="off" enterkeyhint="search">
+      <button type="button" id="pubSearchClear" class="pub-search-clear hidden" aria-label="مسح البحث">×</button>
     </div>
+    <div class="pub-filters" id="pubFilters"></div>
     <div class="pub-tabs" id="pubTabs"></div>
   </div>
   <div class="pub-body" id="pubBody"></div>
@@ -12064,7 +12087,7 @@ async function loadPublic(slug){
   const [catsRes, zonesRes, topItemsRes] = await Promise.all([
     sb.from('categories').select('*, items(*)').eq('restaurant_id', rest.id).eq('items.is_available', true).order('position').order('position', { foreignTable: 'items' }),
     sb.from('delivery_zones').select('*').eq('restaurant_id', rest.id).order('area_name'),
-    sb.rpc('get_top_items', { p_restaurant_id: rest.id, p_limit: 5 }).then(r=>r, e=>({ data: null, error: e }))
+    sb.rpc('get_top_items', { p_restaurant_id: rest.id, p_limit: 12 }).then(r=>r, e=>({ data: null, error: e }))
   ]);
   const catsData = catsRes.data || [];
   const pubCats = catsData.map(c=>{ const { items, ...catOnly } = c; return catOnly; });
@@ -12141,7 +12164,9 @@ async function loadPublic(slug){
       zonesLoadFailed = false;
     }
   }
-  const topItemIds = new Set((topItemsRes.data || []).map(t=>t.item_id));
+  // عدد "الأكثر طلبًا" يكبر مع حجم المنيو (5 للمنيو الصغير حتى 12 للمنيو الكبير) عشان الفلتر والشارة يفضلوا مفيدين
+  const TOP_ITEMS_N = Math.min(12, Math.max(5, Math.round(pubItems.length / 15)));
+  const topItemIds = new Set((topItemsRes.data || []).slice(0, TOP_ITEMS_N).map(t=>t.item_id));
   setPageMeta({
 
     title: rest.name,
@@ -12153,6 +12178,52 @@ async function loadPublic(slug){
   let activeCat = 'ALL';
   let lang = 'ar'; // 'ar' or 'en'
   let searchTerm = '';
+  let activeFilter = null; // 'top' | 'new' | 'offers' | null
+  // تطبيع النص العربي: يتجاهل التشكيل والتطويل ويوحّد (أ إ آ → ا) و(ى → ي) و(ة → ه) عشان البحث ما يفوّتش نتائج بسبب اختلاف الكتابة
+  function normSearch(t){
+    return String(t==null ? '' : t).toLowerCase()
+      .replace(/[\u064B-\u065F\u0670\u0640]/g,'')
+      .replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه')
+      .replace(/\s+/g,' ').trim();
+  }
+  const _searchIndex = new Map();
+  function itemSearchIndex(i){
+    let e = _searchIndex.get(i.id);
+    if(!e){
+      const cat = pubCats.find(c=>c.id===i.category_id);
+      e = {
+        name: normSearch((i.name||'') + ' ' + (i.name_en||'')),
+        rest: normSearch((i.description||'') + ' ' + (cat ? (cat.name||'') + ' ' + (cat.name_en||'') : ''))
+      };
+      _searchIndex.set(i.id, e);
+    }
+    return e;
+  }
+  // كل كلمة يكتبها العميل لازم تظهر في اسم الصنف أو وصفه أو اسم قسمه
+  function searchScore(i, tokens){
+    const e = itemSearchIndex(i);
+    let inName = true;
+    for(const t of tokens){
+      if(e.name.includes(t)) continue;
+      inName = false;
+      if(!e.rest.includes(t)) return -1;
+    }
+    return inName ? 0 : 1;
+  }
+  // "جديد": الأصناف المضافة خلال آخر 14 يومًا — ولو معظم القائمة جديدة (مطعم لسه بادئ) ما تتعلّمش عشان الشارة تفضل ليها معنى
+  const NEW_ITEM_DAYS = 14;
+  const newItemIds = (function(){
+    const cutoff = Date.now() - NEW_ITEM_DAYS*24*60*60*1000;
+    const ids = pubItems.filter(i=> i.created_at && new Date(i.created_at).getTime() >= cutoff).map(i=>i.id);
+    return ids.length <= Math.ceil(pubItems.length/2) ? new Set(ids) : new Set();
+  })();
+  function itemHasDiscount(i){ return i.old_price != null && Number(i.old_price) > Number(i.price); }
+  function filterMatch(i){
+    if(activeFilter === 'top') return topItemIds.has(i.id);
+    if(activeFilter === 'new') return newItemIds.has(i.id);
+    if(activeFilter === 'offers') return itemHasDiscount(i);
+    return true;
+  }
   let cart = {}; // item_id -> { item, qty }
   let weightInputMode = {}; // item_id -> 'weight' | 'price' (لأصناف البيع بالوزن)
   let isRestaurantOpenNow = true;
@@ -12266,6 +12337,38 @@ async function loadPublic(slug){
   }
   function cartSubtotal(){
     return Object.values(cart).reduce((sum,c)=> sum + (c.qty * Number(c.unitPrice)), 0);
+  }
+  // ترتيب الاقتراحات: قسم مختلف عمّا في السلة (مكمّل) ← الأكثر طلبًا ← عليه خصم ← جديد ← سعر لا يزيد عن أغلى سطر في السلة. بحد أقصى صنفين من كل قسم
+  function getCartSuggestions(limit){
+    const lines = Object.values(cart);
+    const inCartIds = new Set(lines.map(c=>c.item.id));
+    const cartCats = new Set(lines.map(c=>c.item.category_id));
+    const maxUnit = Math.max(0, ...lines.map(c=> Number(c.unitPrice) || 0));
+    const scored = [];
+    pubItems.forEach((i, idx)=>{
+      if(inCartIds.has(i.id)) return;
+      if(i.pricing_type === 'weight' || i.pricing_type === 'sizes') return;
+      const price = Number(i.price);
+      if(!Number.isFinite(price) || price <= 0) return;
+      if(getItemModifierSections(i.id).length) return;
+      let sc = 0;
+      if(!cartCats.has(i.category_id)) sc += 3;
+      if(topItemIds.has(i.id)) sc += 2;
+      if(itemHasDiscount(i)) sc += 1;
+      if(newItemIds.has(i.id)) sc += 0.5;
+      if(maxUnit && price <= maxUnit) sc += 1;
+      scored.push({ i, sc, idx });
+    });
+    scored.sort((a,b)=> b.sc - a.sc || a.idx - b.idx);
+    const perCat = {}, out = [];
+    for(const x of scored){
+      const c = x.i.category_id;
+      if((perCat[c] || 0) >= 2) continue;
+      perCat[c] = (perCat[c] || 0) + 1;
+      out.push(x.i);
+      if(out.length >= limit) break;
+    }
+    return out;
   }
   let prevPubCartCount = 0;
   // زر "كرر آخر طلب": يظهر فقط لو فيه طلب سابق + العميل ما أخفاهوش + السلة فاضية
@@ -12627,29 +12730,59 @@ async function loadPublic(slug){
       return;
     }
     const allTab = document.createElement('div');
-    const isAllActive = activeCat==='ALL' && !searchTerm;
+    const isAllActive = activeCat==='ALL' && !searchTerm && !activeFilter;
     allTab.className = 'pub-tab pub-tab-all' + (isAllActive ? ' active' : '');
     allTab.innerHTML = `<span>📋 ${lang==='en' ? 'All' : 'الكل'}</span><span class="pub-tab-count">${pubItems.length}</span>`;
-    allTab.addEventListener('click', ()=>{ activeCat = 'ALL'; searchTerm=''; document.getElementById('pubSearchInput').value=''; renderPublicBody(); });
+    allTab.addEventListener('click', ()=>{ activeCat = 'ALL'; searchTerm=''; activeFilter=null; document.getElementById('pubSearchInput').value=''; renderPublicBody(); });
     tabsWrap.appendChild(allTab);
     if(isAllActive){ requestAnimationFrame(()=> scrollTabIntoView(tabsWrap, allTab)); }
     pubCats.forEach(cat=>{
-      const isActive = cat.id===activeCat && !searchTerm;
+      const isActive = cat.id===activeCat && !searchTerm && !activeFilter;
       const t = document.createElement('div');
       t.className = 'pub-tab' + (isActive ? ' active' : '');
       const count = pubItems.filter(i=>i.category_id===cat.id).length;
       t.innerHTML = `<span>${escapeHtml(tName(cat.name, cat.name_en))}</span><span class="pub-tab-count">${count}</span>`;
-      t.addEventListener('click', ()=>{ activeCat = cat.id; searchTerm=''; document.getElementById('pubSearchInput').value=''; renderPublicBody(); });
+      t.addEventListener('click', ()=>{ activeCat = cat.id; searchTerm=''; activeFilter=null; document.getElementById('pubSearchInput').value=''; renderPublicBody(); });
       tabsWrap.appendChild(t);
       if(isActive){ requestAnimationFrame(()=> scrollTabIntoView(tabsWrap, t)); }
     });
+    const clearBtnEl = document.getElementById('pubSearchClear');
+    if(clearBtnEl) clearBtnEl.classList.toggle('hidden', !searchTerm);
+    const filtersEl = document.getElementById('pubFilters');
+    if(filtersEl){
+      const defs = [
+        { key:'top',    on: pubItems.some(i=>topItemIds.has(i.id)), label: lang==='en' ? '🔥 Bestsellers' : '🔥 الأكثر طلبًا' },
+        { key:'new',    on: newItemIds.size > 0,                    label: lang==='en' ? '🆕 New' : '🆕 جديد' },
+        { key:'offers', on: pubItems.some(itemHasDiscount),         label: lang==='en' ? '🏷 Offers' : '🏷 عروض' }
+      ].filter(d=>d.on);
+      filtersEl.innerHTML = '';
+      defs.forEach(d=>{
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'pub-filter-chip' + (activeFilter===d.key ? ' active' : '');
+        chip.textContent = d.label;
+        chip.addEventListener('click', ()=>{ activeFilter = activeFilter===d.key ? null : d.key; renderPublicBody(); });
+        filtersEl.appendChild(chip);
+      });
+    }
     const body = document.getElementById('pubBody');
     let catItems;
-    if(searchTerm){
-      const q = searchTerm.toLowerCase();
-      catItems = pubItems.filter(i=>
-        (i.name||'').toLowerCase().includes(q) || (i.name_en||'').toLowerCase().includes(q)
-      );
+    if(searchTerm || activeFilter){
+      const tokens = normSearch(searchTerm).split(' ').filter(Boolean);
+      const scored = [];
+      pubItems.forEach(i=>{
+        if(activeFilter && !filterMatch(i)) return;
+        const sc = tokens.length ? searchScore(i, tokens) : 0;
+        if(sc >= 0) scored.push({ i, sc });
+      });
+      // نتائج الاسم أولًا ثم نتائج الوصف/القسم (الترتيب الأصلي محفوظ داخل كل مجموعة)
+      catItems = scored.map((x,k)=>({ ...x, k })).sort((x,y)=> x.sc - y.sc || x.k - y.k).map(x=>x.i);
+      if(filtersEl){
+        const cnt = document.createElement('span');
+        cnt.className = 'pub-result-count';
+        cnt.textContent = lang==='en' ? `${catItems.length} result${catItems.length===1?'':'s'}` : `${catItems.length} نتيجة`;
+        filtersEl.appendChild(cnt);
+      }
     } else if(activeCat === 'ALL'){
       catItems = pubCats.flatMap(cat => pubItems.filter(i=>i.category_id===cat.id));
     } else {
@@ -12674,7 +12807,7 @@ async function loadPublic(slug){
 
     body.innerHTML = catItems.map((i, idx)=>{
       let headerHtml = '';
-      if(activeCat === 'ALL' && !searchTerm){
+      if(activeCat === 'ALL' && !searchTerm && !activeFilter){
         const prevCatId = idx>0 ? catItems[idx-1].category_id : null;
         if(i.category_id !== prevCatId){
           const cat = pubCats.find(c=>c.id===i.category_id);
@@ -12744,7 +12877,7 @@ async function loadPublic(slug){
           <span class="chevron" data-action="toggle">${i.description ? '▾' : ''}</span>
           ${i.image_url ? `<img src="${i.image_url}" data-cache-src="${i.image_url}" loading="lazy" decoding="async">` : `<div class="no-img">${biz(rest.business_type,'placeholderIcon')}</div>`}
           <div class="info">
-            <div class="name-primary">${escapeHtml(tName(i.name, i.name_en))}${topItemIds.has(i.id) ? ` <span title="${lang==='en' ? 'Bestseller' : 'الأكثر طلبًا'}">🔥</span>` : ''}</div>
+            <div class="name-primary">${escapeHtml(tName(i.name, i.name_en))}${topItemIds.has(i.id) ? ` <span title="${lang==='en' ? 'Bestseller' : 'الأكثر طلبًا'}">🔥</span>` : ''}${newItemIds.has(i.id) ? ` <span class="new-tag">${lang==='en' ? 'New' : 'جديد'}</span>` : ''}</div>
             ${secondaryName(i.name, i.name_en) ? `<div class="name-secondary">${escapeHtml(secondaryName(i.name, i.name_en))}</div>` : ''}
             <div class="price">${priceLine}</div>
             ${i.description ? `<div class="desc-expand">${escapeHtml(i.description)}</div>` : ''}
@@ -12756,7 +12889,7 @@ async function loadPublic(slug){
     }).join('');
     hydrateCachedImages(body);
 
-    const isShowcaseShelf = document.body.classList.contains('pub-design-showcase') && activeCat === 'ALL' && !searchTerm;
+    const isShowcaseShelf = document.body.classList.contains('pub-design-showcase') && activeCat === 'ALL' && !searchTerm && !activeFilter;
     body.classList.toggle('shelf-mode', isShowcaseShelf);
     if(isShowcaseShelf){
       const kids = Array.from(body.children);
@@ -12801,7 +12934,7 @@ async function loadPublic(slug){
     }
 
     // تصميم "الأقسام الجانبية" على الموبايل: بدل التبويبات الأفقية، الأقسام تتحول لقوائم قابلة للطي (أكورديون) — قسم واحد مفتوح في كل مرة
-    const isSidebarAccordion = document.body.classList.contains('pub-design-sidebar') && window.innerWidth < 760 && activeCat === 'ALL' && !searchTerm;
+    const isSidebarAccordion = document.body.classList.contains('pub-design-sidebar') && window.innerWidth < 760 && activeCat === 'ALL' && !searchTerm && !activeFilter;
     body.classList.toggle('accordion-mode', isSidebarAccordion);
     if(isSidebarAccordion){
       const kids = Array.from(body.children);
@@ -13233,8 +13366,16 @@ async function loadPublic(slug){
     renderPublicBody();
   });
   let pubSearchDebounceId = null;
+  document.getElementById('pubSearchClear').addEventListener('click', ()=>{
+    const inp = document.getElementById('pubSearchInput');
+    inp.value = ''; searchTerm = '';
+    clearTimeout(pubSearchDebounceId);
+    renderPublicBody();
+    inp.focus();
+  });
   document.getElementById('pubSearchInput').addEventListener('input', (e)=>{
     searchTerm = e.target.value.trim();
+    document.getElementById('pubSearchClear').classList.toggle('hidden', !searchTerm);
     clearTimeout(pubSearchDebounceId);
     // يتم تأجيل إعادة الرسم قليلًا (180ms) لتجنّب إعادة بناء كاملة للـ DOM مع كل حرف يكتبه الزبون
     pubSearchDebounceId = setTimeout(()=> renderPublicBody(), 180);
@@ -14237,6 +14378,7 @@ async function loadPublic(slug){
         <div id="cartLinesWrap">
           ${lines.length === 0 ? `<div class="cart-empty-note">${lang==='en' ? 'Your cart is empty' : 'السلة فارغة'}</div>` : ''}
         </div>
+          <div id="cartSuggestWrap"></div>
         </div>
         <div class="modal-actions" id="cartActionsWrap">
           <div id="cartSubtotalWrap" class="ord-footer-total"></div>
@@ -14296,6 +14438,37 @@ async function loadPublic(slug){
         });
         row.querySelector('[data-action="removeLine"]').addEventListener('click', ()=>{
           delete cart[key];
+          renderLines();
+          updateCartButton();
+        });
+      });
+      renderSuggestions();
+    }
+    // اقتراحات السلة: أصناف بسيطة (سعر ثابت، بدون أحجام/وزن/إضافات) تُضاف بضغطة واحدة
+    function renderSuggestions(){
+      const wrap = overlay.querySelector('#cartSuggestWrap');
+      if(!wrap) return;
+      const sugg = Object.keys(cart).length ? getCartSuggestions(6) : [];
+      if(!sugg.length){ wrap.innerHTML = ''; return; }
+      const cur = getRestaurantCurrency(rest);
+      wrap.innerHTML = `
+        <div class="cart-suggest">
+          <div class="cart-suggest-title">${lang==='en' ? 'You may also like' : 'قد يعجبك أيضًا'}</div>
+          <div class="cart-suggest-row">
+            ${sugg.map(i=>`
+              <div class="cart-suggest-card" data-suggest-id="${i.id}">
+                ${i.image_url ? `<img src="${i.image_url}" loading="lazy" decoding="async" alt="">` : `<div class="cs-noimg">${biz(rest.business_type,'placeholderIcon')}</div>`}
+                <div class="cs-name">${escapeHtml(tName(i.name, i.name_en))}</div>
+                <div class="cs-price">${Number(i.price).toFixed(2)} ${cur}</div>
+                <button type="button" class="cs-add">${lang==='en' ? '+ Add' : '+ أضف'}</button>
+              </div>`).join('')}
+          </div>
+        </div>`;
+      wrap.querySelectorAll('.cart-suggest-card').forEach(card=>{
+        card.querySelector('.cs-add').addEventListener('click', ()=>{
+          const item = pubItems.find(x=>x.id===card.dataset.suggestId);
+          if(!item || cart[item.id]) return;
+          cart[item.id] = { item, variantLabel: null, unitPrice: Number(item.price), qty: 1 };
           renderLines();
           updateCartButton();
         });
