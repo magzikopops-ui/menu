@@ -96,6 +96,9 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .brand-group{display:flex; align-items:center; gap:14px;}
 .brand{ font-family:var(--display); color:var(--paper); font-size:24px; display:flex; align-items:center; gap:10px; }
 .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--ember);}
+.topbar-menu-logo{ flex:0 0 100%; order:-1; display:flex; justify-content:center; align-items:center; margin:-6px 0 -6px; }
+.topbar-menu-logo img{ height:30px; width:30px; border-radius:8px; object-fit:cover; box-shadow:0 3px 10px rgba(0,0,0,.3); }
+.brand-logo.shop-logo{ width:40px; height:40px; border-radius:10px; background:#fff; }
 .brand-logo{ width:34px; height:34px; border-radius:9px; object-fit:cover; flex-shrink:0; box-shadow:0 3px 10px rgba(0,0,0,.3); }
 .switch-link{color:var(--stone); font-size:12px; cursor:pointer; text-decoration:underline; text-underline-offset:3px;}
 .switch-link:hover{color:var(--paper);}
@@ -1586,8 +1589,9 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
 
 <div id="cashierScreen" class="hidden">
   <div class="topbar">
+    <div class="topbar-menu-logo"><img src="favicon.png" alt="منيو m@g" title="منيو m@g"></div>
     <div class="brand-group">
-      <div class="brand"><img class="brand-logo" src="favicon.png" alt="منيو m@g" title="منيو m@g"> <span id="cashierRestName">منيو m@g</span></div>
+      <div class="brand"><img class="brand-logo shop-logo" id="cashierShopLogo" style="display:none" alt="" onerror="this.style.display='none'"> <span id="cashierRestName">منيو m@g</span></div>
       <span style="color:var(--stone); font-size:12px; background:#2A2825; border:1px solid #454138; border-radius:6px; padding:5px 10px;">👤 حساب كاشير</span>
     </div>
     <div class="topbar-actions">
@@ -1629,8 +1633,9 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
 
 <div class="app hidden" id="dashboardScreen">
   <div class="topbar">
+    <div class="topbar-menu-logo"><img src="favicon.png" alt="منيو m@g" title="منيو m@g"></div>
     <div class="brand-group">
-      <div class="brand"><img class="brand-logo" src="favicon.png" alt="منيو m@g" title="منيو m@g"> <span id="dashRestaurantName">—</span></div>
+      <div class="brand"><img class="brand-logo shop-logo" id="dashShopLogo" style="display:none" alt="" onerror="this.style.display='none'"> <span id="dashRestaurantName">—</span></div>
       <span id="branchSwitcherWrap" class="hidden" style="display:inline-flex; align-items:center; gap:4px;">
         <select id="branchSwitcherSelect" style="font-size:12px; padding:3px 6px; border-radius:6px; border:1px solid var(--line); background:var(--paper); color:var(--ink); max-width:140px;"></select>
         <button type="button" class="link-btn" id="addBranchBtn" title="إضافة فرع جديد" style="font-size:12px; padding:3px 8px;">+ فرع</button>
@@ -2937,11 +2942,20 @@ function applyTierLockBadgesUI(){
   setFeatureLockBadge('winbackBtn', !!restaurant.restriction_winback_disabled, '🔒 شاشة العملاء غير النشطين متاحة في باقة PRO فقط');
 }
 
+// شعار المتجر بجانب اسمه في الشريط العلوي (شعار المنيو الثابت بقى في منتصف أعلى الشريط)
+function setTopbarShopLogo(imgId){
+  const el = document.getElementById(imgId);
+  if(!el) return;
+  if(restaurant && restaurant.logo_url){ el.src = restaurant.logo_url; el.alt = restaurant.name || ''; el.style.display = ''; }
+  else { el.removeAttribute('src'); el.style.display = 'none'; }
+}
+
 // شاشة الكاشير المبسّطة — تُفتح للحسابات الفرعية ذات الصلاحية المحدودة (عرض الطلبات وتحديث حالتها فقط)
 async function openCashierDashboard(staffRow){
   restaurant = staffRow.restaurants;
   if(!restaurant){ toast('تعذر تحميل بيانات المتجر'); show('authScreen'); return; }
   document.getElementById('cashierRestName').textContent = restaurant.name || 'منيو m@g';
+  setTopbarShopLogo('cashierShopLogo');
   show('cashierScreen');
   subscribeToNewOrders();
   refreshNewOrdersCount();
@@ -2955,6 +2969,7 @@ async function openDashboard(){
   if(restaurant && restaurant.logo_url) setLoadingLogo(restaurant.logo_url); else resetLoadingLogo();
   show('loadingScreen');
   document.getElementById('dashRestaurantName').textContent = restaurant.name;
+  setTopbarShopLogo('dashShopLogo');
   document.getElementById('ticketShopName').textContent = restaurant.name;
   renderBranchSwitcher();
   refreshAllBizLabels();
@@ -9702,6 +9717,7 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
       await deleteStorageFileFromUrl(originalLogoUrl); // امسح الشعار القديم من التخزين بعد نجاح الحفظ فقط
     }
     document.getElementById('dashRestaurantName').textContent = restaurant.name;
+    setTopbarShopLogo('dashShopLogo');
     document.getElementById('ticketShopName').textContent = restaurant.name;
     refreshAllBizLabels();
     overlay.remove();
