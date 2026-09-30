@@ -12567,7 +12567,30 @@ async function loadPublic(slug){
     overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   }
 
+  function scrollTabIntoView(container, tab){
+    if(!container || !tab) return;
+    const target = tab.offsetLeft - (container.clientWidth - tab.offsetWidth)/2;
+    container.scrollTo({ left: target, behavior: 'auto' });
+  }
+
+  // يحفظ مكان السكرول قبل إعادة بناء المنيو ويرجّعه بعدها (يمنع القفز لفوق عند إضافة صنف للسلة)
   function renderPublicBody(){
+    const tabsEl = document.getElementById('pubTabs');
+    const prevY = window.scrollY;
+    const prevTabsX = tabsEl ? tabsEl.scrollLeft : 0;
+    const prevBehavior = document.documentElement.style.scrollBehavior;
+    document.documentElement.style.scrollBehavior = 'auto';
+    _renderPublicBodyInner();
+    const t2 = document.getElementById('pubTabs');
+    if(t2){ t2.style.scrollBehavior = 'auto'; t2.scrollLeft = prevTabsX; }
+    window.scrollTo(0, prevY);
+    requestAnimationFrame(()=>{
+      window.scrollTo(0, prevY);
+      document.documentElement.style.scrollBehavior = prevBehavior;
+      if(t2) t2.style.scrollBehavior = '';
+    });
+  }
+  function _renderPublicBodyInner(){
     renderHeader();
     const tabsWrap = document.getElementById('pubTabs');
     tabsWrap.innerHTML = '';
@@ -12581,7 +12604,7 @@ async function loadPublic(slug){
     allTab.innerHTML = `<span>📋 ${lang==='en' ? 'All' : 'الكل'}</span><span class="pub-tab-count">${pubItems.length}</span>`;
     allTab.addEventListener('click', ()=>{ activeCat = 'ALL'; searchTerm=''; document.getElementById('pubSearchInput').value=''; renderPublicBody(); });
     tabsWrap.appendChild(allTab);
-    if(isAllActive){ requestAnimationFrame(()=> allTab.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' })); }
+    if(isAllActive){ requestAnimationFrame(()=> scrollTabIntoView(tabsWrap, allTab)); }
     pubCats.forEach(cat=>{
       const isActive = cat.id===activeCat && !searchTerm;
       const t = document.createElement('div');
@@ -12590,7 +12613,7 @@ async function loadPublic(slug){
       t.innerHTML = `<span>${escapeHtml(tName(cat.name, cat.name_en))}</span><span class="pub-tab-count">${count}</span>`;
       t.addEventListener('click', ()=>{ activeCat = cat.id; searchTerm=''; document.getElementById('pubSearchInput').value=''; renderPublicBody(); });
       tabsWrap.appendChild(t);
-      if(isActive){ requestAnimationFrame(()=> t.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' })); }
+      if(isActive){ requestAnimationFrame(()=> scrollTabIntoView(tabsWrap, t)); }
     });
     const body = document.getElementById('pubBody');
     let catItems;
