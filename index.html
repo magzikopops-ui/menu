@@ -1050,6 +1050,34 @@ body.pub-design-ledger .pub-item .item-control .add-to-cart-btn{ background:var(
 body.pub-design-ledger .pub-item .item-control .qty-stepper .qty-btn{ background:var(--paper-dim); color:var(--ink); border:1px solid var(--line); }
 body.pub-design-ledger .discount-badge{ background:var(--ember); color:#171B33; }
 @media (max-width:480px){ body.pub-design-ledger .pub-item .name-primary{ white-space:normal; } body.pub-design-ledger .pub-item .desc-expand, body.pub-design-ledger .pub-item .item-control, body.pub-design-ledger .pub-item .variant-cart-lines{ padding-inline-start:0; } }
+/* تصميم "القائمة المرقّمة" — نوافذ السلة وإتمام الطلب: نفس ألوان التصميم (كحلي داكن + ذهبي). السبب: .modal خلفيته بيضاء بينما --ink فاتح فكان النص بيختفي */
+body.pub-design-ledger .modal{ background:#171B33; color:#F3EFE2; border:1px solid #3B416A; }
+body.pub-design-ledger .modal h3, body.pub-design-ledger .modal label, body.pub-design-ledger .modal .cr-name{ color:#F3EFE2; }
+body.pub-design-ledger .modal input, body.pub-design-ledger .modal textarea, body.pub-design-ledger .modal select,
+body.pub-design-ledger .modal .cart-item-note{ background:#1F2544 !important; color:#F3EFE2 !important; border:1.5px solid #3B416A !important; color-scheme:dark; }
+body.pub-design-ledger .modal input::placeholder, body.pub-design-ledger .modal textarea::placeholder{ color:#9AA0C4; opacity:1; }
+body.pub-design-ledger .modal input:focus, body.pub-design-ledger .modal textarea:focus, body.pub-design-ledger .modal select:focus{ outline:none; border-color:#D8B25C !important; }
+body.pub-design-ledger .modal select option{ background:#1F2544; color:#F3EFE2; }
+body.pub-design-ledger .modal .cart-row{ border-bottom:1px dashed #3B416A; }
+body.pub-design-ledger .modal .cr-line-total{ color:#D8B25C; }
+body.pub-design-ledger .modal .qty-btn{ background:#1F2544; color:#F3EFE2; border:1px solid #3B416A; }
+body.pub-design-ledger .modal .qty-stepper span{ color:#F3EFE2; }
+body.pub-design-ledger .modal .cr-delete-btn{ color:#9AA0C4; }
+body.pub-design-ledger .modal .cart-summary-row{ color:#9AA0C4; }
+body.pub-design-ledger .modal .cart-summary-row.total{ color:#F3EFE2; border-top:1.5px dashed #3B416A; }
+body.pub-design-ledger .modal .btn-cancel{ background:#1F2544; color:#F3EFE2; border:1.5px solid #3B416A; }
+body.pub-design-ledger .modal .btn-confirm, body.pub-design-ledger .modal .ord-type-btn.active{ background:#D8B25C; border-color:#D8B25C; color:#171B33; font-weight:800; }
+body.pub-design-ledger .modal .btn-confirm:hover{ background:#B8933E; }
+body.pub-design-ledger .modal .btn-confirm:disabled{ opacity:.5; }
+body.pub-design-ledger .modal .ord-type-btn{ background:#1F2544; color:#F3EFE2; border-color:#3B416A; }
+body.pub-design-ledger .modal .order-step-circle{ background:#1F2544; border-color:#3B416A; color:#9AA0C4; }
+body.pub-design-ledger .modal .order-step.done .order-step-circle, body.pub-design-ledger .modal .order-step.active .order-step-circle{ background:#D8B25C; border-color:#D8B25C; color:#171B33; }
+body.pub-design-ledger .modal .order-step-label{ color:#9AA0C4; }
+body.pub-design-ledger .modal .order-step.active .order-step-label{ color:#F3EFE2; }
+body.pub-design-ledger .modal .order-step.done .order-step-label{ color:#D8B25C; }
+body.pub-design-ledger .modal-floating-footer .modal-actions{ background:#171B33; box-shadow:0 -6px 16px rgba(0,0,0,.45); }
+body.pub-design-ledger .modal .ord-footer-total, body.pub-design-ledger .modal .ord-footer-total .ord-footer-total-amount{ color:#F3EFE2; }
+body.pub-design-ledger .modal #cartClearBtn{ background:#1F2544 !important; border-color:#3B416A !important; color:#FF7B7B !important; }
 
 /* تصميم "الكتالوج الحديث" (catalog): قائمة نصية نظيفة بدون صور للأصناف، خطوط عريضة وسعر في شارة ملوّنة — مناسب لمتاجر السوبرماركت والبقالة والمطاعم اللي مركزة على السرعة والوضوح */
 body.pub-design-catalog{ --paper:#F6F6F4; --paper-dim:#ECECE8; --ink:#15151A; --line:#DCDCD6; --stone:#6B6B70; --stone-light:#E4E4DF; --ember:#4F46E5; --ember-dark:#3B32C7; --basil:#15151A; --basil-dark:#000000; background:var(--paper); }
