@@ -330,6 +330,7 @@ body.pub-watermark-on #publicScreen{ padding-top:29px; }
 body.pub-watermark-on .pub-tabs-wrap{ top:29px; }
 body.pub-menu-only .pub-order-btn,
 body.pub-menu-only #pubRepeatOrderBtn,
+body.pub-menu-only #pubRepeatWrap,
 body.pub-menu-only .add-to-cart-btn{ display:none !important; }
 @media (max-width:480px){
   .pub-footer.pub-footer-float{ font-size:9.5px; padding:5px 10px; }
@@ -1398,6 +1399,13 @@ body.pub-design-filmstrip .modal .ord-footer-total, body.pub-design-filmstrip .m
 body.pub-design-filmstrip .modal #cartClearBtn{ background:var(--paper-dim) !important; border-color:var(--line) !important; color:#B3261E !important; }
 body.pub-design-filmstrip.pub-user-dark .modal #cartClearBtn{ color:#FF7B7B !important; }
 
+/* زر "كرر آخر طلب" + زر الإخفاء (×) + وضوح الألوان في التصميمات الداكنة */
+.repeat-chip{ align-items:center; gap:6px; }
+.repeat-dismiss{ width:28px; height:28px; border-radius:50%; border:1px solid var(--line); background:var(--paper-dim); color:var(--stone); font-size:16px; line-height:1; cursor:pointer; padding:0; display:inline-flex; align-items:center; justify-content:center; font-family:var(--body); }
+.repeat-dismiss:hover{ color:var(--danger); border-color:var(--danger); }
+body.pub-design-filmstrip #pubRepeatOrderBtn, body.pub-design-ledger #pubRepeatOrderBtn{ background:var(--paper-dim); color:var(--ink); border-color:var(--line); }
+body.pub-design-filmstrip .repeat-dismiss, body.pub-design-ledger .repeat-dismiss, body.pub-user-dark .repeat-dismiss{ background:var(--paper-dim); color:var(--stone); border-color:var(--line); }
+
 .design-picker-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:2px 0 4px; }
 @media (max-width:460px){ .design-picker-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } }
 @media (max-width:340px){ .design-picker-grid{ grid-template-columns:1fr; } }
@@ -1861,7 +1869,10 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
   <div class="pub-logo-wrap" id="pubLogoWrap"></div>
   <div id="pubClosedBanner" class="hidden" style="max-width:640px; margin:0 auto 10px; padding:10px 20px; text-align:center; background:#5c2b2b; color:#fff; font-weight:700; font-size:13px; border-radius:8px;"></div>
   <div style="max-width:640px; margin:0 auto; padding:0 20px 10px; text-align:center;">
-    <button type="button" id="pubRepeatOrderBtn" class="link-btn hidden">🔁 كرر آخر طلب</button>
+    <span id="pubRepeatWrap" class="repeat-chip" style="display:none;">
+      <button type="button" id="pubRepeatOrderBtn" class="link-btn hidden">🔁 كرر آخر طلب</button>
+      <button type="button" id="pubRepeatDismissBtn" class="repeat-dismiss" aria-label="إخفاء" title="إخفاء">×</button>
+    </span>
   </div>
   <div class="pub-tabs-wrap" id="pubTabsWrap">
     <div class="pub-search">
@@ -12229,8 +12240,21 @@ async function loadPublic(slug){
     return Object.values(cart).reduce((sum,c)=> sum + (c.qty * Number(c.unitPrice)), 0);
   }
   let prevPubCartCount = 0;
+  // زر "كرر آخر طلب": يظهر فقط لو فيه طلب سابق + العميل ما أخفاهوش + السلة فاضية
+  function syncRepeatVisibility(){
+    const wrap = document.getElementById('pubRepeatWrap');
+    if(!wrap || !rest) return;
+    let hasLast = false, dismissed = false;
+    try{
+      const arr = JSON.parse(localStorage.getItem(`menuLastOrder_${rest.id}`)) || [];
+      hasLast = Array.isArray(arr) && arr.length > 0;
+      dismissed = localStorage.getItem(`menuRepeatDismissed_${rest.id}`) === '1';
+    }catch(e){}
+    wrap.style.display = (hasLast && !dismissed && Object.keys(cart).length === 0) ? 'inline-flex' : 'none';
+  }
   function updateCartButton(){
     saveCart();
+    syncRepeatVisibility();
     const badge = document.getElementById('pubCartBadge');
     const btn = document.getElementById('pubOrderBtn');
     const label = document.getElementById('pubOrderBtnLabel');
@@ -12288,6 +12312,14 @@ async function loadPublic(slug){
   let lastOrderItems = [];
   try{ lastOrderItems = JSON.parse(localStorage.getItem(`menuLastOrder_${rest.id}`)) || []; }catch(e){ lastOrderItems = []; }
   if(lastOrderItems.length > 0){ repeatOrderBtn.classList.remove('hidden'); } else { repeatOrderBtn.classList.add('hidden'); }
+  const repeatDismissBtn = document.getElementById('pubRepeatDismissBtn');
+  if(repeatDismissBtn){
+    repeatDismissBtn.onclick = ()=>{
+      try{ localStorage.setItem(`menuRepeatDismissed_${rest.id}`, '1'); }catch(e){}
+      syncRepeatVisibility();
+    };
+  }
+  syncRepeatVisibility();
   repeatOrderBtn.onclick = ()=>{
     let restoredCount = 0, skippedCount = 0;
     lastOrderItems.forEach(li=>{
@@ -14007,6 +14039,7 @@ async function loadPublic(slug){
           itemId: c.item.id, variantLabel: c.variantLabel || null, unitPrice: c.unitPrice, qty: c.qty, weightGrams: c.weightGrams || null
         }));
         localStorage.setItem(`menuLastOrder_${rest.id}`, JSON.stringify(lastOrderSnapshot));
+        localStorage.removeItem(`menuRepeatDismissed_${rest.id}`); // طلب جديد = الزر يرجع يظهر المرة الجاية
       }catch(e){}
       const cartLines = Object.values(cart).map(c=>({
         order_id: orderRow.id, item_id: c.item.id,
