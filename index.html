@@ -254,8 +254,12 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .info-quick-btn.wa{ background:#25D366; color:#fff; }
 .info-quick-btn.wa:hover{ background:#1DA851; }
 .pub-logo-wrap{ text-align:center; padding:10px 20px 20px; }
-.pub-logo-wrap img{ max-height:92px; max-width:260px; height:auto; width:auto; object-fit:contain; background:#fff; border-radius:16px; padding:10px 16px; box-shadow:0 4px 14px rgba(0,0,0,.1); }
-@media (max-width:420px){ .pub-logo-wrap img{ max-height:76px; max-width:200px; } }
+.pub-logo-wrap img{ height:92px; width:auto; max-width:260px; object-fit:contain; background:#fff; border-radius:16px; padding:10px 16px; box-shadow:0 4px 14px rgba(0,0,0,.1); cursor:zoom-in; transition:transform .22s ease, box-shadow .22s ease; }
+.pub-logo-wrap img:hover, .pub-logo-wrap img:focus-visible{ transform:scale(1.12); box-shadow:0 10px 26px rgba(0,0,0,.2); }
+@media (max-width:420px){ .pub-logo-wrap img{ height:76px; max-width:200px; } }
+.logo-lightbox{ position:relative; background:#fff; border-radius:20px; padding:32px 28px 24px; max-width:min(420px,90vw); text-align:center; }
+.logo-lightbox img{ height:min(60vh,480px); width:auto; max-width:80vw; object-fit:contain; }
+.logo-lightbox-name{ margin-top:16px; font-family:var(--display); font-size:20px; color:var(--ink); }
 .pub-logo-wrap .name-fallback{ font-family:var(--display); font-size:30px; color:var(--ink); }
 .pub-logo-wrap .pub-rest-name{ font-family:var(--display); font-size:20px; color:var(--ink); margin-top:8px; }
 .pub-logo-wrap .pub-rest-subname{ font-family:var(--body); font-size:14px; color:var(--stone); margin-top:4px; }
@@ -12257,6 +12261,23 @@ async function loadPublic(slug){
       ? `<img src="${rest.logo_url}" data-cache-src="${rest.logo_url}" alt="${escapeHtml(restName)}"><div class="pub-rest-name">${escapeHtml(restName)}</div>`
       : nameBlockHtml;
     hydrateCachedImages(pubLogoWrapEl);
+    const pubLogoImgEl = pubLogoWrapEl.querySelector('img');
+    if(pubLogoImgEl){
+      pubLogoImgEl.addEventListener('click', ()=>{
+        const overlay = document.createElement('div');
+        overlay.className = 'overlay logo-lightbox-overlay';
+        overlay.innerHTML = `
+          <div class="logo-lightbox">
+            <button type="button" class="dark-quickview-close" aria-label="${lang==='en' ? 'Close' : 'إغلاق'}">✕</button>
+            <img src="${rest.logo_url}" alt="${escapeHtml(restName)}">
+            <div class="logo-lightbox-name">${escapeHtml(restName)}</div>
+          </div>`;
+        document.body.appendChild(overlay);
+        function close(){ overlay.remove(); }
+        overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
+        overlay.querySelector('.dark-quickview-close').addEventListener('click', close);
+      });
+    }
     document.getElementById('pubSearchInput').placeholder = lang==='en' ? 'Search the menu...' : 'ابحث في القائمة...';
     document.getElementById('pubOrderBtnLabel').textContent = lang==='en' ? 'Cart' : 'السلة';
     document.getElementById('pubOrderBtnIcon').textContent = rest.business_type === 'store' ? '🛒' : '🍽️';
@@ -12819,11 +12840,39 @@ async function loadPublic(slug){
       } else if(chevron && chevron.textContent){
         row.addEventListener('click', ()=> row.classList.toggle('expanded'));
       }
+      // الضغط على صورة الصنف (في أي تصميم غير الداكن/أورورا/الفاخر، لأن عندهم تفاعل خاص بيهم على الصورة فعلًا)
+      // بيفتح الصورة بحجم أكبر — تفاعل واجهة فقط، مفيش أي بيانات جديدة بتتخزن
+      if(!isDarkDesign && !isAuroraDesign && !isLuxuryDesign){
+        const img = row.querySelector(':scope > .pub-item-front img, :scope .pub-item-front img');
+        if(img){
+          img.style.cursor = 'zoom-in';
+          img.addEventListener('click', (e)=>{
+            e.stopPropagation();
+            openItemImageLightbox(img.currentSrc || img.src, row.querySelector('.name-primary')?.textContent || '');
+          });
+        }
+      }
     });
     body.querySelectorAll('.variant-select').forEach(sel=>{
       sel.addEventListener('click', (e)=> e.stopPropagation());
     });
     refreshDarkQuickView();
+  }
+
+  // فتح صورة الصنف بحجم أكبر في منتصف الشاشة — نفس فكرة تكبير لوجو المتجر
+  function openItemImageLightbox(src, name){
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay logo-lightbox-overlay';
+    overlay.innerHTML = `
+      <div class="logo-lightbox item-image-lightbox">
+        <button type="button" class="dark-quickview-close" aria-label="${lang==='en' ? 'Close' : 'إغلاق'}">✕</button>
+        <img src="${src}" alt="${escapeHtml(name)}">
+        ${name ? `<div class="logo-lightbox-name">${escapeHtml(name)}</div>` : ''}
+      </div>`;
+    document.body.appendChild(overlay);
+    function close(){ overlay.remove(); }
+    overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
+    overlay.querySelector('.dark-quickview-close').addEventListener('click', close);
   }
 
   // "داكن أنيق": نافذة تفاصيل سريعة — بتنقل عنصر التحكم الحقيقي (بكل مستمعاته) جوه المودال بدل ما تستنسخه.
