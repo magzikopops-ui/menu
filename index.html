@@ -14227,7 +14227,8 @@ async function loadPublic(slug){
     overlay.className = 'overlay';
     const lines = Object.values(cart);
     overlay.innerHTML = `
-      <div class="modal">
+      <div class="modal modal-floating-footer">
+        <div class="modal-scroll">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
           <h3 style="margin:0;">${lang==='en' ? 'Your cart' : 'سلة المشتريات'}</h3>
           ${lines.length > 0 ? `<button type="button" id="cartClearBtn" style="background:#fff; border:1.5px solid var(--line); color:var(--danger); font-family:var(--body); font-weight:700; font-size:12.5px; border-radius:16px; cursor:pointer; padding:7px 12px; display:flex; align-items:center; gap:5px; flex-shrink:0;">🗑 ${lang==='en' ? 'Empty cart' : 'إفراغ السلة'}</button>` : ''}
@@ -14236,10 +14237,13 @@ async function loadPublic(slug){
         <div id="cartLinesWrap">
           ${lines.length === 0 ? `<div class="cart-empty-note">${lang==='en' ? 'Your cart is empty' : 'السلة فارغة'}</div>` : ''}
         </div>
-        <div id="cartSubtotalWrap"></div>
+        </div>
         <div class="modal-actions" id="cartActionsWrap">
-          <button class="btn-cancel" id="cartCloseBtn">${lang==='en' ? 'Close' : 'إغلاق'}</button>
-          ${lines.length > 0 ? `<button class="btn-confirm" id="cartProceedBtn">${lang==='en' ? 'Proceed to order' : 'المتابعة للطلب'}</button>` : ''}
+          <div id="cartSubtotalWrap" class="ord-footer-total"></div>
+          <div class="ord-footer-buttons">
+            <button class="btn-cancel" id="cartCloseBtn">${lang==='en' ? 'Close' : 'إغلاق'}</button>
+            ${lines.length > 0 ? `<button class="btn-confirm" id="cartProceedBtn">${lang==='en' ? 'Proceed to order' : 'المتابعة للطلب'}</button>` : ''}
+          </div>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -14276,7 +14280,7 @@ async function loadPublic(slug){
           <span class="cr-line-total">${(c.qty * Number(c.unitPrice)).toFixed(2)} ${getRestaurantCurrency(rest)}</span>
           <button type="button" class="cr-delete-btn" data-action="removeLine" title="${lang==='en' ? 'Remove item' : 'حذف الصنف'}">🗑</button>
         </div>`).join('');
-      subtotalWrap.innerHTML = `<div class="cart-summary-row total"><span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span>${cartSubtotal().toFixed(2)} ${getRestaurantCurrency(rest)}</span></div>`;
+      subtotalWrap.innerHTML = `<span>${lang==='en' ? 'Subtotal' : 'المجموع الفرعي'}</span><span class="ord-footer-total-amount">${cartSubtotal().toFixed(2)} ${getRestaurantCurrency(rest)}</span>`;
       wrap.querySelectorAll('.cart-row').forEach(row=>{
         const key = row.dataset.cartKey;
         row.querySelector('[data-action="inc"]').addEventListener('click', ()=>{
