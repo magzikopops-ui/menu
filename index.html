@@ -1356,6 +1356,45 @@ body.pub-user-dark .variant-select:focus{ outline:none; border-color:var(--ember
 body.pub-user-dark.pub-design-aurora .pub-item{ box-shadow:none; }
 body.pub-user-dark .pub-logo-wrap img{ background:#F0ECE0; border-radius:12px; padding:8px; }
 
+/* ============================================================
+   إصلاح وضوح الألوان في نافذة السلة وإتمام الطلب (الوضع العادي + الداكن)
+   السبب: تصميم "شريط السينما" بيعرّف --ink فاتح و--basil أبيض، بينما .modal خلفيته بيضاء،
+   فكان النص والأزرار (المتابعة/توصيل/علامة ✓) بيختفوا. وفي الوضع الداكن الفوتر والملاحظات كانت بيضاء.
+   ============================================================ */
+/* عام لكل التصميمات في الوضع الداكن */
+body.pub-user-dark .modal-floating-footer .modal-actions{ background:var(--paper-dim); box-shadow:0 -6px 16px rgba(0,0,0,.4); }
+body.pub-user-dark .cart-item-note{ background:var(--paper-dim) !important; color:var(--ink) !important; border-color:var(--line) !important; }
+body.pub-user-dark .modal #cartClearBtn{ background:var(--paper-dim) !important; color:#FF7B7B !important; border-color:var(--line) !important; }
+
+/* شريط السينما — الوضع العادي: نافذة فاتحة بنص غامق واضح */
+body.pub-design-filmstrip .modal{ --ink:#1A1A1A; --paper:#FFFFFF; --paper-dim:#F1F1F1; --line:#D4D4D4; --stone:#5E5E5E; --stone-light:#CFCFCF; --basil:#1E7B3A; --basil-dark:#155C2B; background:#fff; color:#1A1A1A; }
+/* شريط السينما — الوضع الداكن: نافذة داكنة بنص فاتح واضح */
+body.pub-design-filmstrip.pub-user-dark .modal{ --ink:#F5F5F5; --paper:#1A1A1A; --paper-dim:#262626; --line:#404040; --stone:#B0B0B0; --stone-light:#404040; --basil:#4BE08F; --basil-dark:#34C277; background:#161616; color:#F5F5F5; border:1px solid #2E2E2E; }
+
+body.pub-design-filmstrip .modal input, body.pub-design-filmstrip .modal textarea, body.pub-design-filmstrip .modal select,
+body.pub-design-filmstrip .modal .cart-item-note{ background:var(--paper-dim) !important; color:var(--ink) !important; border-color:var(--line) !important; }
+body.pub-design-filmstrip .modal input::placeholder, body.pub-design-filmstrip .modal textarea::placeholder{ color:var(--stone); opacity:1; }
+body.pub-design-filmstrip .modal input:focus, body.pub-design-filmstrip .modal textarea:focus, body.pub-design-filmstrip .modal select:focus{ outline:none; border-color:var(--ember) !important; }
+body.pub-design-filmstrip .modal .qty-btn{ background:var(--paper-dim); color:var(--ink); border-color:var(--line); }
+body.pub-design-filmstrip .modal .cr-line-total{ color:#D10812; }
+body.pub-design-filmstrip.pub-user-dark .modal .cr-line-total{ color:#FF4A55; }
+body.pub-design-filmstrip .modal .btn-cancel{ background:var(--paper-dim); color:var(--ink); border:1.5px solid var(--line); }
+body.pub-design-filmstrip .modal .btn-confirm, body.pub-design-filmstrip .modal .ord-type-btn.active{ background:var(--ember); border-color:var(--ember); color:#fff; }
+body.pub-design-filmstrip .modal .btn-confirm:hover{ background:var(--ember-dark); }
+body.pub-design-filmstrip .modal .btn-confirm:disabled{ opacity:.5; }
+body.pub-design-filmstrip .modal .ord-type-btn{ background:var(--paper-dim); color:var(--ink); border-color:var(--line); }
+body.pub-design-filmstrip .modal .order-step.done .order-step-circle{ background:#1E7B3A; border-color:#1E7B3A; color:#fff; }
+body.pub-design-filmstrip .modal .order-step.active .order-step-circle{ background:var(--ember); border-color:var(--ember); color:#fff; }
+body.pub-design-filmstrip .modal .order-step-label{ color:var(--stone); }
+body.pub-design-filmstrip .modal .order-step.active .order-step-label{ color:var(--ink); }
+body.pub-design-filmstrip .modal .order-step.done .order-step-label{ color:var(--basil); }
+body.pub-design-filmstrip .modal .cart-summary-row{ color:var(--stone); }
+body.pub-design-filmstrip .modal .cart-summary-row.total{ color:var(--ink); }
+body.pub-design-filmstrip .modal-floating-footer .modal-actions{ background:var(--paper); box-shadow:0 -6px 16px rgba(0,0,0,.18); }
+body.pub-design-filmstrip .modal .ord-footer-total, body.pub-design-filmstrip .modal .ord-footer-total .ord-footer-total-amount{ color:var(--ink); }
+body.pub-design-filmstrip .modal #cartClearBtn{ background:var(--paper-dim) !important; border-color:var(--line) !important; color:#B3261E !important; }
+body.pub-design-filmstrip.pub-user-dark .modal #cartClearBtn{ color:#FF7B7B !important; }
+
 .design-picker-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:2px 0 4px; }
 @media (max-width:460px){ .design-picker-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } }
 @media (max-width:340px){ .design-picker-grid{ grid-template-columns:1fr; } }
