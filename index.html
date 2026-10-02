@@ -5,8 +5,16 @@
      crossorigin="anonymous"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>منيو m@g</title>
-<meta name="description" id="metaDescription" content="تصفح المنتجات واطلب أونلاين بسهولة">
+<title>منيو m@g | منيو إلكتروني ونظام طلبات أونلاين للمطاعم والمتاجر</title>
+<meta name="description" id="metaDescription" content="منيو m@g (M@G Menu - magziko): أنشئ منيو إلكتروني لمطعمك أو متجرك، استقبل الطلبات أونلاين، وتابع التوصيل والمبيعات من مكان واحد. تصفح المنتجات واطلب بسهولة.">
+<meta name="keywords" id="metaKeywords" content="منيو إلكتروني, منيو اونلاين, منيو رقمي, QR منيو, منيو QR, نظام طلبات مطاعم, طلب اونلاين, توصيل, مطعم, متجر, كاشير, magziko, M@G Menu, منيو m@g, منيو ماج">
+<meta name="robots" id="metaRobots" content="index, follow, max-image-preview:large">
+<link rel="canonical" id="canonicalLink" href="https://magziko.github.io/menu/">
+<meta property="og:url" id="ogUrl" content="https://magziko.github.io/menu/">
+<meta property="og:locale" content="ar_EG">
+<meta property="og:site_name" content="منيو m@g">
+<meta name="author" content="منيو m@g">
+<script type="application/ld+json" id="ldJson">{"@context":"https://schema.org","@type":"WebSite","name":"منيو m@g","url":"https://magziko.github.io/menu/","inLanguage":"ar","description":"منيو إلكتروني ونظام طلبات أونلاين للمطاعم والمتاجر"}</script>
 <meta property="og:type" content="website">
 <meta property="og:title" id="ogTitle" content="منيو m@g">
 <meta property="og:description" id="ogDescription" content="تصفح المنتجات واطلب أونلاين بسهولة">
@@ -1644,6 +1652,8 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
   </div>
 </div>
 
+<noscript><div style="padding:20px;color:#F6F1E4;text-align:center;">منيو m@g — منيو إلكتروني ونظام طلبات أونلاين للمطاعم والمتاجر. فعّل JavaScript لتصفح المنيو والطلب.</div></noscript>
+
 <div id="cashierScreen" class="hidden">
   <div class="topbar">
     <div class="topbar-menu-logo"><img src="favicon.png" alt="منيو m@g" title="منيو m@g"></div>
@@ -2453,7 +2463,7 @@ function setFavicon(href){
   document.getElementById('appleTouchIconLink').setAttribute('href', href);
 }
 
-function setPageMeta({ title, description, image }){
+function setPageMeta({ title, description, image, keywords, url, robots, jsonLd }){
   document.title = title;
   document.getElementById('metaDescription').setAttribute('content', description);
   document.getElementById('ogTitle').setAttribute('content', title);
@@ -2464,6 +2474,13 @@ function setPageMeta({ title, description, image }){
     document.getElementById('ogImage').setAttribute('content', image);
     document.getElementById('twImage').setAttribute('content', image);
   }
+  if(keywords) document.getElementById('metaKeywords').setAttribute('content', keywords);
+  if(url){
+    document.getElementById('canonicalLink').setAttribute('href', url);
+    document.getElementById('ogUrl').setAttribute('content', url);
+  }
+  if(robots) document.getElementById('metaRobots').setAttribute('content', robots);
+  if(jsonLd) document.getElementById('ldJson').textContent = JSON.stringify(jsonLd);
 }
 
 async function boot(){
@@ -12338,12 +12355,43 @@ async function loadPublic(slug){
   // عدد "الأكثر طلبًا" يكبر مع حجم المنيو (5 للمنيو الصغير حتى 12 للمنيو الكبير) عشان الفلتر والشارة يفضلوا مفيدين
   const TOP_ITEMS_N = Math.min(12, Math.max(5, Math.round(pubItems.length / 15)));
   const topItemIds = new Set((topItemsRes.data || []).slice(0, TOP_ITEMS_N).map(t=>t.item_id));
-  setPageMeta({
-
-    title: rest.name,
-    description: `اطلب أونلاين من ${rest.name} بسهولة وسرعة`,
-    image: rest.logo_url || undefined
-  });
+  {
+    const isStore = rest.business_type === 'store';
+    const kind = isStore ? 'متجر' : 'مطعم';
+    const catNames = pubCats.map(c=>c.name).filter(Boolean);
+    const topCats = catNames.slice(0, 6).join('، ');
+    const baseUrl = `https://${location.host}${location.pathname}`;
+    const pageUrl = `${baseUrl}?r=${encodeURIComponent(rest.slug)}`;
+    const seoTitle = `${rest.name} | منيو أونلاين وطلب ${isStore ? 'منتجات' : 'أكل'} بالتوصيل`;
+    const seoDesc = (`منيو ${rest.name} أونلاين — ${topCats ? 'تصفح ' + topCats + ' و' : ''}اطلب بسهولة مع التوصيل. الأسعار والعروض محدّثة. عبر منيو m@g (M@G Menu - magziko).`).slice(0, 300);
+    const seoKeywords = [
+      rest.name, `منيو ${rest.name}`, `${kind} ${rest.name}`, `اطلب من ${rest.name}`, `${rest.name} اونلاين`,
+      `${rest.name} توصيل`, `${rest.name} اسعار`, 'منيو اونلاين', 'منيو إلكتروني', 'طلب اونلاين', 'توصيل',
+      'magziko', 'M@G Menu', 'منيو m@g',
+      ...catNames.slice(0, 10)
+    ].join(', ');
+    setPageMeta({
+      title: seoTitle,
+      description: seoDesc,
+      image: rest.logo_url || undefined,
+      keywords: seoKeywords,
+      url: pageUrl,
+      robots: 'index, follow, max-image-preview:large',
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': isStore ? 'Store' : 'Restaurant',
+        name: rest.name,
+        url: pageUrl,
+        image: rest.logo_url || undefined,
+        description: seoDesc,
+        inLanguage: 'ar',
+        keywords: seoKeywords,
+        hasMenu: pageUrl,
+        ...(isStore ? {} : { servesCuisine: catNames.slice(0, 6) }),
+        potentialAction: { '@type': 'OrderAction', target: pageUrl }
+      }
+    });
+  }
   if(rest.logo_url) setFavicon(rest.logo_url);
   setupInstallableMenu(rest);
   let activeCat = 'ALL';
