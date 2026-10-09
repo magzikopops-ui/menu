@@ -13270,18 +13270,27 @@ async function loadPublic(slug){
     }).join('');
     hydrateCachedImages(body);
 
-    if(isTilesDesign && activeCat !== 'ALL' && !searchTerm && !activeFilter){
+    if(isTilesDesign && (activeCat !== 'ALL' || searchTerm || activeFilter)){
       const tCat = pubCats.find(c=>c.id===activeCat);
-      if(tCat){
-        const rtl = getComputedStyle(document.body).direction === 'rtl';
-        const bar = document.createElement('div');
-        bar.className = 'cat-backbar';
-        bar.innerHTML = `<button type="button" class="cat-back-btn"><span aria-hidden="true">${rtl ? '›' : '‹'}</span><span>${lang==='en' ? 'All categories' : 'كل الأقسام'}</span></button><div class="cat-back-title">${escapeHtml(tName(tCat.name, tCat.name_en))}</div>`;
-        bar.querySelector('.cat-back-btn').addEventListener('click', ()=>{
-          if(history.state && history.state.pubCat){ history.back(); } else { backToTiles(); }
-        });
-        body.insertBefore(bar, body.firstChild);
-      }
+      const filterTitles = lang==='en'
+        ? { top:'Bestsellers', new:'New', offers:'Offers' }
+        : { top:'الأكثر طلبًا', new:'جديد', offers:'عروض' };
+      const barTitle = (searchTerm || activeFilter)
+        ? (activeFilter && !searchTerm ? filterTitles[activeFilter] : (lang==='en' ? 'Search results' : 'نتائج البحث'))
+        : (tCat ? tName(tCat.name, tCat.name_en) : '');
+      const rtl = getComputedStyle(document.body).direction === 'rtl';
+      const bar = document.createElement('div');
+      bar.className = 'cat-backbar';
+      bar.innerHTML = `<button type="button" class="cat-back-btn"><span aria-hidden="true">${rtl ? '›' : '‹'}</span><span>${lang==='en' ? 'All categories' : 'كل الأقسام'}</span></button><div class="cat-back-title">${escapeHtml(barTitle || '')}</div>`;
+      bar.querySelector('.cat-back-btn').addEventListener('click', ()=>{
+        const pureCategory = !searchTerm && !activeFilter;
+        if(pureCategory && history.state && history.state.pubCat){ history.back(); return; }
+        if(history.state && history.state.pubCat){ try{ history.replaceState(null, ''); }catch(e){} }
+        searchTerm = ''; activeFilter = null;
+        const si = document.getElementById('pubSearchInput'); if(si) si.value = '';
+        backToTiles();
+      });
+      body.insertBefore(bar, body.firstChild);
     }
 
     const isShowcaseShelf = document.body.classList.contains('pub-design-showcase') && activeCat === 'ALL' && !searchTerm && !activeFilter;
