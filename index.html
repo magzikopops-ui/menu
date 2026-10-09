@@ -171,6 +171,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .cat-item:hover{background:#332F2A;}
 .cat-item.active{ background:rgba(184,57,14,.15); border-color:var(--ember); color:var(--paper); }
 .cat-item .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cat-item .cat-thumb{ width:30px; height:30px; border-radius:7px; object-fit:cover; margin-inline-end:8px; flex-shrink:0; background:#221F1C; }
 .cat-item .count{ font-family:var(--mono); direction:ltr; font-size:12px; color:var(--stone); background:#221F1C; padding:2px 7px; border-radius:10px; margin-inline-start:8px; }
 .icon-btn{ background:none;border:none;cursor:pointer; color:var(--stone); padding:3px; border-radius:4px; font-size:14px; display:none; }
 .cat-item:hover .icon-btn{display:inline-block;}
@@ -1402,6 +1403,27 @@ body.pub-design-candy .pub-item .item-control .qty-stepper{ justify-content:cent
 body.pub-design-candy .pub-item .item-control .qty-stepper .qty-btn{ border-radius:50%; background:var(--stone-light); }
 body.pub-design-candy .discount-badge{ background:var(--basil); }
 @media (max-width:380px){ body.pub-design-candy #pubBody{ gap:26px 18px; } }
+
+/* ===== تصميم "مربعات الأقسام": الأقسام كمربعات صور أولًا، ثم يدخل العميل القسم ويختار الأصناف ===== */
+body.pub-design-tiles{ --paper:#ECEFE8; --paper-dim:#DDE3D8; --ink:#17251C; --line:#CFD7C8; --stone:#5E6F62; --stone-light:#E3E8DE; --ember:#2E6B45; --ember-dark:#1F4D31; --basil:#A85F00; --basil-dark:#8A4C00; }
+body.pub-design-tiles .pub-tabs{ display:none; }
+body.pub-design-tiles .pub-search input{ border-radius:14px; }
+.cat-tiles{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding-top:6px; }
+@media (min-width:520px){ .cat-tiles{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
+.cat-tile{ position:relative; display:block; width:100%; aspect-ratio:1/1; padding:0; border:none; border-radius:20px; overflow:hidden; cursor:pointer; background:var(--paper-dim); font-family:inherit; text-align:start; box-shadow:0 3px 12px rgba(23,37,28,.16); -webkit-tap-highlight-color:transparent; }
+.cat-tile img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.cat-tile-ph{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:46px; background:linear-gradient(135deg, var(--ember), var(--ember-dark)); color:rgba(255,255,255,.85); }
+.cat-tile::after{ content:''; position:absolute; inset:0; background:linear-gradient(to top, rgba(10,20,14,.84) 0%, rgba(10,20,14,.36) 40%, rgba(10,20,14,0) 64%); pointer-events:none; }
+.cat-tile-name{ position:absolute; z-index:1; inset-inline:12px; bottom:11px; color:#fff; font-weight:800; font-size:16px; line-height:1.3; text-shadow:0 1px 3px rgba(0,0,0,.45); overflow-wrap:anywhere; }
+.cat-tile-count{ position:absolute; z-index:1; top:10px; inset-inline-start:10px; min-width:26px; height:26px; padding:0 8px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; border-radius:13px; background:var(--basil); color:#fff; font-size:12.5px; font-weight:800; }
+.cat-tile:active{ transform:scale(.97); }
+.cat-tile:focus-visible{ outline:3px solid var(--basil); outline-offset:2px; }
+.cat-backbar{ display:flex; align-items:center; gap:12px; margin:6px 0 14px; }
+.cat-back-btn{ flex-shrink:0; display:flex; align-items:center; gap:6px; padding:9px 14px; border-radius:12px; border:1.5px solid var(--ember); background:var(--paper-dim); color:var(--ink); font-family:inherit; font-weight:800; font-size:13.5px; cursor:pointer; }
+.cat-back-btn:hover{ background:var(--ember); color:#fff; }
+.cat-back-btn:focus-visible{ outline:3px solid var(--basil); outline-offset:2px; }
+.cat-back-title{ flex:1; min-width:0; font-family:var(--display); font-size:20px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+@media (prefers-reduced-motion:reduce){ .cat-tile:active{ transform:none; } }
 
 /* وضع داكن اختياري يفعّله الزائر بنفسه فوق أي شكل مختار — يغيّر الحيادي فقط ويحافظ على لون العلامة الخاص بالتصميم */
 body.pub-user-dark{ --paper:#17151C; --paper-dim:#211E29; --ink:#F0ECE0; --line:#37333F; --stone:#9C96A8; --stone-light:#37333F; }
@@ -9447,7 +9469,8 @@ function openMenuDesignModal(){
     { id:'newsprint', nameAr:'قصاصة الجريدة (تصميم إبداعي)' },
     { id:'ticket', nameAr:'تذكرة السفر (تصميم إبداعي)' },
     { id:'filmstrip', nameAr:'شريط السينما (تصميم إبداعي)' },
-    { id:'candy', nameAr:'لفافة الحلوى (تصميم إبداعي)' }
+    { id:'candy', nameAr:'لفافة الحلوى (تصميم إبداعي)' },
+    { id:'tiles', nameAr:'مربعات الأقسام (يختار العميل القسم بصورته ثم يدخل للأصناف)' }
   ];
   let pendingDesign = restaurant.menu_design || 'classic';
   const overlay = document.createElement('div');
@@ -10652,6 +10675,7 @@ function renderCategories(){
     div.innerHTML = `
       <span style="display:flex;align-items:center;min-width:0;">
         <span class="drag-handle" title="اسحب لإعادة الترتيب">⋮⋮</span>
+        ${cat.image_url ? `<img class="cat-thumb" src="${cat.image_url}" alt="" loading="lazy" decoding="async">` : ''}
         <span class="name">${escapeHtml(cat.name)}</span>
       </span>
       <span style="display:flex;align-items:center;">
@@ -11155,16 +11179,30 @@ async function deleteCategory(id){
   const { error } = await sb.from('categories').delete().eq('id', id);
   if(error){ toast('تعذر الحذف'); return; }
   for(const url of catItemImages){ await deleteStorageFileFromUrl(url); }
+  if(cat.image_url) await deleteStorageFileFromUrl(cat.image_url);
   await refreshData();
   toast('تم الحذف');
 }
 
 function openCategoryModal(existing){
+  let pendingCatImage = existing ? (existing.image_url || null) : null;
+  const originalCatImageUrl = existing ? (existing.image_url || null) : null;
+  const imagesLocked = !!restaurant.restriction_images_disabled;
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
     <div class="modal">
-      <h3>${existing ? 'تعديل اسم الفئة' : 'إضافة فئة جديدة'}</h3>
+      <h3>${existing ? 'تعديل الفئة' : 'إضافة فئة جديدة'}</h3>
+      <div class="field">
+        <label>صورة الفئة (اختياري) — تظهر كمربع في شكل "مربعات الأقسام" بالمنيو</label>
+        <div class="img-drop" id="catImgDrop">
+          ${pendingCatImage ? `<img src="${pendingCatImage}"><br>` : ''}
+          <span id="catImgDropText">${pendingCatImage ? 'انقر لتغيير الصورة' : 'انقر لرفع صورة'}</span><br>
+          <span id="catImgSizeNote" style="font-size:12px;color:var(--stone);"></span>
+        </div>
+        <input type="file" id="catImgInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none;">
+        <button type="button" class="add-btn" id="catRemoveImgBtn" style="margin-top:8px; margin-bottom:0; ${pendingCatImage && !imagesLocked ? '' : 'display:none;'}">حذف الصورة</button>
+      </div>
       <div class="field">
         <label>اسم الفئة (بالعربية)</label>
         <input type="text" id="catNameInput" value="${existing ? escapeHtml(existing.name) : ''}" placeholder="مثال: حلويات">
@@ -11182,6 +11220,42 @@ function openCategoryModal(existing){
   const input = overlay.querySelector('#catNameInput');
   const inputEn = overlay.querySelector('#catNameEnInput');
   input.focus();
+
+  const catImgDrop = overlay.querySelector('#catImgDrop');
+  const catImgInput = overlay.querySelector('#catImgInput');
+  const catRemoveImgBtn = overlay.querySelector('#catRemoveImgBtn');
+  if(imagesLocked){
+    catImgDrop.style.cursor = 'not-allowed';
+    catImgDrop.style.opacity = '.6';
+  }
+  catImgDrop.addEventListener('click', ()=>{
+    if(imagesLocked){ toast('تغيير الصور غير متاح في نسختك الحالية'); return; }
+    catImgInput.click();
+  });
+  catImgInput.addEventListener('change', async ()=>{
+    const file = catImgInput.files[0];
+    if(!file) return;
+    const validation = validateImageFile(file);
+    if(!validation.ok){ toast(validation.message); catImgInput.value = ''; return; }
+    catImgDrop.querySelector('#catImgDropText').textContent = 'جارِ الضغط...';
+    try{
+      const dataUrl = await compressImage(file, { maxDimension: 600, maxSizeKB: 90 });
+      const sizeKB = dataUrlSizeKB(dataUrl);
+      catImgDrop.innerHTML = `<img src="${dataUrl}"><br><span id="catImgDropText">انقر لتغيير الصورة</span><br><span id="catImgSizeNote" style="font-size:12px;color:var(--stone);">${sizeKB ? `الحجم بعد الضغط: ${sizeKB} KB` : ''}</span>`;
+      pendingCatImage = dataUrl;
+      catRemoveImgBtn.style.display = '';
+    }catch(e){
+      toast('تعذر ضغط الصورة، برجاء تجربة صورة أخرى');
+      catImgDrop.querySelector('#catImgDropText').textContent = pendingCatImage ? 'انقر لتغيير الصورة' : 'انقر لرفع صورة';
+    }
+    catImgInput.value = '';
+  });
+  catRemoveImgBtn.addEventListener('click', ()=>{
+    pendingCatImage = null;
+    catImgDrop.innerHTML = `<span id="catImgDropText">انقر لرفع صورة</span><br><span id="catImgSizeNote" style="font-size:12px;color:var(--stone);"></span>`;
+    catRemoveImgBtn.style.display = 'none';
+  });
+
   overlay.querySelector('#catCancel').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   wireEnterToConfirm(overlay, overlay.querySelector('#catConfirm'));
@@ -11191,12 +11265,37 @@ function openCategoryModal(existing){
     if(!name){ input.focus(); return; }
     const btn = overlay.querySelector('#catConfirm');
     btn.disabled = true;
+    let finalCatImage = pendingCatImage;
+    let uploadedNow = null;
+    if(pendingCatImage && pendingCatImage.startsWith('data:')){
+      try{
+        finalCatImage = await uploadImageToStorage(pendingCatImage, `categories/${restaurant.id}`);
+        uploadedNow = finalCatImage;
+      }catch(e){
+        toast('تعذر رفع الصورة، حاول مرة أخرى');
+        btn.disabled = false;
+        return;
+      }
+    }
     if(existing){
-      const { error } = await sb.from('categories').update({ name, name_en }).eq('id', existing.id);
-      if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
+      const { error } = await sb.from('categories').update({ name, name_en, image_url: finalCatImage }).eq('id', existing.id);
+      if(error){
+        toast('تعذر الحفظ');
+        if(uploadedNow) await deleteStorageFileFromUrl(uploadedNow); // امسح الصورة اللي اترفعت لو الحفظ فشل
+        btn.disabled = false;
+        return;
+      }
+      if(originalCatImageUrl && originalCatImageUrl !== finalCatImage){
+        await deleteStorageFileFromUrl(originalCatImageUrl); // امسح الصورة القديمة بعد نجاح الحفظ فقط
+      }
     } else {
-      const { data, error } = await sb.from('categories').insert({ restaurant_id: restaurant.id, name, name_en, position: categories.length }).select().single();
-      if(error){ toast('تعذر الإضافة'); btn.disabled=false; return; }
+      const { data, error } = await sb.from('categories').insert({ restaurant_id: restaurant.id, name, name_en, image_url: finalCatImage, position: categories.length }).select().single();
+      if(error){
+        toast('تعذر الإضافة');
+        if(uploadedNow) await deleteStorageFileFromUrl(uploadedNow);
+        btn.disabled = false;
+        return;
+      }
       selectedCategoryId = data.id;
     }
     overlay.remove();
@@ -12468,7 +12567,8 @@ async function loadPublic(slug){
     { id:'newsprint', nameAr:'قصاصة الجريدة', nameEn:'Newsprint Clipping', bodyClass:'pub-design-newsprint', bg:'#EDEAE3', card:'#FAF8F2', accent:'#B3261E', line:'#CFC9BC', layout:'grid' },
     { id:'ticket', nameAr:'تذكرة السفر', nameEn:'Travel Ticket', bodyClass:'pub-design-ticket', bg:'#FFF9F0', card:'#ffffff', accent:'#E8792E', line:'#D8CBAE', layout:'list' },
     { id:'filmstrip', nameAr:'شريط السينما', nameEn:'Film Strip', bodyClass:'pub-design-filmstrip', bg:'#0D0D0D', card:'#161616', accent:'#E50914', line:'#333333', layout:'grid' },
-    { id:'candy', nameAr:'لفافة الحلوى', nameEn:'Candy Wrapper', bodyClass:'pub-design-candy', bg:'#FFE9F5', card:'#ffffff', accent:'#FF3D81', line:'#FFC2E2', layout:'grid' }
+    { id:'candy', nameAr:'لفافة الحلوى', nameEn:'Candy Wrapper', bodyClass:'pub-design-candy', bg:'#FFE9F5', card:'#ffffff', accent:'#FF3D81', line:'#FFC2E2', layout:'grid' },
+    { id:'tiles', nameAr:'مربعات الأقسام', nameEn:'Category Tiles', bodyClass:'pub-design-tiles', bg:'#ECEFE8', card:'#2E6B45', accent:'#A85F00', line:'#CFD7C8', layout:'tiles' }
   ];
   // شكل المنيو أصبح إعدادًا ثابتًا يحدده صاحب المطعم من لوحة التحكم (وليس اختيارًا مؤقتًا لكل زائر)
   var previewDesignId = null; // معاينة مؤقتة للمالك بالاختصار T — مش بتتحفظ
@@ -12923,6 +13023,40 @@ async function loadPublic(slug){
     container.scrollTo({ left: target, behavior: 'auto' });
   }
 
+  // ===== تصميم "مربعات الأقسام": الدخول لقسم والرجوع للأقسام =====
+  function scrollToMenuTop(){
+    const bodyEl = document.getElementById('pubBody');
+    const wrapEl = document.getElementById('pubTabsWrap');
+    if(!bodyEl) return;
+    const y = bodyEl.getBoundingClientRect().top + window.scrollY - (wrapEl ? wrapEl.offsetHeight : 0) - 8;
+    window.scrollTo(0, Math.max(0, y));
+  }
+  function goToTilesCategory(catId){
+    activeCat = catId;
+    searchTerm = ''; activeFilter = null;
+    const si = document.getElementById('pubSearchInput'); if(si) si.value = '';
+    try{ history.pushState({ pubCat: catId }, ''); }catch(e){}
+    renderPublicBody();
+    requestAnimationFrame(()=> requestAnimationFrame(scrollToMenuTop));
+  }
+  function backToTiles(){
+    activeCat = 'ALL';
+    renderPublicBody();
+    requestAnimationFrame(()=> requestAnimationFrame(scrollToMenuTop));
+  }
+  // زر الرجوع في الموبايل يرجّع العميل لصفحة الأقسام بدل ما يطلع من المنيو
+  if(window.__tilesPopHandler) window.removeEventListener('popstate', window.__tilesPopHandler);
+  window.__tilesPopHandler = ()=>{
+    if(!document.body.classList.contains('pub-design-tiles')) return;
+    const st = history.state;
+    const target = (st && st.pubCat) ? st.pubCat : 'ALL';
+    if(activeCat === target) return;
+    activeCat = target;
+    renderPublicBody();
+    requestAnimationFrame(()=> requestAnimationFrame(scrollToMenuTop));
+  };
+  window.addEventListener('popstate', window.__tilesPopHandler);
+
   // يحفظ مكان السكرول قبل إعادة بناء المنيو ويرجّعه بعدها (يمنع القفز لفوق عند إضافة صنف للسلة)
   function renderPublicBody(){
     const tabsEl = document.getElementById('pubTabs');
@@ -12983,6 +13117,29 @@ async function loadPublic(slug){
         chip.addEventListener('click', ()=>{ activeFilter = activeFilter===d.key ? null : d.key; renderPublicBody(); });
         filtersEl.appendChild(chip);
       });
+    }
+    const isTilesDesign = document.body.classList.contains('pub-design-tiles');
+    if(isTilesDesign && activeCat === 'ALL' && !searchTerm && !activeFilter){
+      const tilesBody = document.getElementById('pubBody');
+      tilesBody.classList.remove('shelf-mode', 'accordion-mode');
+      const tileCats = pubCats.filter(c=> pubItems.some(i=>i.category_id===c.id));
+      if(tileCats.length === 0){
+        tilesBody.innerHTML = `<div class="pub-empty">${lang==='en' ? 'Nothing found.' : `لا توجد ${biz(rest.business_type,'itemsIndef')} هنا.`}</div>`;
+        return;
+      }
+      tilesBody.innerHTML = `<div class="cat-tiles">${tileCats.map(cat=>{
+        const cnt = pubItems.filter(i=>i.category_id===cat.id).length;
+        const nm = escapeHtml(tName(cat.name, cat.name_en));
+        return `<button type="button" class="cat-tile" data-cat-id="${cat.id}" aria-label="${nm}">
+          ${cat.image_url ? `<img src="${cat.image_url}" alt="" loading="lazy" decoding="async">` : `<div class="cat-tile-ph">${biz(rest.business_type,'placeholderIcon')}</div>`}
+          <span class="cat-tile-count">${cnt}</span>
+          <span class="cat-tile-name">${nm}</span>
+        </button>`;
+      }).join('')}</div>`;
+      tilesBody.querySelectorAll('.cat-tile').forEach(btn=>{
+        btn.addEventListener('click', ()=> goToTilesCategory(btn.dataset.catId));
+      });
+      return;
     }
     const body = document.getElementById('pubBody');
     let catItems;
@@ -13107,6 +13264,20 @@ async function loadPublic(slug){
       </div>`;
     }).join('');
     hydrateCachedImages(body);
+
+    if(isTilesDesign && activeCat !== 'ALL' && !searchTerm && !activeFilter){
+      const tCat = pubCats.find(c=>c.id===activeCat);
+      if(tCat){
+        const rtl = getComputedStyle(document.body).direction === 'rtl';
+        const bar = document.createElement('div');
+        bar.className = 'cat-backbar';
+        bar.innerHTML = `<button type="button" class="cat-back-btn"><span aria-hidden="true">${rtl ? '›' : '‹'}</span><span>${lang==='en' ? 'All categories' : 'كل الأقسام'}</span></button><div class="cat-back-title">${escapeHtml(tName(tCat.name, tCat.name_en))}</div>`;
+        bar.querySelector('.cat-back-btn').addEventListener('click', ()=>{
+          if(history.state && history.state.pubCat){ history.back(); } else { backToTiles(); }
+        });
+        body.insertBefore(bar, body.firstChild);
+      }
+    }
 
     const isShowcaseShelf = document.body.classList.contains('pub-design-showcase') && activeCat === 'ALL' && !searchTerm && !activeFilter;
     body.classList.toggle('shelf-mode', isShowcaseShelf);
