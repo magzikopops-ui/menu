@@ -457,7 +457,10 @@ body.pub-mobile-ad-open .pub-order-btn{ bottom:calc(22px + 58px); }
 
 .cart-row{ display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line); padding:10px 0; }
 .cart-row:last-child{border-bottom:none;}
-.cart-row .cr-name{flex:1; font-weight:700; font-size:14px; color:var(--ink);}
+.cart-row .cr-name{flex:1; min-width:0; font-weight:700; font-size:14px; color:var(--ink);}
+.cart-row .cr-head{ flex:1; min-width:0; display:flex; align-items:center; gap:10px; }
+.cart-row .cr-thumb{ width:48px; height:48px; border-radius:10px; object-fit:cover; flex-shrink:0; background:var(--paper-dim); }
+.cart-row .cr-thumb-ph{ display:flex; align-items:center; justify-content:center; font-size:20px; }
 .cart-row .cr-line-total{font-family:var(--mono); direction:ltr; color:var(--ember); font-weight:700; font-size:13px;}
 .cart-row .cr-delete-btn{ background:none; border:none; color:var(--stone); font-size:17px; line-height:1; cursor:pointer; padding:4px; flex-shrink:0; }
 .cart-row .cr-delete-btn:hover{ color:var(--danger); }
@@ -1579,7 +1582,8 @@ body.pub-design-filmstrip .pub-cat-heading{ letter-spacing:2px; overflow-wrap:an
   .modal{ width:100%; max-width:calc(100vw - 20px); padding:16px; }
   /* الصف: الاسم في سطر لوحده بعرض كامل، وتحته الكمية والسعر والحذف */
   .cart-row{ flex-wrap:wrap; gap:8px 10px; }
-  .cart-row .cr-name{ flex:1 1 100%; min-width:0; overflow-wrap:anywhere; }
+  .cart-row .cr-head{ flex:1 1 100%; }
+  .cart-row .cr-name{ flex:1 1 auto; min-width:0; overflow-wrap:anywhere; }
   .cart-row .qty-stepper{ margin-top:0; gap:8px; flex:0 0 auto; }
   .cart-row .qty-btn{ width:36px; height:36px; }
   .cart-row .cr-line-total{ flex:1 1 auto; min-width:0; text-align:start; white-space:nowrap; }
@@ -14835,7 +14839,10 @@ async function loadPublic(slug){
       }
       wrap.innerHTML = entries.map(([key,c])=>`
         <div class="cart-row" data-cart-key="${key}">
-          <span class="cr-name">${escapeHtml(tName(c.item.name, c.item.name_en))}${c.variantLabel ? ' (' + escapeHtml(c.variantLabel) + ')' : ''}</span>
+          <div class="cr-head">
+            ${c.item.image_url ? `<img class="cr-thumb" src="${c.item.image_url}" alt="" loading="lazy" decoding="async">` : `<div class="cr-thumb cr-thumb-ph">${biz(rest.business_type,'placeholderIcon')}</div>`}
+            <span class="cr-name">${escapeHtml(tName(c.item.name, c.item.name_en))}${c.variantLabel ? ' (' + escapeHtml(c.variantLabel) + ')' : ''}</span>
+          </div>
           <div class="qty-stepper">
             <button class="qty-btn" data-action="dec">−</button>
             <span class="qty-val">${c.qty}</span>
