@@ -1410,8 +1410,11 @@ body.pub-design-candy .discount-badge{ background:var(--basil); }
 
 /* ===== تصميم "مربعات الأقسام": الأقسام كمربعات صور أولًا، ثم يدخل العميل القسم ويختار الأصناف ===== */
 body.pub-design-tiles{ --paper:#ECEFE8; --paper-dim:#DDE3D8; --ink:#17251C; --line:#CFD7C8; --stone:#5E6F62; --stone-light:#E3E8DE; --ember:#2E6B45; --ember-dark:#1F4D31; --basil:#A85F00; --basil-dark:#8A4C00; }
+body.pub-design-tilesbig{ --paper:#ECEFE8; --paper-dim:#DDE3D8; --ink:#17251C; --line:#CFD7C8; --stone:#5E6F62; --stone-light:#E3E8DE; --ember:#2E6B45; --ember-dark:#1F4D31; --basil:#A85F00; --basil-dark:#8A4C00; }
 body.pub-design-tiles .pub-tabs{ display:none; }
+body.pub-design-tilesbig .pub-tabs{ display:none; }
 body.pub-design-tiles .pub-search input{ border-radius:14px; }
+body.pub-design-tilesbig .pub-search input{ border-radius:14px; }
 .cat-tiles{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding-top:6px; }
 @media (min-width:520px){ .cat-tiles{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
 .cat-tile{ position:relative; display:block; width:100%; aspect-ratio:1/1; padding:0; border:none; border-radius:20px; overflow:hidden; cursor:pointer; background:var(--paper-dim); font-family:inherit; text-align:start; box-shadow:0 3px 12px rgba(23,37,28,.16); -webkit-tap-highlight-color:transparent; }
@@ -1428,6 +1431,43 @@ body.pub-design-tiles .pub-search input{ border-radius:14px; }
 .cat-back-btn:focus-visible{ outline:3px solid var(--basil); outline-offset:2px; }
 .cat-back-title{ flex:1; min-width:0; font-family:var(--display); font-size:20px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 @media (prefers-reduced-motion:reduce){ .cat-tile:active{ transform:none; } }
+body.pub-design-tiles .pub-item{ cursor:pointer; }
+body.pub-design-tilesbig .pub-item{ cursor:pointer; }
+body.pub-design-tiles .dark-quickview-modal{ width:min(460px,94vw); }
+body.pub-design-tilesbig .dark-quickview-modal{ width:min(460px,94vw); }
+body.pub-design-tiles .dark-quickview-modal .pub-item-front{ padding:0 0 4px; gap:10px; }
+body.pub-design-tilesbig .dark-quickview-modal .pub-item-front{ padding:0 0 4px; gap:10px; }
+body.pub-design-tiles .dark-quickview-modal .pub-item-front img, body.pub-design-tiles .dark-quickview-modal .pub-item-front .no-img{ width:100%; height:min(300px,42vh); border-radius:14px 14px 0 0; object-fit:cover; }
+body.pub-design-tilesbig .dark-quickview-modal .pub-item-front img, body.pub-design-tiles .dark-quickview-modal .pub-item-front .no-img{ width:100%; height:min(300px,42vh); border-radius:14px 14px 0 0; object-fit:cover; }
+body.pub-design-tiles .dark-quickview-modal .pub-item-front .info{ padding:4px 22px 0; }
+body.pub-design-tilesbig .dark-quickview-modal .pub-item-front .info{ padding:4px 22px 0; }
+body.pub-design-tiles .dark-quickview-modal .name-primary{ font-size:21px; }
+body.pub-design-tilesbig .dark-quickview-modal .name-primary{ font-size:21px; }
+body.pub-design-tiles .dark-quickview-modal .desc-expand{ font-size:14.5px; line-height:1.7; }
+body.pub-design-tilesbig .dark-quickview-modal .desc-expand{ font-size:14.5px; line-height:1.7; }
+body.pub-design-tiles .dark-quickview-modal .item-control{ padding:14px 22px 22px; }
+body.pub-design-tilesbig .dark-quickview-modal .item-control{ padding:14px 22px 22px; }
+body.pub-design-tiles .dark-quickview-close{ z-index:2; }
+body.pub-design-tilesbig .dark-quickview-close{ z-index:2; }
+/* ===== تصميم "مربعات الأقسام والأصناف": الأصناف داخل القسم كمربعات كبيرة زي الأقسام ===== */
+body.pub-design-tilesbig #pubBody{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; align-content:start; }
+@media (min-width:520px){ body.pub-design-tilesbig #pubBody{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
+body.pub-design-tilesbig #pubBody > :not(.pub-item){ grid-column:1 / -1; }
+body.pub-design-tilesbig #pubBody > .pub-item{ position:relative; display:block; aspect-ratio:1/1; margin:0; padding:0; border:none; border-radius:20px; overflow:hidden; background:var(--paper-dim); box-shadow:0 3px 12px rgba(23,37,28,.16); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+body.pub-design-tilesbig #pubBody > .pub-item:active{ transform:scale(.97); }
+body.pub-design-tilesbig #pubBody > .pub-item > .pub-item-front{ position:absolute; inset:0; display:block; }
+body.pub-design-tilesbig #pubBody > .pub-item > .pub-item-front::after{ content:''; position:absolute; inset:0; background:linear-gradient(to top, rgba(10,20,14,.86) 0%, rgba(10,20,14,.4) 42%, rgba(10,20,14,0) 68%); pointer-events:none; }
+body.pub-design-tilesbig #pubBody > .pub-item img, body.pub-design-tilesbig #pubBody > .pub-item .no-img{ position:absolute; inset:0; width:100%; height:100%; margin:0; border-radius:0; object-fit:cover; }
+body.pub-design-tilesbig #pubBody > .pub-item .no-img{ display:flex; align-items:center; justify-content:center; font-size:46px; background:linear-gradient(135deg, var(--ember), var(--ember-dark)); color:rgba(255,255,255,.85); }
+body.pub-design-tilesbig #pubBody > .pub-item .info{ position:absolute; z-index:1; inset-inline:12px; bottom:10px; flex:none; padding:0; }
+body.pub-design-tilesbig #pubBody > .pub-item .name-primary{ color:#fff; font-size:15.5px; font-weight:800; line-height:1.3; text-shadow:0 1px 3px rgba(0,0,0,.5); }
+body.pub-design-tilesbig #pubBody > .pub-item .price{ margin-top:4px; padding:2px 9px; border-radius:999px; background:var(--basil); color:#fff; font-size:13px; }
+body.pub-design-tilesbig #pubBody > .pub-item .price *{ color:inherit; }
+body.pub-design-tilesbig #pubBody > .pub-item .price .old-price{ opacity:.8; font-size:11.5px; }
+body.pub-design-tilesbig #pubBody > .pub-item :is(.chevron, .desc-expand, .variant-cart-lines, .name-secondary){ display:none !important; }
+body.pub-design-tilesbig #pubBody > .pub-item > .item-control{ display:none; }
+body.pub-design-tilesbig .item-qty-badge{ position:absolute; z-index:2; top:10px; inset-inline-start:10px; min-width:28px; height:28px; padding:0 8px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; border-radius:14px; background:#fff; color:var(--ember-dark); font-weight:800; font-size:13px; box-shadow:0 2px 6px rgba(0,0,0,.25); }
+@media (prefers-reduced-motion:reduce){ body.pub-design-tilesbig #pubBody > .pub-item:active{ transform:none; } }
 
 /* وضع داكن اختياري يفعّله الزائر بنفسه فوق أي شكل مختار — يغيّر الحيادي فقط ويحافظ على لون العلامة الخاص بالتصميم */
 body.pub-user-dark{ --paper:#17151C; --paper-dim:#211E29; --ink:#F0ECE0; --line:#37333F; --stone:#9C96A8; --stone-light:#37333F; }
@@ -9475,7 +9515,8 @@ function openMenuDesignModal(){
     { id:'ticket', nameAr:'تذكرة السفر (تصميم إبداعي)' },
     { id:'filmstrip', nameAr:'شريط السينما (تصميم إبداعي)' },
     { id:'candy', nameAr:'لفافة الحلوى (تصميم إبداعي)' },
-    { id:'tiles', nameAr:'مربعات الأقسام (يختار العميل القسم بصورته ثم يدخل للأصناف)' }
+    { id:'tiles', nameAr:'مربعات الأقسام (يختار العميل القسم بصورته ثم يدخل للأصناف)' },
+    { id:'tilesbig', nameAr:'مربعات الأقسام والأصناف (الأقسام والأصناف كمربعات صور كبيرة)' }
   ];
   let pendingDesign = restaurant.menu_design || 'classic';
   const overlay = document.createElement('div');
@@ -12573,7 +12614,8 @@ async function loadPublic(slug){
     { id:'ticket', nameAr:'تذكرة السفر', nameEn:'Travel Ticket', bodyClass:'pub-design-ticket', bg:'#FFF9F0', card:'#ffffff', accent:'#E8792E', line:'#D8CBAE', layout:'list' },
     { id:'filmstrip', nameAr:'شريط السينما', nameEn:'Film Strip', bodyClass:'pub-design-filmstrip', bg:'#0D0D0D', card:'#161616', accent:'#E50914', line:'#333333', layout:'grid' },
     { id:'candy', nameAr:'لفافة الحلوى', nameEn:'Candy Wrapper', bodyClass:'pub-design-candy', bg:'#FFE9F5', card:'#ffffff', accent:'#FF3D81', line:'#FFC2E2', layout:'grid' },
-    { id:'tiles', nameAr:'مربعات الأقسام', nameEn:'Category Tiles', bodyClass:'pub-design-tiles', bg:'#ECEFE8', card:'#2E6B45', accent:'#A85F00', line:'#CFD7C8', layout:'tiles' }
+    { id:'tiles', nameAr:'مربعات الأقسام', nameEn:'Category Tiles', bodyClass:'pub-design-tiles', bg:'#ECEFE8', card:'#2E6B45', accent:'#A85F00', line:'#CFD7C8', layout:'tiles' },
+    { id:'tilesbig', nameAr:'مربعات الأقسام والأصناف', nameEn:'Category & Item Tiles', bodyClass:'pub-design-tilesbig', bg:'#ECEFE8', card:'#2E6B45', accent:'#A85F00', line:'#CFD7C8', layout:'tiles' }
   ];
   // شكل المنيو أصبح إعدادًا ثابتًا يحدده صاحب المطعم من لوحة التحكم (وليس اختيارًا مؤقتًا لكل زائر)
   var previewDesignId = null; // معاينة مؤقتة للمالك بالاختصار T — مش بتتحفظ
@@ -13029,6 +13071,7 @@ async function loadPublic(slug){
   }
 
   // ===== تصميم "مربعات الأقسام": الدخول لقسم والرجوع للأقسام =====
+  function isTilesFamily(){ return document.body.classList.contains('pub-design-tiles') || document.body.classList.contains('pub-design-tilesbig'); }
   function scrollToMenuTop(){
     const bodyEl = document.getElementById('pubBody');
     const wrapEl = document.getElementById('pubTabsWrap');
@@ -13052,7 +13095,7 @@ async function loadPublic(slug){
   // زر الرجوع في الموبايل يرجّع العميل لصفحة الأقسام بدل ما يطلع من المنيو
   if(window.__tilesPopHandler) window.removeEventListener('popstate', window.__tilesPopHandler);
   window.__tilesPopHandler = ()=>{
-    if(!document.body.classList.contains('pub-design-tiles')) return;
+    if(!isTilesFamily()) return;
     const st = history.state;
     const target = (st && st.pubCat) ? st.pubCat : 'ALL';
     if(activeCat === target) return;
@@ -13123,7 +13166,7 @@ async function loadPublic(slug){
         filtersEl.appendChild(chip);
       });
     }
-    const isTilesDesign = document.body.classList.contains('pub-design-tiles');
+    const isTilesDesign = isTilesFamily();
     if(isTilesDesign && activeCat === 'ALL' && !searchTerm && !activeFilter){
       const tilesBody = document.getElementById('pubBody');
       tilesBody.classList.remove('shelf-mode', 'accordion-mode');
@@ -13269,6 +13312,16 @@ async function loadPublic(slug){
       </div>`;
     }).join('');
     hydrateCachedImages(body);
+
+    if(document.body.classList.contains('pub-design-tilesbig')){
+      // عدد القطع اللي في السلة لكل صنف يظهر كشارة على المربع (لأن أزرار الكمية بتبقى جوه نافذة التفاصيل)
+      const qtyByItem = {};
+      Object.values(cart).forEach(c=>{ if(c && c.item) qtyByItem[c.item.id] = (qtyByItem[c.item.id] || 0) + c.qty; });
+      body.querySelectorAll(':scope > .pub-item').forEach(row=>{
+        const q = qtyByItem[row.dataset.id];
+        if(q){ const b = document.createElement('span'); b.className = 'item-qty-badge'; b.textContent = '×' + q; row.appendChild(b); }
+      });
+    }
 
     if(isTilesDesign && (activeCat !== 'ALL' || searchTerm || activeFilter)){
       const tCat = pubCats.find(c=>c.id===activeCat);
@@ -13600,6 +13653,7 @@ async function loadPublic(slug){
     const isDarkDesign = document.body.classList.contains('pub-design-dark');
     const isAuroraDesign = document.body.classList.contains('pub-design-aurora');
     const isLuxuryDesign = document.body.classList.contains('pub-design-luxury');
+    const isTilesView = isTilesFamily();
     body.querySelectorAll('.pub-item').forEach(row=>{
       const chevron = row.querySelector('[data-action="toggle"]');
       if(isDarkDesign){
@@ -13615,6 +13669,12 @@ async function loadPublic(slug){
           const primaryBtn = row.querySelector('.item-control .add-to-cart-btn, .item-control .qty-btn[data-action="inc"]');
           if(primaryBtn) primaryBtn.click();
         });
+      } else if(isTilesView){
+        // "مربعات الأقسام": الضغط على الصنف (خارج أزرار التحكم) يفتح نافذة تفاصيل بصورة كبيرة ووصف كامل مع نفس أزرار الإضافة
+        row.addEventListener('click', (e)=>{
+          if(e.target.closest('.item-control') || e.target.closest('.variant-cart-lines')) return;
+          openDarkQuickView(row);
+        });
       } else if(isLuxuryDesign){
         // "أنيق فاخر": اسحب الصف لليسار عشان تظهر لوحة الإضافة السريعة بدل ما تكون ظاهرة طول الوقت
         wireLuxurySwipe(row);
@@ -13623,7 +13683,7 @@ async function loadPublic(slug){
       }
       // الضغط على صورة الصنف (في أي تصميم غير الداكن/أورورا/الفاخر، لأن عندهم تفاعل خاص بيهم على الصورة فعلًا)
       // بيفتح الصورة بحجم أكبر — تفاعل واجهة فقط، مفيش أي بيانات جديدة بتتخزن
-      if(!isDarkDesign && !isAuroraDesign && !isLuxuryDesign){
+      if(!isDarkDesign && !isAuroraDesign && !isLuxuryDesign && !isTilesView){
         const img = row.querySelector(':scope > .pub-item-front img, :scope .pub-item-front img');
         if(img){
           img.style.cursor = 'zoom-in';
