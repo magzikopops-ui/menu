@@ -1637,6 +1637,14 @@ body.pub-design-obsidian #pubBody > .pub-item :is(.chevron, .desc-expand, .varia
 body.pub-design-obsidian #pubBody > .pub-item > .item-control{ display:none; }
 body.pub-design-obsidian .item-qty-badge{ background:#D79A8C; color:#1A1217; }
 @media (prefers-reduced-motion:reduce){ body.pub-design-hero .hero-fab:active{ transform:none; } }
+/* تقييم الأصناف + زر مشاركة الصنف */
+.item-rating{ display:block; margin-top:2px; font-size:12px; font-weight:800; color:#B7791F; }
+.item-rating span{ font-weight:600; opacity:.75; }
+.item-rating.is-top{ color:#D98E04; }
+body.pub-design-tilesbig #pubBody > .pub-item .item-rating, body.pub-design-hero #pubBody > .pub-item .item-rating{ color:#FFD27A; text-shadow:0 1px 3px rgba(0,0,0,.5); }
+body.pub-design-bento #pubBody > .pub-item .item-rating{ position:absolute; z-index:1; top:12px; inset-inline-start:12px; margin:0; padding:3px 9px; border-radius:999px; background:rgba(8,14,32,.62); color:#FFD27A; }
+body.pub-design-obsidian #pubBody > .pub-item .item-rating{ display:none; }
+.qv-share-btn{ position:absolute; top:12px; inset-inline-start:12px; z-index:2; height:32px; padding:0 12px; border:none; border-radius:16px; background:rgba(0,0,0,.45); color:#fff; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; }
 
 
 /* وضع داكن اختياري يفعّله الزائر بنفسه فوق أي شكل مختار — يغيّر الحيادي فقط ويحافظ على لون العلامة الخاص بالتصميم */
@@ -12372,7 +12380,11 @@ async function refreshTrackingData(orderId){
 // يعرض واجهة التقييم بعد تسليم الطلب، أو النجوم التي قيّم بها العميل الطلب إن كان قد قيّمه من قبل
 function renderRatingWidget(orderId, row, code){
   const wrap = document.getElementById('trackRatingWrap');
-  if(row.order_status !== 'delivered'){ wrap.innerHTML = ''; return; }
+  if(row.order_status !== 'delivered'){ wrap.innerHTML = ''; wrap.dataset.formKey = ''; return; }
+  // التحديث الدوري لشاشة التتبع ما يمسحش النجوم اللي العميل بيختارها
+  const formKey = String(orderId || code || '');
+  if(!row.rating_stars && wrap.dataset.formKey === formKey && wrap.querySelector('#trackRatingStars')) return;
+  wrap.dataset.formKey = row.rating_stars ? '' : formKey;
   if(row.rating_stars){
     const starsHtml = [1,2,3,4,5].map(n=> `<span style="font-size:22px; color:${n <= row.rating_stars ? '#f5a623' : '#ddd'};">★</span>`).join('');
     wrap.innerHTML = `
@@ -12388,11 +12400,32 @@ function renderRatingWidget(orderId, row, code){
     <div id="trackRatingStars" style="font-size:28px; letter-spacing:4px; cursor:pointer;">
       ${[1,2,3,4,5].map(n=> `<span data-star="${n}" style="color:#ddd;">★</span>`).join('')}
     </div>
+    <div id="trackItemRatings"></div>
     <textarea id="trackRatingComment" placeholder="تعليق (اختياري)" style="width:100%; margin-top:8px; padding:8px; border:1px solid var(--line); border-radius:8px; font-family:var(--body); font-size:13px; resize:vertical; min-height:50px;"></textarea>
     <button type="button" class="btn-confirm" id="trackRatingSubmitBtn" style="width:100%; margin-top:8px;" disabled>إرسال التقييم</button>
   `;
   const starsWrap = wrap.querySelector('#trackRatingStars');
   const submitBtn = wrap.querySelector('#trackRatingSubmitBtn');
+  // تقييم كل صنف في الطلب (اختياري)
+  const itemStars = {};
+  (async ()=>{
+    try{
+      const { data } = await sb.rpc('get_order_rating_items', code ? { p_code: code } : { p_order_id: orderId });
+      const rows = (data || []).filter(r=> !r.stars);
+      const box = wrap.querySelector('#trackItemRatings');
+      if(!box || !rows.length) return;
+      box.innerHTML = `<div class="orders-empty" style="padding:14px 0 4px; font-weight:700; color:var(--ink);">قيّم الأصناف (اختياري)</div>` + rows.map(r=> `
+        <div class="item-rate-row" data-item="${r.item_id}" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--line);">
+          <span style="font-size:13px; color:var(--ink); text-align:start;">${escapeHtml(r.item_name)}</span>
+          <span style="font-size:22px; letter-spacing:2px; cursor:pointer; white-space:nowrap;">${[1,2,3,4,5].map(n=> `<span data-s="${n}" style="color:#ddd;">★</span>`).join('')}</span>
+        </div>`).join('');
+      box.querySelectorAll('.item-rate-row').forEach(rowEl=>{
+        const id = rowEl.dataset.item;
+        const paint = (n)=> rowEl.querySelectorAll('[data-s]').forEach(el=>{ el.style.color = Number(el.dataset.s) <= n ? '#f5a623' : '#ddd'; });
+        rowEl.querySelectorAll('[data-s]').forEach(el=> el.addEventListener('click', ()=>{ itemStars[id] = Number(el.dataset.s); paint(itemStars[id]); }));
+      });
+    }catch(e){}
+  })();
   function paintStars(n){
     starsWrap.querySelectorAll('[data-star]').forEach(el=>{
       el.style.color = Number(el.dataset.star) <= n ? '#f5a623' : '#ddd';
@@ -12420,6 +12453,10 @@ function renderRatingWidget(orderId, row, code){
       submitBtn.disabled = false;
       submitBtn.textContent = 'إرسال التقييم';
       return;
+    }
+    const pickedItems = Object.entries(itemStars).map(([item_id, stars])=> ({ item_id, stars }));
+    if(pickedItems.length){
+      try{ await sb.rpc('submit_item_ratings', code ? { p_code: code, p_ratings: pickedItems } : { p_order_id: orderId, p_ratings: pickedItems }); }catch(e){}
     }
     toast('شكرًا لتقييمك! 🙏');
     if(code) loadRatingByCode(code); else refreshTrackingData(orderId);
@@ -12592,10 +12629,11 @@ async function loadPublic(slug){
       ? 'POWERED BY منيو m@g &nbsp;·&nbsp; ⚠️ نسخة تجريبية (Demo) — لم يتم تفعيل الاشتراك بعد'
       : 'POWERED BY منيو m@g';
   }
-  const [catsRes, zonesRes, topItemsRes] = await Promise.all([
+  const [catsRes, zonesRes, topItemsRes, ratingStatsRes] = await Promise.all([
     sb.from('categories').select('*, items(*)').eq('restaurant_id', rest.id).eq('items.is_available', true).order('position').order('position', { foreignTable: 'items' }),
     sb.from('delivery_zones').select('*').eq('restaurant_id', rest.id).order('area_name'),
-    sb.rpc('get_top_items', { p_restaurant_id: rest.id, p_limit: 12 }).then(r=>r, e=>({ data: null, error: e }))
+    sb.rpc('get_top_items', { p_restaurant_id: rest.id, p_limit: 12 }).then(r=>r, e=>({ data: null, error: e })),
+    sb.rpc('get_item_rating_stats', { p_restaurant_id: rest.id }).then(r=>r, e=>({ data: null, error: e }))
   ]);
   const catsData = catsRes.data || [];
   const pubCats = catsData.map(c=>{ const { items, ...catOnly } = c; return catOnly; });
@@ -12675,6 +12713,17 @@ async function loadPublic(slug){
   // عدد "الأكثر طلبًا" يكبر مع حجم المنيو (5 للمنيو الصغير حتى 12 للمنيو الكبير) عشان الفلتر والشارة يفضلوا مفيدين
   const TOP_ITEMS_N = Math.min(12, Math.max(5, Math.round(pubItems.length / 15)));
   const topItemIds = new Set((topItemsRes.data || []).slice(0, TOP_ITEMS_N).map(t=>t.item_id));
+  // تقييم الأصناف: يظهر متوسط النجوم على الصنف بعد 3 تقييمات على الأقل، و"الأعلى تقييمًا" = متوسط 4.5 فأكثر
+  const itemRatings = {};
+  ((ratingStatsRes && ratingStatsRes.data) || []).forEach(r=>{ itemRatings[r.item_id] = { avg: Number(r.avg_stars), cnt: Number(r.cnt) }; });
+  const MIN_RATINGS_TO_SHOW = 3;
+  function isTopRated(i){ const r = itemRatings[i.id]; return !!r && r.cnt >= MIN_RATINGS_TO_SHOW && r.avg >= 4.5; }
+  function itemRatingHtml(i){
+    const r = itemRatings[i.id];
+    if(!r || r.cnt < MIN_RATINGS_TO_SHOW) return '';
+    const tip = lang==='en' ? `${r.cnt} ratings` : `${r.cnt} تقييم`;
+    return `<div class="item-rating${r.avg >= 4.5 ? ' is-top' : ''}" title="${tip}">★ ${r.avg.toFixed(1)} <span>(${r.cnt})</span></div>`;
+  }
   {
     const isStore = rest.business_type === 'store';
     const kind = isStore ? 'متجر' : 'مطعم';
@@ -12761,6 +12810,7 @@ async function loadPublic(slug){
     if(activeFilter === 'top') return topItemIds.has(i.id);
     if(activeFilter === 'new') return newItemIds.has(i.id);
     if(activeFilter === 'offers') return itemHasDiscount(i);
+    if(activeFilter === 'rated') return isTopRated(i);
     return true;
   }
   let cart = {}; // item_id -> { item, qty }
@@ -13353,7 +13403,8 @@ async function loadPublic(slug){
       const defs = [
         { key:'top',    on: pubItems.some(i=>topItemIds.has(i.id)), label: lang==='en' ? '🔥 Bestsellers' : '🔥 الأكثر طلبًا' },
         { key:'new',    on: newItemIds.size > 0,                    label: lang==='en' ? '🆕 New' : '🆕 جديد' },
-        { key:'offers', on: pubItems.some(itemHasDiscount),         label: lang==='en' ? '🏷 Offers' : '🏷 عروض' }
+        { key:'offers', on: pubItems.some(itemHasDiscount),         label: lang==='en' ? '🏷 Offers' : '🏷 عروض' },
+        { key:'rated',  on: pubItems.some(isTopRated),              label: lang==='en' ? '⭐ Top rated' : '⭐ الأعلى تقييمًا' }
       ].filter(d=>d.on);
       filtersEl.innerHTML = '';
       defs.forEach(d=>{
@@ -13506,6 +13557,7 @@ async function loadPublic(slug){
           <div class="info">
             <div class="name-primary">${escapeHtml(tName(i.name, i.name_en))}${topItemIds.has(i.id) ? ` <span title="${lang==='en' ? 'Bestseller' : 'الأكثر طلبًا'}">🔥</span>` : ''}${newItemIds.has(i.id) ? ` <span class="new-tag">${lang==='en' ? 'New' : 'جديد'}</span>` : ''}</div>
             ${secondaryName(i.name, i.name_en) ? `<div class="name-secondary">${escapeHtml(secondaryName(i.name, i.name_en))}</div>` : ''}
+            ${itemRatingHtml(i)}
             <div class="price">${priceLine}</div>
             ${i.description ? `<div class="desc-expand">${escapeHtml(i.description)}</div>` : ''}
             ${cartLinesHtml ? `<div class="variant-cart-lines">${cartLinesHtml}</div>` : ''}
@@ -13548,8 +13600,8 @@ async function loadPublic(slug){
     if(isTilesDesign && (activeCat !== 'ALL' || searchTerm || activeFilter)){
       const tCat = pubCats.find(c=>c.id===activeCat);
       const filterTitles = lang==='en'
-        ? { top:'Bestsellers', new:'New', offers:'Offers' }
-        : { top:'الأكثر طلبًا', new:'جديد', offers:'عروض' };
+        ? { top:'Bestsellers', new:'New', offers:'Offers', rated:'Top rated' }
+        : { top:'الأكثر طلبًا', new:'جديد', offers:'عروض', rated:'الأعلى تقييمًا' };
       const barTitle = (searchTerm || activeFilter)
         ? (activeFilter && !searchTerm ? filterTitles[activeFilter] : (lang==='en' ? 'Search results' : 'نتائج البحث'))
         : (tCat ? tName(tCat.name, tCat.name_en) : '');
@@ -13961,7 +14013,25 @@ async function loadPublic(slug){
     closeBtn.textContent = '✕';
     closeBtn.addEventListener('click', closeDarkQuickView);
     modal.appendChild(closeBtn);
+    const shareBtn = document.createElement('button');
+    shareBtn.type = 'button';
+    shareBtn.className = 'qv-share-btn';
+    shareBtn.textContent = lang==='en' ? '🔗 Share' : '🔗 مشاركة';
+    shareBtn.addEventListener('click', ()=> shareItemLink(row.dataset.id));
+    modal.appendChild(shareBtn);
     return true;
+  }
+
+  // مشاركة صنف واحد على واتساب: الرابط بيفتح المنيو على نافذة تفاصيل الصنف نفسه
+  function shareItemLink(itemId){
+    const it = pubItems.find(i=> i.id === itemId);
+    if(!it) return;
+    const out = new URL(location.origin + location.pathname);
+    out.searchParams.set('r', new URLSearchParams(location.search).get('r') || '');
+    out.searchParams.set('item', itemId);
+    const nm = tName(it.name, it.name_en);
+    const msg = `${nm}\n${tName(rest.name, rest.name_en)}\n${out.toString()}`;
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
   }
 
   function closeDarkQuickView(){
@@ -15214,6 +15284,19 @@ async function loadPublic(slug){
 
   loadCart();
   renderPublicBody();
+
+  // رابط صنف مشارك (?item=ID): نفتح نافذة تفاصيل الصنف أول ما المنيو يظهر
+  (function openSharedItemFromUrl(){
+    const sid = new URLSearchParams(location.search).get('item');
+    if(!sid) return;
+    const it = pubItems.find(i=> i.id === sid);
+    if(!it) return;
+    if(isTilesFamily()){ activeCat = it.category_id; renderPublicBody(); }
+    requestAnimationFrame(()=>{
+      const row = Array.from(document.querySelectorAll('#pubBody .pub-item')).find(r=> r.dataset.id === sid);
+      if(row) openDarkQuickView(row);
+    });
+  })();
 
   // تنبيه العروض: لو فيه أصناف عليها خصم (السعر القديم أعلى من الحالي) يظهر بوب أب مرة واحدة في اليوم عند فتح المنيو
   // للتجربة أضف ?offers=1 لرابط المنيو عشان يظهر حتى لو اتعرض النهارده
