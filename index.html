@@ -1722,6 +1722,11 @@ body.pub-design-filmstrip.pub-user-dark .modal #cartClearBtn{ color:#FF7B7B !imp
 
 /* زر "كرر آخر طلب" + زر الإخفاء (×) + وضوح الألوان في التصميمات الداكنة */
 .repeat-chip{ align-items:center; gap:6px; }
+.reserve-btn{ display:inline-flex; align-items:center; gap:6px; padding:8px 18px; border:1.5px solid var(--ember); border-radius:999px; background:transparent; color:var(--ember); font-family:inherit; font-size:14px; font-weight:800; cursor:pointer; margin:0 4px; }
+.reserve-btn:hover{ background:var(--ember); color:#fff; }
+.reserve-btn.hidden{ display:none; }
+.res-error{ margin:8px 0 0; padding:9px 12px; border-radius:10px; background:#fdecea; color:#a6392b; font-size:13px; font-weight:700; line-height:1.6; }
+.res-error.hidden{ display:none; }
 .repeat-dismiss{ width:28px; height:28px; border-radius:50%; border:1px solid var(--line); background:var(--paper-dim); color:var(--stone); font-size:16px; line-height:1; cursor:pointer; padding:0; display:inline-flex; align-items:center; justify-content:center; font-family:var(--body); }
 .repeat-dismiss:hover{ color:var(--danger); border-color:var(--danger); }
 body.pub-design-filmstrip #pubRepeatOrderBtn, body.pub-design-ledger #pubRepeatOrderBtn{ background:var(--paper-dim); color:var(--ink); border-color:var(--line); }
@@ -1979,6 +1984,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
     <div class="topbar-actions">
       <button class="link-btn" id="viewOrdersBtn">📦 الطلبات <span id="newOrdersBadge" class="new-orders-badge hidden">0</span></button>
       <button class="link-btn" id="abandonedCartsBtn">🛒 السلات المتروكة <span id="abandonedCartsBadge" class="new-orders-badge hidden">0</span></button>
+      <button class="link-btn" id="reservationsBtn">📅 الحجوزات <span id="reservationsBadge" class="new-orders-badge hidden">0</span></button>
 
       <div class="dash-menu-group" data-menu="menu-reports">
         <button type="button" class="link-btn dash-menu-trigger">📊 التقارير والإحصائيات <span class="caret">▾</span></button>
@@ -2198,6 +2204,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
       <button type="button" id="pubRepeatOrderBtn" class="link-btn hidden">🔁 كرر آخر طلب</button>
       <button type="button" id="pubRepeatDismissBtn" class="repeat-dismiss" aria-label="إخفاء" title="إخفاء">×</button>
     </span>
+    <button type="button" id="pubReserveBtn" class="reserve-btn hidden">📅 احجز طاولة</button>
   </div>
   <div class="pub-tabs-wrap" id="pubTabsWrap">
     <div class="pub-search">
@@ -3330,6 +3337,7 @@ async function openDashboard(){
   startOverdueCheckLoop();
   refreshNewOrdersCount();
   startAbandonedBadgeLoop();
+  startReservationsBadgeLoop();
   setupNotificationPermission();
   show('dashboardScreen');
   document.getElementById('adminPanelBtn').classList.toggle('hidden', !isSuperAdmin);
@@ -8434,6 +8442,177 @@ document.getElementById('dailyCloseBtn').addEventListener('click', async ()=>{
   }
 });
 
+// ===== حجوزات الطاولات (لوحة التحكم) =====
+var reservationsBadgeTimer = null;
+function updateReservationsBadge(n){
+  const b = document.getElementById('reservationsBadge');
+  if(!b) return;
+  if(n > 0){ b.textContent = n > 99 ? '99+' : n; b.classList.remove('hidden'); } else { b.classList.add('hidden'); }
+}
+async function refreshReservationsBadge(){
+  if(!restaurant) return;
+  try{
+    const { count, error } = await sb.from('reservations').select('id', { count:'exact', head:true })
+      .eq('restaurant_id', restaurant.id).eq('status', 'pending').gte('reserved_for', new Date().toISOString());
+    if(!error) updateReservationsBadge(count || 0);
+  }catch(e){}
+}
+function startReservationsBadgeLoop(){
+  if(reservationsBadgeTimer) clearInterval(reservationsBadgeTimer);
+  refreshReservationsBadge();
+  reservationsBadgeTimer = setInterval(refreshReservationsBadge, 2*60000);
+}
+const RES_STATUS = {
+  pending:   { label:'بانتظار التأكيد', color:'#b26a00' },
+  confirmed: { label:'مؤكد',            color:'#1a7a3d' },
+  cancelled: { label:'ملغي',            color:'#a6392b' },
+  completed: { label:'تم الحضور',       color:'#3b5a99' },
+  no_show:   { label:'لم يحضر',         color:'#7a4a4a' }
+};
+function fmtReservationWhen(iso){
+  return new Date(iso).toLocaleString('ar-EG', { timeZone:'Africa/Cairo', weekday:'long', day:'numeric', month:'long', hour:'numeric', minute:'2-digit' });
+}
+function buildReservationWaMessage(r, kind){
+  const when = fmtReservationWhen(r.reserved_for);
+  const rname = restaurant.name || 'المتجر';
+  if(kind === 'confirm'){
+    return `مرحبًا ${r.customer_name} 👋\nتم تأكيد حجزك في ${rname} ✅\n📅 ${when}\n👥 ${r.party_size} ${r.party_size === 1 ? 'فرد' : 'أفراد'}\nنتشرف بزيارتك 🌹`;
+  }
+  if(kind === 'decline'){
+    return `مرحبًا ${r.customer_name} 👋\nنعتذر، لا نستطيع تأكيد حجزك في ${rname} بتاريخ ${when}.\nيمكنك التواصل معنا لاختيار موعد آخر مناسب 🙏`;
+  }
+  return `مرحبًا ${r.customer_name} 👋\nبخصوص حجزك في ${rname} بتاريخ ${when}`;
+}
+async function openReservationsModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="width:min(560px,94vw);">
+      <h3>📅 حجوزات الطاولات</h3>
+      <div style="border:1.5px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:12px;">
+        <label style="display:flex; justify-content:space-between; align-items:center; gap:10px; font-weight:700;">
+          <span>استقبال الحجوزات من المنيو</span>
+          <span class="admin-switch"><input type="checkbox" id="resEnabled" ${restaurant.accept_reservations ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+        </label>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:8px; font-size:13px;">
+          <span>أقصى عدد أفراد في الحجز الواحد</span>
+          <input type="number" id="resMaxParty" min="1" max="100" value="${restaurant.reservation_max_party || 10}" style="width:80px;">
+        </div>
+        <div style="font-size:12px; color:var(--stone); margin-top:6px; line-height:1.6;">عند التفعيل يظهر زر «احجز طاولة» في المنيو العام. الموعد بتوقيت القاهرة، ويجب أن يكون بعد 30 دقيقة من الآن على الأقل، ويظل «بانتظار التأكيد» حتى تؤكده أنت.</div>
+        <button type="button" class="chip-btn active" id="resSaveSettings" style="margin-top:8px;">حفظ الإعدادات</button>
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+        <button type="button" class="chip-btn active" data-rf="pending">بانتظار التأكيد</button>
+        <button type="button" class="chip-btn" data-rf="upcoming">القادمة المؤكدة</button>
+        <button type="button" class="chip-btn" data-rf="past">السابقة</button>
+      </div>
+      <div id="resList" style="max-height:48vh; overflow-y:auto;"><div class="orders-empty">جارِ التحميل...</div></div>
+      <div class="modal-actions"><button class="btn-cancel" id="resClose">إغلاق</button></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = ()=>{ overlay.remove(); refreshReservationsBadge(); };
+  overlay.querySelector('#resClose').addEventListener('click', close);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+
+  overlay.querySelector('#resSaveSettings').addEventListener('click', async ()=>{
+    const accept_reservations = overlay.querySelector('#resEnabled').checked;
+    const maxRaw = parseInt(overlay.querySelector('#resMaxParty').value, 10);
+    const reservation_max_party = Number.isFinite(maxRaw) ? Math.min(100, Math.max(1, maxRaw)) : 10;
+    const { error } = await sb.from('restaurants').update({ accept_reservations, reservation_max_party }).eq('id', restaurant.id);
+    if(error){ toast('تعذر حفظ الإعدادات'); return; }
+    restaurant.accept_reservations = accept_reservations;
+    restaurant.reservation_max_party = reservation_max_party;
+    overlay.querySelector('#resMaxParty').value = reservation_max_party;
+    toast('تم حفظ إعدادات الحجز');
+  });
+
+  const listEl = overlay.querySelector('#resList');
+  const since = new Date(Date.now() - 30*86400000).toISOString();
+  const { data, error } = await sb.from('reservations').select('*').eq('restaurant_id', restaurant.id)
+    .gte('reserved_for', since).order('reserved_for', { ascending:true }).limit(500);
+  if(error){ listEl.innerHTML = `<div class="orders-empty">تعذر تحميل الحجوزات</div>`; return; }
+  let rows = data || [];
+  let filter = 'pending';
+  const GRACE = 2*3600000; // الحجز يفضل ظاهر في «القادمة» لحد ساعتين بعد موعده
+  const bucket = (r)=>{
+    const live = new Date(r.reserved_for).getTime() >= Date.now() - GRACE;
+    if(r.status === 'pending' && live) return 'pending';
+    if(r.status === 'confirmed' && live) return 'upcoming';
+    return 'past';
+  };
+  const waBtn = (kind, label)=> `<button type="button" data-ra="${kind}" style="flex:1; min-width:110px; background:#25D366; color:#fff; border:none; border-radius:10px; padding:9px 10px; font-family:var(--body); font-weight:800; font-size:13px; cursor:pointer;">${label}</button>`;
+  const outBtn = (kind, label, color)=> `<button type="button" data-ra="${kind}" style="flex:1; min-width:90px; background:none; border:1.5px solid ${color}; color:${color}; border-radius:10px; padding:8px 10px; font-family:var(--body); font-weight:800; font-size:13px; cursor:pointer;">${label}</button>`;
+
+  async function setStatus(id, status){
+    const { error } = await sb.from('reservations').update({ status }).eq('id', id);
+    if(error){ toast('تعذر تحديث الحجز'); return false; }
+    const row = rows.find(x=> x.id === id); if(row) row.status = status;
+    render();
+    return true;
+  }
+  function render(){
+    overlay.querySelectorAll('[data-rf]').forEach(b=>{
+      const n = rows.filter(r=> bucket(r) === b.dataset.rf).length;
+      b.classList.toggle('active', b.dataset.rf === filter);
+      b.textContent = ({ pending:'بانتظار التأكيد', upcoming:'القادمة المؤكدة', past:'السابقة' })[b.dataset.rf] + (n ? ` (${n})` : '');
+    });
+    let list = rows.filter(r=> bucket(r) === filter);
+    if(filter === 'past') list = list.slice().reverse();
+    if(!list.length){ listEl.innerHTML = `<div class="orders-empty">${filter === 'pending' ? 'لا توجد حجوزات بانتظار التأكيد 👌' : filter === 'upcoming' ? 'لا توجد حجوزات مؤكدة قادمة' : 'لا توجد حجوزات سابقة'}</div>`; return; }
+    listEl.innerHTML = list.map(r=>{
+      const st = RES_STATUS[r.status] || { label:r.status, color:'var(--stone)' };
+      const b = bucket(r);
+      let actions = '';
+      if(b === 'pending') actions = waBtn('confirm', '✅ تأكيد + واتساب') + outBtn('decline', '❌ رفض', '#a6392b');
+      else if(b === 'upcoming') actions = waBtn('wa', '💬 واتساب') + outBtn('completed', '✔ حضر', '#3b5a99') + outBtn('no_show', '🚫 لم يحضر', '#7a4a4a') + outBtn('cancel', 'إلغاء', '#a6392b');
+      else if(r.status === 'confirmed') actions = outBtn('completed', '✔ حضر', '#3b5a99') + outBtn('no_show', '🚫 لم يحضر', '#7a4a4a');
+      return `
+      <div class="res-card" data-id="${r.id}" style="border:1.5px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; background:var(--paper-dim,#fff);">
+        <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:baseline;">
+          <strong>${escapeHtml(r.customer_name)}</strong>
+          <span style="font-family:var(--mono); direction:ltr; font-size:12.5px;">${escapeHtml(r.customer_phone)}</span>
+        </div>
+        <div style="font-size:13.5px; margin:6px 0; line-height:1.7;">
+          📅 ${escapeHtml(fmtReservationWhen(r.reserved_for))}<br>
+          👥 ${r.party_size} ${r.party_size === 1 ? 'فرد' : 'أفراد'}${r.notes ? `<br>📝 ${escapeHtml(r.notes)}` : ''}
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:${actions ? '8px' : '0'};">
+          <span style="font-size:12px; font-weight:800; color:${st.color};">${st.label}</span>
+          <button type="button" data-ra="del" title="حذف" style="background:none; border:1.5px solid var(--line); color:var(--danger); border-radius:10px; padding:5px 10px; cursor:pointer;">🗑</button>
+        </div>
+        ${actions ? `<div style="display:flex; gap:8px; flex-wrap:wrap;">${actions}</div>` : ''}
+      </div>`;
+    }).join('');
+    listEl.querySelectorAll('.res-card').forEach(card=>{
+      const id = card.dataset.id;
+      const row = rows.find(x=> x.id === id);
+      const on = (k, fn)=>{ const el = card.querySelector(`[data-ra="${k}"]`); if(el) el.addEventListener('click', fn); };
+      const openWa = (kind)=>{
+        const digits = toEgyptWaDigits(row.customer_phone);
+        if(!digits){ toast('رقم الهاتف غير صالح'); return false; }
+        window.open(`https://wa.me/${digits}?text=${encodeURIComponent(buildReservationWaMessage(row, kind))}`, '_blank');
+        return true;
+      };
+      on('confirm', async ()=>{ if(openWa('confirm')) await setStatus(id, 'confirmed'); });
+      on('decline', async ()=>{ if(openWa('decline')) await setStatus(id, 'cancelled'); });
+      on('wa', ()=>{ openWa('plain'); });
+      on('completed', ()=> setStatus(id, 'completed'));
+      on('no_show', ()=> setStatus(id, 'no_show'));
+      on('cancel', async ()=>{ if(confirm('إلغاء هذا الحجز؟')) await setStatus(id, 'cancelled'); });
+      on('del', async ()=>{
+        if(!confirm('حذف هذا الحجز نهائيًا؟')) return;
+        const { error } = await sb.from('reservations').delete().eq('id', id);
+        if(error){ toast('تعذر الحذف'); return; }
+        rows = rows.filter(x=> x.id !== id);
+        render();
+      });
+    });
+  }
+  overlay.querySelectorAll('[data-rf]').forEach(b=> b.addEventListener('click', ()=>{ filter = b.dataset.rf; render(); }));
+  render();
+}
+document.getElementById('reservationsBtn').addEventListener('click', openReservationsModal);
+
 document.getElementById('reportsBtn').addEventListener('click', async ()=>{
   if(restaurant.restriction_reports_disabled){ toast('🔒 التقارير متاحة في باقة PRO فقط'); return; }
   const overlay = document.createElement('div');
@@ -8507,6 +8686,15 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
       </span>
     </h3>
     <div id="topItemsWrap"><div class="orders-empty">جارِ التحميل...</div></div>
+    <h3 style="margin-top:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <span>🐌 ${biz(restaurant.business_type,'itemsDef')} الراكدة</span>
+      <select id="stagnantPeriod" style="font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid var(--line); background:var(--paper-dim); color:var(--stone);">
+        <option value="30" selected>لم تُطلب منذ 30 يومًا</option>
+        <option value="60">لم تُطلب منذ 60 يومًا</option>
+        <option value="90">لم تُطلب منذ 90 يومًا</option>
+      </select>
+    </h3>
+    <div id="stagnantWrap"><div class="orders-empty">جارِ التحميل...</div></div>
     <h3 style="margin-top:20px;">أوقات الذروة</h3>
     <div id="peakSummaryWrap" class="orders-empty">جارِ التحميل...</div>
     <div class="orders-empty" style="text-align:right; padding:10px 0 4px; font-size:12px; font-weight:700; color:var(--ink);">الطلبات حسب ساعة اليوم</div>
@@ -8552,6 +8740,36 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
       renderTrend(btn.dataset.metric);
     });
   });
+
+  // الأصناف الراكدة: أصناف أقدم من الفترة المختارة ولم تُطلب خلالها (الطلبات الملغية لا تُحسب)
+  const stagnantWrap = overlay.querySelector('#stagnantWrap');
+  async function renderStagnant(days){
+    stagnantWrap.innerHTML = `<div class="orders-empty">جارِ التحميل...</div>`;
+    const { data, error } = await sb.rpc('get_stagnant_items', { p_restaurant_id: restaurant.id, p_days: days });
+    if(error){ stagnantWrap.innerHTML = `<div class="orders-empty">تعذر تحميل التقرير</div>`; return; }
+    const list = data || [];
+    if(!list.length){ stagnantWrap.innerHTML = `<div class="orders-empty">كل أصنافك اتطلبت خلال آخر ${days} يومًا 👌</div>`; return; }
+    const cur = getRestaurantCurrency(restaurant);
+    const ago = (ts)=>{ const d = Math.floor((Date.now() - new Date(ts).getTime()) / 86400000); return d < 1 ? 'اليوم' : `منذ ${d} يومًا`; };
+    const SHOW = 25;
+    const rowHtml = (r)=> `
+      <div class="order-row" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <span style="min-width:0;">
+          <span class="o-name" style="font-weight:700; display:block;">${escapeHtml(r.item_name)}${r.is_available === false ? ' <span style="font-size:11px; color:var(--stone);">(مخفي)</span>' : ''}</span>
+          <span style="font-size:12px; color:var(--stone);">${escapeHtml(r.category_name)} • ${r.pricing_type === 'unit' || r.price != null ? Number(r.price || 0).toFixed(2) + ' ' + escapeHtml(cur) : ''}</span>
+        </span>
+        <span style="font-size:12px; font-weight:800; white-space:nowrap; color:${r.last_sold_at ? 'var(--stone)' : '#a6392b'};">${r.last_sold_at ? 'آخر طلب: ' + ago(r.last_sold_at) : 'لم يُطلب أبدًا'}</span>
+      </div>`;
+    const never = list.filter(r=> !r.last_sold_at).length;
+    stagnantWrap.innerHTML = `
+      <div style="font-size:12.5px; font-weight:700; color:var(--basil-dark); margin-bottom:6px;">${biz(restaurant.business_type,'itemsDef')} الراكدة: ${list.length}${never ? ` — منها ${never} لم تُطلب أبدًا` : ''}</div>
+      <div class="orders-list">${list.slice(0, SHOW).map(rowHtml).join('')}</div>
+      ${list.length > SHOW ? `<button type="button" class="chip-btn" id="stagnantMoreBtn" style="margin-top:8px;">عرض الكل (${list.length})</button>` : ''}`;
+    const more = stagnantWrap.querySelector('#stagnantMoreBtn');
+    if(more) more.addEventListener('click', ()=>{ stagnantWrap.querySelector('.orders-list').innerHTML = list.map(rowHtml).join(''); more.remove(); });
+  }
+  overlay.querySelector('#stagnantPeriod').addEventListener('change', (e)=> renderStagnant(Number(e.target.value)));
+  renderStagnant(30);
 
   // هامش الربح: يعتمد على سعر التكلفة الحالي المسجَّل لكل صنف (وليس سعر التكلفة وقت البيع نفسه، لأنه غير مُسجَّل تاريخيًا)
   const profitWrap = overlay.querySelector('#profitSummaryWrap');
@@ -11833,7 +12051,7 @@ async function collectRestaurantBackup(restaurantId){
     'default_prep_minutes','accept_online_payment','instapay_account','wallets','wallet_label','wallet_number',
     'custom_ad_enabled','custom_ad_icon','custom_ad_title','custom_ad_title_en','custom_ad_desc','custom_ad_desc_en',
     'custom_ad_cta','custom_ad_cta_en','custom_ad_url','default_delivery_fee_mode','default_delivery_fee_amount',
-    'default_delivery_zone_id','notification_phone','notification_apikey','country_code','currency_label','menu_design'];
+    'default_delivery_zone_id','notification_phone','notification_apikey','country_code','currency_label','menu_design','accept_reservations','reservation_max_party'];
   const restaurantSettings = {};
   settingsFields.forEach(f=> restaurantSettings[f] = r[f] !== undefined ? r[f] : null);
 
@@ -13287,6 +13505,12 @@ async function loadPublic(slug){
     document.getElementById('pubOrderBtnLabel').textContent = lang==='en' ? 'Cart' : 'السلة';
     document.getElementById('pubOrderBtnIcon').textContent = rest.business_type === 'store' ? '🛒' : '🍽️';
     document.getElementById('pubRepeatOrderBtn').textContent = lang==='en' ? '🔁 Repeat last order' : '🔁 كرر آخر طلب';
+    const reserveBtn = document.getElementById('pubReserveBtn');
+    if(reserveBtn){
+      reserveBtn.textContent = lang==='en' ? '📅 Book a table' : '📅 احجز طاولة';
+      reserveBtn.classList.toggle('hidden', !rest.accept_reservations);
+      if(!reserveBtn.dataset.bound){ reserveBtn.dataset.bound = '1'; reserveBtn.addEventListener('click', openReservationModal); }
+    }
     document.getElementById('pubInfoBtn').title = lang==='en' ? `${biz(rest.business_type,'entityEn')} info` : `معلومات ${biz(rest.business_type,'entityDef')}`;
     const openStatus = getRestaurantOpenStatus(rest);
     isRestaurantOpenNow = openStatus.isOpen;
@@ -14126,6 +14350,80 @@ async function loadPublic(slug){
     const nm = tName(it.name, it.name_en);
     const msg = `${nm}\n${tName(rest.name, rest.name_en)}\n${out.toString()}`;
     window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+  }
+
+  // حجز طاولة من المنيو العام (rpc: create_reservation) — التوقيت بتوقيت القاهرة
+  function openReservationModal(){
+    const en = lang === 'en';
+    const max = Number(rest.reservation_max_party) || 10;
+    const todayCairo = new Date().toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+    const maxDate = new Date(Date.now() + 60*86400000).toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <h3>${en ? 'Book a table' : 'احجز طاولة'}</h3>
+        <div class="field"><label>${en ? 'Full name' : 'الاسم'}</label><input type="text" id="resName" maxlength="80" autocomplete="name"></div>
+        <div class="field"><label>${en ? 'Phone number' : 'رقم الهاتف'}</label><input type="tel" id="resPhone" inputmode="tel" dir="ltr" maxlength="20" autocomplete="tel"></div>
+        <div class="field"><label>${en ? 'Number of guests' : 'عدد الأفراد'}</label><select id="resParty">${Array.from({ length: max }, (_, i)=> `<option value="${i+1}">${i+1}</option>`).join('')}</select></div>
+        <div class="field"><label>${en ? 'Date' : 'التاريخ'}</label><input type="date" id="resDate" min="${todayCairo}" max="${maxDate}" value="${todayCairo}"></div>
+        <div class="field"><label>${en ? 'Time' : 'الوقت'}</label><input type="time" id="resTime" value="20:00"></div>
+        <div class="field"><label>${en ? 'Notes (optional)' : 'ملاحظات (اختياري)'}</label><input type="text" id="resNotes" maxlength="300"></div>
+        <div id="resError" class="res-error hidden" role="alert"></div>
+        <div class="modal-actions">
+          <button class="btn-cancel" id="resCancel">${en ? 'Cancel' : 'إلغاء'}</button>
+          <button class="btn-confirm" id="resSubmit">${en ? 'Send request' : 'إرسال طلب الحجز'}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const close = ()=> overlay.remove();
+    const errEl = overlay.querySelector('#resError');
+    const showErr = (m)=>{ errEl.textContent = m; errEl.classList.remove('hidden'); };
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+    overlay.querySelector('#resCancel').addEventListener('click', close);
+    overlay.querySelector('#resName').focus();
+    overlay.querySelector('#resSubmit').addEventListener('click', async ()=>{
+      errEl.classList.add('hidden');
+      const name = overlay.querySelector('#resName').value.trim();
+      const phone = overlay.querySelector('#resPhone').value.trim();
+      const party = Number(overlay.querySelector('#resParty').value);
+      const date = overlay.querySelector('#resDate').value;
+      const time = overlay.querySelector('#resTime').value;
+      const notes = overlay.querySelector('#resNotes').value.trim();
+      if(!name){ showErr(en ? 'Please enter your name' : 'يرجى كتابة الاسم'); return; }
+      if(phone.replace(/[^\d]/g, '').length < 8){ showErr(en ? 'Please enter a valid phone number' : 'رقم الهاتف غير صحيح'); return; }
+      if(!date || !time){ showErr(en ? 'Please choose a date and time' : 'يرجى اختيار التاريخ والوقت'); return; }
+      const btn = overlay.querySelector('#resSubmit');
+      btn.disabled = true;
+      const { error } = await sb.rpc('create_reservation', {
+        p_restaurant_id: rest.id, p_name: name, p_phone: phone, p_party: party,
+        p_date: date, p_time: time.length === 5 ? time + ':00' : time, p_notes: notes || null
+      });
+      if(error){
+        btn.disabled = false;
+        showErr(error.message || (en ? 'Could not send the request, please try again' : 'تعذر إرسال الطلب، حاول مرة أخرى'));
+        return;
+      }
+      const when = `${date.split('-').reverse().join('/')} ${time}`;
+      const waDigits = rest.phone ? toEgyptWaDigits(rest.phone) : '';
+      const waMsg = en
+        ? `New table reservation request 📅\nName: ${name}\nPhone: ${phone}\nWhen: ${when}\nGuests: ${party}${notes ? `\nNotes: ${notes}` : ''}`
+        : `طلب حجز طاولة جديد 📅\nالاسم: ${name}\nالهاتف: ${phone}\nالموعد: ${when}\nعدد الأفراد: ${party}${notes ? `\nملاحظات: ${notes}` : ''}`;
+      overlay.querySelector('.modal').innerHTML = `
+        <div style="text-align:center; padding:6px 0 2px;">
+          <div style="font-size:44px;">✅</div>
+          <h3 style="margin:6px 0;">${en ? 'Reservation request sent' : 'تم إرسال طلب الحجز'}</h3>
+          <div style="font-size:14px; line-height:1.7;">${en ? 'The place will contact you to confirm.' : 'سيتواصل معك المتجر لتأكيد الحجز.'}</div>
+          <div style="font-size:14px; font-weight:800; margin-top:8px;">${escapeHtml(when)} — ${party} ${en ? 'guests' : 'أفراد'}</div>
+        </div>
+        <div class="modal-actions" style="margin-top:14px;">
+          <button class="btn-cancel" id="resDone">${en ? 'Close' : 'إغلاق'}</button>
+          ${waDigits ? `<button class="btn-confirm" id="resWa">${en ? 'Send details on WhatsApp' : 'إرسال التفاصيل على واتساب'}</button>` : ''}
+        </div>`;
+      overlay.querySelector('#resDone').addEventListener('click', close);
+      const waBtn = overlay.querySelector('#resWa');
+      if(waBtn) waBtn.addEventListener('click', ()=> window.open(`https://wa.me/${waDigits}?text=${encodeURIComponent(waMsg)}`, '_blank'));
+    });
   }
 
   function closeDarkQuickView(){
