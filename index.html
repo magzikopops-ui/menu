@@ -213,6 +213,80 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .rs-section[open] > summary::after{ content:'▴'; }
 .rs-section[open] > summary{ border-bottom:1px solid var(--line); }
 .rs-section-body{ padding:12px 14px 2px; }
+/* قائمة الإعداد للمطعم الجديد */
+.setup-card{ background:var(--paper-dim); border:1px solid var(--line); border-inline-start:4px solid var(--ember); border-radius:14px; padding:14px 16px; margin-bottom:18px; }
+.setup-head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.setup-head h3{ margin:0; font-size:16px; flex:1; min-width:150px; }
+.setup-progress-text{ font-size:12.5px; font-weight:800; color:var(--stone); }
+.setup-bar{ height:8px; border-radius:4px; background:var(--line); overflow:hidden; margin:10px 0; }
+.setup-bar-fill{ height:100%; border-radius:4px; background:var(--basil); transition:width .3s ease; }
+.setup-step{ display:flex; align-items:center; gap:10px; padding:9px 10px; margin-bottom:6px; border:1px solid var(--line); border-radius:10px; background:var(--paper); font-size:13.5px; font-weight:700; color:var(--ink); }
+.setup-step .st-mark{ flex-shrink:0; width:22px; height:22px; border-radius:50%; border:2px solid var(--stone); display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; }
+.setup-step.done .st-mark{ background:var(--basil); border-color:var(--basil); }
+.setup-step.done .st-text{ color:var(--stone); text-decoration:line-through; }
+.setup-step .st-text{ flex:1; min-width:0; }
+.setup-step .st-opt{ font-size:11px; font-weight:600; color:var(--stone); margin-inline-start:6px; }
+.setup-step button{ flex-shrink:0; background:none; border:1.5px solid var(--ember); color:var(--ember); border-radius:999px; padding:4px 12px; font-family:inherit; font-size:12px; font-weight:800; cursor:pointer; }
+.setup-step button.st-skip{ border-color:var(--line); color:var(--stone); }
+/* الوضع الداكن للوحة التحكم (الشريط العلوي والفئات داكنين أصلًا؛ هنا بنقلب ألوان المحتوى والنوافذ فقط) */
+body.dash-dark .main, body.dash-dark .overlay{ --paper:#1F1D1A; --paper-dim:#2A2825; --ink:#F2EDE4; --line:#3A3733; --stone:#A8A196; --stone-light:#4A453D; --danger:#E0705F; --ember:#D9532B; --ember-dark:#B8390E; --basil:#4F7C5A; --basil-dark:#3F6247; color-scheme:dark; }
+body.dash-dark .main{ color:var(--ink); }
+body.dash-dark .modal, body.dash-dark .item-card{ background:#262421; color:var(--ink); }
+body.dash-dark .modal-floating-footer .modal-actions{ background:#262421; box-shadow:0 -6px 16px rgba(0,0,0,.4); }
+body.dash-dark .sortable-drag{ background:#2A2825; }
+body.dash-dark .dash-attn-row.urgent{ background:#3a2c10; color:#ffd9a0; border-color:#b07a10; }
+body.dash-dark .dash-attn-ok{ background:#183a24; color:#8fe0a8; }
+body.dash-dark .status-badge.pending{ background:#4a3d1a; color:#f0d58a; }
+body.dash-dark .insight-card.positive{ color:#86efac; }
+body.dash-dark .insight-card.warning{ color:#fca5a5; }
+body.dash-dark .bulk-bar{ background:#3A3733; color:#F2EDE4; }
+body.dash-dark .bulk-bar button{ border-color:#F2EDE4; color:#F2EDE4; }
+body.dash-dark .bulk-bar button.danger{ border-color:#ff8a80; color:#ff8a80; }
+body.dash-dark .report-doc, body.dash-dark .receipt-preview-wrap, body.dash-dark .logo-lightbox{ --paper:#F6F1E4; --paper-dim:#EDE6D2; --ink:#201F1D; --line:#E4DCC7; --stone:#8A8577; --stone-light:#D8D2C0; color:#201F1D; }
+body.dash-dark .ticket{ box-shadow:0 20px 40px rgba(0,0,0,.6); }
+body.dash-dark .overlay button[style*="background:#fff"]{ background:#2A2825 !important; }
+/* تحسينات الموبايل للوحة التحكم */
+@media (hover:none){
+  .cat-item .icon-btn{ display:inline-block; }
+  .cat-item .drag-handle{ opacity:1; }
+}
+.item-tools{ flex-wrap:wrap; }
+.item-top{ flex-wrap:wrap; }
+@media (max-width:980px){
+  .rail{ border-left:none; border-bottom:1px solid #3a3733; padding:14px 14px 10px; }
+  .rail h2{ font-size:18px; margin-bottom:10px; }
+  #categoryList{ display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity; }
+  #categoryList .cat-item{ flex:0 0 auto; margin-bottom:0; white-space:nowrap; scroll-snap-align:start; }
+  .main{ padding:18px 16px; overflow-y:visible; }
+  .preview-col{ padding:14px 16px; }
+  .preview-col.collapsed .ticket{ display:none; }
+  .preview-col .preview-toggle{ display:inline-flex; }
+  .ticket-items{ max-height:300px; }
+}
+.preview-toggle{ display:none; align-items:center; gap:6px; background:#2A2825; color:var(--paper); border:1px solid #454138; border-radius:999px; padding:8px 16px; font-family:var(--body); font-weight:700; font-size:13px; cursor:pointer; margin-bottom:12px; }
+@media (max-width:560px){
+  .topbar{ padding:12px 14px; gap:10px; }
+  .brand{ font-size:20px; }
+  .link-btn{ padding:9px 12px; font-size:12.5px; }
+  .main{ padding:14px 12px; }
+  .item-card{ padding:12px; gap:10px; }
+  .item-card img, .item-card .no-img{ width:60px; height:60px; }
+  .item-name{ font-size:15px; }
+  .dash-home, .setup-card{ padding:12px; }
+  .dash-attn-row, .setup-step{ flex-wrap:wrap; }
+  .bulk-bar{ padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .bulk-bar button{ flex:1 1 auto; }
+  .undo-toast{ bottom:calc(14px + env(safe-area-inset-bottom, 0px)); }
+  body.dash-mode .modal{ width:94vw; padding:18px; max-height:92vh; }
+}
+@media (max-width:760px){
+  body.dash-mode input[type=text], body.dash-mode input[type=number], body.dash-mode input[type=tel], body.dash-mode input[type=email], body.dash-mode input[type=password], body.dash-mode input[type=time], body.dash-mode input[type=date], body.dash-mode select, body.dash-mode textarea{ font-size:16px; }
+}
+@media (pointer:coarse){
+  .chip-btn{ padding:8px 14px; font-size:12px; }
+  .item-tools button{ padding:8px 12px; }
+  .icon-btn{ padding:8px; }
+}
 .item-card.selectable{ cursor:pointer; }
 .item-card.selectable.selected{ outline:2px solid var(--ember); }
 .item-card.selectable .item-tools, .item-card.selectable .drag-handle{ display:none; }
@@ -2019,6 +2093,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
       <span class="switch-link" id="signOutLink">تسجيل الخروج</span>
     </div>
     <div class="topbar-actions">
+      <button class="link-btn" id="dashThemeBtn" type="button" aria-pressed="false" title="الوضع الداكن">🌙</button>
       <button class="link-btn" id="viewOrdersBtn">📦 الطلبات <span id="newOrdersBadge" class="new-orders-badge hidden">0</span></button>
       <button class="link-btn" id="abandonedCartsBtn">🛒 السلات المتروكة <span id="abandonedCartsBadge" class="new-orders-badge hidden">0</span></button>
       <button class="link-btn" id="reservationsBtn">📅 الحجوزات <span id="reservationsBadge" class="new-orders-badge hidden">0</span></button>
@@ -2110,6 +2185,15 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
     </div>
   </div>
   <div class="main">
+    <section class="setup-card hidden" id="setupCard" aria-label="قائمة الإعداد">
+      <div class="setup-head">
+        <h3>🚀 جهّز متجرك للإطلاق</h3>
+        <span class="setup-progress-text" id="setupProgressText"></span>
+        <button type="button" class="chip-btn" id="setupHideBtn">إخفاء</button>
+      </div>
+      <div class="setup-bar"><div class="setup-bar-fill" id="setupBarFill" style="width:0%"></div></div>
+      <div id="setupSteps"></div>
+    </section>
     <section class="dash-home" id="dashHome" aria-label="نظرة سريعة">
       <div class="dash-home-head">
         <h3>🏠 نظرة سريعة <span class="dash-home-date" id="dashHomeDate"></span></h3>
@@ -2146,7 +2230,8 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
       <button type="button" id="bulkCancelBtn">إنهاء</button>
     </div>
   </div>
-  <div class="preview-col">
+  <div class="preview-col" id="previewCol">
+    <button type="button" class="preview-toggle" id="previewToggleBtn" aria-expanded="false">👁 معاينة المنيو للعميل</button>
     <div class="preview-label">معاينة القائمة للعميل</div>
     <div class="ticket">
       <div class="ticket-head">
@@ -3402,6 +3487,7 @@ async function openDashboard(){
   refreshNewOrdersCount();
   startAbandonedBadgeLoop();
   startReservationsBadgeLoop();
+  applyDashTheme();
   startDashHomeLoop();
   setupNotificationPermission();
   show('dashboardScreen');
@@ -4085,6 +4171,7 @@ async function refreshData(){
   }
   renderDashboard();
   renderDashHomeAttention();
+  renderSetupChecklist();
 }
 
 function updateNewOrdersBadge(){
@@ -8509,6 +8596,119 @@ document.getElementById('dailyCloseBtn').addEventListener('click', async ()=>{
   }
 });
 
+// ===== الوضع الداكن للوحة التحكم + معاينة المنيو على الموبايل =====
+function applyDashTheme(){
+  let dark = false;
+  try{ dark = localStorage.getItem('dashTheme') === 'dark'; }catch(e){}
+  document.body.classList.add('dash-mode');
+  document.body.classList.toggle('dash-dark', dark);
+  const b = document.getElementById('dashThemeBtn');
+  if(b){
+    b.textContent = dark ? '☀️' : '🌙';
+    b.title = dark ? 'الوضع الفاتح' : 'الوضع الداكن';
+    b.setAttribute('aria-pressed', String(dark));
+  }
+}
+(function bindDashTheme(){
+  const b = document.getElementById('dashThemeBtn');
+  if(b) b.addEventListener('click', ()=>{
+    const dark = !document.body.classList.contains('dash-dark');
+    try{ localStorage.setItem('dashTheme', dark ? 'dark' : 'light'); }catch(e){}
+    applyDashTheme();
+  });
+  const pt = document.getElementById('previewToggleBtn');
+  const col = document.getElementById('previewCol');
+  if(pt && col){
+    if(window.matchMedia && window.matchMedia('(max-width:980px)').matches) col.classList.add('collapsed');
+    pt.addEventListener('click', ()=>{
+      const collapsed = col.classList.toggle('collapsed');
+      pt.setAttribute('aria-expanded', String(!collapsed));
+      pt.textContent = collapsed ? '👁 معاينة المنيو للعميل' : '🙈 إخفاء المعاينة';
+    });
+  }
+})();
+
+// ===== قائمة إعداد المطعم الجديد =====
+var setupZonesCount = null;
+function setupKey(k){ return `setup_${restaurant.id}_${k}`; }
+function setupGet(k){ try{ return localStorage.getItem(setupKey(k)); }catch(e){ return null; } }
+function setupSet(k, v){ try{ localStorage.setItem(setupKey(k), v); }catch(e){} }
+async function openSettingsAndFocus(inputId){
+  const btn = document.getElementById('restaurantSettingsBtn');
+  if(!btn) return;
+  btn.click();
+  for(let i = 0; i < 25; i++){
+    await new Promise(r=> setTimeout(r, 100));
+    const el = document.getElementById(inputId);
+    if(el){
+      const det = el.closest('details'); if(det) det.open = true;
+      el.scrollIntoView({ block:'center' });
+      el.focus();
+      return;
+    }
+  }
+}
+function setupStepList(){
+  const word = biz(restaurant.business_type, 'itemsDef');
+  const itemsWithImg = items.filter(i=> i.image_url).length;
+  const btnVisible = (id)=>{ const el = document.getElementById(id); return !!el && !el.classList.contains('hidden'); };
+  const steps = [
+    { key:'logo', text:'أضف شعار متجرك', done: !!restaurant.logo_url, act: ()=> openSettingsAndFocus('restNameInput'), label:'افتح الإعدادات', show: btnVisible('restaurantSettingsBtn') },
+    { key:'category', text:'أضف أول فئة', done: categories.length > 0, act: ()=> document.getElementById('addCategoryBtn').click(), label:'إضافة فئة', show:true },
+    { key:'items', text:`أضف 5 من ${word} على الأقل (${Math.min(items.length, 5)}/5)`, done: items.length >= 5, act: ()=> document.getElementById(categories.length ? 'addItemBtn' : 'addCategoryBtn').click(), label: categories.length ? 'إضافة' : 'إضافة فئة', show:true },
+    { key:'images', text:`أضف صورًا لـ ${word} (${itemsWithImg}/${items.length})`, done: items.length > 0 && itemsWithImg / items.length >= 0.8,
+      act: ()=>{ const it = items.find(i=> !i.image_url); if(it){ selectedCategoryId = it.category_id; renderDashboard(); openItemModal(it); } },
+      label:'أضف صورة', show: !restaurant.restriction_images_disabled && items.length > 0 },
+    { key:'phone', text:'اكتب رقم التواصل / واتساب', done: !!restaurant.phone, act: ()=> openSettingsAndFocus('restPhoneInput'), label:'اكتب الرقم', show: btnVisible('restaurantSettingsBtn') },
+    { key:'zones', text:'أضف مناطق التوصيل ورسومها', done: (setupZonesCount || 0) > 0, optional:true, act: ()=> document.getElementById('deliveryZonesBtn').click(), label:'مناطق التوصيل', show: btnVisible('deliveryZonesBtn') && setupZonesCount !== null },
+    { key:'hours', text:'حدد أوقات العمل', done: !!(restaurant.opening_time && restaurant.closing_time), optional:true, act: ()=> openSettingsAndFocus('restOpenTimeInput'), label:'حدد الأوقات', show: btnVisible('restaurantSettingsBtn') },
+    { key:'link', text:'انسخ رابط المنيو وشاركه مع عملائك', done: setupGet('linkShared') === '1', act: ()=> document.getElementById('copyPublicLinkBtn').click(), label:'نسخ الرابط', show: btnVisible('copyPublicLinkBtn') }
+  ];
+  return steps.filter(st=> st.show).map(st=> Object.assign({}, st, { skipped: !!st.optional && setupGet('skip_' + st.key) === '1' }));
+}
+function renderSetupChecklist(){
+  const card = document.getElementById('setupCard');
+  if(!card || !restaurant) return;
+  if(setupGet('done') === '1' || setupGet('hidden') === '1'){ card.classList.add('hidden'); return; }
+  // يظهر للمتاجر الجديدة (أول 30 يومًا) أو اللي لسه فيها أقل من 3 أصناف؛ المتاجر القديمة المجهّزة ما بيظهرلها
+  const ageDays = restaurant.created_at ? (Date.now() - new Date(restaurant.created_at).getTime()) / 86400000 : 0;
+  if(!(ageDays < 30 || items.length < 3)){ card.classList.add('hidden'); return; }
+  const steps = setupStepList();
+  const doneCount = steps.filter(s=> s.done || s.skipped).length;
+  if(steps.length && doneCount === steps.length){ setupSet('done', '1'); card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  document.getElementById('setupProgressText').textContent = `${doneCount} من ${steps.length}`;
+  document.getElementById('setupBarFill').style.width = (steps.length ? Math.round(doneCount / steps.length * 100) : 0) + '%';
+  const wrap = document.getElementById('setupSteps');
+  wrap.innerHTML = steps.map(st=> `
+    <div class="setup-step${(st.done || st.skipped) ? ' done' : ''}" data-step="${st.key}">
+      <span class="st-mark">${(st.done || st.skipped) ? '✓' : ''}</span>
+      <span class="st-text">${st.text}${st.optional ? '<span class="st-opt">(اختياري)</span>' : ''}${st.skipped ? '<span class="st-opt">(تم التخطي)</span>' : ''}</span>
+      ${(st.done || st.skipped) ? '' : `<button type="button" data-act="go">${st.label}</button>${st.optional ? '<button type="button" class="st-skip" data-act="skip">تخطي</button>' : ''}`}
+    </div>`).join('');
+  wrap.querySelectorAll('.setup-step').forEach(el=>{
+    const st = steps.find(x=> x.key === el.dataset.step);
+    const go = el.querySelector('[data-act="go"]'); if(go) go.addEventListener('click', ()=> st.act());
+    const skip = el.querySelector('[data-act="skip"]'); if(skip) skip.addEventListener('click', ()=>{ setupSet('skip_' + st.key, '1'); renderSetupChecklist(); });
+  });
+}
+async function refreshSetupChecklist(){
+  if(!restaurant) return;
+  try{
+    const { count, error } = await sb.from('delivery_zones').select('id', { count:'exact', head:true }).eq('restaurant_id', restaurant.id);
+    setupZonesCount = error ? null : (count || 0);
+  }catch(e){ setupZonesCount = null; }
+  renderSetupChecklist();
+}
+(function bindSetupChecklist(){
+  const hide = document.getElementById('setupHideBtn');
+  if(hide) hide.addEventListener('click', ()=>{ setupSet('hidden', '1'); document.getElementById('setupCard').classList.add('hidden'); toast('تم إخفاء قائمة الإعداد'); });
+  ['copyPublicLinkBtn', 'openPublicLinkBtn'].forEach(id=>{
+    const b = document.getElementById(id);
+    if(b) b.addEventListener('click', ()=>{ if(restaurant){ setupSet('linkShared', '1'); renderSetupChecklist(); } });
+  });
+})();
+
 // ===== نظرة سريعة (أعلى لوحة التحكم) =====
 var dashHomeTimer = null;
 var dashHomeCounts = { overdue: 0, reservations: 0 };
@@ -8537,7 +8737,11 @@ function renderDashHomeAttention(){
       <span>${r.icon} ${r.text}</span>
       ${r.btn ? `<button type="button" class="dash-attn-btn" data-btn="${r.btn}">${r.label}</button>` : ''}
     </div>`).join('') : `<div class="dash-attn-ok">✅ مفيش حاجة محتاجة انتباهك دلوقتي</div>`;
-  el.querySelectorAll('[data-btn]').forEach(b=> b.addEventListener('click', ()=>{ const t = document.getElementById(b.dataset.btn); if(t) t.click(); }));
+  el.querySelectorAll('[data-btn]').forEach(b=>{
+    const t = document.getElementById(b.dataset.btn);
+    if(!t || t.classList.contains('hidden')){ b.remove(); return; } // الزر مقفول/مخفي في باقة المتجر
+    b.addEventListener('click', ()=> t.click());
+  });
 }
 async function refreshDashHome(){
   const body = document.getElementById('dashHomeBody');
@@ -8591,11 +8795,12 @@ function applyDashHomeCollapsed(collapsed){
 }
 function startDashHomeLoop(){
   if(dashHomeTimer) clearInterval(dashHomeTimer);
+  refreshSetupChecklist();
   let collapsed = false;
   try{ collapsed = localStorage.getItem(DASH_HOME_KEY) === '1'; }catch(e){}
   applyDashHomeCollapsed(collapsed);
   refreshDashHome();
-  dashHomeTimer = setInterval(()=>{ if(!document.hidden) refreshDashHome(); }, 60000);
+  dashHomeTimer = setInterval(()=>{ if(!document.hidden){ refreshDashHome(); refreshSetupChecklist(); } }, 60000);
 }
 (function bindDashHome(){
   const t = document.getElementById('dashHomeToggle');
