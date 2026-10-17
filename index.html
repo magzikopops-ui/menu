@@ -188,6 +188,43 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .cat-item.sortable-drag{background:#332F2A;}
 
 .main{ background:var(--paper); padding:24px 28px; overflow-y:auto; }
+.dash-home{ background:var(--paper-dim); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:18px; }
+.dash-home-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.dash-home-head h3{ margin:0; font-size:16px; }
+.dash-home-date{ font-size:12px; font-weight:600; color:var(--stone); margin-inline-start:8px; }
+.dash-kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(125px,1fr)); gap:10px; margin:12px 0; }
+.dash-kpi{ background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:10px 12px; min-width:0; }
+.dash-kpi .k-label{ font-size:12px; font-weight:700; color:var(--stone); }
+.dash-kpi .k-value{ margin-top:2px; font-size:21px; font-weight:800; color:var(--ink); overflow-wrap:anywhere; }
+.dash-kpi .k-sub{ margin-top:2px; font-size:11.5px; color:var(--stone); min-height:14px; }
+.dash-attn-title{ font-size:12.5px; font-weight:800; color:var(--stone); margin:4px 0 6px; }
+.dash-attn-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 12px; margin-bottom:6px; border:1px solid var(--line); border-radius:10px; background:var(--paper); font-size:13.5px; font-weight:700; color:var(--ink); }
+.dash-attn-row.urgent{ border-color:#d98e04; background:#fff6e3; color:#3a2a00; }
+.dash-attn-row .dash-attn-btn{ flex-shrink:0; background:none; border:1.5px solid currentColor; color:inherit; border-radius:999px; padding:4px 12px; font-family:inherit; font-size:12px; font-weight:800; cursor:pointer; }
+.dash-attn-ok{ padding:9px 12px; border-radius:10px; background:#e8f5ec; color:#1a7a3d; font-size:13.5px; font-weight:800; }
+.dash-top{ margin-top:10px; font-size:13px; color:var(--ink); }
+.dash-top strong{ font-weight:800; }
+.dash-top-chip{ display:inline-block; margin:3px 0 0 6px; padding:3px 10px; border-radius:999px; background:var(--paper); border:1px solid var(--line); font-size:12.5px; font-weight:700; }
+.dash-quick{ display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
+.rs-section{ border:1px solid var(--line); border-radius:12px; margin-bottom:10px; background:var(--paper); }
+.rs-section > summary{ list-style:none; cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:11px 14px; font-size:14px; font-weight:800; color:var(--ink); }
+.rs-section > summary::-webkit-details-marker{ display:none; }
+.rs-section > summary::after{ content:'▾'; color:var(--stone); }
+.rs-section[open] > summary::after{ content:'▴'; }
+.rs-section[open] > summary{ border-bottom:1px solid var(--line); }
+.rs-section-body{ padding:12px 14px 2px; }
+.item-card.selectable{ cursor:pointer; }
+.item-card.selectable.selected{ outline:2px solid var(--ember); }
+.item-card.selectable .item-tools, .item-card.selectable .drag-handle{ display:none; }
+.item-select-cb{ width:20px; height:20px; flex-shrink:0; margin-inline-end:10px; align-self:center; accent-color:var(--ember); cursor:pointer; }
+.bulk-bar{ position:sticky; bottom:0; z-index:5; display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:10px 12px; margin-top:12px; background:var(--ink); color:var(--paper); border-radius:12px; box-shadow:0 -4px 18px rgba(0,0,0,.25); }
+.bulk-bar.hidden{ display:none; }
+.bulk-bar .bulk-count{ flex:1; min-width:110px; font-size:13.5px; font-weight:800; }
+.bulk-bar button{ background:transparent; border:1.5px solid var(--paper); color:var(--paper); border-radius:999px; padding:6px 12px; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer; }
+.bulk-bar button:disabled{ opacity:.4; cursor:not-allowed; }
+.bulk-bar button.danger{ border-color:#ff8a80; color:#ff8a80; }
+.undo-toast{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:200; display:flex; align-items:center; gap:14px; padding:11px 16px; background:#2A2825; color:#fff; border-radius:12px; box-shadow:0 8px 28px rgba(0,0,0,.35); font-size:14px; font-weight:700; max-width:92vw; }
+.undo-toast button{ background:none; border:none; color:#ffd27a; font-family:inherit; font-size:14px; font-weight:800; cursor:pointer; text-decoration:underline; }
 .main h2{ font-family:var(--display); font-size:24px; margin:0 0 4px; color:var(--ink); }
 .main .sub{color:var(--stone); font-size:14px; margin-bottom:18px;}
 .item-add-btn{ width:100%; background:var(--ember); color:var(--paper); border:none; font-family:var(--body); font-weight:800; font-size:15px; padding:13px; border-radius:8px; cursor:pointer; margin-bottom:20px; }
@@ -2073,6 +2110,23 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
     </div>
   </div>
   <div class="main">
+    <section class="dash-home" id="dashHome" aria-label="نظرة سريعة">
+      <div class="dash-home-head">
+        <h3>🏠 نظرة سريعة <span class="dash-home-date" id="dashHomeDate"></span></h3>
+        <button type="button" class="chip-btn" id="dashHomeToggle" aria-expanded="true">إخفاء</button>
+      </div>
+      <div id="dashHomeBody">
+        <div class="dash-kpis" id="dashKpis"></div>
+        <div class="dash-attn-title">يحتاج انتباهك</div>
+        <div id="dashAttn"></div>
+        <div class="dash-top" id="dashTop"></div>
+        <div class="dash-quick">
+          <button type="button" class="chip-btn" data-dq="addItemBtn">+ صنف جديد</button>
+          <button type="button" class="chip-btn" data-dq="viewOrdersBtn">📦 الطلبات</button>
+          <button type="button" class="chip-btn" data-dq="copyPublicLinkBtn">🔗 نسخ رابط المنيو</button>
+        </div>
+      </div>
+    </section>
     <h2 id="mainTitle">—</h2>
     <div class="sub" id="mainSub"></div>
     <div class="field" style="margin-bottom:14px;">
@@ -2080,7 +2134,17 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
     </div>
     <button class="item-add-btn" id="addItemBtn">+ إضافة صنف جديد</button>
     <button class="add-btn" id="bulkPriceBtn" style="margin-top:-10px;">📊 تحديث الأسعار بالجملة (نسبة / مبلغ / فئة)</button>
+    <button class="add-btn" id="selectModeBtn" style="margin-top:-6px;">☑️ تحديد عدة أصناف (إخفاء / نقل / حذف)</button>
     <div id="itemList"></div>
+    <div class="bulk-bar hidden" id="bulkBar">
+      <span class="bulk-count" id="bulkCount">0 محدد</span>
+      <button type="button" id="bulkSelectAllBtn">تحديد الكل</button>
+      <button type="button" id="bulkHideBtn">🚫 إخفاء</button>
+      <button type="button" id="bulkShowBtn">👁 إظهار</button>
+      <button type="button" id="bulkMoveBtn">📁 نقل لفئة</button>
+      <button type="button" id="bulkDeleteBtn" class="danger">🗑 حذف</button>
+      <button type="button" id="bulkCancelBtn">إنهاء</button>
+    </div>
   </div>
   <div class="preview-col">
     <div class="preview-label">معاينة القائمة للعميل</div>
@@ -3338,6 +3402,7 @@ async function openDashboard(){
   refreshNewOrdersCount();
   startAbandonedBadgeLoop();
   startReservationsBadgeLoop();
+  startDashHomeLoop();
   setupNotificationPermission();
   show('dashboardScreen');
   document.getElementById('adminPanelBtn').classList.toggle('hidden', !isSuperAdmin);
@@ -4019,6 +4084,7 @@ async function refreshData(){
     previewCategoryId = selectedCategoryId;
   }
   renderDashboard();
+  renderDashHomeAttention();
 }
 
 function updateNewOrdersBadge(){
@@ -4029,6 +4095,7 @@ function updateNewOrdersBadge(){
   } else {
     badge.classList.add('hidden');
   }
+  renderDashHomeAttention();
 }
 
 async function refreshNewOrdersCount(){
@@ -8442,6 +8509,105 @@ document.getElementById('dailyCloseBtn').addEventListener('click', async ()=>{
   }
 });
 
+// ===== نظرة سريعة (أعلى لوحة التحكم) =====
+var dashHomeTimer = null;
+var dashHomeCounts = { overdue: 0, reservations: 0 };
+const DASH_HOME_KEY = 'dashHomeCollapsed';
+function cairoDay(offsetDays){
+  return new Date(Date.now() + (offsetDays || 0) * 86400000).toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
+}
+function dhMoney(n){ return Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 }); }
+function renderDashHomeAttention(){
+  const el = document.getElementById('dashAttn');
+  if(!el || !restaurant || !dashHomeCounts) return;
+  const rows = [];
+  if(newOrdersCount > 0) rows.push({ urgent:true, icon:'🔔', text:`طلبات جديدة بانتظار التأكيد: <strong>${newOrdersCount}</strong>`, btn:'viewOrdersBtn', label:'فتح الطلبات' });
+  if(dashHomeCounts.overdue > 0) rows.push({ urgent:true, icon:'⏱️', text:`طلبات اتأخرت عن الموعد المتوقع: <strong>${dashHomeCounts.overdue}</strong>`, btn:'viewOrdersBtn', label:'فتح الطلبات' });
+  if(dashHomeCounts.reservations > 0) rows.push({ icon:'📅', text:`حجوزات بانتظار التأكيد: <strong>${dashHomeCounts.reservations}</strong>`, btn:'reservationsBtn', label:'فتح الحجوزات' });
+  const abBadge = document.getElementById('abandonedCartsBadge');
+  const ab = abBadge && !abBadge.classList.contains('hidden') ? (parseInt(abBadge.textContent, 10) || 0) : 0;
+  if(ab > 0) rows.push({ icon:'🛒', text:`سلات متروكة: <strong>${ab}</strong>`, btn:'abandonedCartsBtn', label:'عرض السلات' });
+  const word = biz(restaurant.business_type, 'itemsDef');
+  const hiddenCount = items.filter(i=> i.is_available === false).length;
+  if(hiddenCount > 0) rows.push({ icon:'🚫', text:`${word} مخفية عن العميل حاليًا: <strong>${hiddenCount}</strong>` });
+  const noImg = items.filter(i=> !i.image_url).length;
+  if(noImg > 0 && !restaurant.restriction_images_disabled) rows.push({ icon:'🖼️', text:`${word} بدون صورة: <strong>${noImg}</strong>` });
+  el.innerHTML = rows.length ? rows.map(r=> `
+    <div class="dash-attn-row${r.urgent ? ' urgent' : ''}">
+      <span>${r.icon} ${r.text}</span>
+      ${r.btn ? `<button type="button" class="dash-attn-btn" data-btn="${r.btn}">${r.label}</button>` : ''}
+    </div>`).join('') : `<div class="dash-attn-ok">✅ مفيش حاجة محتاجة انتباهك دلوقتي</div>`;
+  el.querySelectorAll('[data-btn]').forEach(b=> b.addEventListener('click', ()=>{ const t = document.getElementById(b.dataset.btn); if(t) t.click(); }));
+}
+async function refreshDashHome(){
+  const body = document.getElementById('dashHomeBody');
+  if(!body || !restaurant) return;
+  const today = cairoDay(0), yesterday = cairoDay(-1);
+  const dateEl = document.getElementById('dashHomeDate');
+  if(dateEl) dateEl.textContent = new Date().toLocaleDateString('ar-EG', { timeZone:'Africa/Cairo', weekday:'long', day:'numeric', month:'long' });
+  const nowIso = new Date().toISOString();
+  const safe = (p)=> p.then(r=> r, e=> ({ data:null, count:null, error:e }));
+  const [ordersRes, visitsRes, topRes, overdueRes, resRes] = await Promise.all([
+    safe(sb.from('order_stats_daily').select('day,orders_count,orders_total').eq('restaurant_id', restaurant.id).gte('day', yesterday)),
+    safe(sb.from('menu_visits_daily').select('day,visits_count').eq('restaurant_id', restaurant.id).gte('day', yesterday)),
+    safe(sb.from('item_stats_daily').select('item_name,quantity').eq('restaurant_id', restaurant.id).eq('day', today).order('quantity', { ascending:false }).limit(3)),
+    safe(sb.from('orders').select('id', { count:'exact', head:true }).eq('restaurant_id', restaurant.id).in('status', ['pending','preparing']).lt('estimated_ready_at', nowIso)),
+    safe(sb.from('reservations').select('id', { count:'exact', head:true }).eq('restaurant_id', restaurant.id).eq('status', 'pending').gte('reserved_for', nowIso))
+  ]);
+  dashHomeCounts = { overdue: overdueRes.error ? 0 : (overdueRes.count || 0), reservations: resRes.error ? 0 : (resRes.count || 0) };
+  const cur = getRestaurantCurrency(restaurant);
+  const kpiEl = document.getElementById('dashKpis');
+  if(ordersRes.error){
+    kpiEl.innerHTML = '';
+  } else {
+    const pick = (res, day)=> (res.data || []).find(r=> r.day === day);
+    const o0 = pick(ordersRes, today), o1 = pick(ordersRes, yesterday);
+    const v0 = pick(visitsRes, today), v1 = pick(visitsRes, yesterday);
+    const c0 = o0 ? Number(o0.orders_count) : 0, c1 = o1 ? Number(o1.orders_count) : 0;
+    const t0 = o0 ? Number(o0.orders_total) : 0, t1 = o1 ? Number(o1.orders_total) : 0;
+    const vis0 = v0 ? Number(v0.visits_count) : 0, vis1 = v1 ? Number(v1.visits_count) : 0;
+    const tiles = [
+      { label:'طلبات اليوم', value: c0, sub: `أمس: ${c1}` },
+      { label:'مبيعات اليوم', value: `${dhMoney(t0)} ${cur}`, sub: `أمس: ${dhMoney(t1)}` },
+      { label:'متوسط الطلب', value: c0 ? `${dhMoney(t0 / c0)} ${cur}` : '—', sub: c1 ? `أمس: ${dhMoney(t1 / c1)}` : '' }
+    ];
+    if(!visitsRes.error) tiles.push({ label:'زيارات المنيو', value: vis0, sub: vis0 && c0 ? `نسبة الطلب: ${Math.round(c0 / vis0 * 100)}%` : `أمس: ${vis1}` });
+    kpiEl.innerHTML = tiles.map(t=> `<div class="dash-kpi"><div class="k-label">${t.label}</div><div class="k-value">${t.value}</div><div class="k-sub">${t.sub}</div></div>`).join('');
+  }
+  const topEl = document.getElementById('dashTop');
+  const topRows = topRes.error ? null : (topRes.data || []);
+  topEl.innerHTML = topRows === null ? '' : (topRows.length
+    ? `<strong>الأكثر طلبًا اليوم:</strong> ${topRows.map(r=> `<span class="dash-top-chip">${escapeHtml(r.item_name)} ×${r.quantity}</span>`).join('')}`
+    : `<strong>الأكثر طلبًا اليوم:</strong> <span style="color:var(--stone);">لا توجد طلبات بعد</span>`);
+  renderDashHomeAttention();
+}
+function applyDashHomeCollapsed(collapsed){
+  const body = document.getElementById('dashHomeBody');
+  const btn = document.getElementById('dashHomeToggle');
+  if(!body || !btn) return;
+  body.classList.toggle('hidden', collapsed);
+  btn.textContent = collapsed ? 'عرض' : 'إخفاء';
+  btn.setAttribute('aria-expanded', String(!collapsed));
+}
+function startDashHomeLoop(){
+  if(dashHomeTimer) clearInterval(dashHomeTimer);
+  let collapsed = false;
+  try{ collapsed = localStorage.getItem(DASH_HOME_KEY) === '1'; }catch(e){}
+  applyDashHomeCollapsed(collapsed);
+  refreshDashHome();
+  dashHomeTimer = setInterval(()=>{ if(!document.hidden) refreshDashHome(); }, 60000);
+}
+(function bindDashHome(){
+  const t = document.getElementById('dashHomeToggle');
+  if(t) t.addEventListener('click', ()=>{
+    const body = document.getElementById('dashHomeBody');
+    const next = !body.classList.contains('hidden');
+    applyDashHomeCollapsed(next);
+    try{ localStorage.setItem(DASH_HOME_KEY, next ? '1' : '0'); }catch(e){}
+  });
+  document.querySelectorAll('#dashHome [data-dq]').forEach(b=> b.addEventListener('click', ()=>{ const target = document.getElementById(b.dataset.dq); if(target) target.click(); }));
+})();
+
 // ===== حجوزات الطاولات (لوحة التحكم) =====
 var reservationsBadgeTimer = null;
 function updateReservationsBadge(n){
@@ -10002,6 +10168,10 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
   overlay.innerHTML = `
     <div class="modal">
       <h3 id="rsHeading">إعدادات ${t().entityDef}</h3>
+      <div style="display:flex; justify-content:flex-end; margin:-4px 0 10px;"><button type="button" class="chip-btn" id="rsToggleAll">فتح كل الأقسام</button></div>
+      <details class="rs-section" open>
+        <summary>🏪 بيانات النشاط</summary>
+        <div class="rs-section-body">
       <div class="field">
         <label>نوع النشاط</label>
         <div class="ord-type-toggle">
@@ -10026,32 +10196,6 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
       <div class="field">
         <label id="rsNameEnLabel">اسم ${t().entityDef} بالإنجليزية (اختياري)</label>
         <input type="text" id="restNameEnInput" value="${restaurant.name_en ? escapeHtml(restaurant.name_en) : ''}" placeholder="e.g. Al Asayel Restaurant">
-      </div>
-      <div class="field">
-        <label id="rsPhoneLabel">رقم هاتف ${t().entityDef} (يظهر للعميل - اتصال)</label>
-        <input type="text" id="restPhoneInput" value="${restaurant.phone ? escapeHtml(restaurant.phone) : ''}" placeholder="رقم بصيغة دولية: 201154361888" style="direction:ltr;">
-      </div>
-      <div class="field">
-        <label>متوسط وقت تجهيز الطلب (بالدقايق)</label>
-        <small>يُحسب وقت الجاهزية المتوقع تلقائيًا لكل طلب جديد بناءً على هذا الرقم، ويمكنك تعديله لكل طلب على حدة من شاشة الطلبات.</small>
-        <input type="number" id="restPrepMinutesInput" min="1" max="180" value="${restaurant.default_prep_minutes || 20}" style="direction:ltr; margin-top:8px;">
-      </div>
-      <div class="field">
-        <label>يوزر ${t().entityDef} على ماسنجر (اختياري — لإرسال الطلب عبر ماسنجر)</label>
-        <small>اسم المستخدم (Username) الخاص بصفحة الفيسبوك، دون كتابة الرابط كاملاً. مثال: إذا كان رابط صفحتك facebook.com/mypage فأدخل mypage فقط.</small>
-        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-          <input type="text" id="restMessengerInput" value="${restaurant.messenger_username ? escapeHtml(restaurant.messenger_username) : ''}" placeholder="مثال: mypage" style="flex:1; min-width:0; direction:ltr;" ${restaurant.restriction_extra_channels_disabled ? 'disabled title="قنوات الاستقبال الإضافية (ماسنجر/تليجرام) متاحة في باقة PRO فقط"' : ''}>
-          <button type="button" id="testMessengerBtn" ${restaurant.restriction_extra_channels_disabled ? 'disabled' : ''} style="width:auto; flex:none; margin:0; white-space:nowrap; padding:10px 16px; background:transparent; border:1.5px dashed var(--stone); color:var(--stone-light); font-family:var(--body); font-weight:700; font-size:14px; border-radius:8px; cursor:pointer;">تجربة</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>يوزر ${t().entityDef} على تليجرام (اختياري — لإرسال الطلب عبر تليجرام)</label>
-        <small>يوزرنيم حسابك أو قناتك في تليجرام من غير @. مثال: mystore</small>
-        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-          <input type="text" id="restTelegramInput" value="${restaurant.telegram_username ? escapeHtml(restaurant.telegram_username) : ''}" placeholder="مثال: mystore" style="flex:1; min-width:0; direction:ltr;" ${restaurant.restriction_extra_channels_disabled ? 'disabled title="قنوات الاستقبال الإضافية (ماسنجر/تليجرام) متاحة في باقة PRO فقط"' : ''}>
-          <button type="button" id="testTelegramBtn" ${restaurant.restriction_extra_channels_disabled ? 'disabled' : ''} style="width:auto; flex:none; margin:0; white-space:nowrap; padding:10px 16px; background:transparent; border:1.5px dashed var(--stone); color:var(--stone-light); font-family:var(--body); font-weight:700; font-size:14px; border-radius:8px; cursor:pointer;">تجربة</button>
-        </div>
-        ${restaurant.restriction_extra_channels_disabled ? `<small style="color:var(--stone); margin-top:4px; display:block;">🔒 الاستقبال عبر ماسنجر وتليجرام متاح في باقة PRO فقط.</small>` : ''}
       </div>
       <div class="field">
         <label id="rsAddressLabel">عنوان ${t().entityDef} (اختياري)</label>
@@ -10080,6 +10224,49 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
             <input type="time" id="restCloseTimeInput" value="${restaurant.closing_time ? restaurant.closing_time.slice(0,5) : ''}">
           </div>
         </div>
+      </div>
+        </div>
+      </details>
+      <details class="rs-section">
+        <summary>📞 التواصل وإشعارات الطلبات</summary>
+        <div class="rs-section-body">
+      <div class="field">
+        <label id="rsPhoneLabel">رقم هاتف ${t().entityDef} (يظهر للعميل - اتصال)</label>
+        <input type="text" id="restPhoneInput" value="${restaurant.phone ? escapeHtml(restaurant.phone) : ''}" placeholder="رقم بصيغة دولية: 201154361888" style="direction:ltr;">
+      </div>
+      <div class="field">
+        <label>يوزر ${t().entityDef} على ماسنجر (اختياري — لإرسال الطلب عبر ماسنجر)</label>
+        <small>اسم المستخدم (Username) الخاص بصفحة الفيسبوك، دون كتابة الرابط كاملاً. مثال: إذا كان رابط صفحتك facebook.com/mypage فأدخل mypage فقط.</small>
+        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+          <input type="text" id="restMessengerInput" value="${restaurant.messenger_username ? escapeHtml(restaurant.messenger_username) : ''}" placeholder="مثال: mypage" style="flex:1; min-width:0; direction:ltr;" ${restaurant.restriction_extra_channels_disabled ? 'disabled title="قنوات الاستقبال الإضافية (ماسنجر/تليجرام) متاحة في باقة PRO فقط"' : ''}>
+          <button type="button" id="testMessengerBtn" ${restaurant.restriction_extra_channels_disabled ? 'disabled' : ''} style="width:auto; flex:none; margin:0; white-space:nowrap; padding:10px 16px; background:transparent; border:1.5px dashed var(--stone); color:var(--stone-light); font-family:var(--body); font-weight:700; font-size:14px; border-radius:8px; cursor:pointer;">تجربة</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>يوزر ${t().entityDef} على تليجرام (اختياري — لإرسال الطلب عبر تليجرام)</label>
+        <small>يوزرنيم حسابك أو قناتك في تليجرام من غير @. مثال: mystore</small>
+        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+          <input type="text" id="restTelegramInput" value="${restaurant.telegram_username ? escapeHtml(restaurant.telegram_username) : ''}" placeholder="مثال: mystore" style="flex:1; min-width:0; direction:ltr;" ${restaurant.restriction_extra_channels_disabled ? 'disabled title="قنوات الاستقبال الإضافية (ماسنجر/تليجرام) متاحة في باقة PRO فقط"' : ''}>
+          <button type="button" id="testTelegramBtn" ${restaurant.restriction_extra_channels_disabled ? 'disabled' : ''} style="width:auto; flex:none; margin:0; white-space:nowrap; padding:10px 16px; background:transparent; border:1.5px dashed var(--stone); color:var(--stone-light); font-family:var(--body); font-weight:700; font-size:14px; border-radius:8px; cursor:pointer;">تجربة</button>
+        </div>
+        ${restaurant.restriction_extra_channels_disabled ? `<small style="color:var(--stone); margin-top:4px; display:block;">🔒 الاستقبال عبر ماسنجر وتليجرام متاح في باقة PRO فقط.</small>` : ''}
+      </div>
+      <div class="field">
+        <label>إشعار واتساب بالطلبات الجديدة (اختياري)</label>
+        <small>لتفعيل الإشعار: احفظ رقم <span dir="ltr" style="font-family:var(--mono);">+34 684 74 26 79</span> في هاتفك، وأرسل إليه عبر واتساب رسالة نصها بالإنجليزية تمامًا: <span dir="ltr" style="font-family:var(--mono);">I allow callmebot to send me messages</span>، وسيصلك رد برسالة تحتوي على الرمز الخاص بك (apikey). أدخل رقمك ورمزك أدناه.</small>
+        <input type="text" id="notifPhoneInput" value="${restaurant.notification_phone ? escapeHtml(restaurant.notification_phone) : ''}" placeholder="رقم واتساب بصيغة دولية: 201154361888" style="margin-top:8px; direction:ltr;" ${restaurant.restriction_notif_settings_disabled ? 'disabled title="تعديل رقم التنبيهات غير متاح في نسختك الحالية"' : ''}>
+        <input type="text" id="notifApikeyInput" value="${restaurant.notification_apikey ? escapeHtml(restaurant.notification_apikey) : ''}" placeholder="الرمز (apikey) الذي وصلك من البوت" style="margin-top:8px; direction:ltr;" ${restaurant.restriction_notif_settings_disabled ? 'disabled title="تعديل رقم التنبيهات غير متاح في نسختك الحالية"' : ''}>
+        ${restaurant.restriction_notif_settings_disabled ? `<small style="color:var(--stone); margin-top:4px; display:block;">🔒 رقم استلام إشعارات الطلبات مقفول من الإدارة.</small>` : ''}
+      </div>
+        </div>
+      </details>
+      <details class="rs-section">
+        <summary>🚚 الطلب والتوصيل</summary>
+        <div class="rs-section-body">
+      <div class="field">
+        <label>متوسط وقت تجهيز الطلب (بالدقايق)</label>
+        <small>يُحسب وقت الجاهزية المتوقع تلقائيًا لكل طلب جديد بناءً على هذا الرقم، ويمكنك تعديله لكل طلب على حدة من شاشة الطلبات.</small>
+        <input type="number" id="restPrepMinutesInput" min="1" max="180" value="${restaurant.default_prep_minutes || 20}" style="direction:ltr; margin-top:8px;">
       </div>
       <div class="field">
         <label>حد أدنى لقيمة الطلب في التوصيل (اختياري — اتركه فاضيًا لعدم وجود حد أدنى)</label>
@@ -10117,6 +10304,11 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
           ` : `<small style="color:var(--danger);">لا توجد مناطق مضافة بعد — أضف مناطق أولًا من "مناطق التوصيل" لاستخدام هذا الخيار.</small>`}
         </div>
       </div>
+        </div>
+      </details>
+      <details class="rs-section">
+        <summary>🍽 عرض المنيو</summary>
+        <div class="rs-section-body">
       <div class="field">
         <label style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
           <span>🚫 إظهار الصنف المتوقف بعلامة «نفذ»</span>
@@ -10124,6 +10316,11 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
         </label>
         <small>عند تفعيلها، الصنف اللي تضغط عليه "إخفاء مؤقتًا (نفذت الكمية)" يفضل ظاهر للعميل بصورة رمادية وعلامة «نفذ» ومن غير زر إضافة، بدل ما يختفي من المنيو.</small>
       </div>
+        </div>
+      </details>
+      <details class="rs-section">
+        <summary>💳 الدفع أونلاين</summary>
+        <div class="rs-section-body">
       <div class="field" id="rsOnlinePaymentField">
         <label style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
           <span>💳 قبول الدفع أونلاين</span>
@@ -10149,13 +10346,11 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
           </div>
         </div>
       </div>
-      <div class="field">
-        <label>إشعار واتساب بالطلبات الجديدة (اختياري)</label>
-        <small>لتفعيل الإشعار: احفظ رقم <span dir="ltr" style="font-family:var(--mono);">+34 684 74 26 79</span> في هاتفك، وأرسل إليه عبر واتساب رسالة نصها بالإنجليزية تمامًا: <span dir="ltr" style="font-family:var(--mono);">I allow callmebot to send me messages</span>، وسيصلك رد برسالة تحتوي على الرمز الخاص بك (apikey). أدخل رقمك ورمزك أدناه.</small>
-        <input type="text" id="notifPhoneInput" value="${restaurant.notification_phone ? escapeHtml(restaurant.notification_phone) : ''}" placeholder="رقم واتساب بصيغة دولية: 201154361888" style="margin-top:8px; direction:ltr;" ${restaurant.restriction_notif_settings_disabled ? 'disabled title="تعديل رقم التنبيهات غير متاح في نسختك الحالية"' : ''}>
-        <input type="text" id="notifApikeyInput" value="${restaurant.notification_apikey ? escapeHtml(restaurant.notification_apikey) : ''}" placeholder="الرمز (apikey) الذي وصلك من البوت" style="margin-top:8px; direction:ltr;" ${restaurant.restriction_notif_settings_disabled ? 'disabled title="تعديل رقم التنبيهات غير متاح في نسختك الحالية"' : ''}>
-        ${restaurant.restriction_notif_settings_disabled ? `<small style="color:var(--stone); margin-top:4px; display:block;">🔒 رقم استلام إشعارات الطلبات مقفول من الإدارة.</small>` : ''}
-      </div>
+        </div>
+      </details>
+      <details class="rs-section">
+        <summary>🧰 الصيانة</summary>
+        <div class="rs-section-body">
       <div class="field">
         <label>الصيانة</label>
         <small>أدوات صيانة دورية، لا حاجة لاستخدامها كثيرًا</small>
@@ -10164,6 +10359,8 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
           <button type="button" class="add-btn" id="rsCleanupImagesBtn" style="margin:0; flex:1;">تنظيف وتحسين الصور</button>
         </div>
       </div>
+        </div>
+      </details>
       <div class="modal-actions">
         <button class="btn-cancel" id="rsCancel">إلغاء</button>
         <button class="btn-confirm" id="rsConfirm">حفظ</button>
@@ -10171,6 +10368,24 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     </div>`;
   document.body.appendChild(overlay);
   wireEnterToConfirm(overlay, overlay.querySelector('#rsConfirm'));
+  // فتح/طي كل الأقسام
+  const rsToggleAll = overlay.querySelector('#rsToggleAll');
+  rsToggleAll.addEventListener('click', ()=>{
+    const secs = overlay.querySelectorAll('.rs-section');
+    const openAll = !Array.from(secs).every(d=> d.open);
+    secs.forEach(d=>{ d.open = openAll; });
+    rsToggleAll.textContent = openAll ? 'طي كل الأقسام' : 'فتح كل الأقسام';
+  });
+  // تنبيه لو فيه تعديلات لم تُحفظ عند الإغلاق
+  const snapSettings = ()=> Array.from(overlay.querySelectorAll('input,select,textarea')).map(el=> (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value).join('|')
+    + '#' + Array.from(overlay.querySelectorAll('.ord-type-btn.active')).map(e=> e.id).join(',')
+    + '#' + Array.from(overlay.querySelectorAll('.img-drop img')).map(e=> e.getAttribute('src')).join(',');
+  let rsBaseline = null;
+  setTimeout(()=>{ rsBaseline = snapSettings(); }, 0);
+  const rsTryClose = ()=>{
+    if(rsBaseline !== null && snapSettings() !== rsBaseline && !confirm('فيه تعديلات لم تُحفظ بعد. هل تريد الإغلاق بدون حفظ؟')) return;
+    overlay.remove();
+  };
 
   // إدارة قائمة المحافظ الإلكترونية (أكثر من محفظة لكل متجر)
   let pendingWallets = (Array.isArray(restaurant.wallets) && restaurant.wallets.length)
@@ -10378,8 +10593,8 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
       instapayFieldWrap.style.display = (countrySelect.value === 'EG') ? '' : 'none';
     });
   }
-  overlay.querySelector('#rsCancel').addEventListener('click', ()=> overlay.remove());
-  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#rsCancel').addEventListener('click', rsTryClose);
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) rsTryClose(); });
   overlay.querySelector('#rsConfirm').addEventListener('click', async ()=>{
     const name = overlay.querySelector('#restNameInput').value.trim();
     if(!name){ toast(`اسم ${t().entityDef} مطلوب`); return; }
@@ -11294,11 +11509,30 @@ function buildItemCard(item){
       ${(itemAddons[item.id] || []).length ? `<div style="font-size:11px; color:var(--basil); margin-top:2px;">🧂 ${(itemAddons[item.id] || []).length} إضافة متاحة</div>` : ''}
       <div class="item-tools">
         <button data-action="edit">تعديل</button>
+        <button data-action="duplicate">نسخ</button>
         <button data-action="toggleAvailability">${isAvailable ? 'إخفاء مؤقتًا (نفذت الكمية)' : 'إظهار مرة أخرى'}</button>
         ${restaurant.restriction_delete_disabled ? '' : `<button data-action="delete" class="danger">حذف</button>`}
       </div>
     </div>`;
   div.querySelector('[data-action="edit"]').addEventListener('click', ()=> openItemModal(item));
+  div.querySelector('[data-action="duplicate"]').addEventListener('click', ()=> duplicateItem(item));
+  if(itemSelectMode){
+    div.classList.add('selectable');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'item-select-cb';
+    cb.checked = selectedItemIds.has(item.id);
+    if(cb.checked) div.classList.add('selected');
+    div.insertBefore(cb, div.firstChild);
+    const toggle = ()=>{
+      if(selectedItemIds.has(item.id)) selectedItemIds.delete(item.id); else selectedItemIds.add(item.id);
+      cb.checked = selectedItemIds.has(item.id);
+      div.classList.toggle('selected', cb.checked);
+      updateBulkBar();
+    };
+    cb.addEventListener('click', (e)=>{ e.stopPropagation(); toggle(); });
+    div.addEventListener('click', (e)=>{ if(e.target !== cb) toggle(); });
+  }
   const itemDeleteBtn = div.querySelector('[data-action="delete"]');
   if(itemDeleteBtn) itemDeleteBtn.addEventListener('click', ()=> deleteItem(item.id));
   div.querySelector('[data-action="toggleAvailability"]').addEventListener('click', ()=> toggleItemAvailability(item, !isAvailable));
@@ -12165,16 +12399,214 @@ async function migrateLegacyImages(){
   return migrated;
 }
 
+// ===== تراجع بعد الحذف: بنحتفظ بنسخة من الصنف وتوابعه ونأجّل مسح الصور من التخزين 10 ثواني =====
+var pendingUndo = null;
+function showUndoToast(message, onUndo, onFinalize, ms){
+  if(pendingUndo){ pendingUndo.finalize(); }
+  const el = document.createElement('div');
+  el.className = 'undo-toast';
+  el.setAttribute('role', 'status');
+  el.innerHTML = `<span>${message}</span><button type="button">تراجع</button>`;
+  document.body.appendChild(el);
+  let settled = false;
+  const state = {
+    finalize: ()=>{ if(settled) return; settled = true; clearTimeout(timer); el.remove(); pendingUndo = null; if(onFinalize) onFinalize(); }
+  };
+  const timer = setTimeout(state.finalize, ms || 10000);
+  el.querySelector('button').addEventListener('click', async ()=>{
+    if(settled) return;
+    settled = true; clearTimeout(timer); el.remove(); pendingUndo = null;
+    await onUndo();
+  });
+  pendingUndo = state;
+}
+function snapshotItems(ids){
+  return ids.map(id=>{
+    const it = items.find(i=> i.id === id);
+    if(!it) return null;
+    return {
+      item: Object.assign({}, it),
+      sizes: (itemSizes[id] || []).map(x=> Object.assign({}, x)),
+      addons: (itemAddons[id] || []).map(x=> Object.assign({}, x)),
+      groups: (itemAddonGroupLinks[id] || []).slice(),
+      overrides: Object.assign({}, itemOptionPriceOverrides[id] || {})
+    };
+  }).filter(Boolean);
+}
+async function restoreItemsSnapshot(snaps){
+  const ins = async (table, rows)=>{ if(!rows.length) return; const { error } = await sb.from(table).insert(rows); if(error) throw error; };
+  await ins('items', snaps.map(s=> s.item));
+  await ins('item_sizes', snaps.flatMap(s=> s.sizes));
+  await ins('item_addons', snaps.flatMap(s=> s.addons));
+  await ins('item_addon_groups', snaps.flatMap(s=> s.groups.map((group_id, idx)=> ({ item_id: s.item.id, group_id, position: idx }))));
+  await ins('item_addon_option_prices', snaps.flatMap(s=> Object.entries(s.overrides).map(([option_id, price])=> ({ item_id: s.item.id, option_id, price }))));
+}
+async function deleteItemsWithUndo(ids, label){
+  const snaps = snapshotItems(ids);
+  if(!snaps.length) return false;
+  const { error } = await sb.from('items').delete().in('id', ids);
+  if(error){ toast('تعذر الحذف'); return false; }
+  await refreshData();
+  showUndoToast(label, async ()=>{
+    try{
+      await restoreItemsSnapshot(snaps);
+      await refreshData();
+      toast('تم التراجع عن الحذف');
+    }catch(e){
+      toast('تعذر التراجع عن الحذف');
+      await refreshData();
+    }
+  }, ()=>{ snaps.forEach(s=>{ if(s.item.image_url) deleteStorageFileFromUrl(s.item.image_url); }); });
+  return true;
+}
 async function deleteItem(id){
   if(restaurant.restriction_delete_disabled){ toast('حذف الأصناف غير متاح في نسختك الحالية'); return; }
   if(!confirm(`حذف هذا ${biz(restaurant.business_type,'itemDef')}؟`)) return;
-  const item = items.find(i=>i.id===id);
-  const { error } = await sb.from('items').delete().eq('id', id);
-  if(error){ toast('تعذر الحذف'); return; }
-  if(item && item.image_url) await deleteStorageFileFromUrl(item.image_url);
-  await refreshData();
-  toast('تم الحذف');
+  await deleteItemsWithUndo([id], 'تم الحذف');
 }
+
+// ===== نسخ صنف (بأحجامه وإضافاته وربط مجموعاته، وبنسخة مستقلة من صورته) =====
+async function duplicateItem(item){
+  if(restaurant.restriction_max_items_enabled){
+    const limit = restaurant.restriction_max_items_value || 10;
+    if(items.length >= limit){ toast(`وصلت للحد الأقصى (${limit}) لعدد ${biz(restaurant.business_type,'itemsDef')} في نسختك الحالية`); return; }
+  }
+  const siblings = items.filter(i=> i.category_id === item.category_id);
+  const nextPos = siblings.reduce((m, i)=> Math.max(m, Number(i.position) || 0), 0) + 1;
+  const row = {
+    category_id: item.category_id,
+    name: `${item.name} (نسخة)`,
+    name_en: item.name_en ? `${item.name_en} (copy)` : null,
+    price: item.price, description: item.description, image_url: null,
+    pricing_type: item.pricing_type, position: nextPos, is_available: item.is_available,
+    old_price: item.old_price, weight_sale_mode: item.weight_sale_mode,
+    min_weight_grams: item.min_weight_grams, cost_price: item.cost_price
+  };
+  const { data: created, error } = await sb.from('items').insert(row).select().single();
+  if(error || !created){ toast('تعذر نسخ الصنف'); return; }
+  let copiedImagePath = null;
+  try{
+    if(item.image_url && item.image_url.includes('/menu-images/')){
+      const src = item.image_url.split('/menu-images/')[1];
+      const dir = src.includes('/') ? src.slice(0, src.lastIndexOf('/')) : '';
+      const ext = src.includes('.') ? src.slice(src.lastIndexOf('.') + 1) : 'jpg';
+      const dest = `${dir ? dir + '/' : ''}${crypto.randomUUID()}.${ext}`;
+      const { error: cpErr } = await sb.storage.from('menu-images').copy(src, dest);
+      if(!cpErr){
+        copiedImagePath = dest;
+        const { data: pub } = sb.storage.from('menu-images').getPublicUrl(dest);
+        const { error: upErr } = await sb.from('items').update({ image_url: pub.publicUrl }).eq('id', created.id);
+        if(upErr) throw upErr;
+      }
+    }
+    const ins = async (table, rows)=>{ if(!rows.length) return; const { error: e } = await sb.from(table).insert(rows); if(e) throw e; };
+    await ins('item_sizes', (itemSizes[item.id] || []).map(x=> ({ item_id: created.id, size_name: x.size_name, size_name_en: x.size_name_en, price: x.price, position: x.position })));
+    await ins('item_addons', (itemAddons[item.id] || []).map(x=> ({ item_id: created.id, name: x.name, name_en: x.name_en, price: x.price, position: x.position })));
+    await ins('item_addon_groups', (itemAddonGroupLinks[item.id] || []).map((group_id, idx)=> ({ item_id: created.id, group_id, position: idx })));
+    await ins('item_addon_option_prices', Object.entries(itemOptionPriceOverrides[item.id] || {}).map(([option_id, price])=> ({ item_id: created.id, option_id, price })));
+  }catch(e){
+    await sb.from('items').delete().eq('id', created.id);
+    if(copiedImagePath) { try{ await sb.storage.from('menu-images').remove([copiedImagePath]); }catch(_){} }
+    toast('تعذر نسخ الصنف');
+    return;
+  }
+  await refreshData();
+  toast('تم نسخ الصنف — عدّل اسمه وبياناته');
+  const fresh = items.find(i=> i.id === created.id);
+  if(fresh) openItemModal(fresh);
+}
+
+// ===== تحديد عدة أصناف وإجراءات جماعية =====
+var itemSelectMode = false;
+var selectedItemIds = new Set();
+function visibleItemIdsNow(){
+  if(itemSearchQuery.trim()){
+    const q = itemSearchQuery.trim().toLowerCase();
+    return items.filter(i=> (i.name && i.name.toLowerCase().includes(q)) || (i.name_en && i.name_en.toLowerCase().includes(q)) || (i.description && i.description.toLowerCase().includes(q))).map(i=> i.id);
+  }
+  return items.filter(i=> i.category_id === selectedCategoryId).map(i=> i.id);
+}
+function updateBulkBar(){
+  const bar = document.getElementById('bulkBar');
+  if(!bar) return;
+  bar.classList.toggle('hidden', !itemSelectMode);
+  const n = selectedItemIds.size;
+  document.getElementById('bulkCount').textContent = `${n} محدد`;
+  ['bulkHideBtn','bulkShowBtn','bulkMoveBtn','bulkDeleteBtn'].forEach(id=>{ const b = document.getElementById(id); if(b) b.disabled = n === 0; });
+  const del = document.getElementById('bulkDeleteBtn');
+  if(del) del.style.display = restaurant && restaurant.restriction_delete_disabled ? 'none' : '';
+  const all = document.getElementById('bulkSelectAllBtn');
+  if(all){ const ids = visibleItemIdsNow(); all.textContent = ids.length && ids.every(id=> selectedItemIds.has(id)) ? 'إلغاء تحديد الكل' : 'تحديد الكل'; }
+}
+function setItemSelectMode(on){
+  itemSelectMode = on;
+  selectedItemIds = new Set();
+  const btn = document.getElementById('selectModeBtn');
+  if(btn) btn.textContent = on ? '✖ إنهاء التحديد' : '☑️ تحديد عدة أصناف (إخفاء / نقل / حذف)';
+  renderItems();
+  updateBulkBar();
+}
+async function bulkSetAvailability(makeAvailable){
+  const ids = [...selectedItemIds];
+  if(!ids.length) return;
+  const { error } = await sb.from('items').update({ is_available: makeAvailable }).in('id', ids);
+  if(error){ toast('تعذر التحديث'); return; }
+  setItemSelectMode(false);
+  await refreshData();
+  toast(makeAvailable ? 'تم إظهار الأصناف المحددة' : 'تم إخفاء الأصناف المحددة');
+}
+function openBulkMoveModal(){
+  const ids = [...selectedItemIds];
+  if(!ids.length) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>نقل ${ids.length} إلى فئة</h3>
+      <div class="field">
+        <label>الفئة الجديدة</label>
+        <select id="bulkMoveTarget">${categories.map(c=> `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="bulkMoveCancel">إلغاء</button>
+        <button class="btn-confirm" id="bulkMoveConfirm">نقل</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#bulkMoveCancel').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#bulkMoveConfirm').addEventListener('click', async ()=>{
+    const target = overlay.querySelector('#bulkMoveTarget').value;
+    const base = items.filter(i=> i.category_id === target).reduce((m, i)=> Math.max(m, Number(i.position) || 0), 0);
+    const ordered = items.filter(i=> ids.includes(i.id));
+    const results = await Promise.all(ordered.map((it, idx)=> sb.from('items').update({ category_id: target, position: base + idx + 1 }).eq('id', it.id)));
+    if(results.some(r=> r.error)){ toast('تعذر نقل بعض الأصناف'); }
+    overlay.remove();
+    setItemSelectMode(false);
+    await refreshData();
+    toast('تم نقل الأصناف');
+  });
+}
+document.getElementById('selectModeBtn').addEventListener('click', ()=> setItemSelectMode(!itemSelectMode));
+document.getElementById('bulkCancelBtn').addEventListener('click', ()=> setItemSelectMode(false));
+document.getElementById('bulkHideBtn').addEventListener('click', ()=> bulkSetAvailability(false));
+document.getElementById('bulkShowBtn').addEventListener('click', ()=> bulkSetAvailability(true));
+document.getElementById('bulkMoveBtn').addEventListener('click', openBulkMoveModal);
+document.getElementById('bulkSelectAllBtn').addEventListener('click', ()=>{
+  const ids = visibleItemIdsNow();
+  const allSelected = ids.length && ids.every(id=> selectedItemIds.has(id));
+  ids.forEach(id=>{ if(allSelected) selectedItemIds.delete(id); else selectedItemIds.add(id); });
+  renderItems();
+  updateBulkBar();
+});
+document.getElementById('bulkDeleteBtn').addEventListener('click', async ()=>{
+  if(restaurant.restriction_delete_disabled){ toast('حذف الأصناف غير متاح في نسختك الحالية'); return; }
+  const ids = [...selectedItemIds];
+  if(!ids.length) return;
+  if(!confirm(`حذف ${ids.length} من الأصناف المحددة؟ (تقدر تتراجع خلال 10 ثواني)`)) return;
+  setItemSelectMode(false);
+  await deleteItemsWithUndo(ids, `تم حذف ${ids.length} من الأصناف`);
+});
 
 function openItemModal(existing){
   if(!selectedCategoryId){ toast('يرجى إضافة فئة أولاً'); return; }
