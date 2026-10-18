@@ -213,6 +213,55 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .rs-section[open] > summary::after{ content:'▴'; }
 .rs-section[open] > summary{ border-bottom:1px solid var(--line); }
 .rs-section-body{ padding:12px 14px 2px; }
+.orders-overlay{ padding:14px; }
+.modal.orders-modal{ display:flex; flex-direction:column; width:min(1560px,97vw); height:min(94vh,1000px); max-height:none; padding:0; overflow:hidden; }
+.orders-head{ flex-shrink:0; display:flex; flex-wrap:wrap; align-items:center; gap:10px 12px; padding:16px 22px 10px; border-bottom:1px solid var(--line); background:inherit; }
+.orders-head > *{ margin:0; }
+.orders-head .orders-title-row, .orders-head #autoPrintNote, .orders-head .orders-summary{ flex:1 1 100%; }
+.orders-head .order-filters{ flex:1 1 auto; margin:0; }
+.orders-head .orders-selects{ display:flex; gap:8px; flex:0 1 auto; }
+.orders-head .orders-selects .orders-sel{ flex:0 0 auto; min-width:150px; }
+.orders-head #ordersTableFilter{ flex:0 0 200px; min-width:160px; }
+.orders-head .orders-search-input{ flex:1 1 260px; width:auto; margin:0; }
+.orders-head .orders-summary{ margin:0; }
+.orders-body{ flex:1; min-height:0; overflow-y:auto; padding:16px 22px; }
+.orders-foot{ flex-shrink:0; padding:12px 22px calc(12px + env(safe-area-inset-bottom, 0px)); border-top:1px solid var(--line); background:inherit; }
+.orders-foot .modal-actions{ margin:0; justify-content:flex-end; }
+.orders-foot .modal-actions button{ flex:0 0 auto; min-width:160px; }
+.orders-modal .orders-list{ max-height:none; overflow:visible; display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,350px),1fr)); gap:14px; align-items:start; }
+.orders-modal .orders-list > .orders-empty{ grid-column:1 / -1; }
+.orders-modal .order-row{ margin:0; }
+@media (hover:hover){ .orders-modal .order-row:hover{ box-shadow:0 4px 16px rgba(32,31,29,.12); } }
+@media (max-width:1099px){
+  .modal.orders-modal{ width:96vw; height:94vh; }
+  .orders-head{ padding:14px 16px 8px; }
+  .orders-body{ padding:12px 16px; }
+  .orders-foot{ padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .orders-modal .orders-list{ grid-template-columns:repeat(auto-fill,minmax(min(100%,310px),1fr)); }
+  .orders-head .orders-search-input{ flex:1 1 100%; }
+}
+@media (max-width:700px){
+  .orders-overlay{ padding:0; align-items:stretch; }
+  .modal.orders-modal{ width:100vw; max-width:100vw; height:100dvh; height:100vh; border-radius:0; display:block; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  @supports (height:100dvh){ .modal.orders-modal{ height:100dvh; } }
+  .orders-head{ position:static; padding:12px 12px 8px; }
+  .orders-body{ overflow:visible; padding:10px 12px; }
+  .orders-foot{ position:sticky; bottom:0; z-index:3; padding:10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); box-shadow:0 -6px 16px rgba(0,0,0,.12); }
+  .orders-foot .modal-actions button{ flex:1; }
+  .orders-modal .orders-list{ grid-template-columns:1fr; }
+  .orders-head .order-filters{ flex:1 1 100%; flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch; }
+  .orders-head .order-filters .order-filter-btn{ flex:0 0 auto; white-space:nowrap; }
+  .orders-head .orders-selects{ flex:1 1 100%; }
+  .orders-head .orders-selects .orders-sel{ flex:1; min-width:0; }
+  .orders-head #ordersTableFilter{ flex:1 1 100%; }
+  .orders-head .orders-title-row h3{ font-size:18px; }
+}
+@media (pointer:coarse){
+  .orders-modal .status-select{ min-height:44px; font-size:14px; }
+  .orders-modal .order-filter-btn{ padding:9px 16px; }
+  .orders-modal .orders-sel, .orders-modal .orders-search-input{ min-height:42px; font-size:16px; }
+  .orders-modal .o-wa-btn, .orders-modal .o-print-btn{ padding:7px 14px; }
+}
 .orders-sel{ flex:1; min-width:140px; border:1.5px solid var(--line); border-radius:10px; padding:8px 10px; font-family:inherit; font-size:13px; background:var(--paper); color:var(--ink); }
 .orders-summary{ display:flex; gap:14px; flex-wrap:wrap; align-items:center; padding:8px 12px; margin:8px 0 10px; border:1px dashed var(--line); border-radius:10px; font-size:12.5px; font-weight:700; color:var(--stone); }
 .orders-summary strong{ color:var(--ink); }
@@ -4651,6 +4700,7 @@ function subscribeToNewOrders(){
       table: 'orders',
       filter: `restaurant_id=eq.${restaurant.id}`
     }, (payload)=>{
+      if(window.__ordersModalApi) window.__ordersModalApi.onInsert(payload.new);
       newOrdersCount++;
       updateNewOrdersBadge();
       startOrderAlertLoop();
@@ -4665,7 +4715,8 @@ function subscribeToNewOrders(){
       schema: 'public',
       table: 'orders',
       filter: `restaurant_id=eq.${restaurant.id}`
-    }, ()=>{
+    }, (payload)=>{
+      if(window.__ordersModalApi) window.__ordersModalApi.onUpdate(payload.new);
       refreshNewOrdersCount();
     })
     .subscribe();
@@ -6070,10 +6121,11 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
 async function openOrdersOverlay(){
   stopOrderAlertLoop();
   const overlay = document.createElement('div');
-  overlay.className = 'overlay';
+  overlay.className = 'overlay orders-overlay';
   overlay.innerHTML = `
-    <div class="modal">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+    <div class="modal orders-modal">
+      <div class="orders-head">
+      <div class="orders-title-row" style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
         <h3 style="margin:0;">الطلبات الواردة</h3>
         <span style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
           <select id="alertToneSelect" style="font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid var(--line); background:var(--paper-dim); color:var(--stone);">
@@ -6093,7 +6145,7 @@ async function openOrdersOverlay(){
         <button type="button" class="order-filter-btn" data-filter="week">آخر 7 أيام</button>
         <button type="button" class="order-filter-btn" data-filter="previous">أيام سابقة</button>
       </div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0;">
+      <div class="orders-selects">
         <select id="ordersStatusFilter" class="orders-sel" aria-label="حالة الطلب">
           <option value="all">كل الحالات</option>
           <option value="pending">قيد الانتظار</option>
@@ -6109,20 +6161,38 @@ async function openOrdersOverlay(){
         </select>
       </div>
       <div class="orders-summary" id="ordersSummary" aria-live="polite"></div>
-      <select id="ordersTableFilter" class="hidden" style="width:100%; box-sizing:border-box; border:1.5px solid var(--line); border-radius:10px; padding:9px 12px; font-family:var(--body); font-size:13px; color:var(--ink); background:var(--paper); margin-bottom:12px;">
+      <select id="ordersTableFilter" class="orders-sel hidden">
         <option value="all">🧾 كل الطلبات (توصيل / استلام / طاولات)</option>
         <option value="dine_in_any">🍽️ كل طلبات الطاولات</option>
       </select>
       <input type="text" id="ordersSearchInput" class="orders-search-input" placeholder="بحث برقم الطلب، اسم العميل، أو رقم الهاتف...">
+      </div>
+      <div class="orders-body">
       <div class="orders-list" id="ordersListWrap"><div class="orders-empty">جارِ التحميل...</div></div>
       <div style="text-align:center; margin-top:10px;"><button type="button" class="chip-btn hidden" id="ordersLoadMoreBtn">⬇️ تحميل طلبات أقدم</button></div>
-      <div class="modal-actions">
-        <button class="btn-cancel" id="ordersCloseBtn">إغلاق</button>
+      </div>
+      <div class="orders-foot">
+        <div class="modal-actions">
+          <button class="btn-cancel" id="ordersCloseBtn">إغلاق</button>
+        </div>
       </div>
     </div>`;
   document.body.appendChild(overlay);
-  overlay.querySelector('#ordersCloseBtn').addEventListener('click', ()=> overlay.remove());
-  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  const closeOrders = ()=>{
+    document.removeEventListener('keydown', ordersKeyHandler);
+    if(window.__ordersModalApi && window.__ordersModalApi.overlay === overlay) window.__ordersModalApi = null;
+    overlay.remove();
+  };
+  // اختصارات للكمبيوتر: Esc للإغلاق، و "/" للانتقال لخانة البحث
+  function ordersKeyHandler(e){
+    if(e.key === 'Escape'){ closeOrders(); return; }
+    const tag = (document.activeElement && document.activeElement.tagName) || '';
+    if(e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT'){ e.preventDefault(); const si = overlay.querySelector('#ordersSearchInput'); if(si) si.focus(); }
+  }
+  document.addEventListener('keydown', ordersKeyHandler);
+  overlay.addEventListener('pointerdown', ()=> stopOrderAlertLoop(), true); // لمس الشاشة = تم الاطلاع، يوقف التنبيه المتكرر
+  overlay.querySelector('#ordersCloseBtn').addEventListener('click', closeOrders);
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeOrders(); });
 
   const toneSelect = overlay.querySelector('#alertToneSelect');
   toneSelect.value = getSelectedAlertTone();
@@ -6156,7 +6226,7 @@ async function openOrdersOverlay(){
   let hasMoreOrders = !!orders && orders.length === ORDERS_PAGE;
   const wrap = overlay.querySelector('#ordersListWrap');
   if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل الطلبات</div>`; return; }
-  if(!orders || orders.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا توجد طلبات بعد</div>`; return; }
+  if(!orders){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل الطلبات</div>`; return; }
 
   // يتم تسجيل الطلبات التي "لم تُشاهَد بعد" قبل فتح هذه الشاشة، لعرض شارة "جديد" عليها في العرض الحالي فقط
   // (إذا لم يتم ذلك، سيُضاف seen_at لأي طلب فور فتح الشاشة، فلن نتمكن من تمييزه)
@@ -6506,7 +6576,7 @@ async function openOrdersOverlay(){
     const moreBtn = overlay.querySelector('#ordersLoadMoreBtn');
     moreBtn.classList.toggle('hidden', !hasMoreOrders);
     if(filtered.length === 0){
-      wrap.innerHTML = `<div class="orders-empty">${searchQuery ? 'لا توجد نتائج مطابقة للبحث' : 'لا توجد طلبات في هذا التصنيف'}</div>`;
+      wrap.innerHTML = `<div class="orders-empty">${orders.length === 0 ? 'لا توجد طلبات بعد' : (searchQuery ? 'لا توجد نتائج مطابقة للبحث' : 'لا توجد طلبات في هذا التصنيف')}</div>`;
       return;
     }
     wrap.innerHTML = filtered.map(orderRowHtml).join('');
@@ -6553,6 +6623,37 @@ async function openOrdersOverlay(){
   });
 
   renderList();
+
+  // تحديث لحظي للشاشة المفتوحة (مهم لشاشة المطبخ/الكاشير الكبيرة): طلب جديد يظهر فورًا، وتغيير الحالة من جهاز تاني ينعكس
+  let softTimer = null;
+  function softRender(){
+    clearTimeout(softTimer);
+    softTimer = setTimeout(()=>{
+      const ae = document.activeElement;
+      if(ae && wrap.contains(ae) && ae.tagName === 'SELECT'){ softRender(); return; } // ما نقفلش قايمة منسدلة المستخدم فاتحها
+      renderList();
+    }, 400);
+  }
+  window.__ordersModalApi = {
+    overlay,
+    async onInsert(row){
+      if(!row || orders.some(o=> o.id === row.id)) return;
+      await new Promise(r=> setTimeout(r, 800)); // order_items بتتضاف بعد الطلب بلحظات
+      try{ await loadItemsForOrders([row]); }catch(e){}
+      if(orders.some(o=> o.id === row.id)) return;
+      unseenAtOpenIds.add(row.id);
+      orders.unshift(row);
+      sb.from('orders').update({ seen_at: new Date().toISOString() }).eq('id', row.id).then(()=>{}, ()=>{});
+      softRender();
+    },
+    onUpdate(row){
+      if(!row) return;
+      const idx = orders.findIndex(o=> o.id === row.id);
+      if(idx < 0) return;
+      orders[idx] = Object.assign(orders[idx], row);
+      softRender();
+    }
+  };
 }
 document.getElementById('viewOrdersBtn').addEventListener('click', openOrdersOverlay);
 document.getElementById('abandonedCartsBtn').addEventListener('click', openAbandonedCartsOverlay);
