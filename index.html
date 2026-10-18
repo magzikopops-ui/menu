@@ -213,6 +213,37 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .rs-section[open] > summary::after{ content:'▴'; }
 .rs-section[open] > summary{ border-bottom:1px solid var(--line); }
 .rs-section-body{ padding:12px 14px 2px; }
+.settings-overlay{ padding:14px; }
+.modal.settings-modal{ display:flex; flex-direction:column; width:min(1200px,96vw); height:min(92vh,1000px); max-height:none; padding:0; overflow:hidden; }
+.settings-head{ flex-shrink:0; display:flex; align-items:center; gap:10px 14px; flex-wrap:wrap; padding:14px 22px; border-bottom:1px solid var(--line); background:inherit; }
+.settings-head h3{ margin:0; flex:0 0 auto; }
+.settings-search{ flex:1 1 220px; min-width:0; box-sizing:border-box; border:1.5px solid var(--line); border-radius:10px; padding:8px 12px; font-family:var(--body); font-size:13px; color:var(--ink); background:var(--paper); }
+.settings-search:focus{ outline:none; border-color:var(--ember); }
+.settings-body{ flex:1; min-height:0; overflow-y:auto; padding:16px 22px; }
+.settings-foot{ flex-shrink:0; padding:12px 22px calc(12px + env(safe-area-inset-bottom, 0px)); border-top:1px solid var(--line); background:inherit; }
+.settings-foot .modal-actions{ margin:0; justify-content:flex-end; flex-direction:row; }
+.settings-foot .modal-actions button{ flex:0 0 auto; min-width:150px; }
+.rs-sections{ columns:480px; column-gap:16px; }
+.rs-sections .rs-section{ break-inside:avoid; margin-bottom:14px; }
+@media (max-width:1099px){
+  .modal.settings-modal{ width:96vw; height:94vh; }
+  .settings-head, .settings-body, .settings-foot{ padding-left:16px; padding-right:16px; }
+}
+@media (max-width:700px){
+  .settings-overlay{ padding:0; align-items:stretch; }
+  .modal.settings-modal{ width:100vw; max-width:100vw; height:100vh; border-radius:0; }
+  @supports (height:100dvh){ .modal.settings-modal{ height:100dvh; } }
+  .settings-head{ padding:10px 12px; }
+  .settings-head h3{ font-size:17px; flex:1 1 auto; }
+  .settings-search{ order:3; flex:1 1 100%; }
+  .settings-body{ padding:12px; }
+  .settings-foot{ padding:10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .settings-foot .modal-actions button{ flex:1; }
+}
+@media (pointer:coarse){
+  .settings-modal .rs-section > summary{ min-height:48px; }
+  .settings-search{ min-height:42px; font-size:16px; }
+}
 .orders-overlay{ padding:14px; }
 .modal.orders-modal{ display:flex; flex-direction:column; width:min(1560px,97vw); height:min(94vh,1000px); max-height:none; padding:0; overflow:hidden; }
 .orders-head{ flex-shrink:0; display:flex; flex-wrap:wrap; align-items:center; gap:10px 12px; padding:16px 22px 10px; border-bottom:1px solid var(--line); background:inherit; }
@@ -2666,7 +2697,9 @@ document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
   const overlays = document.querySelectorAll('.overlay');
   if(overlays.length === 0) return;
-  overlays[overlays.length - 1].remove();
+  const top = overlays[overlays.length - 1];
+  if(top.dataset.escGuard === '1') return; // النافذة بتتعامل مع Esc بنفسها (زي الإعدادات: تنبيه التعديلات غير المحفوظة)
+  top.remove();
 });
 
 // تحديد النص بالكامل تلقائيًا عند التركيز على أي حقل رقمي (سعر، رسوم...) لتسهيل الكتابة فوقه
@@ -6122,6 +6155,7 @@ async function openOrdersOverlay(){
   stopOrderAlertLoop();
   const overlay = document.createElement('div');
   overlay.className = 'overlay orders-overlay';
+  overlay.dataset.escGuard = '1';
   overlay.innerHTML = `
     <div class="modal orders-modal">
       <div class="orders-head">
@@ -10700,11 +10734,17 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
   let pendingBizType = restaurant.business_type === 'store' ? 'store' : 'restaurant';
   const t = () => BIZ_TERMS[pendingBizType];
   const overlay = document.createElement('div');
-  overlay.className = 'overlay';
+  overlay.className = 'overlay settings-overlay';
+  overlay.dataset.escGuard = '1';
   overlay.innerHTML = `
-    <div class="modal">
-      <h3 id="rsHeading">إعدادات ${t().entityDef}</h3>
-      <div style="display:flex; justify-content:flex-end; margin:-4px 0 10px;"><button type="button" class="chip-btn" id="rsToggleAll">فتح كل الأقسام</button></div>
+    <div class="modal settings-modal">
+      <div class="settings-head">
+        <h3 id="rsHeading">إعدادات ${t().entityDef}</h3>
+        <input type="search" id="rsSearch" class="settings-search" placeholder="🔍 ابحث في الإعدادات..." aria-label="بحث في الإعدادات">
+        <button type="button" class="chip-btn" id="rsToggleAll">فتح كل الأقسام</button>
+      </div>
+      <div class="settings-body">
+      <div class="rs-sections">
       <details class="rs-section" open>
         <summary>🏪 بيانات النشاط</summary>
         <div class="rs-section-body">
@@ -10897,9 +10937,14 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
       </div>
         </div>
       </details>
-      <div class="modal-actions">
-        <button class="btn-cancel" id="rsCancel">إلغاء</button>
-        <button class="btn-confirm" id="rsConfirm">حفظ</button>
+      </div>
+      <div class="orders-empty hidden" id="rsNoResults">لا توجد إعدادات مطابقة للبحث</div>
+      </div>
+      <div class="settings-foot">
+        <div class="modal-actions">
+          <button class="btn-cancel" id="rsCancel">إلغاء</button>
+          <button class="btn-confirm" id="rsConfirm">حفظ</button>
+        </div>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -10912,6 +10957,30 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     secs.forEach(d=>{ d.open = openAll; });
     rsToggleAll.textContent = openAll ? 'طي كل الأقسام' : 'فتح كل الأقسام';
   });
+  // على الشاشات الكبيرة: كل الأقسام مفتوحة من البداية (فيه مساحة)
+  if(window.matchMedia && window.matchMedia('(min-width:1000px)').matches){
+    overlay.querySelectorAll('.rs-section').forEach(d=>{ d.open = true; });
+    rsToggleAll.textContent = 'طي كل الأقسام';
+  }
+  // بحث داخل الإعدادات: يخفي الحقول غير المطابقة ويفتح الأقسام اللي فيها نتائج
+  const rsSearch = overlay.querySelector('#rsSearch');
+  rsSearch.addEventListener('input', ()=>{
+    const q = rsSearch.value.trim().toLowerCase();
+    let anySection = false;
+    overlay.querySelectorAll('.rs-section').forEach(sec=>{
+      let any = false;
+      sec.querySelectorAll('.rs-section-body > .field').forEach(f=>{
+        const hit = !q || f.textContent.toLowerCase().includes(q);
+        f.style.display = hit ? '' : 'none';
+        if(hit) any = true;
+      });
+      sec.querySelectorAll('.rs-section-body > :not(.field)').forEach(x=>{ x.style.display = q ? 'none' : ''; });
+      sec.style.display = any ? '' : 'none';
+      if(q && any) sec.open = true;
+      if(any) anySection = true;
+    });
+    overlay.querySelector('#rsNoResults').classList.toggle('hidden', anySection || !q);
+  });
   // تنبيه لو فيه تعديلات لم تُحفظ عند الإغلاق
   const snapSettings = ()=> Array.from(overlay.querySelectorAll('input,select,textarea')).map(el=> (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value).join('|')
     + '#' + Array.from(overlay.querySelectorAll('.ord-type-btn.active')).map(e=> e.id).join(',')
@@ -10922,6 +10991,11 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     if(rsBaseline !== null && snapSettings() !== rsBaseline && !confirm('فيه تعديلات لم تُحفظ بعد. هل تريد الإغلاق بدون حفظ؟')) return;
     overlay.remove();
   };
+  const rsKeyHandler = (e)=>{
+    if(!document.body.contains(overlay)){ document.removeEventListener('keydown', rsKeyHandler); return; }
+    if(e.key === 'Escape') rsTryClose();
+  };
+  document.addEventListener('keydown', rsKeyHandler);
 
   // إدارة قائمة المحافظ الإلكترونية (أكثر من محفظة لكل متجر)
   let pendingWallets = (Array.isArray(restaurant.wallets) && restaurant.wallets.length)
