@@ -213,6 +213,9 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .rs-section[open] > summary::after{ content:'▴'; }
 .rs-section[open] > summary{ border-bottom:1px solid var(--line); }
 .rs-section-body{ padding:12px 14px 2px; }
+.orders-sel{ flex:1; min-width:140px; border:1.5px solid var(--line); border-radius:10px; padding:8px 10px; font-family:inherit; font-size:13px; background:var(--paper); color:var(--ink); }
+.orders-summary{ display:flex; gap:14px; flex-wrap:wrap; align-items:center; padding:8px 12px; margin:8px 0 10px; border:1px dashed var(--line); border-radius:10px; font-size:12.5px; font-weight:700; color:var(--stone); }
+.orders-summary strong{ color:var(--ink); }
 .rt-tabs{ display:flex; gap:6px; margin-bottom:12px; }
 .rt-summary{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--paper-dim); margin-bottom:12px; }
 .rt-big{ font-size:30px; font-weight:800; color:var(--ink); line-height:1; }
@@ -6090,12 +6093,29 @@ async function openOrdersOverlay(){
         <button type="button" class="order-filter-btn" data-filter="week">آخر 7 أيام</button>
         <button type="button" class="order-filter-btn" data-filter="previous">أيام سابقة</button>
       </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0;">
+        <select id="ordersStatusFilter" class="orders-sel" aria-label="حالة الطلب">
+          <option value="all">كل الحالات</option>
+          <option value="pending">قيد الانتظار</option>
+          <option value="preparing">قيد التجهيز</option>
+          <option value="delivered">تم التسليم</option>
+          <option value="cancelled">ملغي</option>
+        </select>
+        <select id="ordersTypeFilter" class="orders-sel" aria-label="نوع الطلب">
+          <option value="all">كل الأنواع</option>
+          <option value="delivery">🛵 توصيل</option>
+          <option value="pickup">📦 استلام</option>
+          <option value="dine_in">🍽️ طاولات</option>
+        </select>
+      </div>
+      <div class="orders-summary" id="ordersSummary" aria-live="polite"></div>
       <select id="ordersTableFilter" class="hidden" style="width:100%; box-sizing:border-box; border:1.5px solid var(--line); border-radius:10px; padding:9px 12px; font-family:var(--body); font-size:13px; color:var(--ink); background:var(--paper); margin-bottom:12px;">
         <option value="all">🧾 كل الطلبات (توصيل / استلام / طاولات)</option>
         <option value="dine_in_any">🍽️ كل طلبات الطاولات</option>
       </select>
       <input type="text" id="ordersSearchInput" class="orders-search-input" placeholder="بحث برقم الطلب، اسم العميل، أو رقم الهاتف...">
       <div class="orders-list" id="ordersListWrap"><div class="orders-empty">جارِ التحميل...</div></div>
+      <div style="text-align:center; margin-top:10px;"><button type="button" class="chip-btn hidden" id="ordersLoadMoreBtn">⬇️ تحميل طلبات أقدم</button></div>
       <div class="modal-actions">
         <button class="btn-cancel" id="ordersCloseBtn">إغلاق</button>
       </div>
@@ -6129,7 +6149,11 @@ async function openOrdersOverlay(){
     toast(isAutoPrintEnabled() ? 'تم تفعيل الطباعة التلقائية على هذا الجهاز' : 'تم إيقاف الطباعة التلقائية على هذا الجهاز');
   });
 
-  const { data: orders, error } = await sb.from('orders').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending:false });
+  // تحميل آخر 300 طلب فقط (بدل كل الطلبات)، والأقدم بزر «تحميل طلبات أقدم»
+  const ORDERS_PAGE = 300;
+  const { data: orders, error } = await sb.from('orders').select('*').eq('restaurant_id', restaurant.id)
+    .order('created_at', { ascending:false }).order('id', { ascending:false }).range(0, ORDERS_PAGE - 1);
+  let hasMoreOrders = !!orders && orders.length === ORDERS_PAGE;
   const wrap = overlay.querySelector('#ordersListWrap');
   if(error){ wrap.innerHTML = `<div class="orders-empty">تعذر تحميل الطلبات</div>`; return; }
   if(!orders || orders.length === 0){ wrap.innerHTML = `<div class="orders-empty">لا توجد طلبات بعد</div>`; return; }
@@ -6146,14 +6170,18 @@ async function openOrdersOverlay(){
   }
 
   let itemsByOrder = {};
-  const orderIds = orders.map(o=>o.id);
-  if(orderIds.length){
-    const { data: allItems } = await sb.from('order_items').select('*').in('order_id', orderIds);
-    (allItems || []).forEach(oi=>{
-      if(!itemsByOrder[oi.order_id]) itemsByOrder[oi.order_id] = [];
-      itemsByOrder[oi.order_id].push(oi);
-    });
+  // أصناف الطلبات على دفعات صغيرة (عشان طول الرابط وحد 1000 صف)
+  async function loadItemsForOrders(list){
+    const ids = list.map(o=> o.id);
+    for(let k = 0; k < ids.length; k += 40){
+      const { data: chunkItems } = await sb.from('order_items').select('*').in('order_id', ids.slice(k, k + 40));
+      (chunkItems || []).forEach(oi=>{
+        if(!itemsByOrder[oi.order_id]) itemsByOrder[oi.order_id] = [];
+        itemsByOrder[oi.order_id].push(oi);
+      });
+    }
   }
+  await loadItemsForOrders(orders);
 
   const { data: allDriversList } = await sb.from('drivers').select('id,name,phone,is_active').eq('restaurant_id', restaurant.id).order('is_active', { ascending:false }).order('name');
   const driversById = {};
@@ -6201,6 +6229,8 @@ async function openOrdersOverlay(){
 
   let currentFilter = 'all';
   let currentTableFilter = 'all';
+  let currentStatusFilter = 'all';
+  let currentTypeFilter = 'all';
   let searchQuery = '';
 
   function matchesSearch(o){
@@ -6445,17 +6475,36 @@ async function openOrdersOverlay(){
     return true;
   }
 
+  function passesFilters(o){
+    if(!matchesSearch(o)) return false;
+    if(!matchesTableFilter(o)) return false;
+    if(currentStatusFilter !== 'all' && (o.status || 'pending') !== currentStatusFilter) return false;
+    if(currentTypeFilter !== 'all' && (o.order_type || 'delivery') !== currentTypeFilter) return false;
+    if(currentFilter === 'new') return isNewOrder(o);
+    if(currentFilter === 'today') return isToday(o);
+    if(currentFilter === 'yesterday') return isYesterday(o);
+    if(currentFilter === 'week') return isLast7Days(o);
+    if(currentFilter === 'previous') return !isToday(o);
+    return true;
+  }
+
+  function renderSummary(filtered){
+    const el = overlay.querySelector('#ordersSummary');
+    const cur = getRestaurantCurrency(restaurant);
+    const countable = filtered.filter(o=> (o.status || 'pending') !== 'cancelled');
+    const sum = countable.reduce((t, o)=> t + (Number(o.total) || 0), 0);
+    const active = filtered.filter(o=> { const st = o.status || 'pending'; return st === 'pending' || st === 'preparing'; }).length;
+    el.innerHTML = `<span>عدد الطلبات: <strong>${filtered.length}</strong></span>`
+      + `<span>قيد التنفيذ: <strong>${active}</strong></span>`
+      + `<span>الإجمالي (بدون الملغي): <strong>${sum.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${escapeHtml(cur)}</strong></span>`
+      + (hasMoreOrders ? `<span style="font-weight:600;">المعروض: آخر ${orders.length} طلب — اضغط «تحميل طلبات أقدم» لعرض الباقي</span>` : '');
+  }
+
   function renderList(){
-    const filtered = orders.filter(o=>{
-      if(!matchesSearch(o)) return false;
-      if(!matchesTableFilter(o)) return false;
-      if(currentFilter === 'new') return isNewOrder(o);
-      if(currentFilter === 'today') return isToday(o);
-      if(currentFilter === 'yesterday') return isYesterday(o);
-      if(currentFilter === 'week') return isLast7Days(o);
-      if(currentFilter === 'previous') return !isToday(o);
-      return true;
-    });
+    const filtered = orders.filter(passesFilters);
+    renderSummary(filtered);
+    const moreBtn = overlay.querySelector('#ordersLoadMoreBtn');
+    moreBtn.classList.toggle('hidden', !hasMoreOrders);
     if(filtered.length === 0){
       wrap.innerHTML = `<div class="orders-empty">${searchQuery ? 'لا توجد نتائج مطابقة للبحث' : 'لا توجد طلبات في هذا التصنيف'}</div>`;
       return;
@@ -6463,6 +6512,21 @@ async function openOrdersOverlay(){
     wrap.innerHTML = filtered.map(orderRowHtml).join('');
     attachRowHandlers();
   }
+
+  overlay.querySelector('#ordersStatusFilter').addEventListener('change', (e)=>{ currentStatusFilter = e.target.value; renderList(); });
+  overlay.querySelector('#ordersTypeFilter').addEventListener('change', (e)=>{ currentTypeFilter = e.target.value; renderList(); });
+  overlay.querySelector('#ordersLoadMoreBtn').addEventListener('click', async (e)=>{
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    const { data: older, error: olderErr } = await sb.from('orders').select('*').eq('restaurant_id', restaurant.id)
+      .order('created_at', { ascending:false }).order('id', { ascending:false }).range(orders.length, orders.length + ORDERS_PAGE - 1);
+    btn.disabled = false;
+    if(olderErr || !older){ toast('تعذر تحميل الطلبات الأقدم'); return; }
+    await loadItemsForOrders(older);
+    orders.push(...older);
+    hasMoreOrders = older.length === ORDERS_PAGE;
+    renderList();
+  });
 
   overlay.querySelector('#ordersSearchInput').addEventListener('input', (e)=>{
     searchQuery = e.target.value;
@@ -6475,16 +6539,8 @@ async function openOrdersOverlay(){
   });
 
   overlay.querySelector('#ordersExportBtn').addEventListener('click', ()=>{
-    const filtered = orders.filter(o=>{
-      if(!matchesSearch(o)) return false;
-      if(!matchesTableFilter(o)) return false;
-      if(currentFilter === 'new') return isNewOrder(o);
-      if(currentFilter === 'today') return isToday(o);
-      if(currentFilter === 'yesterday') return isYesterday(o);
-      if(currentFilter === 'week') return isLast7Days(o);
-      if(currentFilter === 'previous') return !isToday(o);
-      return true;
-    });
+    const filtered = orders.filter(passesFilters);
+    if(hasMoreOrders) toast('التصدير يشمل الطلبات المحمّلة فقط — حمّل الأقدم أولًا لو عايزها كلها');
     exportOrdersToExcel(filtered, itemsByOrder, 'تصدير');
   });
 
