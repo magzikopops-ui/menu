@@ -8832,6 +8832,62 @@ function startDashHomeLoop(){
 
 // ===== حجوزات الطاولات (لوحة التحكم) =====
 var reservationsBadgeTimer = null;
+var lastPendingReservations = null;
+var lastReservationAlertAt = 0;
+var reservationsChannel = null;
+var reservationsChannelFor = null;
+function reservationSoundOn(){
+  try{ return localStorage.getItem(`resSound_${restaurant.id}`) !== '0'; }catch(e){ return true; }
+}
+function playReservationChime(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [[660, 0], [880, 0.22], [1046, 0.44]].forEach(([freq, delay])=>{
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
+      g.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + delay + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + 0.5);
+      o.start(ctx.currentTime + delay); o.stop(ctx.currentTime + delay + 0.5);
+    });
+  }catch(e){}
+}
+// تنبيه حجز جديد: نغمة قصيرة مختلفة عن نغمة الطلبات (مرة واحدة بدون تكرار) + رسالة + إشعار سطح المكتب لو مفعّل
+function alertNewReservation(row){
+  if(Date.now() - lastReservationAlertAt < 8000) return; // يمنع التكرار لو الاشتراك اللحظي والفحص الدوري التقطوا نفس الحجز
+  lastReservationAlertAt = Date.now();
+  if(reservationSoundOn()) playReservationChime();
+  const who = row && row.customer_name ? row.customer_name : 'عميل';
+  const party = row && row.party_size ? ` — ${row.party_size} ${row.party_size === 1 ? 'فرد' : 'أفراد'}` : '';
+  toast(`📅 حجز جديد من ${who}${party}`);
+  if('Notification' in window && Notification.permission === 'granted'){
+    try{
+      const n = new Notification('حجز جديد 📅', {
+        body: `${who}${party}${row && row.reserved_for ? ' — ' + fmtReservationWhen(row.reserved_for) : ''}`,
+        icon: (restaurant && restaurant.logo_url) ? restaurant.logo_url : undefined,
+        tag: 'new-reservation-' + (row && row.id ? row.id : Date.now())
+      });
+      n.onclick = ()=>{ window.focus(); n.close(); };
+    }catch(e){}
+  }
+}
+function subscribeToReservations(){
+  if(!restaurant) return;
+  if(reservationsChannel && reservationsChannelFor === restaurant.id) return;
+  if(reservationsChannel){ try{ sb.removeChannel(reservationsChannel); }catch(e){} reservationsChannel = null; }
+  reservationsChannelFor = restaurant.id;
+  reservationsChannel = sb.channel(`reservations-${restaurant.id}`)
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'reservations', filter:`restaurant_id=eq.${restaurant.id}` }, (payload)=>{
+      alertNewReservation(payload.new);
+      refreshReservationsBadge();
+      refreshDashHome();
+    })
+    .on('postgres_changes', { event:'UPDATE', schema:'public', table:'reservations', filter:`restaurant_id=eq.${restaurant.id}` }, ()=>{
+      refreshReservationsBadge();
+    })
+    .subscribe();
+}
 function updateReservationsBadge(n){
   const b = document.getElementById('reservationsBadge');
   if(!b) return;
@@ -8842,13 +8898,21 @@ async function refreshReservationsBadge(){
   try{
     const { count, error } = await sb.from('reservations').select('id', { count:'exact', head:true })
       .eq('restaurant_id', restaurant.id).eq('status', 'pending').gte('reserved_for', new Date().toISOString());
-    if(!error) updateReservationsBadge(count || 0);
+    if(!error){
+      const n = count || 0;
+      // الفحص الدوري يلتقط الحجز لو الاشتراك اللحظي ما اشتغلش: لو العدد زاد عن آخر مرة نبّه
+      if(lastPendingReservations !== null && n > lastPendingReservations) alertNewReservation(null);
+      lastPendingReservations = n;
+      updateReservationsBadge(n);
+    }
   }catch(e){}
 }
 function startReservationsBadgeLoop(){
   if(reservationsBadgeTimer) clearInterval(reservationsBadgeTimer);
+  lastPendingReservations = null;
   refreshReservationsBadge();
   reservationsBadgeTimer = setInterval(refreshReservationsBadge, 2*60000);
+  subscribeToReservations();
 }
 const RES_STATUS = {
   pending:   { label:'بانتظار التأكيد', color:'#b26a00' },
@@ -8886,6 +8950,13 @@ async function openReservationsModal(){
           <span>أقصى عدد أفراد في الحجز الواحد</span>
           <input type="number" id="resMaxParty" min="1" max="100" value="${restaurant.reservation_max_party || 10}" style="width:80px;">
         </div>
+        <label style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:10px; font-size:13px; font-weight:700;">
+          <span>🔔 تنبيه صوتي عند وصول حجز جديد</span>
+          <span style="display:flex; align-items:center; gap:8px;">
+            <button type="button" class="chip-btn" id="resSoundTest">تجربة</button>
+            <span class="admin-switch"><input type="checkbox" id="resSoundOn" ${reservationSoundOn() ? 'checked' : ''}><span class="admin-switch-slider"></span></span>
+          </span>
+        </label>
         <div style="font-size:12px; color:var(--stone); margin-top:6px; line-height:1.6;">عند التفعيل يظهر زر «احجز طاولة» في المنيو العام. الموعد بتوقيت القاهرة، ويجب أن يكون بعد 30 دقيقة من الآن على الأقل، ويظل «بانتظار التأكيد» حتى تؤكده أنت.</div>
         <button type="button" class="chip-btn active" id="resSaveSettings" style="margin-top:8px;">حفظ الإعدادات</button>
       </div>
@@ -8902,6 +8973,10 @@ async function openReservationsModal(){
   overlay.querySelector('#resClose').addEventListener('click', close);
   overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
 
+  overlay.querySelector('#resSoundOn').addEventListener('change', (e)=>{
+    try{ localStorage.setItem(`resSound_${restaurant.id}`, e.target.checked ? '1' : '0'); }catch(_){}
+  });
+  overlay.querySelector('#resSoundTest').addEventListener('click', playReservationChime);
   overlay.querySelector('#resSaveSettings').addEventListener('click', async ()=>{
     const accept_reservations = overlay.querySelector('#resEnabled').checked;
     const maxRaw = parseInt(overlay.querySelector('#resMaxParty').value, 10);
