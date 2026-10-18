@@ -213,6 +213,21 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .rs-section[open] > summary::after{ content:'▴'; }
 .rs-section[open] > summary{ border-bottom:1px solid var(--line); }
 .rs-section-body{ padding:12px 14px 2px; }
+.rt-tabs{ display:flex; gap:6px; margin-bottom:12px; }
+.rt-summary{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--paper-dim); margin-bottom:12px; }
+.rt-big{ font-size:30px; font-weight:800; color:var(--ink); line-height:1; }
+.rt-stars{ color:#f5a623; letter-spacing:2px; }
+.rt-muted{ font-size:12px; color:var(--stone); }
+.rt-h{ font-size:13px; font-weight:800; color:var(--stone); margin:14px 0 6px; }
+.rt-row{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px dotted var(--line); font-size:13.5px; }
+.rt-row .rt-name{ flex:1; min-width:0; font-weight:700; color:var(--ink); overflow-wrap:anywhere; }
+.rt-row .rt-val{ white-space:nowrap; font-weight:800; color:#b7791f; }
+.rt-row .rt-cnt{ font-size:12px; color:var(--stone); white-space:nowrap; }
+.rt-bar{ height:7px; border-radius:4px; background:var(--line); overflow:hidden; flex:0 0 70px; }
+.rt-bar > div{ height:100%; background:#f5a623; }
+.rt-dist-row{ display:flex; align-items:center; gap:8px; font-size:12.5px; margin:3px 0; }
+.rt-dist-row .rt-bar{ flex:1; }
+.rt-comment{ padding:8px 10px; border:1px solid var(--line); border-radius:10px; margin-bottom:6px; font-size:13px; background:var(--paper); }
 /* قائمة الإعداد للمطعم الجديد */
 .setup-card{ background:var(--paper-dim); border:1px solid var(--line); border-inline-start:4px solid var(--ember); border-radius:14px; padding:14px 16px; margin-bottom:18px; }
 .setup-head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
@@ -2097,6 +2112,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
       <button class="link-btn" id="viewOrdersBtn">📦 الطلبات <span id="newOrdersBadge" class="new-orders-badge hidden">0</span></button>
       <button class="link-btn" id="abandonedCartsBtn">🛒 السلات المتروكة <span id="abandonedCartsBadge" class="new-orders-badge hidden">0</span></button>
       <button class="link-btn" id="reservationsBtn">📅 الحجوزات <span id="reservationsBadge" class="new-orders-badge hidden">0</span></button>
+      <button class="link-btn" id="ratingsBtn">⭐ التقييمات</button>
 
       <div class="dash-menu-group" data-menu="menu-reports">
         <button type="button" class="link-btn dash-menu-trigger">📊 التقارير والإحصائيات <span class="caret">▾</span></button>
@@ -3406,6 +3422,7 @@ function applyGranularRestrictionsUI(){
   const restrictions = {
     viewOrdersBtn: restaurant.restriction_orders_disabled || menuOnly,
     abandonedCartsBtn: restaurant.restriction_orders_disabled || menuOnly,
+    ratingsBtn: restaurant.restriction_orders_disabled || menuOnly,
     viewStatsBtn: restaurant.restriction_stats_disabled,
     publicLinkSplitBtn: restaurant.restriction_share_disabled,
     showQrBtn: restaurant.restriction_share_disabled,
@@ -8983,6 +9000,88 @@ async function openReservationsModal(){
   render();
 }
 document.getElementById('reservationsBtn').addEventListener('click', openReservationsModal);
+
+// ===== شاشة التقييمات (للمالك): تقييم الطلبات + تقييم كل صنف =====
+async function openRatingsModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="width:min(560px,94vw);">
+      <h3>⭐ تقييمات العملاء</h3>
+      <div class="rt-tabs">
+        <button type="button" class="chip-btn active" data-rt="items">تقييم ${biz(restaurant.business_type,'itemsDef')}</button>
+        <button type="button" class="chip-btn" data-rt="orders">تقييم الطلبات</button>
+      </div>
+      <div id="rtBody" style="max-height:62vh; overflow-y:auto;"><div class="orders-empty">جارِ التحميل...</div></div>
+      <div class="modal-actions"><button class="btn-cancel" id="rtClose">إغلاق</button></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#rtClose').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.remove(); });
+  const body = overlay.querySelector('#rtBody');
+
+  const safe = (p)=> p.then(r=> r, e=> ({ data:null, error:e }));
+  const ordersP = safe(sb.from('orders').select('order_number,customer_name,rating_stars,rating_comment,created_at')
+    .eq('restaurant_id', restaurant.id).not('rating_stars', 'is', null).order('created_at', { ascending:false }).limit(500));
+  const itemRatings = [];
+  let itemsErr = null;
+  for(let from = 0; ; from += 1000){
+    const { data, error } = await safe(sb.from('item_ratings').select('item_id,stars').eq('restaurant_id', restaurant.id).order('created_at').order('id').range(from, from + 999));
+    if(error){ itemsErr = error; break; }
+    itemRatings.push(...(data || []));
+    if(!data || data.length < 1000) break;
+  }
+  const ordersRes = await ordersP;
+  const stars = (n)=> '★'.repeat(Math.round(n)) + '☆'.repeat(5 - Math.round(n));
+  const MIN = 3;
+
+  function renderItemsTab(){
+    if(itemsErr){ body.innerHTML = `<div class="orders-empty">تعذر تحميل التقييمات</div>`; return; }
+    if(!itemRatings.length){ body.innerHTML = `<div class="orders-empty">لا توجد تقييمات للأصناف بعد. بتظهر بعد ما العميل يقيّم أصناف طلبه من شاشة التتبع.</div>`; return; }
+    const agg = {};
+    itemRatings.forEach(r=>{ const a = agg[r.item_id] || (agg[r.item_id] = { sum:0, cnt:0 }); a.sum += r.stars; a.cnt += 1; });
+    const rows = Object.entries(agg).map(([id, a])=>{
+      const it = items.find(i=> i.id === id);
+      return it ? { id, name: it.name, avg: a.sum / a.cnt, cnt: a.cnt } : null;
+    }).filter(Boolean);
+    const total = itemRatings.length;
+    const overall = itemRatings.reduce((s2, r)=> s2 + r.stars, 0) / total;
+    const eligible = rows.filter(r=> r.cnt >= MIN);
+    const top = eligible.slice().sort((a, b)=> b.avg - a.avg || b.cnt - a.cnt).filter(r=> r.avg >= 4).slice(0, 5);
+    const low = eligible.slice().sort((a, b)=> a.avg - b.avg || b.cnt - a.cnt).filter(r=> r.avg <= 3.5).slice(0, 5);
+    const rowHtml = (r)=> `<div class="rt-row"><span class="rt-name">${escapeHtml(r.name)}</span><span class="rt-bar"><div style="width:${Math.round(r.avg / 5 * 100)}%"></div></span><span class="rt-val">★ ${r.avg.toFixed(1)}</span><span class="rt-cnt">(${r.cnt})</span></div>`;
+    const all = rows.slice().sort((a, b)=> b.cnt - a.cnt || b.avg - a.avg);
+    body.innerHTML = `
+      <div class="rt-summary"><span class="rt-big">${overall.toFixed(1)}</span><span><span class="rt-stars">${stars(overall)}</span><br><span class="rt-muted">${total} تقييم لـ ${rows.length} ${biz(restaurant.business_type,'itemsDef')}</span></span></div>
+      ${top.length ? `<div class="rt-h">🏆 الأعلى تقييمًا</div>${top.map(rowHtml).join('')}` : ''}
+      ${low.length ? `<div class="rt-h">⚠️ يحتاج انتباه (تقييم 3.5 أو أقل)</div>${low.map(rowHtml).join('')}` : ''}
+      <div class="rt-h">كل الأصناف المقيّمة</div>
+      <div id="rtAllList">${all.slice(0, 25).map(rowHtml).join('')}</div>
+      ${all.length > 25 ? `<button type="button" class="chip-btn" id="rtMoreBtn" style="margin-top:8px;">عرض الكل (${all.length})</button>` : ''}
+      <div class="rt-muted" style="margin-top:10px;">الترتيب الأول والثاني بيشمل الأصناف اللي وصلها ${MIN} تقييمات على الأقل. التقييم الظاهر للعميل على المنيو بيتحسب بنفس القاعدة.</div>`;
+    const more = body.querySelector('#rtMoreBtn');
+    if(more) more.addEventListener('click', ()=>{ body.querySelector('#rtAllList').innerHTML = all.map(rowHtml).join(''); more.remove(); });
+  }
+  function renderOrdersTab(){
+    if(ordersRes.error){ body.innerHTML = `<div class="orders-empty">تعذر تحميل التقييمات</div>`; return; }
+    const rows = ordersRes.data || [];
+    if(!rows.length){ body.innerHTML = `<div class="orders-empty">لا توجد تقييمات للطلبات بعد.</div>`; return; }
+    const avg = rows.reduce((s2, r)=> s2 + r.rating_stars, 0) / rows.length;
+    const dist = [5, 4, 3, 2, 1].map(n=> ({ n, c: rows.filter(r=> r.rating_stars === n).length }));
+    const withComment = rows.filter(r=> r.rating_comment && r.rating_comment.trim()).slice(0, 15);
+    body.innerHTML = `
+      <div class="rt-summary"><span class="rt-big">${avg.toFixed(1)}</span><span><span class="rt-stars">${stars(avg)}</span><br><span class="rt-muted">${rows.length} تقييم${rows.length >= 500 ? ' (آخر 500)' : ''}</span></span></div>
+      ${dist.map(d=> `<div class="rt-dist-row"><span style="width:26px;">${d.n} ★</span><span class="rt-bar"><div style="width:${Math.round(d.c / rows.length * 100)}%"></div></span><span class="rt-cnt" style="width:34px; text-align:end;">${d.c}</span></div>`).join('')}
+      <div class="rt-h">💬 آخر التعليقات</div>
+      ${withComment.length ? withComment.map(r=> `<div class="rt-comment"><div><span class="rt-stars">${'★'.repeat(r.rating_stars)}${'☆'.repeat(5 - r.rating_stars)}</span> <strong>${escapeHtml(r.customer_name || '')}</strong> <span class="rt-muted">#${r.order_number ?? ''}</span></div><div style="margin-top:4px;">${escapeHtml(r.rating_comment)}</div></div>`).join('') : `<div class="rt-muted">لا توجد تعليقات مكتوبة.</div>`}`;
+  }
+  overlay.querySelectorAll('[data-rt]').forEach(b=> b.addEventListener('click', ()=>{
+    overlay.querySelectorAll('[data-rt]').forEach(x=> x.classList.toggle('active', x === b));
+    if(b.dataset.rt === 'items') renderItemsTab(); else renderOrdersTab();
+  }));
+  renderItemsTab();
+}
+document.getElementById('ratingsBtn').addEventListener('click', openRatingsModal);
 
 document.getElementById('reportsBtn').addEventListener('click', async ()=>{
   if(restaurant.restriction_reports_disabled){ toast('🔒 التقارير متاحة في باقة PRO فقط'); return; }
