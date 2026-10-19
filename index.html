@@ -214,6 +214,38 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .rs-section[open] > summary{ border-bottom:1px solid var(--line); }
 .rs-section-body{ padding:12px 14px 2px; }
 .settings-overlay{ padding:14px; }
+/* نوافذ الشاشات الكبيرة في لوحة التحكم: عنوان وأزرار ثابتة، تمرير داخلي، وملء الشاشة على الموبايل */
+.modal.modal-screen{ --ms-w:880px; --ms-pad:22px; width:min(var(--ms-w),96vw); max-height:92vh; padding:var(--ms-pad); padding-top:0; padding-bottom:0; overflow-y:auto; }
+.modal-screen.ms-sm{ --ms-w:680px; }
+.modal-screen.ms-lg{ --ms-w:1040px; }
+.modal-screen.ms-xl{ --ms-w:1240px; }
+.modal-screen > :first-child{ position:sticky; top:0; z-index:3; background:inherit; margin:0 calc(var(--ms-pad) * -1) 14px !important; padding:16px var(--ms-pad) 12px; border-bottom:1px solid var(--line); }
+.modal-screen > .modal-actions{ position:sticky; bottom:0; z-index:3; background:inherit; margin:16px calc(var(--ms-pad) * -1) 0 !important; padding:12px var(--ms-pad) calc(12px + env(safe-area-inset-bottom, 0px)); border-top:1px solid var(--line); }
+.modal-screen .orders-list{ max-height:none; overflow:visible; }
+.modal-screen [style*="max-height"][style*="overflow-y:auto"]{ max-height:none !important; overflow:visible !important; }
+.modal-screen .zone-add-row{ flex-wrap:wrap; }
+@media (min-width:900px){
+  .modal-screen #resList{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; align-items:start; }
+  .modal-screen #resList > .res-card{ margin-bottom:0; }
+  .modal-screen #resList > .orders-empty{ grid-column:1 / -1; }
+}
+.item-form-grid{ display:grid; grid-template-columns:1fr; gap:0 20px; }
+.item-form-grid > .field{ min-width:0; }
+@media (min-width:900px){
+  .item-form-grid{ grid-template-columns:1fr 1fr; }
+  .item-form-grid > .field.fw{ grid-column:1 / -1; }
+}
+@media (max-width:700px){
+  .overlay.screen-overlay{ padding:0; align-items:stretch; }
+  .modal.modal-screen, body.dash-mode .modal.modal-screen{ --ms-pad:14px; width:100vw; max-width:100vw; height:100vh; max-height:none; border-radius:0; padding:var(--ms-pad); padding-top:0; padding-bottom:0; }
+  @supports (height:100dvh){ .modal.modal-screen, body.dash-mode .modal.modal-screen{ height:100dvh; } }
+  .modal-screen table{ display:block; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .modal-screen > .modal-actions{ flex-wrap:nowrap; }
+  .modal-screen > .modal-actions button, .modal-screen > .modal-actions a{ flex:1; min-width:0; }
+}
+@media (pointer:coarse){
+  .modal-screen .chip-btn, .modal-screen .btn-export-sm{ padding:9px 14px; }
+}
 .modal.settings-modal{ display:flex; flex-direction:column; width:min(1200px,96vw); height:min(92vh,1000px); max-height:none; padding:0; overflow:hidden; }
 .settings-head{ flex-shrink:0; display:flex; align-items:center; gap:10px 14px; flex-wrap:wrap; padding:14px 22px; border-bottom:1px solid var(--line); background:inherit; }
 .settings-head h3{ margin:0; flex:0 0 auto; }
@@ -4359,7 +4391,7 @@ async function openAbandonedCartsOverlay(){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-lg">
       <h3 style="margin:0 0 6px;">🛒 السلات المتروكة</h3>
       <div style="font-size:12.5px; color:var(--stone); margin-bottom:10px; line-height:1.6;">
         عملاء أدخلوا رقم هاتفهم وأضافوا أصنافًا للسلة ثم غادروا دون إتمام الطلب (آخر ${ABANDON_DAYS} أيام). اضغط لإرسال تذكير على واتساب — تُفتح الرسالة معبّأة وتضغط إرسال بنفسك.
@@ -4759,7 +4791,7 @@ document.getElementById('deliveryZonesBtn').addEventListener('click', async ()=>
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-md">
       <h3>مناطق التوصيل ورسومها</h3>
       <div class="zone-add-row">
         <input type="text" id="newZoneName" placeholder="اسم المنطقة (مثال: مدينة نصر)">
@@ -4853,7 +4885,7 @@ document.getElementById('driversBtn').addEventListener('click', async ()=>{
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-md">
       <h3>السائقين</h3>
       <div class="zone-add-row" style="flex-wrap:wrap;">
         <input type="text" id="newDriverName" placeholder="اسم السائق" style="flex:1; min-width:120px;">
@@ -4967,7 +4999,7 @@ document.getElementById('addonGroupsBtn').addEventListener('click', async ()=>{
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-lg">
       <h3>🧩 الإضافات والمتغيرات</h3>
       <p style="font-size:12.5px; color:var(--stone); margin:-6px 0 12px; line-height:1.7;">سجّل مجموعة مرة واحدة (زي "الإضافات الإضافية" أو "الحجم") وبعدين اربطها بأي عدد من الأصناف من شاشة تعديل الصنف — بدل ما تكتبها من الأول في كل صنف.</p>
       <div class="zone-add-row" style="flex-wrap:wrap;">
@@ -5074,7 +5106,7 @@ document.getElementById('couponsBtn').addEventListener('click', async ()=>{
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-lg">
       <h3>🏷️ أكواد الخصم للعملاء</h3>
       <p style="font-size:12.5px; color:var(--stone); margin:-6px 0 12px; line-height:1.7;">أنشئ كودًا يقدر العميل يكتبه في شاشة الطلب ليحصل على خصم مباشر على قيمة طلبه.</p>
       <div class="zone-add-row" style="flex-wrap:wrap;">
@@ -5175,7 +5207,7 @@ document.getElementById('winbackBtn').addEventListener('click', async ()=>{
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-md">
       <h3>🎯 العملاء غير النشطين</h3>
       <p style="font-size:12.5px; color:var(--stone); margin:-6px 0 12px; line-height:1.7;">عملاء سبق أن طلبوا من متجرك، لكن لم يطلبوا خلال المدة التي تحددها.</p>
       <div class="zone-add-row" style="flex-wrap:wrap; align-items:center;">
@@ -5261,7 +5293,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-lg">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px;">
         <h3 style="margin:0;">عملاء ${escapeHtml(restaurant.name)}</h3>
         <span style="display:flex; gap:6px;">
@@ -8618,7 +8650,7 @@ document.getElementById('viewStatsBtn').addEventListener('click', async ()=>{
   overlay.className = 'overlay';
   const showBranchToggle = branches.length > 1;
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-md">
       <h3>إحصائيات الطلبات</h3>
       ${showBranchToggle ? `
       <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
@@ -8803,6 +8835,13 @@ document.getElementById('dailyCloseBtn').addEventListener('click', async ()=>{
     btn.disabled = false;
   }
 });
+
+// ===== نوافذ الشاشات الكبيرة: وسم الـoverlay عشان الموبايل يعرضها ملء الشاشة =====
+(function watchScreenOverlays(){
+  const tag = (n)=>{ if(n.nodeType === 1 && n.classList && n.classList.contains('overlay') && n.querySelector(':scope > .modal-screen')) n.classList.add('screen-overlay'); };
+  document.querySelectorAll('.overlay').forEach(tag);
+  new MutationObserver((muts)=>{ muts.forEach(m=> m.addedNodes.forEach(tag)); }).observe(document.body, { childList:true });
+})();
 
 // ===== الوضع الداكن للوحة التحكم + معاينة المنيو على الموبايل =====
 function applyDashTheme(){
@@ -9130,7 +9169,7 @@ async function openReservationsModal(){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal" style="width:min(560px,94vw);">
+    <div class="modal modal-screen ms-lg">
       <h3>📅 حجوزات الطاولات</h3>
       <div style="border:1.5px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:12px;">
         <label style="display:flex; justify-content:space-between; align-items:center; gap:10px; font-weight:700;">
@@ -9272,7 +9311,7 @@ async function openRatingsModal(){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal" style="width:min(560px,94vw);">
+    <div class="modal modal-screen ms-md">
       <h3>⭐ تقييمات العملاء</h3>
       <div class="rt-tabs">
         <button type="button" class="chip-btn active" data-rt="items">تقييم ${biz(restaurant.business_type,'itemsDef')}</button>
@@ -9354,7 +9393,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-xl">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px;">
         <h3 style="margin:0;">التقارير والتحليلات</h3>
         <button type="button" class="btn-export-sm" id="statsExportPdfBtn">📄 تصدير تقرير شهري</button>
@@ -10062,7 +10101,7 @@ async function openStaffModal(){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-md">
       <h3>👤 حسابات الكاشير</h3>
       <div class="field">
         <small>حسابات فرعية بصلاحيات محدودة — يمكنها الاطلاع على الطلبات الواردة وتغيير حالتها فقط، دون أي صلاحية للوصول إلى باقي لوحة التحكم (الأصناف، الإعدادات، التقارير، الاشتراك).</small>
@@ -10165,7 +10204,7 @@ function openBackupModal(){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-md">
       <h3>📦 النسخ الاحتياطي والاستعادة</h3>
       <div class="auth-err" style="color:#8A6D00; background:rgba(184,141,14,.1); border:1px solid rgba(184,141,14,.3); border-radius:8px; padding:10px 12px; margin-bottom:14px; display:block;">
         🔒 يحتوي ملف النسخة الاحتياطية على بيانات حقيقية لعملائك (الأسماء وأرقام الهواتف وعناوين الطلبات)، وهو بذلك ملف حساس — احتفظ به في مكان آمن، ولا تشاركه مع أي جهة غير موثوقة.
@@ -10268,7 +10307,7 @@ function openCleanupOrdersModal(){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-sm">
       <h3>حذف الطلبات</h3>
       <div class="field">
         <label>نطاق الحذف:</label>
@@ -10479,7 +10518,7 @@ function openCleanupImagesModal(){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-md">
       <h3>تنظيف وتحسين الصور</h3>
       <div class="orders-empty" style="text-align:right; padding:6px 0 0;">
         سيتم فحص جميع صور الشعار والأصناف الخاصة بك، وسيحدث ما يلي:
@@ -10603,7 +10642,7 @@ async function openSubscriptionModal(){
   overlay.className = 'overlay';
   const st = formatSubStatusAr(restaurant);
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-md">
       <h3>💳 الاشتراك</h3>
       <div class="pay-summary" style="margin-bottom:16px;">
         <div>
@@ -10679,7 +10718,7 @@ function openMenuDesignModal(){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-lg">
       <h3>🎨 شكل المنيو</h3>
       <div class="field">
         <small>اختر الشكل الذي سيظهر لكل زوار المنيو، ويمكنك تغييره في أي وقت من هنا.</small>
@@ -13235,9 +13274,10 @@ function openItemModal(existing){
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal modal-screen ms-md item-modal">
       <h3>${existing ? `تعديل ${biz(restaurant.business_type,'itemDef')}` : `إضافة ${biz(restaurant.business_type,'itemIndef')} جديد`}</h3>
-      <div class="field">
+      <div class="item-form-grid">
+      <div class="field fw">
         <label>صورة ${biz(restaurant.business_type,'itemDef')} (اختياري)</label>
         <div class="img-drop" id="imgDrop">
           ${pendingImage ? `<img src="${pendingImage}"><br>` : ''}
@@ -13287,23 +13327,24 @@ function openItemModal(existing){
         <label>💰 سعر التكلفة (اختياري وخاص) — لحساب هامش الربح الفعلي في التقارير، ولا يظهر للعميل مطلقًا</label>
         <input type="number" id="itemCostPrice" min="0" step="0.01" value="${existing && existing.cost_price != null ? existing.cost_price : ''}" placeholder="0.00">
       </div>
-      <div class="field" id="sizesFieldWrap">
+      <div class="field fw" id="sizesFieldWrap">
         <label>الأحجام والأسعار</label>
         <div id="sizesRowsWrap"></div>
         <button type="button" class="add-btn" id="addSizeRowBtn" style="margin-top:8px; margin-bottom:0;">+ إضافة حجم</button>
       </div>
-      <div class="field">
+      <div class="field fw">
         <label>🧂 إضافات خاصة بهذا الصنف فقط (اختياري) — في حال الرغبة بإضافة غير مدرجة ضمن أي مجموعة عامة</label>
         <div id="addonsRowsWrap"></div>
         <button type="button" class="add-btn" id="addAddonRowBtn" style="margin-top:8px; margin-bottom:0;">+ إضافة</button>
       </div>
-      <div class="field" id="addonGroupsFieldWrap">
+      <div class="field fw" id="addonGroupsFieldWrap">
         <label>🧩 مجموعات الإضافات والمتغيرات (اختياري) — اختر أي مجموعات جاهزة من "الإضافات والمتغيرات" لربطها بهذا الصنف</label>
         <div id="itemAddonGroupsWrap"></div>
       </div>
-      <div class="field">
+      <div class="field fw">
         <label>الوصف (اختياري)</label>
         <textarea id="itemDesc" placeholder="${biz(restaurant.business_type,'itemDescPh')}">${existing ? escapeHtml(existing.description||'') : ''}</textarea>
+      </div>
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" id="itemCancel">إلغاء</button>
