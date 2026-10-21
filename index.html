@@ -257,6 +257,50 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .settings-foot .modal-actions button{ flex:0 0 auto; min-width:150px; }
 .rs-sections{ columns:480px; column-gap:16px; }
 .rs-sections .rs-section{ break-inside:avoid; margin-bottom:14px; }
+/* شاشة المطبخ الحية */
+.kds-overlay{ position:fixed; inset:0; z-index:60; background:#14120f; color:#f3efe6; display:flex; flex-direction:column; padding:0; align-items:stretch; justify-content:flex-start; font-family:var(--body); }
+.kds-head{ flex-shrink:0; display:flex; align-items:center; gap:10px 14px; flex-wrap:wrap; padding:12px 18px; background:#1f1c18; border-bottom:1px solid #3a352d; }
+.kds-head h3{ margin:0; font-size:20px; color:#fff; }
+.kds-clock{ font-size:18px; font-weight:800; color:#e8d9b5; font-variant-numeric:tabular-nums; }
+.kds-spacer{ flex:1; }
+.kds-chip{ border:1.5px solid #4a443a; background:#2a2621; color:#e9e3d6; border-radius:999px; padding:6px 14px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+.kds-chip.active{ background:#e8b64a; color:#241c08; border-color:#e8b64a; }
+.kds-cols{ flex:1; min-height:0; display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; padding:12px; }
+.kds-col{ display:flex; flex-direction:column; min-height:0; background:#1b1814; border:1px solid #38332b; border-radius:14px; }
+.kds-col-head{ flex-shrink:0; display:flex; justify-content:space-between; align-items:center; padding:10px 14px; font-weight:800; font-size:16px; border-bottom:1px solid #38332b; }
+.kds-col-head .kds-count{ background:#38332b; border-radius:999px; padding:2px 12px; font-size:14px; }
+.kds-col[data-col="pending"] .kds-col-head{ color:#ffb86b; }
+.kds-col[data-col="preparing"] .kds-col-head{ color:#8ecbff; }
+.kds-col[data-col="ready"] .kds-col-head{ color:#9be8b0; }
+.kds-col[data-col="delivered"] .kds-col-head{ color:#b9b0a0; }
+.kds-card.readyc{ border-color:#2f7a48; background:#1f2b22; }
+.kds-act.ready{ background:#2f8fd6; color:#04182a; }
+.kds-list{ flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:10px; }
+.kds-card{ background:#26221d; border:2px solid #3f392f; border-inline-start-width:8px; border-radius:12px; padding:12px 14px; }
+.kds-card.ok{ border-color:#2f7a48; }
+.kds-card.warn{ border-color:#d9a21b; }
+.kds-card.late{ border-color:#d9423a; animation:kdsPulse 1.4s ease-in-out infinite; }
+.kds-card.done{ opacity:.7; border-color:#3f392f; }
+@keyframes kdsPulse{ 50%{ background:#3a2220; } }
+.kds-card-top{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; }
+.kds-num{ font-size:22px; font-weight:900; color:#fff; }
+.kds-type{ font-size:13px; font-weight:800; background:#38332b; border-radius:999px; padding:3px 10px; }
+.kds-timer{ font-size:20px; font-weight:900; font-variant-numeric:tabular-nums; }
+.kds-card.warn .kds-timer{ color:#f3c14b; }
+.kds-card.late .kds-timer{ color:#ff7a70; }
+.kds-name{ font-size:13px; color:#b9b0a0; margin-bottom:6px; }
+.kds-lines{ list-style:none; margin:0 0 8px; padding:0; }
+.kds-lines li{ font-size:17px; font-weight:700; padding:3px 0; border-bottom:1px dashed #3a352d; }
+.kds-lines li b{ color:#e8b64a; margin-inline-end:6px; }
+.kds-lines small{ display:block; font-size:13px; font-weight:600; color:#c9b98e; }
+.kds-note{ font-size:14px; font-weight:700; color:#ffd98a; background:#3a3016; border-radius:8px; padding:6px 10px; margin-bottom:8px; }
+.kds-ready-at{ font-size:12.5px; color:#b9b0a0; margin-bottom:8px; }
+.kds-act{ width:100%; border:0; border-radius:10px; padding:12px; font-family:inherit; font-size:17px; font-weight:900; cursor:pointer; }
+.kds-act.start{ background:#e8b64a; color:#241c08; }
+.kds-act.finish{ background:#35a35e; color:#06210f; }
+.kds-act:disabled{ opacity:.5; cursor:wait; }
+.kds-empty{ text-align:center; color:#7d7566; padding:30px 10px; font-size:14px; }
+@media (max-width:900px){ .kds-cols{ grid-template-columns:1fr; overflow-y:auto; } .kds-col{ min-height:300px; } }
 /* قائمة جانبية للإعدادات (الشاشات الكبيرة فقط) */
 .rs-nav{ display:none; }
 @media (min-width:1000px){
@@ -825,6 +869,7 @@ body.pub-mobile-ad-open .pub-order-btn{ bottom:calc(22px + 58px); }
 .status-badge{ display:inline-block; font-size:11px; font-weight:800; padding:3px 10px; border-radius:12px; margin-inline-start:6px; }
 .status-badge.pending{background:#efe6d0; color:#8a6d1a;}
 .status-badge.preparing{background:rgba(184,57,14,.15); color:var(--ember);}
+.status-badge.ready{background:rgba(46,125,50,.18); color:#2e7d32;}
 .status-badge.delivered{background:rgba(63,98,71,.15); color:var(--basil);}
 .status-badge.cancelled{background:rgba(166,57,43,.15); color:var(--danger);}
 .new-orders-badge{ display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; margin-inline-start:5px; border-radius:999px; background:var(--danger); color:#fff; font-size:11px; font-weight:800; font-family:var(--mono); vertical-align:middle; animation:badge-pulse 1.6s infinite; }
@@ -2189,6 +2234,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
     </div>
     <div class="topbar-actions">
       <button class="link-btn" id="cashierOrdersBtn">📋 الطلبات الواردة</button>
+      <button class="link-btn" id="cashierKitchenBtn">👨‍🍳 شاشة المطبخ</button>
       <button class="link-btn" id="cashierNotifPermBtn">🔔 تفعيل تنبيه الطلبات</button>
       <button class="link-btn" id="cashierSignOutBtn">تسجيل الخروج</button>
     </div>
@@ -2240,6 +2286,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
     <div class="topbar-actions">
       <button class="link-btn" id="dashThemeBtn" type="button" aria-pressed="false" title="الوضع الداكن">🌙</button>
       <button class="link-btn" id="viewOrdersBtn">📦 الطلبات <span id="newOrdersBadge" class="new-orders-badge hidden">0</span></button>
+      <button class="link-btn" id="kitchenScreenBtn">👨‍🍳 شاشة المطبخ</button>
       <button class="link-btn" id="abandonedCartsBtn">🛒 السلات المتروكة <span id="abandonedCartsBadge" class="new-orders-badge hidden">0</span></button>
       <button class="link-btn" id="reservationsBtn">📅 الحجوزات <span id="reservationsBadge" class="new-orders-badge hidden">0</span></button>
       <button class="link-btn" id="ratingsBtn">⭐ التقييمات</button>
@@ -2250,6 +2297,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
           <button class="link-btn" id="viewStatsBtn">الإحصائيات</button>
           <button class="link-btn" id="reportsBtn">التقارير</button>
           <button class="link-btn" id="dailyCloseBtn">📊 تقفيل اليوم</button>
+          <button class="link-btn hidden" id="branchCompareBtn">🏢 مقارنة الفروع</button>
         </div>
       </div>
 
@@ -3619,6 +3667,8 @@ async function openCashierDashboard(staffRow){
   setupNotificationPermission('cashierNotifPermBtn');
   document.getElementById('cashierOrdersBtn').onclick = openOrdersOverlay;
   document.getElementById('cashierOrdersBtnBig').onclick = openOrdersOverlay;
+  document.getElementById('cashierKitchenBtn').onclick = openKitchenScreen;
+  maybeAutoOpenKitchen();
   document.getElementById('cashierSignOutBtn').onclick = signOutApp;
 }
 
@@ -3644,6 +3694,7 @@ async function openDashboard(){
   checkPublicMenuHealthAlert().catch(()=>{});
   await checkSubscriptionExpiry();
   if(restaurant.account_suspended){ showAccountSuspendedBlock(); return; }
+  maybeAutoOpenKitchen();
   await checkDemoExpiry();
   if(restaurant.restriction_banner_enabled) showTrialExpiredBanner();
   maybeShowRenewSoonBanner();
@@ -3652,6 +3703,7 @@ async function openDashboard(){
   applyFeaturePlanUI();
   applyGranularRestrictionsUI();
   applyTierLockBadgesUI();
+  document.getElementById('branchCompareBtn').classList.toggle('hidden', !(branches && branches.length > 1));
   maybeShowDailyCloseReminder();
   migrateLegacyImages().catch(()=>{});
   maybeRunAutoDailyBackup().catch(()=>{});
@@ -4781,6 +4833,7 @@ function subscribeToNewOrders(){
       filter: `restaurant_id=eq.${restaurant.id}`
     }, (payload)=>{
       if(window.__ordersModalApi) window.__ordersModalApi.onInsert(payload.new);
+      if(window.__kdsApi) window.__kdsApi.onInsert(payload.new);
       newOrdersCount++;
       updateNewOrdersBadge();
       startOrderAlertLoop();
@@ -4797,6 +4850,7 @@ function subscribeToNewOrders(){
       filter: `restaurant_id=eq.${restaurant.id}`
     }, (payload)=>{
       if(window.__ordersModalApi) window.__ordersModalApi.onUpdate(payload.new);
+      if(window.__kdsApi) window.__kdsApi.onUpdate(payload.new);
       refreshNewOrdersCount();
     })
     .subscribe();
@@ -4924,7 +4978,7 @@ document.getElementById('driversBtn').addEventListener('click', async ()=>{
     if(!drivers || drivers.length === 0){ wrap.innerHTML = `<div class="orders-empty">لم تتم إضافة أي سائقين بعد</div>`; return; }
 
     // عدد الطلبات النشطة (قيد الانتظار أو التجهيز) المعيّنة لكل سائق حاليًا
-    const { data: activeAssigned } = await sb.from('orders').select('driver_id').eq('restaurant_id', restaurant.id).in('status', ['pending','preparing']).not('driver_id', 'is', null);
+    const { data: activeAssigned } = await sb.from('orders').select('driver_id').eq('restaurant_id', restaurant.id).in('status', ['pending','preparing','ready']).not('driver_id', 'is', null);
     const activeCounts = {};
     (activeAssigned || []).forEach(o=>{ activeCounts[o.driver_id] = (activeCounts[o.driver_id]||0) + 1; });
 
@@ -6231,6 +6285,7 @@ async function openOrdersOverlay(){
           <option value="all">كل الحالات</option>
           <option value="pending">قيد الانتظار</option>
           <option value="preparing">قيد التجهيز</option>
+          <option value="ready">جاهز</option>
           <option value="delivered">تم التسليم</option>
           <option value="cancelled">ملغي</option>
         </select>
@@ -6338,11 +6393,12 @@ async function openOrdersOverlay(){
   const driversById = {};
   (allDriversList || []).forEach(d=> driversById[d.id] = d);
 
-  const STATUS_LABELS = { pending:'قيد الانتظار', preparing:'قيد التجهيز', delivered:'تم التسليم', cancelled:'ملغي' };
+  const STATUS_LABELS = { pending:'قيد الانتظار', preparing:'قيد التجهيز', ready:'جاهز', delivered:'تم التسليم', cancelled:'ملغي' };
 
   // رسائل واتساب جاهزة تُرسل للعميل عند تغيير حالة طلبه (ميزة PRO) — يفتح واتساب برسالة معبأة مسبقًا ليضغط صاحب المتجر إرسال فقط
   const STATUS_WA_MESSAGES = {
     preparing: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nطلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} الآن قيد التجهيز 👨‍🍳\nسيصلك قريبًا إن شاء الله.`,
+    ready: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nطلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} أصبح جاهزًا ✅\n${o.order_type === 'pickup' ? 'يمكنك الحضور لاستلامه الآن.' : (o.order_type === 'dine_in' ? 'سيصلك إلى طاولتك حالًا.' : 'وسيصلك قريبًا إن شاء الله.')}`,
     delivered: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nطلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} تم تسليمه ✅\nنتمنى لك الهناء والعافية، وننتظر طلبك مجددًا 🌟${o.rating_code ? `\n\nقيّم تجربتك في ثوانٍ 👇\n${location.origin}${location.pathname}?v=${o.rating_code}` : ''}`,
     cancelled: (o)=> `مرحبًا ${o.customer_name || ''} 👋\nنأسف، طلبك رقم #${o.order_number ?? ''} من ${restaurant.name || 'المتجر'} تم إلغاؤه ❌\nإذا كنت بحاجة لمزيد من التفاصيل أو ترغب في تقديم طلب جديد، فنحن في خدمتك.`,
   };
@@ -6473,6 +6529,7 @@ async function openOrdersOverlay(){
         <select class="status-select" data-action="statusSelect" ${(status==='delivered' || status==='cancelled') ? 'disabled title="لا يمكن تغيير حالة الطلب بعد أن أصبح نهائيًا"' : ''}>
           <option value="pending" ${status==='pending' ? 'selected' : ''}>قيد الانتظار</option>
           <option value="preparing" ${status==='preparing' ? 'selected' : ''}>قيد التجهيز</option>
+          <option value="ready" ${status==='ready' ? 'selected' : ''}>جاهز</option>
           <option value="delivered" ${status==='delivered' ? 'selected' : ''}>تم التسليم</option>
           <option value="cancelled" ${status==='cancelled' ? 'selected' : ''}>ملغي</option>
         </select>
@@ -6644,7 +6701,7 @@ async function openOrdersOverlay(){
     const cur = getRestaurantCurrency(restaurant);
     const countable = filtered.filter(o=> (o.status || 'pending') !== 'cancelled');
     const sum = countable.reduce((t, o)=> t + (Number(o.total) || 0), 0);
-    const active = filtered.filter(o=> { const st = o.status || 'pending'; return st === 'pending' || st === 'preparing'; }).length;
+    const active = filtered.filter(o=> { const st = o.status || 'pending'; return st === 'pending' || st === 'preparing' || st === 'ready'; }).length;
     el.innerHTML = `<span>عدد الطلبات: <strong>${filtered.length}</strong></span>`
       + `<span>قيد التنفيذ: <strong>${active}</strong></span>`
       + `<span>الإجمالي (بدون الملغي): <strong>${sum.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${escapeHtml(cur)}</strong></span>`
@@ -6736,6 +6793,338 @@ async function openOrdersOverlay(){
     }
   };
 }
+// ===== شاشة المطبخ الحية: أعمدة (جديد / قيد التجهيز / سُلّم مؤخرًا) مع مؤقتات وتحديث لحظي =====
+// رابط شاشة المطبخ المباشر (?kitchen=1): بعد تسجيل الدخول تُفتح الشاشة تلقائيًا — مناسب لتابلت المطبخ بحساب كاشير
+function kitchenScreenLink(){ return location.origin + location.pathname + '?kitchen=1'; }
+function maybeAutoOpenKitchen(){
+  try{ if(new URLSearchParams(location.search).get('kitchen') === '1') openKitchenScreen(); }catch(e){}
+}
+async function openKitchenScreen(){
+  if(window.__kdsApi) return;
+  stopOrderAlertLoop();
+  const DELIVERED_WINDOW_MIN = 60;
+  const overlay = document.createElement('div');
+  overlay.className = 'kds-overlay';
+  overlay.innerHTML = `
+    <div class="kds-head">
+      <h3>👨‍🍳 شاشة المطبخ</h3>
+      <span class="kds-clock" id="kdsClock"></span>
+      <span class="kds-spacer"></span>
+      <button type="button" class="kds-chip active" data-kds-filter="all">الكل</button>
+      <button type="button" class="kds-chip" data-kds-filter="delivery">🛵 توصيل</button>
+      <button type="button" class="kds-chip" data-kds-filter="pickup">📦 استلام</button>
+      <button type="button" class="kds-chip" data-kds-filter="dine_in">🍽️ طاولات</button>
+      <button type="button" class="kds-chip" id="kdsLinkBtn">🔗 نسخ رابط الشاشة</button>
+      <button type="button" class="kds-chip" id="kdsMuteBtn">🔇 إيقاف التنبيه</button>
+      <button type="button" class="kds-chip" id="kdsFullBtn">⛶ ملء الشاشة</button>
+      <button type="button" class="kds-chip" id="kdsCloseBtn">✕ إغلاق</button>
+    </div>
+    <div class="kds-cols">
+      <div class="kds-col" data-col="pending"><div class="kds-col-head"><span>🆕 جديد</span><span class="kds-count" data-count="pending">0</span></div><div class="kds-list" data-list="pending"></div></div>
+      <div class="kds-col" data-col="preparing"><div class="kds-col-head"><span>👨‍🍳 قيد التجهيز</span><span class="kds-count" data-count="preparing">0</span></div><div class="kds-list" data-list="preparing"></div></div>
+      <div class="kds-col" data-col="ready"><div class="kds-col-head"><span>🔔 جاهز</span><span class="kds-count" data-count="ready">0</span></div><div class="kds-list" data-list="ready"></div></div>
+      <div class="kds-col" data-col="delivered"><div class="kds-col-head"><span>✅ سُلّم مؤخرًا (آخر ساعة)</span><span class="kds-count" data-count="delivered">0</span></div><div class="kds-list" data-list="delivered"></div></div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  let orders = [];
+  let itemsByOrder = {};
+  let filter = 'all';
+  const busy = new Set();
+
+  async function loadItems(list){
+    const ids = list.map(o=> o.id).filter(id=> !itemsByOrder[id]);
+    for(let k = 0; k < ids.length; k += 40){
+      const { data } = await sb.from('order_items').select('*').in('order_id', ids.slice(k, k + 40));
+      (data || []).forEach(l=> { (itemsByOrder[l.order_id] = itemsByOrder[l.order_id] || []).push(l); });
+    }
+    ids.forEach(id=> { if(!itemsByOrder[id]) itemsByOrder[id] = []; });
+  }
+  async function loadAll(){
+    const since = new Date(Date.now() - DELIVERED_WINDOW_MIN * 60000).toISOString();
+    const [act, done] = await Promise.all([
+      sb.from('orders').select('*').eq('restaurant_id', restaurant.id).in('status', ['pending','preparing','ready']).order('created_at', { ascending:true }).limit(200),
+      sb.from('orders').select('*').eq('restaurant_id', restaurant.id).eq('status', 'delivered').gte('delivered_at', since).order('delivered_at', { ascending:false }).limit(50)
+    ]);
+    if(act.error){ toast('تعذر تحميل طلبات المطبخ'); return; }
+    orders = [...(act.data || []), ...(done.data || [])];
+    await loadItems(orders);
+    render();
+  }
+
+  const fmtElapsed = (ms)=>{
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    const p = (n)=> String(n).padStart(2, '0');
+    return h ? `${h}:${p(m)}:${p(sec)}` : `${p(m)}:${p(sec)}`;
+  };
+  function urgency(o){
+    const now = Date.now();
+    if(o.estimated_ready_at){
+      const diffMin = (new Date(o.estimated_ready_at).getTime() - now) / 60000;
+      if(diffMin < 0) return 'late';
+      if(diffMin <= 5) return 'warn';
+      return 'ok';
+    }
+    const elapsedMin = (now - new Date(o.created_at).getTime()) / 60000;
+    if(elapsedMin > 25) return 'late';
+    if(elapsedMin > 15) return 'warn';
+    return 'ok';
+  }
+  function cardHtml(o){
+    const st = o.status || 'pending';
+    const lines = itemsByOrder[o.id] || [];
+    const done = st === 'delivered';
+    const cls = done ? 'done' : (st === 'ready' ? 'readyc' : urgency(o));
+    const readyTxt = (!done && o.estimated_ready_at) ? `<div class="kds-ready-at">⏱️ جاهز الساعة ${new Date(o.estimated_ready_at).toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' })}</div>` : '';
+    const timerBase = done ? (o.delivered_at || o.created_at) : o.created_at;
+    const timer = done
+      ? `<span class="kds-timer" style="font-size:13px; color:#8fe0a6;">منذ ${Math.max(0, Math.round((Date.now() - new Date(timerBase).getTime()) / 60000))} د</span>`
+      : `<span class="kds-timer" data-since="${new Date(timerBase).getTime()}">${fmtElapsed(Date.now() - new Date(timerBase).getTime())}</span>`;
+    const act = st === 'pending'
+      ? `<button type="button" class="kds-act start" data-kds-act="preparing" data-id="${o.id}" ${busy.has(o.id) ? 'disabled' : ''}>▶ بدء التجهيز</button>`
+      : (st === 'preparing' ? `<button type="button" class="kds-act ready" data-kds-act="ready" data-id="${o.id}" ${busy.has(o.id) ? 'disabled' : ''}>🔔 الطلب جاهز</button>`
+      : (st === 'ready' ? `<button type="button" class="kds-act finish" data-kds-act="delivered" data-id="${o.id}" ${busy.has(o.id) ? 'disabled' : ''}>✅ تم التسليم</button>` : ''));
+    return `
+      <div class="kds-card ${cls}" data-id="${o.id}">
+        <div class="kds-card-top">
+          <span class="kds-num">${o.order_number != null ? '#' + escapeHtml(String(o.order_number)) : ''}</span>
+          <span class="kds-type">${escapeHtml(orderTypeLabel(o))}</span>
+          ${timer}
+        </div>
+        <div class="kds-name">${escapeHtml(o.customer_name || '')}</div>
+        <ul class="kds-lines">${lines.length ? lines.map(l=> `<li><b>×${escapeHtml(String(l.quantity))}</b>${escapeHtml(l.item_name || '')}${l.item_note ? `<small>${escapeHtml(l.item_note)}</small>` : ''}</li>`).join('') : '<li style="color:#7d7566;">جارِ تحميل الأصناف...</li>'}</ul>
+        ${o.notes ? `<div class="kds-note">📝 ${escapeHtml(o.notes)}</div>` : ''}
+        ${readyTxt}
+        ${act}
+      </div>`;
+  }
+  const typeOf = (o)=> o.order_type === 'dine_in' ? 'dine_in' : (o.order_type === 'pickup' ? 'pickup' : 'delivery');
+  function render(){
+    const vis = orders.filter(o=> filter === 'all' || typeOf(o) === filter);
+    ['pending','preparing','ready','delivered'].forEach(col=>{
+      const list = vis.filter(o=> (o.status || 'pending') === col);
+      overlay.querySelector(`[data-count="${col}"]`).textContent = list.length;
+      overlay.querySelector(`[data-list="${col}"]`).innerHTML = list.length ? list.map(cardHtml).join('') : '<div class="kds-empty">لا توجد طلبات</div>';
+    });
+  }
+  function tick(){
+    overlay.querySelector('#kdsClock').textContent = new Date().toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    overlay.querySelectorAll('.kds-timer[data-since]').forEach(el=>{ el.textContent = fmtElapsed(Date.now() - Number(el.dataset.since)); });
+  }
+  let lastClassPass = 0;
+  const tickId = setInterval(()=>{
+    tick();
+    if(Date.now() - lastClassPass > 15000){ // تحديث ألوان الإلحاح وإخراج المُسلَّم الأقدم من ساعة
+      lastClassPass = Date.now();
+      const cutoff = Date.now() - DELIVERED_WINDOW_MIN * 60000;
+      orders = orders.filter(o=> !(o.status === 'delivered' && new Date(o.delivered_at || o.created_at).getTime() < cutoff));
+      render();
+    }
+  }, 1000);
+  const pollId = setInterval(()=>{ loadAll(); }, 60000); // مزامنة احتياطية إن انقطع الاتصال اللحظي
+
+  async function setStatus(id, newStatus){
+    if(busy.has(id)) return;
+    busy.add(id); render();
+    const payload = { status: newStatus };
+    if(newStatus === 'delivered') payload.delivered_at = new Date().toISOString();
+    const { error } = await sb.from('orders').update(payload).eq('id', id);
+    busy.delete(id);
+    if(error){ toast('تعذر تحديث حالة الطلب'); render(); return; }
+    const o = orders.find(x=> x.id === id);
+    if(o) Object.assign(o, payload);
+    refreshNewOrdersCount();
+    render();
+  }
+  overlay.addEventListener('click', (e)=>{
+    const actBtn = e.target.closest('[data-kds-act]');
+    if(actBtn){ setStatus(actBtn.dataset.id, actBtn.dataset.kdsAct); return; }
+    const f = e.target.closest('[data-kds-filter]');
+    if(f){
+      filter = f.dataset.kdsFilter;
+      overlay.querySelectorAll('[data-kds-filter]').forEach(b=> b.classList.toggle('active', b === f));
+      render();
+    }
+  });
+  // أي لمسة على الشاشة تُسكت تنبيه الطلب الجديد المتكرر
+  overlay.addEventListener('pointerdown', ()=> stopOrderAlertLoop());
+  overlay.querySelector('#kdsMuteBtn').addEventListener('click', ()=>{ stopOrderAlertLoop(); toast('تم إيقاف التنبيه'); });
+  overlay.querySelector('#kdsLinkBtn').addEventListener('click', async ()=>{
+    const link = kitchenScreenLink();
+    try{ await navigator.clipboard.writeText(link); toast('تم نسخ رابط شاشة المطبخ — افتحه على تابلت المطبخ وسجّل الدخول بحساب كاشير'); }
+    catch(e){ window.prompt('انسخ رابط شاشة المطبخ:', link); }
+  });
+  // إبقاء شاشة التابلت مضاءة أثناء عرض شاشة المطبخ
+  let wakeLock = null;
+  const takeWake = async ()=>{ try{ if(navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); }catch(e){} };
+  takeWake();
+  const onVis = ()=>{ if(document.visibilityState === 'visible') takeWake(); };
+  document.addEventListener('visibilitychange', onVis);
+  const fullBtn = overlay.querySelector('#kdsFullBtn');
+  fullBtn.addEventListener('click', ()=>{
+    try{
+      if(document.fullscreenElement) document.exitFullscreen();
+      else overlay.requestFullscreen && overlay.requestFullscreen();
+    }catch(e){}
+  });
+  function close(){
+    clearInterval(tickId); clearInterval(pollId);
+    document.removeEventListener('keydown', onKey);
+    document.removeEventListener('visibilitychange', onVis);
+    try{ if(wakeLock) wakeLock.release(); }catch(e){}
+    try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
+    window.__kdsApi = null;
+    overlay.remove();
+  }
+  function onKey(e){ if(e.key === 'Escape' && !document.fullscreenElement) close(); }
+  document.addEventListener('keydown', onKey);
+  overlay.querySelector('#kdsCloseBtn').addEventListener('click', close);
+
+  window.__kdsApi = {
+    async onInsert(row){
+      if(!row || orders.some(o=> o.id === row.id)) return;
+      await new Promise(r=> setTimeout(r, 800)); // order_items تُضاف بعد الطلب بلحظات
+      if(orders.some(o=> o.id === row.id)) return;
+      orders.push(row);
+      try{ await loadItems([row]); }catch(e){}
+      render();
+    },
+    onUpdate(row){
+      if(!row) return;
+      const i = orders.findIndex(o=> o.id === row.id);
+      if(i < 0){
+        if(row.status === 'pending' || row.status === 'preparing' || row.status === 'ready'){ orders.push(row); loadItems([row]).then(render); }
+        return;
+      }
+      if(row.status === 'cancelled'){ orders.splice(i, 1); }
+      else Object.assign(orders[i], row);
+      render();
+    }
+  };
+  tick();
+  await loadAll();
+}
+// ===== مقارنة الفروع: مبيعات وطلبات وزمن تجهيز وتقييم لكل فرع (للحسابات متعددة الفروع) =====
+async function openBranchCompare(){
+  if(!branches || branches.length < 2){ toast('تتوفر مقارنة الفروع عند وجود فرعين أو أكثر'); return; }
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal modal-screen ms-lg">
+      <h3>🏢 مقارنة الفروع</h3>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;" id="bcPeriods">
+        <button type="button" class="chip-btn" data-days="7">آخر ٧ أيام</button>
+        <button type="button" class="chip-btn" data-days="30">آخر ٣٠ يومًا</button>
+        <button type="button" class="chip-btn" data-days="90">آخر ٩٠ يومًا</button>
+      </div>
+      <div id="bcBody"><div class="orders-empty">جارِ التحميل...</div></div>
+      <div class="modal-actions"><button class="btn-cancel" id="bcClose">إغلاق</button></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = ()=> overlay.remove();
+  overlay.querySelector('#bcClose').addEventListener('click', close);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+
+  async function fetchOrders(days){
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const ids = branches.map(b=> b.id);
+    let all = [];
+    for(let page = 0; page < 20; page++){
+      const { data, error } = await sb.from('orders')
+        .select('id,restaurant_id,total,status,created_at,delivered_at,estimated_ready_at,rating_stars')
+        .in('restaurant_id', ids).gte('created_at', since)
+        .order('created_at', { ascending:false }).range(page * 1000, page * 1000 + 999);
+      if(error) return { error };
+      all = all.concat(data || []);
+      if(!data || data.length < 1000) break;
+    }
+    return { rows: all };
+  }
+  function compute(rows){
+    const stats = {};
+    branches.forEach(b=> { stats[b.id] = { b, orders:0, cancelled:0, sales:0, prepSum:0, prepN:0, lateN:0, onTimeN:0, rateSum:0, rateN:0 }; });
+    rows.forEach(o=>{
+      const s = stats[o.restaurant_id]; if(!s) return;
+      s.orders++;
+      if(o.status === 'cancelled'){ s.cancelled++; return; }
+      s.sales += Number(o.total) || 0;
+      if(o.status === 'delivered' && o.delivered_at){
+        const mins = (new Date(o.delivered_at) - new Date(o.created_at)) / 60000;
+        if(mins > 0 && mins < 180){ s.prepSum += mins; s.prepN++; }
+        if(o.estimated_ready_at){ if(new Date(o.delivered_at) > new Date(o.estimated_ready_at)) s.lateN++; else s.onTimeN++; }
+      }
+      if(o.rating_stars){ s.rateSum += o.rating_stars; s.rateN++; }
+    });
+    return Object.values(stats).map(s=> Object.assign(s, {
+      valid: s.orders - s.cancelled,
+      avgTicket: (s.orders - s.cancelled) ? s.sales / (s.orders - s.cancelled) : 0,
+      cancelPct: s.orders ? s.cancelled / s.orders * 100 : 0,
+      prepAvg: s.prepN ? s.prepSum / s.prepN : null,
+      latePct: (s.lateN + s.onTimeN) ? s.lateN / (s.lateN + s.onTimeN) * 100 : null,
+      rating: s.rateN ? s.rateSum / s.rateN : null
+    }));
+  }
+  function bar(val, max, color){
+    const w = max > 0 ? Math.max(2, Math.round(val / max * 100)) : 0;
+    return `<div style="height:6px; border-radius:4px; background:var(--line); margin-top:4px;"><div style="height:100%; width:${w}%; border-radius:4px; background:${color};"></div></div>`;
+  }
+  function render(list, days){
+    const cur = escapeHtml(getRestaurantCurrency(restaurant));
+    const fmt = (n)=> Number(n).toLocaleString('en-US', { maximumFractionDigits:0 });
+    const maxSales = Math.max(...list.map(s=> s.sales), 0);
+    const maxOrders = Math.max(...list.map(s=> s.valid), 0);
+    const bestSales = list.reduce((a, s)=> s.sales > a.sales ? s : a, list[0]);
+    const withPrep = list.filter(s=> s.prepAvg != null);
+    const fastest = withPrep.length > 1 ? withPrep.reduce((a, s)=> s.prepAvg < a.prepAvg ? s : a, withPrep[0]) : null;
+    const withRate = list.filter(s=> s.rating != null);
+    const topRated = withRate.length > 1 ? withRate.reduce((a, s)=> s.rating > a.rating ? s : a, withRate[0]) : null;
+    const totalSales = list.reduce((t, s)=> t + s.sales, 0);
+    const totalOrders = list.reduce((t, s)=> t + s.valid, 0);
+    const cell = (label, value, extra)=> `<div style="min-width:110px;"><div style="font-size:11px; color:var(--stone);">${label}</div><div style="font-weight:800; font-size:15px;">${value}</div>${extra || ''}</div>`;
+    const cards = list.map(s=> `
+      <div class="o-card" style="padding:14px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+          <strong style="font-size:16px;">${escapeHtml(s.b.name || '')}${s.b.id === restaurant.id ? ' <span class="o-tag" style="font-size:11px;">الفرع الحالي</span>' : ''}</strong>
+          <span>
+            ${s === bestSales && s.sales > 0 ? '<span class="status-badge ready">🏆 الأعلى مبيعًا</span> ' : ''}
+            ${fastest && s === fastest ? '<span class="status-badge ready">⚡ الأسرع تجهيزًا</span> ' : ''}
+            ${topRated && s === topRated ? '<span class="status-badge ready">⭐ الأعلى تقييمًا</span>' : ''}
+          </span>
+        </div>
+        <div style="display:flex; gap:16px 22px; flex-wrap:wrap;">
+          ${cell('المبيعات', `${fmt(s.sales)} ${cur}`, bar(s.sales, maxSales, '#2e7d32'))}
+          ${cell('الطلبات', fmt(s.valid), bar(s.valid, maxOrders, '#2f8fd6'))}
+          ${cell('متوسط الطلب', `${s.avgTicket.toFixed(1)} ${cur}`)}
+          ${cell('الإلغاء', `${s.cancelPct.toFixed(1)}%`)}
+          ${cell('متوسط وقت التجهيز', s.prepAvg != null ? `${Math.round(s.prepAvg)} د` : '—')}
+          ${cell('التسليم بعد الموعد', s.latePct != null ? `${s.latePct.toFixed(0)}%` : '—')}
+          ${cell('التقييم', s.rating != null ? `${s.rating.toFixed(1)} ★ <span style="font-size:11px; color:var(--stone);">(${s.rateN})</span>` : '—')}
+        </div>
+      </div>`).join('');
+    overlay.querySelector('#bcBody').innerHTML = `
+      <div class="orders-summary" style="margin-bottom:12px; display:flex; gap:16px; flex-wrap:wrap; font-size:13px;">
+        <span>الفترة: <strong>آخر ${days} يومًا</strong></span>
+        <span>إجمالي المبيعات: <strong>${fmt(totalSales)} ${cur}</strong></span>
+        <span>إجمالي الطلبات: <strong>${fmt(totalOrders)}</strong></span>
+      </div>
+      ${cards}
+      <div class="o-time" style="font-size:11.5px;">يُحسب وقت التجهيز من لحظة وصول الطلب حتى تسليمه، وتُستبعد الطلبات الملغاة من المبيعات والمتوسطات.</div>`;
+  }
+  async function load(days){
+    overlay.querySelectorAll('#bcPeriods [data-days]').forEach(b=> b.classList.toggle('active', Number(b.dataset.days) === days));
+    overlay.querySelector('#bcBody').innerHTML = '<div class="orders-empty">جارِ التحميل...</div>';
+    const r = await fetchOrders(days);
+    if(r.error){ overlay.querySelector('#bcBody').innerHTML = '<div class="orders-empty">تعذر تحميل بيانات الفروع</div>'; return; }
+    render(compute(r.rows), days);
+  }
+  overlay.querySelector('#bcPeriods').addEventListener('click', (e)=>{
+    const b = e.target.closest('[data-days]'); if(b) load(Number(b.dataset.days));
+  });
+  load(30);
+}
+document.getElementById('branchCompareBtn').addEventListener('click', openBranchCompare);
+document.getElementById('kitchenScreenBtn').addEventListener('click', openKitchenScreen);
 document.getElementById('viewOrdersBtn').addEventListener('click', openOrdersOverlay);
 document.getElementById('abandonedCartsBtn').addEventListener('click', openAbandonedCartsOverlay);
 
@@ -6748,7 +7137,7 @@ function saveReceiptWidth(w){
   try{ localStorage.setItem(RECEIPT_WIDTH_KEY, w); }catch(e){}
 }
 
-const RECEIPT_STATUS_LABELS = { pending:'قيد الانتظار', preparing:'قيد التجهيز', delivered:'تم التسليم', cancelled:'ملغي' };
+const RECEIPT_STATUS_LABELS = { pending:'قيد الانتظار', preparing:'قيد التجهيز', ready:'جاهز', delivered:'تم التسليم', cancelled:'ملغي' };
 
 function buildReceiptHtml(order, lines, widthMm){
   const d = new Date(order.created_at);
@@ -10067,7 +10456,7 @@ function buildMonthlyReportHtml({ restaurant, dailyRows, itemStatsRows, custRows
     </div>`;
 }
 
-const ORDER_STATUS_LABELS_EXPORT = { pending:'قيد الانتظار', preparing:'قيد التجهيز', delivered:'تم التسليم', cancelled:'ملغي' };
+const ORDER_STATUS_LABELS_EXPORT = { pending:'قيد الانتظار', preparing:'قيد التجهيز', ready:'جاهز', delivered:'تم التسليم', cancelled:'ملغي' };
 function exportOrdersToExcel(orderList, itemsByOrderMap, filenameLabel){
   if(!orderList || orderList.length === 0){ toast('لا توجد طلبات لتصديرها'); return; }
   const header = ['رقم الطلب','التاريخ والوقت','اسم العميل','رقم الهاتف','رقم هاتف إضافي','نوع الطلب','الحالة','المدينة','المنطقة','العنوان','الأصناف','عدد القطع','الإجمالي الفرعي','رسوم التوصيل','الإجمالي','ملاحظات'];
@@ -13930,9 +14319,10 @@ function renderTrackingStatus(status){
   const steps = [
     { key:'pending', label:'قيد الانتظار', icon:'🕒' },
     { key:'preparing', label:'قيد التجهيز', icon:'👨‍🍳' },
+    { key:'ready', label:'جاهز', icon:'🔔' },
     { key:'delivered', label:'تم التسليم', icon:'✅' }
   ];
-  const order = ['pending','preparing','delivered'];
+  const order = ['pending','preparing','ready','delivered'];
   const currentIdx = Math.max(0, order.indexOf(status));
   return `<div style="display:flex; justify-content:space-between; align-items:flex-start;">
     ${steps.map((s,i)=>`
