@@ -257,6 +257,21 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .settings-foot .modal-actions button{ flex:0 0 auto; min-width:150px; }
 .rs-sections{ columns:480px; column-gap:16px; }
 .rs-sections .rs-section{ break-inside:avoid; margin-bottom:14px; }
+/* قائمة جانبية للإعدادات (الشاشات الكبيرة فقط) */
+.rs-nav{ display:none; }
+@media (min-width:1000px){
+  .settings-modal.rs-navmode .settings-body{ display:flex; gap:0; padding:0; overflow:hidden; }
+  .settings-modal.rs-navmode .rs-nav{ display:flex; flex-direction:column; gap:4px; flex:0 0 240px; overflow-y:auto; padding:16px 14px; border-inline-end:1px solid var(--line); background:var(--paper); }
+  .rs-nav-item{ text-align:start; border:0; background:none; font-family:inherit; font-size:14px; font-weight:700; color:var(--ink); padding:10px 12px; border-radius:10px; cursor:pointer; }
+  .rs-nav-item:hover{ background:var(--line); }
+  .rs-nav-item.active{ background:var(--ember); color:#fff; }
+  .settings-modal.rs-navmode .rs-main{ flex:1; min-width:0; overflow-y:auto; padding:16px 22px; }
+  .settings-modal.rs-navmode .rs-sections{ columns:auto; max-width:760px; }
+  .settings-modal.rs-navmode:not(.rs-searching) .rs-section:not(.rs-active){ display:none; }
+  .settings-modal.rs-navmode .rs-section > summary{ pointer-events:none; cursor:default; }
+  .settings-modal.rs-navmode .rs-section > summary::after{ content:none; }
+  .settings-modal.rs-navmode #rsToggleAll{ display:none; }
+}
 @media (max-width:1099px){
   .modal.settings-modal{ width:96vw; height:94vh; }
   .settings-head, .settings-body, .settings-foot{ padding-left:16px; padding-right:16px; }
@@ -8888,7 +8903,7 @@ async function openSettingsAndFocus(inputId){
     await new Promise(r=> setTimeout(r, 100));
     const el = document.getElementById(inputId);
     if(el){
-      const det = el.closest('details'); if(det) det.open = true;
+      const det = el.closest('details'); if(det){ det.open = true; det.dispatchEvent(new Event('rs-activate')); }
       el.scrollIntoView({ block:'center' });
       el.focus();
       return;
@@ -11001,10 +11016,38 @@ document.getElementById('restaurantSettingsBtn').addEventListener('click', async
     overlay.querySelectorAll('.rs-section').forEach(d=>{ d.open = true; });
     rsToggleAll.textContent = 'طي كل الأقسام';
   }
+  // قائمة جانبية للأقسام على الشاشات الكبيرة: يظهر قسم واحد في كل مرة
+  if(window.matchMedia && window.matchMedia('(min-width:1000px)').matches){
+    const rsBody = overlay.querySelector('.settings-body');
+    const rsSectionsEl = overlay.querySelector('.rs-sections');
+    const rsNoRes = overlay.querySelector('#rsNoResults');
+    const rsMain = document.createElement('div'); rsMain.className = 'rs-main';
+    const rsNav = document.createElement('nav'); rsNav.className = 'rs-nav'; rsNav.setAttribute('aria-label','أقسام الإعدادات');
+    rsBody.append(rsNav, rsMain); rsMain.append(rsSectionsEl, rsNoRes);
+    const rsSecs = Array.from(overlay.querySelectorAll('.rs-section'));
+    const activate = (sec)=>{
+      rsSecs.forEach(x=> x.classList.toggle('rs-active', x === sec));
+      rsNav.querySelectorAll('.rs-nav-item').forEach((b,i)=> b.classList.toggle('active', rsSecs[i] === sec));
+      rsMain.scrollTop = 0;
+    };
+    rsSecs.forEach(sec=>{
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'rs-nav-item';
+      b.textContent = sec.querySelector('summary').textContent.trim();
+      b.addEventListener('click', ()=>{
+        const si = overlay.querySelector('#rsSearch'); if(si && si.value){ si.value = ''; si.dispatchEvent(new Event('input')); }
+        activate(sec);
+      });
+      rsNav.appendChild(b);
+      sec.addEventListener('rs-activate', ()=> activate(sec));
+    });
+    overlay.querySelector('.settings-modal').classList.add('rs-navmode');
+    activate(rsSecs[0]);
+  }
   // بحث داخل الإعدادات: يخفي الحقول غير المطابقة ويفتح الأقسام اللي فيها نتائج
   const rsSearch = overlay.querySelector('#rsSearch');
   rsSearch.addEventListener('input', ()=>{
     const q = rsSearch.value.trim().toLowerCase();
+    overlay.querySelector('.settings-modal').classList.toggle('rs-searching', !!q);
     let anySection = false;
     overlay.querySelectorAll('.rs-section').forEach(sec=>{
       let any = false;
