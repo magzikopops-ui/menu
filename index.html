@@ -852,6 +852,20 @@ body.pub-mobile-ad-open .pub-order-btn{ bottom:calc(22px + 58px); }
 .report-kpi .kpi-delta{ font-size:10.5px; margin-top:2px; }
 .report-kpi .kpi-delta.up{ color:#166534; }
 .report-kpi .kpi-delta.down{ color:#a6392b; }
+.menu-pdf-doc{ font-family:inherit; color:#111; direction:rtl; }
+.menu-pdf-head{ text-align:center; margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid #111; }
+.menu-pdf-head img{ max-height:70px; max-width:160px; object-fit:contain; margin-bottom:6px; }
+.menu-pdf-head h1{ font-size:22px; margin:0 0 4px; }
+.menu-pdf-head div{ font-size:12px; color:#555; }
+.menu-pdf-cat{ font-size:16px; font-weight:800; margin:16px 0 6px; padding:5px 10px; background:#eee; break-after:avoid; page-break-after:avoid; }
+.menu-pdf-item{ display:flex; gap:10px; align-items:center; padding:7px 4px; border-bottom:1px dashed #ccc; break-inside:avoid; page-break-inside:avoid; }
+.menu-pdf-item img{ width:64px; height:64px; object-fit:cover; border-radius:6px; flex:none; }
+.menu-pdf-info{ flex:1; min-width:0; }
+.menu-pdf-name{ font-weight:700; font-size:13.5px; }
+.menu-pdf-desc{ font-size:11px; color:#555; margin-top:2px; }
+.menu-pdf-price{ font-weight:800; font-size:13px; white-space:nowrap; text-align:left; direction:ltr; }
+.menu-pdf-price s{ color:#888; font-weight:400; font-size:11px; margin-inline-end:5px; }
+.menu-pdf-sizes{ font-size:12px; line-height:1.7; text-align:left; direction:rtl; }
 @media print{
   body > *:not(#receiptPrintArea):not(#reportPrintArea){ display:none !important; }
   #receiptPrintArea{ display:block !important; margin:0; padding:0; }
@@ -2313,6 +2327,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
           <div class="dash-menu-divider"></div>
           <button class="link-btn" id="importExcelBtn">📥 استيراد من إكسيل</button>
           <button class="link-btn" id="exportExcelBtn">📤 تصدير إلى إكسيل</button>
+          <button class="link-btn" id="exportPdfBtn">📄 تحميل المنيو PDF</button>
           <div class="dash-menu-divider"></div>
           <button class="link-btn" id="addonGroupsBtn">🧩 الإضافات والمتغيرات</button>
         </div>
@@ -2629,7 +2644,7 @@ const ACCOUNT_LEVEL_FIELDS = ['subscription_tier','feature_plan','subscription_e
   'restriction_delivery_zones_disabled','restriction_drivers_disabled','restriction_extra_channels_disabled',
   'restriction_multi_wallet_disabled','restriction_stats_charts_disabled','restriction_customers_disabled',
   'restriction_settings_disabled','restriction_notif_settings_disabled','restriction_delete_disabled','restriction_excel_disabled',
-  'restriction_status_wa_disabled','restriction_coupons_disabled','restriction_daily_report_disabled','restriction_winback_disabled'];
+  'restriction_status_wa_disabled','restriction_coupons_disabled','restriction_daily_report_disabled','restriction_winback_disabled','restriction_pdf_disabled'];
 // حد أقصى لعدد الفروع حسب الباقة السعرية — STARTER فرع واحد فقط، PRO بلا حدود
 function maxBranchesForTier(tier){ return tier === 'pro' ? Infinity : 1; }
 // حد أقصى لعدد حسابات الكاشير حسب الباقة — STARTER حساب واحد، PRO حسابين (نفس الحد المطبّق فعليًا في قاعدة البيانات)
@@ -3611,6 +3626,7 @@ function applyGranularRestrictionsUI(){
     deliveryZonesBtn: restaurant.restriction_delivery_zones_disabled || menuOnly,
     customersBtn: restaurant.restriction_customers_disabled || menuOnly,
     restaurantSettingsBtn: restaurant.restriction_settings_disabled,
+    exportPdfBtn: restaurant.restriction_pdf_disabled,
   };
   Object.entries(restrictions).forEach(([id, restricted])=>{
     const el = document.getElementById(id);
@@ -7900,6 +7916,7 @@ async function openAdminPanel(){
             ${perm('restriction_coupons_disabled', '🏷️', 'منع أكواد الخصم للعملاء')}
             ${perm('restriction_daily_report_disabled', '📊', 'منع تقرير تقفيل اليوم')}
             ${perm('restriction_winback_disabled', '🎯', 'منع شاشة العملاء غير النشطين')}
+            ${perm('restriction_pdf_disabled', '📄', 'منع تحميل المنيو PDF')}
           </div>
         </div>
 
@@ -8104,7 +8121,7 @@ async function openAdminPanel(){
     });
   });
 
-  const CLIENT_PERM_FIELDS = ['restriction_prices_disabled','restriction_images_disabled','restriction_orders_disabled','restriction_print_disabled','restriction_stats_disabled','restriction_reports_disabled','restriction_share_disabled','restriction_delivery_zones_disabled','restriction_drivers_disabled','restriction_extra_channels_disabled','restriction_multi_wallet_disabled','restriction_stats_charts_disabled','restriction_customers_disabled','restriction_settings_disabled','restriction_notif_settings_disabled','restriction_delete_disabled','restriction_status_wa_disabled','restriction_coupons_disabled','restriction_daily_report_disabled','restriction_winback_disabled'];
+  const CLIENT_PERM_FIELDS = ['restriction_prices_disabled','restriction_images_disabled','restriction_orders_disabled','restriction_print_disabled','restriction_stats_disabled','restriction_reports_disabled','restriction_share_disabled','restriction_delivery_zones_disabled','restriction_drivers_disabled','restriction_extra_channels_disabled','restriction_multi_wallet_disabled','restriction_stats_charts_disabled','restriction_customers_disabled','restriction_settings_disabled','restriction_notif_settings_disabled','restriction_delete_disabled','restriction_status_wa_disabled','restriction_coupons_disabled','restriction_daily_report_disabled','restriction_winback_disabled','restriction_pdf_disabled'];
 
   wrap.querySelectorAll('.admin-lock-all-btn, .admin-unlock-all-btn').forEach(btn=>{
     btn.addEventListener('click', async (e)=>{
@@ -12358,6 +12375,93 @@ function exportableImageUrl(url){
   if(url.startsWith('data:')) return '(صورة محفوظة محليًا - لم تُرفع للتخزين بعد)';
   return safeExcelText(url);
 }
+
+/* ============ تحميل المنيو كملف PDF (من لوحة التحكم) ============ */
+document.getElementById('exportPdfBtn').addEventListener('click', ()=>{
+  if(restaurant.restriction_pdf_disabled){ toast('🔒 هذه الميزة غير متاحة لحسابك'); return; }
+  if(categories.length === 0){ toast(`لا توجد فئات أو ${biz(restaurant.business_type,'itemsIndef')} لتحميلها`); return; }
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>📄 تحميل المنيو PDF</h3>
+      <label style="display:flex;gap:8px;align-items:center;margin:10px 0;"><input type="checkbox" id="pdfOptImages" checked> تضمين الصور</label>
+      <label style="display:flex;gap:8px;align-items:center;margin:10px 0;"><input type="checkbox" id="pdfOptPrices" checked> تضمين الأسعار</label>
+      <label style="display:flex;gap:8px;align-items:center;margin:10px 0;"><input type="checkbox" id="pdfOptHideUnavailable" checked> إخفاء غير المتاح</label>
+      <div style="font-size:12px;color:var(--muted,#777);">سيفتح نافذة الطباعة — اختر «حفظ كملف PDF» كوجهة للطباعة.</div>
+      <div class="modal-actions">
+        <button class="btn-confirm" id="pdfGoBtn">تحميل</button>
+        <button class="btn-cancel" id="pdfCancelBtn">إلغاء</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#pdfCancelBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#pdfGoBtn').addEventListener('click', async ()=>{
+    const withImages = overlay.querySelector('#pdfOptImages').checked;
+    const withPrices = overlay.querySelector('#pdfOptPrices').checked;
+    const hideUnavail = overlay.querySelector('#pdfOptHideUnavailable').checked;
+    overlay.remove();
+    await printMenuPdf({ withImages, withPrices, hideUnavail });
+  });
+});
+
+async function printMenuPdf({ withImages, withPrices, hideUnavail }){
+  const cur = escapeHtml(getRestaurantCurrency(restaurant));
+  const fmt = (n)=> { const v = Number(n); return isFinite(v) ? (Number.isInteger(v) ? String(v) : v.toFixed(2)) : ''; };
+  let body = '';
+  let count = 0;
+  categories.forEach(cat=>{
+    const list = items.filter(i=> i.category_id === cat.id && !(hideUnavail && i.is_available === false));
+    if(!list.length) return;
+    body += `<div class="menu-pdf-cat">${escapeHtml(cat.name || '')}</div>`;
+    list.forEach(item=>{
+      count++;
+      let priceHtml = '';
+      if(withPrices){
+        if(item.pricing_type === 'sizes'){
+          const sz = itemSizes[item.id] || [];
+          priceHtml = `<div class="menu-pdf-sizes">${sz.map(z=> `${escapeHtml(z.size_name||'')}: <b>${fmt(z.price)}</b> ${cur}`).join('<br>')}</div>`;
+        } else if(item.price != null){
+          const old = item.old_price != null && Number(item.old_price) > Number(item.price) ? `<s>${fmt(item.old_price)}</s>` : '';
+          const unit = item.pricing_type === 'weight' ? ` / كجم` : '';
+          priceHtml = `<div class="menu-pdf-price">${old}${fmt(item.price)} ${cur}${unit}</div>`;
+        }
+      }
+      const img = (withImages && item.image_url) ? `<img src="${escapeHtml(item.image_url)}" crossorigin="anonymous" alt="">` : '';
+      body += `<div class="menu-pdf-item">${img}<div class="menu-pdf-info"><div class="menu-pdf-name">${escapeHtml(item.name || '')}</div>${item.description ? `<div class="menu-pdf-desc">${escapeHtml(item.description)}</div>` : ''}</div>${priceHtml}</div>`;
+    });
+  });
+  if(!count){ toast('لا توجد عناصر للتحميل'); return; }
+  const head = `<div class="menu-pdf-head">${restaurant.logo_url ? `<img src="${escapeHtml(restaurant.logo_url)}" crossorigin="anonymous" alt="">` : ''}<h1>${escapeHtml(restaurant.name || '')}</h1>${restaurant.address ? `<div>${escapeHtml(restaurant.address)}</div>` : ''}${restaurant.phone ? `<div style="direction:ltr;">${escapeHtml(restaurant.phone)}</div>` : ''}</div>`;
+  let printArea = document.getElementById('reportPrintArea');
+  if(!printArea){
+    printArea = document.createElement('div');
+    printArea.id = 'reportPrintArea';
+    document.body.appendChild(printArea);
+  }
+  printArea.innerHTML = `<div class="menu-pdf-doc">${head}${body}</div>`;
+  // انتظار تحميل كل الصور (مع مهلة) قبل الطباعة وإلا تظهر فارغة
+  const imgs = Array.from(printArea.querySelectorAll('img'));
+  if(imgs.length) toast('جاري تجهيز الصور...');
+  await Promise.race([
+    Promise.all(imgs.map(im=> im.complete ? Promise.resolve() : new Promise(r=>{ im.onload = im.onerror = r; }))),
+    new Promise(r=> setTimeout(r, 15000))
+  ]);
+  let pageStyle = document.getElementById('receiptPageStyle');
+  if(!pageStyle){
+    pageStyle = document.createElement('style');
+    pageStyle.id = 'receiptPageStyle';
+    document.head.appendChild(pageStyle);
+  }
+  pageStyle.textContent = `@page{ size:A4; margin:14mm; }`;
+  const prevTitle = document.title;
+  document.title = `منيو — ${restaurant.name}`;
+  const restoreTitle = ()=>{ document.title = prevTitle; window.removeEventListener('afterprint', restoreTitle); };
+  window.addEventListener('afterprint', restoreTitle);
+  window.print();
+}
+
 document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   if(restaurant.restriction_excel_disabled){ toast('🔒 تصدير Excel متاح في باقة PRO فقط'); return; }
   if(categories.length === 0){
