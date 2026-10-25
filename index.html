@@ -35,7 +35,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://vinpjtrxwqlmwppggbqy.supabase.co">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;700;800&family=Almarai:wght@400;700;800&family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Changa:wght@400;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -857,15 +857,15 @@ body.pub-mobile-ad-open .pub-order-btn{ bottom:calc(22px + 58px); }
 .menu-pdf-head img{ max-height:70px; max-width:160px; object-fit:contain; margin-bottom:6px; }
 .menu-pdf-head h1{ font-size:22px; margin:0 0 4px; }
 .menu-pdf-head div{ font-size:12px; color:#555; }
-.menu-pdf-cat{ font-size:16px; font-weight:800; margin:16px 0 6px; padding:5px 10px; background:#eee; break-after:avoid; page-break-after:avoid; }
+.menu-pdf-cat{ font-size:1.25em; font-weight:800; margin:16px 0 6px; padding:5px 10px; background:#eee; break-after:avoid; page-break-after:avoid; }
 .menu-pdf-item{ display:flex; gap:10px; align-items:center; padding:7px 4px; border-bottom:1px dashed #ccc; break-inside:avoid; page-break-inside:avoid; }
 .menu-pdf-item img{ width:64px; height:64px; object-fit:cover; border-radius:6px; flex:none; }
 .menu-pdf-info{ flex:1; min-width:0; }
-.menu-pdf-name{ font-weight:700; font-size:13.5px; }
-.menu-pdf-desc{ font-size:11px; color:#555; margin-top:2px; }
-.menu-pdf-price{ font-weight:800; font-size:13px; white-space:nowrap; text-align:left; direction:ltr; }
+.menu-pdf-name{ font-weight:700; font-size:1.05em; }
+.menu-pdf-desc{ font-size:.85em; color:#555; margin-top:2px; }
+.menu-pdf-price{ font-weight:800; font-size:1em; white-space:nowrap; text-align:left; direction:ltr; }
 .menu-pdf-price s{ color:#888; font-weight:400; font-size:11px; margin-inline-end:5px; }
-.menu-pdf-sizes{ font-size:12px; line-height:1.7; text-align:left; direction:rtl; }
+.menu-pdf-sizes{ font-size:.95em; line-height:1.7; text-align:left; direction:rtl; }
 @media print{
   body > *:not(#receiptPrintArea):not(#reportPrintArea){ display:none !important; }
   #receiptPrintArea{ display:block !important; margin:0; padding:0; }
@@ -12388,6 +12388,23 @@ document.getElementById('exportPdfBtn').addEventListener('click', ()=>{
       <label style="display:flex;gap:8px;align-items:center;margin:10px 0;"><input type="checkbox" id="pdfOptImages" checked> تضمين الصور</label>
       <label style="display:flex;gap:8px;align-items:center;margin:10px 0;"><input type="checkbox" id="pdfOptPrices" checked> تضمين الأسعار</label>
       <label style="display:flex;gap:8px;align-items:center;margin:10px 0;"><input type="checkbox" id="pdfOptHideUnavailable" checked> إخفاء غير المتاح</label>
+      <label style="display:block;margin:10px 0;">الخط
+        <select id="pdfOptFont" style="width:100%;margin-top:4px;">
+          <option value="Tajawal">تجوال</option><option value="Cairo">القاهرة</option><option value="Almarai">المراعي</option>
+          <option value="Amiri">أميري (نسخ كلاسيكي)</option><option value="Noto Naskh Arabic">نسخ</option><option value="Changa">شانجا</option><option value="Lalezar">لالزار (عناوين)</option>
+        </select></label>
+      <label style="display:block;margin:10px 0;">حجم الخط
+        <select id="pdfOptSize" style="width:100%;margin-top:4px;">
+          <option value="0.9">صغير</option><option value="1" selected>متوسط</option><option value="1.2">كبير</option><option value="1.4">كبير جداً</option>
+        </select></label>
+      <label style="display:block;margin:10px 0;">شكل العملة
+        <select id="pdfOptCurrency" style="width:100%;margin-top:4px;">
+          <option value="asis" selected>كما في الإعدادات</option><option value="short">عربي مختصر (ج.م)</option><option value="full">عربي كامل (جنيه)</option>
+        </select></label>
+      <label style="display:block;margin:10px 0;">شكل الأرقام
+        <select id="pdfOptDigits" style="width:100%;margin-top:4px;">
+          <option value="en" selected>إنجليزي (1 2 3)</option><option value="ar">عربي (١ ٢ ٣)</option>
+        </select></label>
       <div style="font-size:12px;color:var(--muted,#777);">سيفتح نافذة الطباعة — اختر «حفظ كملف PDF» كوجهة للطباعة.</div>
       <div class="modal-actions">
         <button class="btn-confirm" id="pdfGoBtn">تحميل</button>
@@ -12401,13 +12418,20 @@ document.getElementById('exportPdfBtn').addEventListener('click', ()=>{
     const withImages = overlay.querySelector('#pdfOptImages').checked;
     const withPrices = overlay.querySelector('#pdfOptPrices').checked;
     const hideUnavail = overlay.querySelector('#pdfOptHideUnavailable').checked;
+    const font = overlay.querySelector('#pdfOptFont').value;
+    const scale = Number(overlay.querySelector('#pdfOptSize').value) || 1;
+    const digits = overlay.querySelector('#pdfOptDigits').value;
+    const currencyMode = overlay.querySelector('#pdfOptCurrency').value;
     overlay.remove();
-    await printMenuPdf({ withImages, withPrices, hideUnavail });
+    await printMenuPdf({ withImages, withPrices, hideUnavail, font, scale, digits, currencyMode });
   });
 });
 
-async function printMenuPdf({ withImages, withPrices, hideUnavail }){
-  const cur = escapeHtml(getRestaurantCurrency(restaurant));
+async function printMenuPdf({ withImages, withPrices, hideUnavail, font='Tajawal', scale=1, digits='en', currencyMode='asis' }){
+  const rawCur = getRestaurantCurrency(restaurant);
+  const CUR_AR = { EGP:['ج.م','جنيه'], SAR:['ر.س','ريال'], AED:['د.إ','درهم'], KWD:['د.ك','دينار'], QAR:['ر.ق','ريال'], BHD:['د.ب','دينار'], OMR:['ر.ع','ريال'], JOD:['د.أ','دينار'], USD:['$','دولار'], EUR:['€','يورو'] };
+  const arCur = CUR_AR[rawCur.toUpperCase()];
+  const cur = escapeHtml(currencyMode === 'asis' || !arCur ? rawCur : arCur[currencyMode === 'full' ? 1 : 0]);
   const fmt = (n)=> { const v = Number(n); return isFinite(v) ? (Number.isInteger(v) ? String(v) : v.toFixed(2)) : ''; };
   let body = '';
   let count = 0;
@@ -12440,7 +12464,13 @@ async function printMenuPdf({ withImages, withPrices, hideUnavail }){
     printArea.id = 'reportPrintArea';
     document.body.appendChild(printArea);
   }
-  printArea.innerHTML = `<div class="menu-pdf-doc">${head}${body}</div>`;
+  printArea.innerHTML = `<div class="menu-pdf-doc" style="font-family:'${font}',Tajawal,sans-serif; font-size:${(13*scale).toFixed(1)}px;">${head}${body}</div>`;
+  if(digits === 'ar'){
+    const map = '٠١٢٣٤٥٦٧٨٩';
+    const w = document.createTreeWalker(printArea, NodeFilter.SHOW_TEXT);
+    let n; while((n = w.nextNode())) n.nodeValue = n.nodeValue.replace(/[0-9]/g, d=> map[d]);
+  }
+  try{ await document.fonts.load(`700 16px "${font}"`); await document.fonts.ready; }catch(_){}
   // انتظار تحميل كل الصور (مع مهلة) قبل الطباعة وإلا تظهر فارغة
   const imgs = Array.from(printArea.querySelectorAll('img'));
   if(imgs.length) toast('جاري تجهيز الصور...');
