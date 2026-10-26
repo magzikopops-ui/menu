@@ -12489,15 +12489,16 @@ async function printMenuPdf({ withImages, withPrices, hideUnavail, font='Tajawal
   });
   if(!count){ toast('لا توجد عناصر للتحميل'); return; }
   const head = `<div class="menu-pdf-head">${restaurant.logo_url ? `<img src="${escapeHtml(restaurant.logo_url)}" crossorigin="anonymous" alt="">` : ''}<h1>${escapeHtml(restaurant.name || '')}</h1>${restaurant.address ? `<div>${escapeHtml(restaurant.address)}</div>` : ''}${restaurant.phone ? `<div style="direction:ltr;">${escapeHtml(restaurant.phone)}</div>` : ''}</div>`;
-  const coverHtml = cover ? `<div class="menu-pdf-cover">${restaurant.logo_url ? `<img src="${escapeHtml(restaurant.logo_url)}" crossorigin="anonymous" alt="">` : ''}<h1>${escapeHtml(restaurant.name || '')}</h1><div class="sub">المنيو</div>${restaurant.address ? `<div>${escapeHtml(restaurant.address)}</div>` : ''}${restaurant.phone ? `<div style="direction:ltr;">${escapeHtml(restaurant.phone)}</div>` : ''}</div>` : '';
   let qrHtml = '';
   if(withQr && window.QRCode && restaurant.slug){
     try{
       const link = `${location.origin}${location.pathname}?r=${restaurant.slug}`;
       const dataUrl = await QRCode.toDataURL(link, { width: 300, margin: 1 });
       qrHtml = `<div class="menu-pdf-qr"><img src="${dataUrl}" alt="QR"><div>امسح الرمز لتصفح المنيو وطلب أونلاين</div></div>`;
-    }catch(_){}
+    }catch(e){ console.warn('QR failed', e); toast('تعذّر إنشاء رمز QR'); }
   }
+  else if(withQr) toast('رمز QR غير متاح الآن — تأكد من الاتصال بالإنترنت');
+  const coverHtml = cover ? `<div class="menu-pdf-cover">${restaurant.logo_url ? `<img src="${escapeHtml(restaurant.logo_url)}" crossorigin="anonymous" alt="">` : ''}<h1>${escapeHtml(restaurant.name || '')}</h1><div class="sub">المنيو</div>${restaurant.address ? `<div>${escapeHtml(restaurant.address)}</div>` : ''}${restaurant.phone ? `<div style="direction:ltr;">${escapeHtml(restaurant.phone)}</div>` : ''}${qrHtml}</div>` : '';
   let printArea = document.getElementById('reportPrintArea');
   if(!printArea){
     printArea = document.createElement('div');
