@@ -12504,12 +12504,15 @@ async function printMenuPdf({ withImages, withPrices, hideUnavail, font='Tajawal
           setTimeout(rej, 8000);
         });
       }
-      dataUrl = await QRCode.toDataURL(link, { width: 300, margin: 1 });
-    }catch(e){ console.warn('QR failed', e); }
+      // نفس الطريقة المستخدمة في باقي التطبيق (toCanvas + callback) لأنها مضمونة العمل
+      const cv = document.createElement('canvas');
+      await new Promise((res, rej)=> QRCode.toCanvas(cv, link, { width: 300, margin: 1 }, (err)=> err ? rej(err) : res()));
+      dataUrl = cv.toDataURL('image/png');
+    }catch(e){ console.warn('QR failed', e); window.__qrErr = String((e && e.message) || e || 'load'); }
     if(dataUrl){
       qrHtml = `<div class="menu-pdf-qr"><img src="${dataUrl}" alt="QR"><div>امسح الرمز لتصفح المنيو وطلب أونلاين</div></div>`;
     } else {
-      toast('تعذّر إنشاء رمز QR — تم وضع الرابط نصاً');
+      toast('تعذّر إنشاء رمز QR (' + (window.__qrErr || '?') + ') — تم وضع الرابط نصاً');
       qrHtml = `<div class="menu-pdf-qr"><div style="direction:ltr;word-break:break-all;">${escapeHtml(link)}</div><div>رابط المنيو الإلكتروني</div></div>`;
     }
   }
