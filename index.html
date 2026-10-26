@@ -852,18 +852,36 @@ body.pub-mobile-ad-open .pub-order-btn{ bottom:calc(22px + 58px); }
 .report-kpi .kpi-delta{ font-size:10.5px; margin-top:2px; }
 .report-kpi .kpi-delta.up{ color:#166534; }
 .report-kpi .kpi-delta.down{ color:#a6392b; }
-.menu-pdf-doc{ font-family:inherit; color:#111; direction:rtl; }
-.menu-pdf-head{ text-align:center; margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid #111; }
+.menu-pdf-doc{ -webkit-print-color-adjust:exact; print-color-adjust:exact; font-family:inherit; color:#111; direction:rtl; }
+.menu-pdf-head{ text-align:center; margin-bottom:14px; padding-bottom:10px; border-bottom:3px solid var(--pdf-accent,#111); }
+.menu-pdf-head h1{ color:var(--pdf-accent,#111); }
+.menu-pdf-cover{ min-height:250mm; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:12px; break-after:page; page-break-after:always; border:3px solid var(--pdf-accent,#111); padding:20mm; box-sizing:border-box; }
+.menu-pdf-cover img{ max-width:60mm; max-height:60mm; object-fit:contain; }
+.menu-pdf-cover h1{ font-size:2.6em; margin:0; color:var(--pdf-accent,#111); }
+.menu-pdf-cover .sub{ font-size:1.3em; letter-spacing:2px; color:#555; }
+.menu-pdf-qr{ text-align:center; margin-top:22px; padding-top:12px; border-top:2px dashed var(--pdf-accent,#111); break-inside:avoid; page-break-inside:avoid; }
+.menu-pdf-qr img{ width:34mm; height:34mm; }
+.menu-pdf-qr div{ font-size:.9em; color:#444; margin-top:4px; }
+.menu-pdf-grid{ display:grid; gap:8px; }
+.menu-pdf-grid.g2{ grid-template-columns:repeat(2,1fr); }
+.menu-pdf-grid.g3{ grid-template-columns:repeat(3,1fr); }
+.menu-pdf-grid.g4{ grid-template-columns:repeat(4,1fr); gap:6px; }
+.menu-pdf-grid.g4 .menu-pdf-item{ padding:5px; font-size:.88em; }
+.menu-pdf-grid.g4 .menu-pdf-item img{ height:22mm; }
+.menu-pdf-grid .menu-pdf-item{ flex-direction:column; align-items:stretch; text-align:center; border:1px solid #ddd; border-radius:8px; padding:8px; gap:6px; }
+.menu-pdf-grid .menu-pdf-item img{ width:100%; height:32mm; }
+.menu-pdf-grid.g3 .menu-pdf-item img{ height:26mm; }
+.menu-pdf-grid .menu-pdf-price, .menu-pdf-grid .menu-pdf-sizes{ text-align:center; direction:rtl; white-space:normal; }
 .menu-pdf-head img{ max-height:70px; max-width:160px; object-fit:contain; margin-bottom:6px; }
 .menu-pdf-head h1{ font-size:22px; margin:0 0 4px; }
 .menu-pdf-head div{ font-size:12px; color:#555; }
-.menu-pdf-cat{ font-size:1.25em; font-weight:800; margin:16px 0 6px; padding:5px 10px; background:#eee; break-after:avoid; page-break-after:avoid; }
+.menu-pdf-cat{ font-size:1.25em; font-weight:800; margin:16px 0 6px; padding:5px 10px; background:var(--pdf-accent,#111); color:#fff; border-radius:4px; break-after:avoid; page-break-after:avoid; }
 .menu-pdf-item{ display:flex; gap:10px; align-items:center; padding:7px 4px; border-bottom:1px dashed #ccc; break-inside:avoid; page-break-inside:avoid; }
 .menu-pdf-item img{ width:64px; height:64px; object-fit:cover; border-radius:6px; flex:none; }
 .menu-pdf-info{ flex:1; min-width:0; }
 .menu-pdf-name{ font-weight:700; font-size:1.05em; }
 .menu-pdf-desc{ font-size:.85em; color:#555; margin-top:2px; }
-.menu-pdf-price{ font-weight:800; font-size:1em; white-space:nowrap; text-align:left; direction:ltr; }
+.menu-pdf-price{ color:var(--pdf-accent,#111); font-weight:800; font-size:1em; white-space:nowrap; text-align:left; direction:ltr; }
 .menu-pdf-price s{ color:#888; font-weight:400; font-size:11px; margin-inline-end:5px; }
 .menu-pdf-sizes{ font-size:.95em; line-height:1.7; text-align:left; direction:rtl; }
 @media print{
@@ -12388,6 +12406,13 @@ document.getElementById('exportPdfBtn').addEventListener('click', ()=>{
       <label style="display:flex;gap:8px;align-items:center;margin:10px 0;"><input type="checkbox" id="pdfOptImages" checked> تضمين الصور</label>
       <label style="display:flex;gap:8px;align-items:center;margin:10px 0;"><input type="checkbox" id="pdfOptPrices" checked> تضمين الأسعار</label>
       <label style="display:flex;gap:8px;align-items:center;margin:10px 0;"><input type="checkbox" id="pdfOptHideUnavailable" checked> إخفاء غير المتاح</label>
+      <label style="display:block;margin:10px 0;">التخطيط
+        <select id="pdfOptLayout" style="width:100%;margin-top:4px;">
+          <option value="list" selected>قائمة (عمود واحد)</option><option value="g2">عمودان (بطاقات)</option><option value="g3">ثلاثة أعمدة (بطاقات)</option><option value="g4">أربعة أعمدة (بطاقات)</option>
+        </select></label>
+      <label style="display:flex;gap:8px;align-items:center;margin:10px 0;">لون الهوية <input type="color" id="pdfOptColor" value="#B8390E" style="width:44px;height:30px;padding:0;border:none;"></label>
+      <label style="display:flex;gap:8px;align-items:center;margin:10px 0;"><input type="checkbox" id="pdfOptCover"> صفحة غلاف بالشعار</label>
+      <label style="display:flex;gap:8px;align-items:center;margin:10px 0;"><input type="checkbox" id="pdfOptQr" checked> رمز QR للمنيو الإلكتروني في آخر الصفحة</label>
       <label style="display:block;margin:10px 0;">الخط
         <select id="pdfOptFont" style="width:100%;margin-top:4px;">
           <option value="Tajawal">تجوال</option><option value="Cairo">القاهرة</option><option value="Almarai">المراعي</option>
@@ -12422,12 +12447,16 @@ document.getElementById('exportPdfBtn').addEventListener('click', ()=>{
     const scale = Number(overlay.querySelector('#pdfOptSize').value) || 1;
     const digits = overlay.querySelector('#pdfOptDigits').value;
     const currencyMode = overlay.querySelector('#pdfOptCurrency').value;
+    const layout = overlay.querySelector('#pdfOptLayout').value;
+    const accent = overlay.querySelector('#pdfOptColor').value;
+    const cover = overlay.querySelector('#pdfOptCover').checked;
+    const withQr = overlay.querySelector('#pdfOptQr').checked;
     overlay.remove();
-    await printMenuPdf({ withImages, withPrices, hideUnavail, font, scale, digits, currencyMode });
+    await printMenuPdf({ withImages, withPrices, hideUnavail, font, scale, digits, currencyMode, layout, accent, cover, withQr });
   });
 });
 
-async function printMenuPdf({ withImages, withPrices, hideUnavail, font='Tajawal', scale=1, digits='en', currencyMode='asis' }){
+async function printMenuPdf({ withImages, withPrices, hideUnavail, font='Tajawal', scale=1, digits='en', currencyMode='asis', layout='list', accent='#B8390E', cover=false, withQr=true }){
   const rawCur = getRestaurantCurrency(restaurant);
   const CUR_AR = { EGP:['ج.م','جنيه'], SAR:['ر.س','ريال'], AED:['د.إ','درهم'], KWD:['د.ك','دينار'], QAR:['ر.ق','ريال'], BHD:['د.ب','دينار'], OMR:['ر.ع','ريال'], JOD:['د.أ','دينار'], USD:['$','دولار'], EUR:['€','يورو'] };
   const arCur = CUR_AR[rawCur.toUpperCase()];
@@ -12439,6 +12468,7 @@ async function printMenuPdf({ withImages, withPrices, hideUnavail, font='Tajawal
     const list = items.filter(i=> i.category_id === cat.id && !(hideUnavail && i.is_available === false));
     if(!list.length) return;
     body += `<div class="menu-pdf-cat">${escapeHtml(cat.name || '')}</div>`;
+    if(layout !== 'list') body += `<div class="menu-pdf-grid ${layout}">`;
     list.forEach(item=>{
       count++;
       let priceHtml = '';
@@ -12455,16 +12485,26 @@ async function printMenuPdf({ withImages, withPrices, hideUnavail, font='Tajawal
       const img = (withImages && item.image_url) ? `<img src="${escapeHtml(item.image_url)}" crossorigin="anonymous" alt="">` : '';
       body += `<div class="menu-pdf-item">${img}<div class="menu-pdf-info"><div class="menu-pdf-name">${escapeHtml(item.name || '')}</div>${item.description ? `<div class="menu-pdf-desc">${escapeHtml(item.description)}</div>` : ''}</div>${priceHtml}</div>`;
     });
+    if(layout !== 'list') body += `</div>`;
   });
   if(!count){ toast('لا توجد عناصر للتحميل'); return; }
   const head = `<div class="menu-pdf-head">${restaurant.logo_url ? `<img src="${escapeHtml(restaurant.logo_url)}" crossorigin="anonymous" alt="">` : ''}<h1>${escapeHtml(restaurant.name || '')}</h1>${restaurant.address ? `<div>${escapeHtml(restaurant.address)}</div>` : ''}${restaurant.phone ? `<div style="direction:ltr;">${escapeHtml(restaurant.phone)}</div>` : ''}</div>`;
+  const coverHtml = cover ? `<div class="menu-pdf-cover">${restaurant.logo_url ? `<img src="${escapeHtml(restaurant.logo_url)}" crossorigin="anonymous" alt="">` : ''}<h1>${escapeHtml(restaurant.name || '')}</h1><div class="sub">المنيو</div>${restaurant.address ? `<div>${escapeHtml(restaurant.address)}</div>` : ''}${restaurant.phone ? `<div style="direction:ltr;">${escapeHtml(restaurant.phone)}</div>` : ''}</div>` : '';
+  let qrHtml = '';
+  if(withQr && window.QRCode && restaurant.slug){
+    try{
+      const link = `${location.origin}${location.pathname}?r=${restaurant.slug}`;
+      const dataUrl = await QRCode.toDataURL(link, { width: 300, margin: 1 });
+      qrHtml = `<div class="menu-pdf-qr"><img src="${dataUrl}" alt="QR"><div>امسح الرمز لتصفح المنيو وطلب أونلاين</div></div>`;
+    }catch(_){}
+  }
   let printArea = document.getElementById('reportPrintArea');
   if(!printArea){
     printArea = document.createElement('div');
     printArea.id = 'reportPrintArea';
     document.body.appendChild(printArea);
   }
-  printArea.innerHTML = `<div class="menu-pdf-doc" style="font-family:'${font}',Tajawal,sans-serif; font-size:${(13*scale).toFixed(1)}px;">${head}${body}</div>`;
+  printArea.innerHTML = `<div class="menu-pdf-doc" style="--pdf-accent:${/^#[0-9a-fA-F]{6}$/.test(accent) ? accent : '#111'}; font-family:'${font}',Tajawal,sans-serif; font-size:${(13*scale).toFixed(1)}px;">${coverHtml}${cover ? '' : head}${body}${qrHtml}</div>`;
   if(digits === 'ar'){
     const map = '٠١٢٣٤٥٦٧٨٩';
     const w = document.createTreeWalker(printArea, NodeFilter.SHOW_TEXT);
