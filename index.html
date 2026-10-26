@@ -767,6 +767,18 @@ body.pub-mobile-ad-open .pub-order-btn{ bottom:calc(22px + 58px); }
 .cart-summary-row{ display:flex; justify-content:space-between; padding:6px 0; font-size:13.5px; color:var(--stone); }
 .cart-summary-row.total{ font-weight:800; color:var(--ink); font-size:15px; border-top:1.5px dashed var(--stone-light); margin-top:6px; padding-top:10px; }
 .cart-empty-note{ text-align:center; color:var(--stone); padding:24px; font-size:13.5px; }
+/* شاشات الكمبيوتر والشاشات الكبيرة: سلة أعرض ليظهر اسم الصنف في سطر واحد */
+@media (min-width:900px){
+  .modal.cart-modal{ width:min(720px,70vw); max-width:720px; padding:26px; }
+  .cart-row{ gap:16px; padding:14px 0; }
+  .cart-row .cr-thumb{ width:60px; height:60px; }
+  .cart-row .cr-name{ font-size:16px; }
+  .cart-row .cr-line-total{ font-size:15px; min-width:110px; text-align:end; }
+}
+@media (min-width:1400px){
+  .modal.cart-modal{ width:min(860px,56vw); max-width:860px; }
+  .cart-row .cr-name{ font-size:17px; }
+}
 .cart-suggest{ margin-top:14px; padding-top:12px; border-top:1.5px dashed var(--stone-light); }
 .cart-suggest-title{ font-weight:800; font-size:13.5px; color:var(--ink); margin-bottom:8px; }
 .cart-suggest-row{ display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; scrollbar-width:thin; }
@@ -12492,29 +12504,9 @@ async function printMenuPdf({ withImages, withPrices, hideUnavail, font='Tajawal
   let qrHtml = '';
   if(withQr){
     const link = `${location.origin}${location.pathname}?r=${encodeURIComponent(restaurant.slug || '')}`;
-    let dataUrl = '';
-    try{
-      if(!window.QRCode){
-        // المكتبة لم تُحمَّل بعد (script defer) — نحمّلها الآن وننتظرها
-        await new Promise((res, rej)=>{
-          const sc = document.createElement('script');
-          sc.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
-          sc.onload = res; sc.onerror = rej;
-          document.head.appendChild(sc);
-          setTimeout(rej, 8000);
-        });
-      }
-      // نفس الطريقة المستخدمة في باقي التطبيق (toCanvas + callback) لأنها مضمونة العمل
-      const cv = document.createElement('canvas');
-      await new Promise((res, rej)=> QRCode.toCanvas(cv, link, { width: 300, margin: 1 }, (err)=> err ? rej(err) : res()));
-      dataUrl = cv.toDataURL('image/png');
-    }catch(e){ console.warn('QR failed', e); window.__qrErr = String((e && e.message) || e || 'load'); }
-    if(dataUrl){
-      qrHtml = `<div class="menu-pdf-qr"><img src="${dataUrl}" alt="QR"><div>امسح الرمز لتصفح المنيو وطلب أونلاين</div></div>`;
-    } else {
-      toast('تعذّر إنشاء رمز QR (' + (window.__qrErr || '?') + ') — تم وضع الرابط نصاً');
-      qrHtml = `<div class="menu-pdf-qr"><div style="direction:ltr;word-break:break-all;">${escapeHtml(link)}</div><div>رابط المنيو الإلكتروني</div></div>`;
-    }
+    // نفس خدمة QR المستخدمة في زر "QR Code" بالتطبيق (تعمل عندك فعلاً)؛ الصورة تُنتظر مع بقية الصور قبل الطباعة
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=${encodeURIComponent(link)}`;
+    qrHtml = `<div class="menu-pdf-qr"><img src="${qrUrl}" alt="QR"><div>امسح الرمز لتصفح المنيو وطلب أونلاين</div><div style="direction:ltr;word-break:break-all;font-size:.8em;color:#777;">${escapeHtml(link)}</div></div>`;
   }
   const coverHtml = cover ? `<div class="menu-pdf-cover">${restaurant.logo_url ? `<img src="${escapeHtml(restaurant.logo_url)}" crossorigin="anonymous" alt="">` : ''}<h1>${escapeHtml(restaurant.name || '')}</h1><div class="sub">المنيو</div>${restaurant.address ? `<div>${escapeHtml(restaurant.address)}</div>` : ''}${restaurant.phone ? `<div style="direction:ltr;">${escapeHtml(restaurant.phone)}</div>` : ''}${qrHtml}</div>` : '';
   let printArea = document.getElementById('reportPrintArea');
@@ -17270,7 +17262,7 @@ async function loadPublic(slug){
     overlay.className = 'overlay';
     const lines = Object.values(cart);
     overlay.innerHTML = `
-      <div class="modal modal-floating-footer">
+      <div class="modal modal-floating-footer cart-modal">
         <div class="modal-scroll">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
           <h3 style="margin:0;">${lang==='en' ? 'Your cart' : 'سلة المشتريات'}</h3>
