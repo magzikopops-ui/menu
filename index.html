@@ -2726,7 +2726,8 @@ function isRunningStandalone(){
 async function setupInstallableMenu(rest){
   try{
     const base = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}`;
-    const startUrl = `${location.pathname}?r=${rest.slug}`;
+    // عناوين مطلقة كاملة: في manifest من نوع blob تُرفض العناوين النسبية (يتجاهلها Chrome)
+    const startUrl = `${location.origin}${location.pathname}?r=${rest.slug}`;
     // أيقونة صالحة للتثبيت: نحوّل شعار المتجر إلى PNG مربع 512 (يتطلبه Chrome)، وإن تعذّر نستخدم أيقونة الموقع الثابتة
     let iconSrc = `${base}menu-favicon.png`;
     if(rest.logo_url){
@@ -2748,7 +2749,7 @@ async function setupInstallableMenu(rest){
       name: rest.name || 'منيو',
       short_name: (rest.name || 'منيو').slice(0, 12),
       start_url: startUrl,
-      scope: location.pathname.replace(/[^/]*$/, ''),
+      scope: base,
       display: 'standalone',
       background_color: '#F6F1E4',
       theme_color: '#B8390E',
