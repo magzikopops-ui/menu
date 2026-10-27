@@ -2362,6 +2362,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
           <button class="link-btn" id="addonGroupsBtn">🧩 الإضافات والمتغيرات</button>
           <div class="dash-menu-divider"></div>
           <button class="link-btn" id="installDashBtn">💻 تثبيت لوحة التحكم كتطبيق</button>
+          <button class="link-btn" id="dashStartupBtn">🚀 تشغيل اللوحة عند فتح الجهاز</button>
         </div>
       </div>
 
@@ -2784,7 +2785,41 @@ function setupInstallableDashboard(){
     if(isRunningStandalone()) btn.classList.add('hidden');
     else btn.onclick = ()=> handleInstallClick(true);
   }
+  const sb2 = document.getElementById('dashStartupBtn');
+  if(sb2) sb2.onclick = ()=> showStartupTipModal();
 }
+// المتصفح لا يسمح للموقع بفتح chrome://apps ولا بتفعيل التشغيل عند الدخول بنفسه، فنعرض الخطوات مع زر نسخ العنوان
+function showStartupTipModal(){
+  const isEdge = /Edg\//.test(navigator.userAgent || '');
+  const appsUrl = isEdge ? 'edge://apps' : 'chrome://apps';
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  const steps = [
+    'اضغط زر «نسخ العنوان» بالأسفل',
+    'افتح تبويباً جديداً في المتصفح والصق العنوان ثم Enter',
+    'اضغط بزر الفأرة الأيمن على أيقونة «لوحة تحكم منيو m@g»',
+    'اختر «Start app when you sign in» (بدء التطبيق عند تسجيل الدخول)'
+  ];
+  overlay.innerHTML = `
+    <div class="modal info-modal">
+      <h3>🚀 تشغيل اللوحة تلقائياً عند فتح الجهاز</h3>
+      <p style="margin:0 0 12px; color:var(--stone); font-size:13.5px; line-height:1.7;">يُفعَّل مرة واحدة من إعدادات المتصفح بعد تثبيت اللوحة (Chrome أو Edge على ويندوز / ماك / لينكس).</p>
+      ${steps.map((t,i)=>`<div class="field-row"><span class="icon">${i+1}️⃣</span><span class="txt">${escapeHtml(t)}</span></div>`).join('')}
+      <div style="direction:ltr; text-align:center; font-family:var(--mono); margin:10px 0; font-weight:700;">${appsUrl}</div>
+      <div class="modal-actions">
+        <button class="btn-confirm" id="startupCopyBtn">📋 نسخ العنوان</button>
+        <button class="btn-cancel" id="startupCloseBtn">إغلاق</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#startupCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#startupCopyBtn').addEventListener('click', async ()=>{
+    try{ await navigator.clipboard.writeText(appsUrl); toast('تم نسخ العنوان — الصقه في تبويب جديد'); }
+    catch(e){ toast(appsUrl); }
+  });
+}
+window.addEventListener('appinstalled', ()=>{ if(dashInstallReady) setTimeout(showStartupTipModal, 600); });
 function detectPlatformForInstall(){
   const ua = navigator.userAgent || '';
   const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
