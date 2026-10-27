@@ -2363,6 +2363,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
           <div class="dash-menu-divider"></div>
           <button class="link-btn" id="installDashBtn">💻 تثبيت لوحة التحكم كتطبيق</button>
           <button class="link-btn" id="dashStartupBtn">🚀 تشغيل اللوحة عند فتح الجهاز</button>
+          <button class="link-btn" id="dashShortcutsBtn">⌨️ اختصارات لوحة المفاتيح</button>
         </div>
       </div>
 
@@ -2785,6 +2786,8 @@ function setupInstallableDashboard(){
     if(isRunningStandalone()) btn.classList.add('hidden');
     else btn.onclick = ()=> handleInstallClick(true);
   }
+  const shBtn = document.getElementById('dashShortcutsBtn');
+  if(shBtn) shBtn.onclick = ()=> showShortcutsHelp();
   const sb2 = document.getElementById('dashStartupBtn');
   if(sb2) sb2.onclick = ()=> showStartupTipModal();
 }
@@ -2926,6 +2929,36 @@ document.addEventListener('keydown', function(e){
   if(top.dataset.escGuard === '1') return; // النافذة بتتعامل مع Esc بنفسها (زي الإعدادات: تنبيه التعديلات غير المحفوظة)
   top.remove();
 });
+
+// اختصارات لوحة المفاتيح للوحة التحكم (كمبيوتر): N صنف جديد، / بحث، O الطلبات، ? قائمة الاختصارات
+document.addEventListener('keydown', function(e){
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  const dash = document.getElementById('dashboardScreen');
+  if(!dash || dash.classList.contains('hidden')) return;
+  const t = e.target;
+  const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+  if(typing || document.querySelector('.overlay')) return;
+  const k = e.key;
+  const click = (id)=>{ const b = document.getElementById(id); if(b && !b.classList.contains('hidden')){ e.preventDefault(); b.click(); } };
+  if(k === 'n' || k === 'N' || k === 'ى') click('addItemBtn');
+  else if(k === 'o' || k === 'O' || k === 'خ') click('viewOrdersBtn');
+  else if(k === '/'){ const i = document.getElementById('itemSearchInput'); if(i){ e.preventDefault(); i.focus(); i.select(); } }
+  else if(k === '?' || k === '؟'){ e.preventDefault(); showShortcutsHelp(); }
+});
+function showShortcutsHelp(){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  const rows = [['N','إضافة صنف جديد'],['O','فتح الطلبات'],['/','البحث في الأصناف'],['Esc','إغلاق النافذة المفتوحة'],['?','عرض هذه القائمة']];
+  overlay.innerHTML = `
+    <div class="modal info-modal">
+      <h3>⌨️ اختصارات لوحة المفاتيح</h3>
+      ${rows.map(r=> `<div class="field-row"><span class="icon" style="font-family:var(--mono);font-weight:800;min-width:36px;text-align:center;">${r[0]}</span><span class="txt">${r[1]}</span></div>`).join('')}
+      <div class="modal-actions"><button class="btn-confirm" id="shortcutsCloseBtn">تمام</button></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#shortcutsCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+}
 
 // تحديد النص بالكامل تلقائيًا عند التركيز على أي حقل رقمي (سعر، رسوم...) لتسهيل الكتابة فوقه
 document.addEventListener('focusin', function(e){
@@ -4514,6 +4547,11 @@ function updateNewOrdersBadge(){
   } else {
     badge.classList.add('hidden');
   }
+  // رقم على أيقونة التطبيق المثبّت في شريط المهام/الدوك (Badging API — يعمل في Chrome/Edge للتطبيقات المثبّتة)
+  try{
+    if(newOrdersCount > 0 && navigator.setAppBadge) navigator.setAppBadge(newOrdersCount).catch(()=>{});
+    else if(newOrdersCount <= 0 && navigator.clearAppBadge) navigator.clearAppBadge().catch(()=>{});
+  }catch(e){}
   renderDashHomeAttention();
 }
 
@@ -4844,9 +4882,13 @@ function showDesktopOrderNotification(orderRow){
       body: `من ${custName} — ${typeLabel}${orderRow && orderRow.total != null ? ` — ${orderRow.total} ${getRestaurantCurrency(restaurant)}` : ''}`,
       icon: (restaurant && restaurant.logo_url) ? restaurant.logo_url : undefined,
       tag: 'new-order-' + (orderRow && orderRow.id ? orderRow.id : Date.now()),
-      renotify: true
+      renotify: true,
+      requireInteraction: true
     });
-    n.onclick = ()=>{ window.focus(); n.close(); };
+    n.onclick = ()=>{
+      window.focus(); n.close();
+      try{ if(!document.getElementById('ordersListWrap') && typeof openOrdersOverlay === 'function') openOrdersOverlay(); }catch(e){}
+    };
   }catch(e){ console.error('showDesktopOrderNotification failed:', e); }
 }
 
