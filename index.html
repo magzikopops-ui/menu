@@ -2360,6 +2360,8 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
           <button class="link-btn" id="exportPdfBtn">📄 تحميل المنيو PDF</button>
           <div class="dash-menu-divider"></div>
           <button class="link-btn" id="addonGroupsBtn">🧩 الإضافات والمتغيرات</button>
+          <div class="dash-menu-divider"></div>
+          <button class="link-btn" id="installDashBtn">💻 تثبيت لوحة التحكم كتطبيق</button>
         </div>
       </div>
 
@@ -2741,6 +2743,48 @@ function setupInstallableMenu(rest){
     if(appleTitle) appleTitle.setAttribute('content', rest.name || 'منيو');
   }catch(e){}
 }
+// تثبيت لوحة التحكم كتطبيق مستقل (كمبيوتر/موبايل): manifest مخصص يفتح اللوحة نفسها بدون ?r=
+let dashInstallReady = false;
+function setupInstallableDashboard(){
+  if(dashInstallReady) return;
+  try{
+    const link = document.getElementById('manifestLink');
+    if(!link) return;
+    dashInstallReady = true;
+    const makeIcon = ()=>{
+      const c = document.createElement('canvas'); c.width = c.height = 512;
+      const g = c.getContext('2d');
+      g.fillStyle = '#B8390E'; g.fillRect(0,0,512,512);
+      g.fillStyle = '#fff'; g.font = 'bold 200px Tajawal, Arial, sans-serif';
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('m@g', 256, 270);
+      return c.toDataURL('image/png');
+    };
+    const icon = makeIcon();
+    const name = 'لوحة تحكم منيو m@g';
+    const manifest = {
+      id: `${location.pathname}?app=dashboard`,
+      name, short_name: 'لوحة المنيو',
+      start_url: location.pathname,
+      scope: location.pathname,
+      display: 'standalone',
+      background_color: '#F6F1E4',
+      theme_color: '#B8390E',
+      icons: [
+        { src: icon, sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: icon, sizes: '512x512', type: 'image/png', purpose: 'any' }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    link.setAttribute('href', URL.createObjectURL(blob));
+    const appleTitle = document.getElementById('appleWebAppTitle');
+    if(appleTitle) appleTitle.setAttribute('content', 'لوحة المنيو');
+  }catch(e){ console.warn('dashboard manifest failed', e); }
+  const btn = document.getElementById('installDashBtn');
+  if(btn){
+    if(isRunningStandalone()) btn.classList.add('hidden');
+    else btn.onclick = ()=> handleInstallClick(true);
+  }
+}
 function detectPlatformForInstall(){
   const ua = navigator.userAgent || '';
   const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -2755,16 +2799,16 @@ function detectPlatformForInstall(){
   if(isAndroid) return 'android-other';
   return 'desktop';
 }
-async function handleInstallClick(){
+async function handleInstallClick(forDashboard){
   if(deferredInstallPrompt){
     deferredInstallPrompt.prompt();
     try{ await deferredInstallPrompt.userChoice; }catch(e){}
     deferredInstallPrompt = null;
     return;
   }
-  showInstallInstructionsModal();
+  showInstallInstructionsModal(forDashboard);
 }
-function showInstallInstructionsModal(){
+function showInstallInstructionsModal(forDashboard){
   const platform = detectPlatformForInstall();
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
@@ -2791,6 +2835,12 @@ function showInstallInstructionsModal(){
       'اضغط على قائمة المتصفح (⋮) أعلى الشاشة',
       'اختر "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية"'
     ];
+  } else if(forDashboard){
+    steps = [
+      'في Chrome أو Edge: اضغط أيقونة التثبيت 💻 في نهاية شريط العنوان، أو من قائمة المتصفح (⋮) اختر "تثبيت" / "Cast, save and share ← Install page as app"',
+      'في Safari على ماك: من قائمة File اختر "Add to Dock"',
+      'بعدها ستجد اللوحة كتطبيق مستقل في قائمة التطبيقات أو سطح المكتب'
+    ];
   } else {
     steps = [
       'افتح المنيو من متصفح على موبايلك (Chrome أو Safari)',
@@ -2799,7 +2849,7 @@ function showInstallInstructionsModal(){
   }
   overlay.innerHTML = `
     <div class="modal info-modal">
-      <h3>📲 احفظ المنيو على شاشتك الرئيسية</h3>
+      <h3>${forDashboard ? '💻 ثبّت لوحة التحكم كتطبيق' : '📲 احفظ المنيو على شاشتك الرئيسية'}</h3>
       <p style="margin:0 0 12px; color:var(--stone); font-size:13.5px; line-height:1.7;">بعد الحفظ، ستجد أيقونة المنيو مثل أي تطبيق عادي على شاشتك، ويمكنك فتحها بضغطة واحدة في أي وقت.</p>
       ${steps.map((s,i)=>`<div class="field-row"><span class="icon">${i+1}️⃣</span><span class="txt">${escapeHtml(s)}</span></div>`).join('')}
       <div class="modal-actions">
@@ -12622,6 +12672,7 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
 });
 
 function renderDashboard(){
+  setupInstallableDashboard();
   renderCategories();
   renderItems();
   renderTicket();
