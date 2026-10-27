@@ -108,6 +108,11 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .topbar-menu-logo img{ height:30px; width:30px; border-radius:8px; object-fit:cover; box-shadow:0 3px 10px rgba(0,0,0,.3); }
 .brand-logo.shop-logo{ width:40px; height:40px; border-radius:10px; background:#fff; }
 .brand-logo{ width:34px; height:34px; border-radius:9px; object-fit:cover; flex-shrink:0; box-shadow:0 3px 10px rgba(0,0,0,.3); }
+.auth-install-btn{ width:100%; margin-top:10px; background:transparent; color:inherit; border:1.5px solid rgba(255,255,255,.25); padding:10px; border-radius:8px; font-family:var(--body); font-weight:700; font-size:13px; cursor:pointer; opacity:.9; }
+.auth-install-btn:hover{ background:rgba(255,255,255,.08); opacity:1; }
+.auth-install-btn.hidden{ display:none; }
+.account-email-label{ font-size:12px; color:var(--stone); background:var(--paper-dim,rgba(255,255,255,.06)); border:1px solid var(--line,rgba(255,255,255,.15)); border-radius:6px; padding:3px 8px; direction:ltr; cursor:pointer; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; vertical-align:middle; }
+.account-email-label.hidden{ display:none; }
 .switch-link{color:var(--stone); font-size:12px; cursor:pointer; text-decoration:underline; text-underline-offset:3px;}
 .switch-link:hover{color:var(--paper);}
 .topbar-actions{display:flex; gap:10px; flex-wrap:wrap;}
@@ -2237,6 +2242,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
     </div>
     <button class="auth-btn" id="authSubmitBtn">دخول</button>
     <div class="auth-err" id="authErr"></div>
+    <button type="button" class="auth-install-btn" id="installAuthBtn">💻 تثبيت لوحة التحكم كتطبيق</button>
   </div>
   <div class="auth-showcase">
     <div class="auth-showcase-label">✨ نموذج حي من أحد عملائنا</div>
@@ -2274,7 +2280,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
     <div class="topbar-menu-logo"><img src="favicon.png" alt="منيو m@g" title="منيو m@g"></div>
     <div class="brand-group">
       <div class="brand"><img class="brand-logo shop-logo" id="cashierShopLogo" style="display:none" alt="" onerror="this.style.display='none'"> <span id="cashierRestName">منيو m@g</span></div>
-      <span style="color:var(--stone); font-size:12px; background:#2A2825; border:1px solid #454138; border-radius:6px; padding:5px 10px;">👤 حساب كاشير</span>
+      <span style="color:var(--stone); font-size:12px; background:#2A2825; border:1px solid #454138; border-radius:6px; padding:5px 10px;">👤 حساب كاشير<span id="cashierUserLabel"></span></span>
     </div>
     <div class="topbar-actions">
       <button class="link-btn" id="cashierOrdersBtn">📋 الطلبات الواردة</button>
@@ -2324,6 +2330,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
         <button type="button" class="link-btn" id="addBranchBtn" title="إضافة فرع جديد" style="font-size:12px; padding:3px 8px;">+ فرع</button>
       </span>
       <span class="trial-days-badge hidden" id="trialDaysBadge"></span>
+      <span class="account-email-label hidden" id="accountEmailLabel" title="اضغط لنسخ البريد"></span>
       <span class="switch-link" id="changePasswordLink">تغيير كلمة المرور</span>
       <span class="switch-link" id="signOutLink">تسجيل الخروج</span>
     </div>
@@ -2777,11 +2784,12 @@ function setupInstallableDashboard(){
     const appleTitle = document.getElementById('appleWebAppTitle');
     if(appleTitle) appleTitle.setAttribute('content', 'لوحة المنيو');
   }catch(e){ console.warn('dashboard manifest failed', e); }
-  const btn = document.getElementById('installDashBtn');
-  if(btn){
+  ['installDashBtn','installAuthBtn'].forEach(id=>{
+    const btn = document.getElementById(id);
+    if(!btn) return;
     if(isRunningStandalone()) btn.classList.add('hidden');
     else btn.onclick = ()=> handleInstallClick(true);
-  }
+  });
   const shBtn = document.getElementById('dashShortcutsBtn');
   if(shBtn) shBtn.onclick = ()=> showShortcutsHelp();
   const sb2 = document.getElementById('dashStartupBtn');
@@ -3207,7 +3215,27 @@ function sendOrderToDriverWhatsApp(order, lines, driver){
   window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
+// يعرض البريد/اسم المستخدم المسجَّل به الحساب الحالي في اللوحة وشاشة الكاشير
+function renderAccountIdentity(){
+  try{
+    const email = (currentUser && currentUser.email) || '';
+    if(!email) return;
+    const isCashierEmail = /@cashier\.menu-mag\.com$/i.test(email);
+    const shown = isCashierEmail ? email.replace(/@cashier\.menu-mag\.com$/i, '') : email;
+    const lbl = document.getElementById('accountEmailLabel');
+    if(lbl){
+      lbl.textContent = (isCashierEmail ? '👤 ' : '✉️ ') + shown;
+      lbl.title = (isCashierEmail ? 'اسم المستخدم: ' : 'البريد: ') + shown + ' — اضغط للنسخ';
+      lbl.classList.remove('hidden');
+      lbl.onclick = ()=>{ try{ navigator.clipboard.writeText(shown); toast('تم النسخ'); }catch(e){ toast(shown); } };
+    }
+    const cl = document.getElementById('cashierUserLabel');
+    if(cl) cl.textContent = ' — ' + shown;
+  }catch(e){}
+}
 function show(id){
+  if(id === 'dashboardScreen' || id === 'cashierScreen') renderAccountIdentity();
+  if(id === 'authScreen' && typeof setupInstallableDashboard === 'function'){ try{ setupInstallableDashboard(); }catch(e){} }
   ['loadingScreen','authScreen','onboardScreen','dashboardScreen','publicScreen','trackingScreen','cashierScreen'].forEach(s=>{
     document.getElementById(s).classList.toggle('hidden', s!==id);
   });
