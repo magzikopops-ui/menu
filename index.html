@@ -2723,21 +2723,39 @@ window.addEventListener('beforeinstallprompt', (e)=>{
 function isRunningStandalone(){
   return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 }
-function setupInstallableMenu(rest){
+async function setupInstallableMenu(rest){
   try{
+    const base = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}`;
     const startUrl = `${location.pathname}?r=${rest.slug}`;
+    // أيقونة صالحة للتثبيت: نحوّل شعار المتجر إلى PNG مربع 512 (يتطلبه Chrome)، وإن تعذّر نستخدم أيقونة الموقع الثابتة
+    let iconSrc = `${base}menu-favicon.png`;
+    if(rest.logo_url){
+      try{
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        await new Promise((res, rej)=>{ img.onload = res; img.onerror = rej; img.src = rest.logo_url; setTimeout(rej, 6000); });
+        const c = document.createElement('canvas'); c.width = c.height = 512;
+        const g = c.getContext('2d');
+        g.fillStyle = '#ffffff'; g.fillRect(0,0,512,512);
+        const r = Math.min(448 / img.naturalWidth, 448 / img.naturalHeight);
+        const w = img.naturalWidth * r, h = img.naturalHeight * r;
+        g.drawImage(img, (512-w)/2, (512-h)/2, w, h);
+        iconSrc = c.toDataURL('image/png');
+      }catch(e){ /* نبقى على الأيقونة الثابتة */ }
+    }
     const manifest = {
+      id: startUrl,
       name: rest.name || 'منيو',
       short_name: (rest.name || 'منيو').slice(0, 12),
       start_url: startUrl,
-      scope: location.pathname,
+      scope: location.pathname.replace(/[^/]*$/, ''),
       display: 'standalone',
       background_color: '#F6F1E4',
       theme_color: '#B8390E',
-      icons: rest.logo_url ? [
-        { src: rest.logo_url, sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: rest.logo_url, sizes: '512x512', type: 'image/png', purpose: 'any' }
-      ] : []
+      icons: [
+        { src: iconSrc, sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: iconSrc, sizes: '512x512', type: 'image/png', purpose: 'any' }
+      ]
     };
     const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
     document.getElementById('manifestLink').setAttribute('href', URL.createObjectURL(blob));
@@ -2850,11 +2868,11 @@ function showInstallInstructionsModal(forDashboard){
       'اضغط على قائمة المتصفح (⋮) أعلى الشاشة',
       'اختر "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية"'
     ];
-  } else if(forDashboard){
+  } else if(forDashboard || platform === 'desktop'){
     steps = [
       'في Chrome أو Edge: اضغط أيقونة التثبيت 💻 في نهاية شريط العنوان، أو من قائمة المتصفح (⋮) اختر "تثبيت" / "Cast, save and share ← Install page as app"',
       'في Safari على ماك: من قائمة File اختر "Add to Dock"',
-      'بعدها ستجد اللوحة كتطبيق مستقل في قائمة التطبيقات أو سطح المكتب'
+      forDashboard ? 'بعدها ستجد اللوحة كتطبيق مستقل في قائمة التطبيقات أو سطح المكتب' : 'بعدها ستجد المنيو كتطبيق مستقل في قائمة التطبيقات أو سطح المكتب'
     ];
   } else {
     steps = [
