@@ -13029,6 +13029,272 @@ function renderItems(){
   initItemSortable();
 }
 
+/* ============ بوستر تسويقي للصنف (صورة جاهزة للمشاركة) ============ */
+const POSTER_CUR_AR = { EGP:['ج.م','جنيه'], SAR:['ر.س','ريال'], AED:['د.إ','درهم'], KWD:['د.ك','دينار'], QAR:['ر.ق','ريال'], BHD:['د.ب','دينار'], OMR:['ر.ع','ريال'], JOD:['د.أ','دينار'], USD:['$','دولار'], EUR:['€','يورو'] };
+const POSTER_SIZES = { square:[1080,1080,'مربع (منشور)'], portrait:[1080,1350,'عمودي (إنستجرام)'], story:[1080,1920,'ستوري / ريلز'] };
+const POSTER_PREFS_KEY = 'posterPrefs_v1';
+
+async function posterLoadImage(url){
+  if(!url) return null;
+  try{
+    const res = await fetch(url, { mode:'cors' });
+    if(!res.ok) throw new Error('http ' + res.status);
+    const blob = await res.blob();
+    return await createImageBitmap(blob);
+  }catch(e){
+    try{
+      return await new Promise((resolve, reject)=>{
+        const im = new Image(); im.crossOrigin = 'anonymous';
+        im.onload = ()=> resolve(im); im.onerror = reject; im.src = url;
+        setTimeout(reject, 8000);
+      });
+    }catch(e2){ return null; }
+  }
+}
+function posterRoundRect(ctx, x, y, w, h, r){
+  r = Math.min(r, w/2, h/2);
+  ctx.beginPath(); ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r); ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath();
+}
+function posterWrap(ctx, text, maxW, maxLines){
+  const words = String(text || '').split(/\s+/).filter(Boolean);
+  const lines = []; let cur = '';
+  for(const w of words){
+    const t = cur ? cur + ' ' + w : w;
+    if(ctx.measureText(t).width <= maxW || !cur){ cur = t; } else { lines.push(cur); cur = w; }
+  }
+  if(cur) lines.push(cur);
+  if(lines.length > maxLines){
+    const kept = lines.slice(0, maxLines);
+    let last = kept[maxLines-1];
+    while(last.length > 1 && ctx.measureText(last + '…').width > maxW) last = last.slice(0, -1);
+    kept[maxLines-1] = last + '…';
+    return kept;
+  }
+  return lines;
+}
+function posterDrawCover(ctx, img, x, y, w, h){
+  const iw = img.width || img.naturalWidth, ih = img.height || img.naturalHeight;
+  const s = Math.max(w/iw, h/ih); const dw = iw*s, dh = ih*s;
+  ctx.drawImage(img, x + (w-dw)/2, y + (h-dh)/2, dw, dh);
+}
+
+async function renderItemPoster(canvas, item, o){
+  const [W, H] = POSTER_SIZES[o.size] || POSTER_SIZES.square;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const accent = o.accent, dark = o.theme === 'dark';
+  const bg1 = dark ? '#1d1b19' : '#fbf7ec', bg2 = dark ? '#2b2724' : '#f1e8d2';
+  const ink = dark ? '#f6f1e4' : '#201F1D', muted = dark ? '#b9b2a0' : '#6b655a';
+  const cur = getRestaurantCurrency(restaurant);
+  const curTxt = o.currency === 'asis' || !POSTER_CUR_AR[cur.toUpperCase()] ? cur : POSTER_CUR_AR[cur.toUpperCase()][o.currency === 'full' ? 1 : 0];
+  const dig = (t)=> o.digits === 'ar' ? String(t).replace(/[0-9]/g, d=> '٠١٢٣٤٥٦٧٨٩'[d]) : String(t);
+  const fmt = (n)=> { const v = Number(n); return dig(Number.isInteger(v) ? v : v.toFixed(2)); };
+
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, bg1); g.addColorStop(1, bg2);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = accent; ctx.fillRect(0, 0, W, 14);
+  ctx.direction = 'rtl'; ctx.textBaseline = 'alphabetic';
+  const font = o.font || 'Tajawal', dispFont = o.font === 'Tajawal' ? 'Lalezar' : o.font;
+  const pad = 64, cw = W - pad*2;
+
+  // ---- بيانات الأسعار ----
+  let priceLines = [], oldTxt = '', discount = 0;
+  if(o.showPrice){
+    if(item.pricing_type === 'sizes'){
+      const sz = itemSizes[item.id] || [];
+      if(sz.length) priceLines = [sz.map(s=> `${s.size_name} ${fmt(s.price)}`).join('  ·  ') + ' ' + curTxt];
+    } else if(item.price != null){
+      priceLines = [`${fmt(item.price)} ${curTxt}` + (item.pricing_type === 'weight' ? ' / كجم' : '')];
+      if(o.showOld && item.old_price != null && Number(item.old_price) > Number(item.price)){
+        oldTxt = `${fmt(item.old_price)} ${curTxt}`;
+        discount = Math.round((Number(item.old_price) - Number(item.price)) / Number(item.old_price) * 100);
+      }
+    }
+  }
+  // ---- قياس العناصر ----
+  const headerH = (o.showLogo || o.showName) ? 120 : 0;
+  const infoLines = []; 
+  if(o.showAddress && restaurant.address) infoLines.push('📍 ' + restaurant.address);
+  if(o.showPhone && restaurant.phone) infoLines.push('📞 ' + dig(restaurant.phone));
+  ctx.font = `600 32px "${font}", sans-serif`;
+  const infoWrapped = infoLines.flatMap(t=> posterWrap(ctx, t, cw - 40, 2));
+  const footerH = infoWrapped.length ? infoWrapped.length * 46 + 48 : 0;
+  const nameSize = o.size === 'story' ? 96 : 84;
+  ctx.font = `${nameSize}px "${dispFont}", "${font}", sans-serif`;
+  const nameLines = posterWrap(ctx, item.name, cw, 2);
+  const nameH = nameLines.length * (nameSize * 1.2);
+  let descLines = [];
+  if(o.showDesc && item.description){ ctx.font = `500 34px "${font}", sans-serif`; descLines = posterWrap(ctx, item.description, cw - 20, o.size === 'story' ? 4 : 2); }
+  const descH = descLines.length ? descLines.length * 48 + 10 : 0;
+  const gap = 28;
+  const priceH = priceLines.length ? (108 + (oldTxt ? 50 : 0) + gap) : 0;
+  const latinCur = /[A-Za-z$€]/.test(curTxt);
+  const hasImg = o.showImage && o.img;
+  let y = 14 + 24;
+  // رأس: لوجو + اسم المحل
+  if(headerH){
+    const cy = y + headerH/2;
+    let right = W - pad;
+    if(o.showLogo && o.logoImg){
+      const r = 46;
+      ctx.save(); ctx.beginPath(); ctx.arc(right - r, cy, r, 0, Math.PI*2); ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill(); ctx.clip();
+      posterDrawCover(ctx, o.logoImg, right - 2*r, cy - r, 2*r, 2*r); ctx.restore();
+      ctx.lineWidth = 4; ctx.strokeStyle = accent; ctx.beginPath(); ctx.arc(right - r, cy, r, 0, Math.PI*2); ctx.stroke();
+      right -= 2*r + 22;
+    }
+    if(o.showName){
+      ctx.fillStyle = ink; ctx.textAlign = 'right'; ctx.font = `800 46px "${font}", sans-serif`;
+      const nm = posterWrap(ctx, restaurant.name || '', right - pad, 1)[0] || '';
+      ctx.fillText(nm, right, cy + 16);
+    }
+    y += headerH + 6;
+  }
+  // مساحة الصورة
+  const fixed = nameH + 6 + descH + gap + (gap - 6) + priceH + footerH + 28;
+  const imgH = hasImg ? Math.max(260, H - y - fixed) : 0;
+  if(hasImg){
+    ctx.save(); posterRoundRect(ctx, pad, y, cw, imgH, 36); ctx.clip();
+    posterDrawCover(ctx, o.img, pad, y, cw, imgH); ctx.restore();
+    ctx.lineWidth = 6; ctx.strokeStyle = accent; posterRoundRect(ctx, pad, y, cw, imgH, 36); ctx.stroke();
+    if(discount > 0){
+      const bx = pad + 90, by = y + 90;
+      ctx.fillStyle = '#d93025'; ctx.beginPath(); ctx.arc(bx, by, 74, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = `800 44px "${font}", sans-serif`; ctx.fillText(dig(discount) + '%', bx, by + 6);
+      ctx.font = `700 24px "${font}", sans-serif`; ctx.fillText('خصم', bx, by + 36);
+    }
+    y += imgH + gap;
+  } else { y += 20; }
+  // الاسم
+  ctx.fillStyle = ink; ctx.textAlign = 'center'; ctx.font = `${nameSize}px "${dispFont}", "${font}", sans-serif`;
+  nameLines.forEach((ln, i)=>{ ctx.fillText(ln, W/2, y + nameSize * (0.95 + i * 1.2)); });
+  y += nameH + 6;
+  // الوصف
+  if(descLines.length){
+    ctx.fillStyle = muted; ctx.font = `500 34px "${font}", sans-serif`;
+    descLines.forEach((ln, i)=> ctx.fillText(ln, W/2, y + 38 + i*48)); y += descH;
+  }
+  y += gap - 6;
+  // السعر
+  if(priceLines.length){
+    if(oldTxt){
+      ctx.font = `600 40px "${font}", sans-serif`; ctx.fillStyle = muted; ctx.textAlign = 'center'; ctx.direction = latinCur ? 'ltr' : 'rtl';
+      const w = ctx.measureText(oldTxt).width; ctx.fillText(oldTxt, W/2, y + 36);
+      ctx.strokeStyle = '#d93025'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(W/2 - w/2 - 6, y + 24); ctx.lineTo(W/2 + w/2 + 6, y + 24); ctx.stroke();
+      y += 50;
+    }
+    let fs = 72; ctx.font = `800 ${fs}px "${font}", sans-serif`;
+    while(ctx.measureText(priceLines[0]).width > cw - 80 && fs > 34){ fs -= 4; ctx.font = `800 ${fs}px "${font}", sans-serif`; }
+    const tw = ctx.measureText(priceLines[0]).width, bw = Math.min(cw, tw + 90), bh = 108;
+    ctx.fillStyle = accent; posterRoundRect(ctx, W/2 - bw/2, y, bw, bh, 54); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.direction = (latinCur && item.pricing_type !== 'sizes') ? 'ltr' : 'rtl'; ctx.fillText(priceLines[0], W/2, y + bh/2 + fs*0.33); ctx.direction = 'rtl';
+    y += bh + gap;
+  }
+  // التذييل: عنوان + هاتف
+  if(infoWrapped.length){
+    const fh = footerH; const fy = H - fh;
+    ctx.fillStyle = accent; ctx.fillRect(0, fy, W, fh);
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = `700 32px "${font}", sans-serif`;
+    infoWrapped.forEach((ln, i)=> ctx.fillText(ln, W/2, fy + 44 + i*46));
+  }
+  ctx.textAlign = 'start';
+}
+
+function openItemPosterModal(item){
+  let prefs = {};
+  try{ prefs = JSON.parse(localStorage.getItem(POSTER_PREFS_KEY) || '{}') || {}; }catch(e){}
+  const P = Object.assign({ size:'square', theme:'light', accent:'#B8390E', font:'Tajawal', digits:'en', currency:'asis',
+    showImage:true, showPrice:true, showOld:true, showDesc:false, showLogo:true, showName:true, showAddress:true, showPhone:true }, prefs);
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  const chk = (id, label, on)=> `<label style="display:flex;gap:8px;align-items:center;margin:6px 0;"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}> ${label}</label>`;
+  const sel = (id, label, opts, val)=> `<label style="display:block;margin:8px 0;">${label}<select id="${id}" style="width:100%;margin-top:4px;">${opts.map(([v,t])=> `<option value="${v}" ${v===val?'selected':''}>${t}</option>`).join('')}</select></label>`;
+  overlay.innerHTML = `
+    <div class="modal" style="width:min(920px,96vw); max-width:96vw;">
+      <h3>🖼️ بوستر تسويقي — ${escapeHtml(item.name)}</h3>
+      <div style="display:flex; flex-wrap:wrap; gap:18px; align-items:flex-start;">
+        <div style="flex:1 1 300px; min-width:0; text-align:center;">
+          <canvas id="posterCanvas" style="width:100%; max-width:420px; height:auto; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.25); background:#eee;"></canvas>
+          <div id="posterStatus" style="font-size:12px; color:var(--stone); margin-top:6px;">جارِ التجهيز...</div>
+        </div>
+        <div style="flex:1 1 260px; min-width:0;">
+          <div style="font-weight:800; margin-bottom:4px;">البيانات المضافة</div>
+          ${chk('pstImage','صورة '+biz(restaurant.business_type,'itemDef'),P.showImage)}
+          ${chk('pstPrice','السعر',P.showPrice)}
+          ${chk('pstOld','السعر قبل الخصم ونسبة الخصم (إن وُجد)',P.showOld)}
+          ${chk('pstDesc','الوصف',P.showDesc)}
+          ${chk('pstLogo','لوجو المحل',P.showLogo)}
+          ${chk('pstName','اسم المحل',P.showName)}
+          ${chk('pstAddr','العنوان',P.showAddress)}
+          ${chk('pstPhone','رقم التليفون',P.showPhone)}
+          ${sel('pstSize','المقاس',Object.entries(POSTER_SIZES).map(([k,v])=>[k,v[2]]),P.size)}
+          ${sel('pstTheme','الخلفية',[['light','فاتحة'],['dark','داكنة']],P.theme)}
+          ${sel('pstFont','الخط',[['Tajawal','تجوال'],['Cairo','القاهرة'],['Almarai','المراعي'],['Amiri','أميري'],['Changa','شانجا']],P.font)}
+          ${sel('pstDigits','الأرقام',[['en','إنجليزي (1 2 3)'],['ar','عربي (١ ٢ ٣)']],P.digits)}
+          ${sel('pstCur','العملة',[['asis','كما في الإعدادات'],['short','عربي مختصر (ج.م)'],['full','عربي كامل (جنيه)']],P.currency)}
+          <label style="display:flex;gap:8px;align-items:center;margin:8px 0;">لون الهوية <input type="color" id="pstColor" value="${P.accent}" style="width:44px;height:30px;padding:0;border:none;"></label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-confirm" id="pstDownload">⬇️ تحميل الصورة</button>
+        <button class="btn-confirm" id="pstShare" style="background:#25D366;">📤 مشاركة</button>
+        <button class="btn-cancel" id="pstClose">إغلاق</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#pstClose').addEventListener('click', ()=> overlay.remove());
+  const $ = (id)=> overlay.querySelector(id);
+  const canvas = $('#posterCanvas'), status = $('#posterStatus');
+  let imgs = { img:null, logoImg:null }, imgsLoaded = false, drawing = false, again = false;
+  const readOpts = ()=> ({
+    size:$('#pstSize').value, theme:$('#pstTheme').value, accent:$('#pstColor').value, font:$('#pstFont').value, digits:$('#pstDigits').value, currency:$('#pstCur').value,
+    showImage:$('#pstImage').checked, showPrice:$('#pstPrice').checked, showOld:$('#pstOld').checked, showDesc:$('#pstDesc').checked,
+    showLogo:$('#pstLogo').checked, showName:$('#pstName').checked, showAddress:$('#pstAddr').checked, showPhone:$('#pstPhone').checked
+  });
+  const draw = async ()=>{
+    if(drawing){ again = true; return; }
+    drawing = true;
+    try{
+      const o = readOpts();
+      try{ localStorage.setItem(POSTER_PREFS_KEY, JSON.stringify(o)); }catch(e){}
+      try{ await document.fonts.load(`800 40px "${o.font}"`); await document.fonts.load('40px "Lalezar"'); }catch(e){}
+      if(!imgsLoaded){
+        const [im, lg] = await Promise.all([posterLoadImage(item.image_url), posterLoadImage(restaurant.logo_url)]);
+        imgs = { img: im, logoImg: lg }; imgsLoaded = true;
+      }
+      await renderItemPoster(canvas, item, Object.assign({}, o, imgs));
+      const notes = [];
+      if(o.showImage && item.image_url && !imgs.img) notes.push('تعذّر تحميل صورة الصنف');
+      if(o.showLogo && restaurant.logo_url && !imgs.logoImg) notes.push('تعذّر تحميل اللوجو');
+      status.textContent = notes.length ? '⚠️ ' + notes.join(' — ') : 'المعاينة جاهزة';
+    }catch(e){ console.warn('poster failed', e); status.textContent = '⚠️ حدث خطأ أثناء التجهيز'; }
+    drawing = false;
+    if(again){ again = false; draw(); }
+  };
+  overlay.querySelectorAll('input, select').forEach(el=> el.addEventListener('change', draw));
+  const toBlob = ()=> new Promise((res, rej)=> { try{ canvas.toBlob(b=> b ? res(b) : rej(new Error('empty')), 'image/png'); }catch(e){ rej(e); } });
+  const fileName = ()=> `${(restaurant.slug || 'menu')}-${String(item.name).replace(/[^\p{L}\p{N}]+/gu, '-').slice(0, 40)}.png`;
+  $('#pstDownload').addEventListener('click', async ()=>{
+    try{
+      const blob = await toBlob(); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = fileName(); a.click();
+      setTimeout(()=> URL.revokeObjectURL(url), 3000); toast('تم تحميل الصورة');
+    }catch(e){ toast('تعذّر إنشاء الصورة (قد تكون الصورة محمية من المتصفح)'); }
+  });
+  $('#pstShare').addEventListener('click', async ()=>{
+    try{
+      const blob = await toBlob(); const file = new File([blob], fileName(), { type:'image/png' });
+      if(navigator.canShare && navigator.canShare({ files:[file] })){
+        await navigator.share({ files:[file], title: item.name });
+      } else {
+        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fileName(); a.click();
+        setTimeout(()=> URL.revokeObjectURL(url), 3000); toast('المشاركة المباشرة غير متاحة هنا — تم تحميل الصورة لتشاركها يدوياً');
+      }
+    }catch(e){ if(e && e.name !== 'AbortError') toast('تعذّرت المشاركة'); }
+  });
+  draw();
+}
+
 function buildItemCard(item){
   const div = document.createElement('div');
   div.className = 'item-card';
@@ -13048,12 +13314,15 @@ function buildItemCard(item){
       <div class="item-tools">
         <button data-action="edit">تعديل</button>
         <button data-action="duplicate">نسخ</button>
+        ${restaurant.restriction_share_disabled ? '' : `<button data-action="poster" title="إنشاء صورة تسويقية للصنف">🖼️ بوستر</button>`}
         <button data-action="toggleAvailability">${isAvailable ? 'إخفاء مؤقتًا (نفذت الكمية)' : 'إظهار مرة أخرى'}</button>
         ${restaurant.restriction_delete_disabled ? '' : `<button data-action="delete" class="danger">حذف</button>`}
       </div>
     </div>`;
   div.querySelector('[data-action="edit"]').addEventListener('click', ()=> openItemModal(item));
   div.querySelector('[data-action="duplicate"]').addEventListener('click', ()=> duplicateItem(item));
+  const posterBtn = div.querySelector('[data-action="poster"]');
+  if(posterBtn) posterBtn.addEventListener('click', (e)=>{ e.stopPropagation(); openItemPosterModal(item); });
   if(itemSelectMode){
     div.classList.add('selectable');
     const cb = document.createElement('input');
