@@ -13039,8 +13039,31 @@ const POSTER_TEMPLATES = {
   classic: { name:'كلاسيك', accent:'#B8390E', bg:'#fbf7ec', fg:'#B8390E' },
   bold:    { name:'جريء',   accent:'#C2410C', bg:'#C2410C', fg:'#ffd27a' },
   elegant: { name:'أنيق',   accent:'#D4AF37', bg:'#1a1714', fg:'#D4AF37' },
-  fresh:   { name:'عصري',   accent:'#16A36A', bg:'#ffffff', fg:'#16A36A' }
+  fresh:   { name:'عصري',   accent:'#16A36A', bg:'#ffffff', fg:'#16A36A' },
+  royal:   { name:'ملكي',   accent:'#E0B84C', bg:'linear-gradient(135deg,#14213d,#0b1327)', fg:'#E0B84C', fixed:true },
+  ramadan: { name:'رمضان',  accent:'#E9C46A', bg:'linear-gradient(135deg,#0f3d2e,#06241b)', fg:'#E9C46A', fixed:true },
+  sunset:  { name:'غروب',   accent:'#FF6B35', bg:'linear-gradient(135deg,#FF6B35,#D6336C)', fg:'#ffffff', fixed:true },
+  ocean:   { name:'محيط',   accent:'#0E8FA8', bg:'linear-gradient(135deg,#0E8FA8,#064E5E)', fg:'#ffffff', fixed:true },
+  candy:   { name:'حلويات', accent:'#E83E8C', bg:'linear-gradient(135deg,#fff0f6,#ffd3e8)', fg:'#E83E8C', fixed:true },
+  fastfood:{ name:'فاست فود',accent:'#D92D20', bg:'repeating-linear-gradient(45deg,#FFC72C 0 10px,#FFB300 10px 20px)', fg:'#D92D20', fixed:true },
+  noir:    { name:'ستيك',   accent:'#E03131', bg:'linear-gradient(135deg,#1a1a1a,#050505)', fg:'#E03131', fixed:true },
+  minimal: { name:'بسيط',   accent:'#111827', bg:'#ffffff', fg:'#111827' }
 };
+function posterPattern(ctx, W, H, type, color){
+  ctx.save(); ctx.fillStyle = color; ctx.strokeStyle = color;
+  if(type === 'dots'){
+    for(let y = 30; y < H; y += 54) for(let x = ((y / 54) % 2 ? 30 : 57); x < W; x += 54){ ctx.beginPath(); ctx.arc(x, y, 5, 0, 6.2832); ctx.fill(); }
+  } else if(type === 'stripes'){
+    ctx.lineWidth = 26; for(let x = -H; x < W + H; x += 96){ ctx.beginPath(); ctx.moveTo(x, H); ctx.lineTo(x + H, 0); ctx.stroke(); }
+  } else if(type === 'stars'){
+    for(let y = 60; y < H; y += 120) for(let x = ((y / 120) % 2 ? 60 : 120); x < W; x += 120){
+      ctx.beginPath(); for(let k = 0; k < 16; k++){ const a = k * Math.PI / 8, r = k % 2 ? 9 : 20; ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } ctx.closePath(); ctx.fill();
+    }
+  } else if(type === 'waves'){
+    ctx.lineWidth = 4; for(let y = 40; y < H; y += 70){ ctx.beginPath(); for(let x = 0; x <= W; x += 10){ const yy = y + Math.sin(x / 55) * 14; x ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy); } ctx.stroke(); }
+  }
+  ctx.restore();
+}
 
 async function posterLoadImage(url){
   if(!url) return null;
@@ -13139,6 +13162,23 @@ function posterPalette(o){
   if(t === 'fresh') return { t, bg1:dark?'#161616':'#ffffff', bg2:dark?'#161616':'#ffffff', deco:false, topBar:null, frame:false, ink:dark?'#f5f5f5':'#1c1c1c', muted:dark?'#a8a8a8':'#6d6d6d', line:A, imgBorder:0, imgRadius:0,
     priceStyle:'pill', priceBg:A, priceInk:'#ffffff', footerBg:dark?'#232323':'#f2f2f2', footerInk:dark?'#f5f5f5':'#1c1c1c',
     cardBg:dark?'#232323':'#f4f4f4', cardInk:dark?'#f5f5f5':'#1c1c1c', cardMuted:dark?'#a8a8a8':'#6d6d6d', cardLine:null, titleBg:A, titleInk:'#ffffff', disp:'Cairo', hero:true, ornament:false };
+  const mk = (o2)=> Object.assign({ t, deco:false, topBar:null, frame:false, imgBorder:6, imgRadius:30, priceStyle:'pill', hero:false, ornament:false, disp:'Lalezar', cardLine:null, titleBg:null, pattern:null, patternColor:'rgba(255,255,255,.07)' }, o2);
+  if(t === 'royal') return mk({ bg1:'#14213d', bg2:'#0b1327', pattern:'dots', patternColor:'rgba(224,184,76,.10)', ink:'#ffffff', muted:'#c9d1e6', line:A, imgBorder:6, imgRadius:30,
+    priceBg:A, priceInk:'#14213d', footerBg:'#0a1124', footerInk:'#ffffff', cardBg:'#1d2d52', cardInk:'#ffffff', cardMuted:'#b8c3df', cardLine:A, titleBg:A, titleInk:'#14213d', disp:'Cairo', ornament:true });
+  if(t === 'ramadan') return mk({ bg1:'#0f3d2e', bg2:'#06241b', pattern:'stars', patternColor:'rgba(233,196,106,.10)', frame:true, ink:'#fdf3d8', muted:'#d4c6a0', line:A, imgBorder:4, imgRadius:60,
+    priceBg:A, priceInk:'#06241b', footerBg:null, footerInk:'#fdf3d8', cardBg:'#14503c', cardInk:'#fdf3d8', cardMuted:'#d4c6a0', cardLine:A, titleBg:null, titleInk:A, disp:'Amiri', ornament:true });
+  if(t === 'sunset') return mk({ bg1:A, bg2:'#D6336C', pattern:'dots', patternColor:'rgba(255,255,255,.14)', ink:'#ffffff', muted:'rgba(255,255,255,.92)', line:'#ffffff', imgBorder:10, imgRadius:48,
+    priceBg:'#ffffff', priceInk:A, cardPriceBg:A, cardPriceInk:'#ffffff', footerBg:'rgba(0,0,0,.30)', footerInk:'#ffffff', cardBg:'#ffffff', cardInk:'#2b2020', cardMuted:'#6b5a5a', titleBg:'#ffffff', titleInk:A });
+  if(t === 'ocean') return mk({ bg1:A, bg2:'#064E5E', pattern:'waves', patternColor:'rgba(255,255,255,.09)', ink:'#ffffff', muted:'rgba(255,255,255,.92)', line:'#ffffff', imgBorder:8, imgRadius:36,
+    priceBg:'#FFD166', priceInk:'#05303a', footerBg:'rgba(0,0,0,.28)', footerInk:'#ffffff', cardBg:'#ffffff', cardInk:'#05303a', cardMuted:'#4b6e77', titleBg:'#FFD166', titleInk:'#05303a' });
+  if(t === 'candy') return mk({ bg1:'#fff0f6', bg2:'#ffd3e8', pattern:'dots', patternColor:'rgba(232,62,140,.13)', ink:'#4a1d33', muted:'#8a5670', line:'#ffffff', imgBorder:10, imgRadius:70,
+    priceBg:A, priceInk:'#ffffff', footerBg:A, footerInk:'#ffffff', cardBg:'#ffffff', cardInk:'#4a1d33', cardMuted:'#8a5670', cardLine:'#ffc2e2', titleBg:A, titleInk:'#ffffff' });
+  if(t === 'fastfood') return mk({ bg1:'#FFC72C', bg2:'#FFB300', pattern:'stripes', patternColor:'rgba(255,255,255,.14)', ink:'#2b1a00', muted:'#5a3d00', line:A, imgBorder:8, imgRadius:30,
+    priceBg:A, priceInk:'#ffffff', footerBg:'#2b1a00', footerInk:'#FFC72C', cardBg:'#ffffff', cardInk:'#2b1a00', cardMuted:'#6b5320', cardLine:A, titleBg:A, titleInk:'#ffffff' });
+  if(t === 'noir') return mk({ bg1:'#1a1a1a', bg2:'#050505', topBar:A, ink:'#ffffff', muted:'#b5b5b5', line:A, imgBorder:5, imgRadius:18,
+    priceBg:A, priceInk:'#ffffff', footerBg:'#000000', footerInk:'#ffffff', cardBg:'#242424', cardInk:'#ffffff', cardMuted:'#b5b5b5', cardLine:A, titleBg:A, titleInk:'#ffffff', disp:'Changa' });
+  if(t === 'minimal') return mk({ bg1:dark?'#141414':'#ffffff', bg2:dark?'#141414':'#ffffff', ink:dark?'#f5f5f5':'#111111', muted:dark?'#a0a0a0':'#6b7280', line:dark?'#f5f5f5':A, imgBorder:0, imgRadius:14,
+    priceStyle:'text', priceInk:dark?'#f5f5f5':A, footerBg:null, footerInk:dark?'#f5f5f5':'#111111', cardBg:dark?'#1f1f1f':'#f7f7f8', cardInk:dark?'#f5f5f5':'#111111', cardMuted:dark?'#a0a0a0':'#6b7280', cardLine:dark?'#333':'#e5e7eb', titleBg:null, titleInk:dark?'#f5f5f5':A, disp:'Cairo' });
   return { t:'classic', bg1:dark?'#1d1b19':'#fbf7ec', bg2:dark?'#2b2724':'#f1e8d2', deco:false, topBar:A, frame:false, ink:dark?'#f6f1e4':'#201F1D', muted:dark?'#b9b2a0':'#6b655a', line:A, imgBorder:6, imgRadius:36,
     priceStyle:'pill', priceBg:A, priceInk:'#ffffff', footerBg:A, footerInk:'#ffffff',
     cardBg:dark?'#34302c':'#ffffff', cardInk:dark?'#f6f1e4':'#201F1D', cardMuted:dark?'#b9b2a0':'#6b655a', cardLine:A, titleBg:A, titleInk:'#ffffff', disp:'Lalezar', hero:false, ornament:false };
@@ -13184,6 +13224,7 @@ async function renderPoster(canvas, list, o){
   // ---------- الخلفية ----------
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, pal.bg1); g.addColorStop(1, pal.bg2);
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  if(pal.pattern) posterPattern(ctx, W, H, pal.pattern, pal.patternColor);
   if(pal.deco){
     ctx.fillStyle = 'rgba(255,255,255,.08)';
     [[W * .92, H * .10, 300], [W * .04, H * .52, 230], [W * .84, H * .88, 280]].forEach(([cx, cy, r])=>{ ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); });
@@ -13442,8 +13483,8 @@ async function renderPoster(canvas, list, o){
         ctx.fillStyle = pal.priceInk; ctx.fillText(P.text, x + cellW / 2, pillTop + pillH / 2 + fsz * 0.33);
       } else {
         const bw = Math.min(cellW - 28, tw + 36);
-        ctx.fillStyle = pal.priceBg; posterRRect(ctx, x + cellW / 2 - bw / 2, pillTop, bw, pillH, pillH / 2); ctx.fill();
-        ctx.fillStyle = pal.priceInk; ctx.fillText(P.text, x + cellW / 2, pillTop + pillH / 2 + fsz * 0.33);
+        ctx.fillStyle = pal.cardPriceBg || pal.priceBg; posterRRect(ctx, x + cellW / 2 - bw / 2, pillTop, bw, pillH, pillH / 2); ctx.fill();
+        ctx.fillStyle = pal.cardPriceInk || pal.priceInk; ctx.fillText(P.text, x + cellW / 2, pillTop + pillH / 2 + fsz * 0.33);
       }
       ctx.direction = 'rtl';
       if(P.oldText){
@@ -13477,7 +13518,7 @@ function openPosterModal(listIn){
   overlay.className = 'overlay';
   const chk = (id, label, on, hide)=> `<label style="display:${hide ? 'none' : 'flex'};gap:8px;align-items:center;margin:6px 0;"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}> ${label}</label>`;
   const sel = (id, label, opts, val)=> `<label style="display:block;margin:8px 0;">${label}<select id="${id}" style="width:100%;margin-top:4px;">${opts.map(([v, t])=> `<option value="${v}" ${v === val ? 'selected' : ''}>${t}</option>`).join('')}</select></label>`;
-  const tplChips = Object.entries(POSTER_TEMPLATES).map(([k, t])=> `<button type="button" class="pst-tpl" data-tpl="${k}" style="flex:1 1 0; min-width:62px; height:62px; border-radius:12px; border:3px solid transparent; background:${t.bg}; color:${t.fg}; font-family:inherit; font-weight:800; font-size:13px; cursor:pointer; box-shadow:0 0 0 1px rgba(0,0,0,.2);">${t.name}</button>`).join('');
+  const tplChips = Object.entries(POSTER_TEMPLATES).map(([k, t])=> `<button type="button" class="pst-tpl" data-tpl="${k}" style="flex:0 0 calc(25% - 6px); min-width:0; height:54px; border-radius:12px; border:3px solid transparent; background:${t.bg}; color:${t.fg}; font-family:inherit; font-weight:800; font-size:13px; cursor:pointer; box-shadow:0 0 0 1px rgba(0,0,0,.2);">${t.name}</button>`).join('');
   overlay.innerHTML = `
     <div class="modal" style="width:min(940px,96vw); max-width:96vw;">
       <h3>🖼️ ${multi ? `بوستر تسويقي — ${list.length} أصناف` : `بوستر تسويقي — ${escapeHtml(list[0].name)}`}</h3>
@@ -13488,7 +13529,7 @@ function openPosterModal(listIn){
         </div>
         <div style="flex:1 1 270px; min-width:0;">
           <div style="font-weight:800; margin-bottom:6px;">القالب</div>
-          <div id="pstTplRow" style="display:flex; gap:8px; margin-bottom:10px;">${tplChips}</div>
+          <div id="pstTplRow" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">${tplChips}</div>
           <div id="pstTitleWrap" style="${multi ? '' : 'display:none;'}">
             ${chk('pstShowTitle', 'عنوان البوستر', P.showTitle)}
             <input type="text" id="pstTitle" value="${escapeHtml(P.title || '')}" maxlength="40" placeholder="مثال: عروض الأسبوع" style="width:100%; margin-bottom:8px;">
@@ -13528,7 +13569,7 @@ function openPosterModal(listIn){
   const menuLink = `${location.origin}${location.pathname}?r=${encodeURIComponent(restaurant.slug || '')}`;
   const markTpl = ()=>{
     overlay.querySelectorAll('.pst-tpl').forEach(b=>{ b.style.borderColor = b.dataset.tpl === tpl ? '#1858C9' : 'transparent'; b.style.transform = b.dataset.tpl === tpl ? 'scale(1.04)' : ''; });
-    $('#pstTheme').disabled = (tpl === 'bold' || tpl === 'elegant');
+    $('#pstTheme').disabled = (tpl === 'bold' || tpl === 'elegant' || !!POSTER_TEMPLATES[tpl].fixed);
   };
   const readOpts = ()=> ({
     template:tpl, size:$('#pstSize').value, theme:$('#pstTheme').value, accent:$('#pstColor').value, font:$('#pstFont').value, digits:$('#pstDigits').value, currency:$('#pstCur').value,
