@@ -13056,7 +13056,11 @@ const POSTER_TEMPLATES = {
   polaroid:{ name:'بولارويد', accent:'#E4572E', bg:'linear-gradient(135deg,#d8c2a0,#c9b08a)', fg:'#2b2118', fixed:true },
   board:   { name:'سبورة',  accent:'#F2C94C', bg:'linear-gradient(135deg,#23312b,#161f1b)', fg:'#F2C94C', fixed:true },
   bistro:  { name:'بيسترو', accent:'#7A1F2B', bg:'linear-gradient(135deg,#FBF5EA,#F3E8D2)', fg:'#7A1F2B', fixed:true },
-  spotlight:{ name:'مميّز', accent:'#2563EB', bg:'linear-gradient(135deg,#F4F6FB,#DDE3F3)', fg:'#2563EB', fixed:true }
+  spotlight:{ name:'مميّز', accent:'#2563EB', bg:'linear-gradient(135deg,#F4F6FB,#DDE3F3)', fg:'#2563EB', fixed:true },
+  eid:     { name:'العيد',  accent:'#F4C430', bg:'linear-gradient(135deg,#3b1d6e,#1f0f42)', fg:'#F4C430', fixed:true },
+  friday:  { name:'تخفيضات', accent:'#FFD60A', bg:'repeating-linear-gradient(45deg,#111 0 10px,#1c1c1c 10px 20px)', fg:'#FFD60A', fixed:true },
+  school:  { name:'المدارس', accent:'#1D4ED8', bg:'linear-gradient(135deg,#EAF3FF,#CFE3FF)', fg:'#1D4ED8', fixed:true },
+  mother:  { name:'يوم الأم', accent:'#D6336C', bg:'linear-gradient(135deg,#FFE9F1,#FFC9DD)', fg:'#D6336C', fixed:true }
 };
 function posterPattern(ctx, W, H, type, color){
   ctx.save(); ctx.fillStyle = color; ctx.strokeStyle = color;
@@ -13067,6 +13071,16 @@ function posterPattern(ctx, W, H, type, color){
   } else if(type === 'stars'){
     for(let y = 60; y < H; y += 120) for(let x = ((y / 120) % 2 ? 60 : 120); x < W; x += 120){
       ctx.beginPath(); for(let k = 0; k < 16; k++){ const a = k * Math.PI / 8, r = k % 2 ? 9 : 20; ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } ctx.closePath(); ctx.fill();
+    }
+  } else if(type === 'confetti'){
+    let sd = 7; const rnd = ()=> (sd = (sd * 16807) % 2147483647) / 2147483647;
+    const cols = ['#FFD166', '#EF476F', '#06D6A0', '#4CC9F0', '#ffffff'];
+    for(let k = 0; k < 110; k++){ ctx.save(); ctx.globalAlpha = .45; ctx.fillStyle = cols[k % cols.length]; ctx.translate(rnd() * W, rnd() * H); ctx.rotate(rnd() * 6.28); ctx.fillRect(-8, -4, 16, 8); ctx.restore(); }
+  } else if(type === 'grid'){
+    ctx.lineWidth = 2; for(let x = 0; x < W; x += 54){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); } for(let y = 0; y < H; y += 54){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  } else if(type === 'hearts'){
+    for(let y = 50; y < H; y += 110) for(let x = ((y - 50) / 110 % 2 ? 50 : 105); x < W; x += 110){
+      ctx.beginPath(); ctx.moveTo(x, y + 12); ctx.bezierCurveTo(x - 26, y - 6, x - 14, y - 24, x, y - 10); ctx.bezierCurveTo(x + 14, y - 24, x + 26, y - 6, x, y + 12); ctx.fill();
     }
   } else if(type === 'waves'){
     ctx.lineWidth = 4; for(let y = 40; y < H; y += 70){ ctx.beginPath(); for(let x = 0; x <= W; x += 10){ const yy = y + Math.sin(x / 55) * 14; x ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy); } ctx.stroke(); }
@@ -13145,9 +13159,64 @@ function posterWrap(ctx, text, maxW, maxLines){
   }
   return lines;
 }
+// إزالة الخلفية الموحّدة (بيضاء/ملونة) من حواف الصورة: تعبئة فيضية من الحواف مع تنعيم بسيط. ترجع null لو الخلفية غير موحّدة
+function posterCutout(img){
+  try{
+    const iw = img.width || img.naturalWidth, ih = img.height || img.naturalHeight;
+    if(!iw || !ih) return null;
+    const sc = Math.min(1, 900 / Math.max(iw, ih)), w = Math.max(1, Math.round(iw * sc)), h = Math.max(1, Math.round(ih * sc));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d', { willReadFrequently:true }); x.drawImage(img, 0, 0, w, h);
+    const id = x.getImageData(0, 0, w, h), d = id.data;
+    const pts = [];
+    for(let i = 0; i < w; i += 3){ pts.push(i, 0, i, h - 1); }
+    for(let j = 0; j < h; j += 3){ pts.push(0, j, w - 1, j); }
+    let r = 0, g = 0, b = 0, a = 0, n = pts.length / 2;
+    for(let k = 0; k < pts.length; k += 2){ const o = (pts[k + 1] * w + pts[k]) * 4; r += d[o]; g += d[o + 1]; b += d[o + 2]; a += d[o + 3]; }
+    r /= n; g /= n; b /= n; a /= n;
+    const vis = new Uint8Array(w * h);
+    if(a > 40){
+      let ok = 0;
+      for(let k = 0; k < pts.length; k += 2){ const o = (pts[k + 1] * w + pts[k]) * 4; if(Math.hypot(d[o] - r, d[o + 1] - g, d[o + 2] - b) < 40) ok++; }
+      if(ok / n < 0.9) return null;
+      const tol = 46, st = new Int32Array(w * h); let sp = 0;
+      const tryPush = (px, py)=>{ if(px < 0 || py < 0 || px >= w || py >= h) return; const idx = py * w + px; if(vis[idx]) return; const o = idx * 4; if(Math.hypot(d[o] - r, d[o + 1] - g, d[o + 2] - b) <= tol){ vis[idx] = 1; st[sp++] = idx; } };
+      for(let i = 0; i < w; i++){ tryPush(i, 0); tryPush(i, h - 1); }
+      for(let j = 0; j < h; j++){ tryPush(0, j); tryPush(w - 1, j); }
+      while(sp){ const idx = st[--sp], px = idx % w, py = (idx - px) / w; tryPush(px + 1, py); tryPush(px - 1, py); tryPush(px, py + 1); tryPush(px, py - 1); }
+      let removed = 0; for(let i = 0; i < vis.length; i++) if(vis[i]) removed++;
+      const ratio = removed / vis.length; if(ratio < 0.03 || ratio > 0.93) return null;
+      for(let i = 0; i < vis.length; i++) if(vis[i]) d[i * 4 + 3] = 0;
+      // تنعيم الحافة: حلقتان بشفافية جزئية
+      const ring = new Uint8Array(w * h);
+      const nb = (i)=>{ const px = i % w, py = (i - px) / w; return (px > 0 && vis[i - 1]) || (px < w - 1 && vis[i + 1]) || (py > 0 && vis[i - w]) || (py < h - 1 && vis[i + w]); };
+      for(let i = 0; i < vis.length; i++) if(!vis[i] && nb(i)){ ring[i] = 1; d[i * 4 + 3] = 120; }
+      for(let i = 0; i < vis.length; i++) if(!vis[i] && !ring[i]){ const px = i % w, py = (i - px) / w; if((px > 0 && ring[i - 1]) || (px < w - 1 && ring[i + 1]) || (py > 0 && ring[i - w]) || (py < h - 1 && ring[i + w])) d[i * 4 + 3] = 225; }
+      x.putImageData(id, 0, 0);
+    }
+    // قص الحواف الفارغة
+    let x0 = w, y0 = h, x1 = 0, y1 = 0;
+    for(let py = 0; py < h; py++) for(let px = 0; px < w; px++) if(d[(py * w + px) * 4 + 3] > 30){ if(px < x0) x0 = px; if(px > x1) x1 = px; if(py < y0) y0 = py; if(py > y1) y1 = py; }
+    if(x1 <= x0 || y1 <= y0) return null;
+    const cw2 = x1 - x0 + 1, ch2 = y1 - y0 + 1;
+    const out = document.createElement('canvas'); out.width = cw2; out.height = ch2;
+    out.getContext('2d').drawImage(c, x0, y0, cw2, ch2, 0, 0, cw2, ch2);
+    out.__cut = true; return out;
+  }catch(e){ return null; }
+}
 function posterDrawCover(ctx, img, x, y, w, h){
   const iw = img.width || img.naturalWidth, ih = img.height || img.naturalHeight;
   if(!iw || !ih) return;
+  if(img.__cut){
+    ctx.save();
+    ctx.fillStyle = 'rgba(128,128,128,.13)'; ctx.fillRect(x, y, w, h);
+    const rg = ctx.createRadialGradient(x + w / 2, y + h / 2, 0, x + w / 2, y + h / 2, Math.max(w, h) * 0.6);
+    rg.addColorStop(0, 'rgba(255,255,255,.35)'); rg.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = rg; ctx.fillRect(x, y, w, h);
+    const k = Math.min(w * 0.88 / iw, h * 0.88 / ih), dw = iw * k, dh = ih * k;
+    ctx.shadowColor = 'rgba(0,0,0,.4)'; ctx.shadowBlur = Math.max(10, Math.min(w, h) * 0.04); ctx.shadowOffsetY = Math.max(4, Math.min(w, h) * 0.02);
+    ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+    ctx.restore(); return;
+  }
   const s = Math.max(w / iw, h / ih); const dw = iw * s, dh = ih * s;
   ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
 }
@@ -13171,7 +13240,7 @@ function posterPalette(o){
   if(t === 'fresh') return { t, bg1:dark?'#161616':'#ffffff', bg2:dark?'#161616':'#ffffff', deco:false, topBar:null, frame:false, ink:dark?'#f5f5f5':'#1c1c1c', muted:dark?'#a8a8a8':'#6d6d6d', line:A, imgBorder:0, imgRadius:0,
     priceStyle:'pill', priceBg:A, priceInk:'#ffffff', footerBg:dark?'#232323':'#f2f2f2', footerInk:dark?'#f5f5f5':'#1c1c1c',
     cardBg:dark?'#232323':'#f4f4f4', cardInk:dark?'#f5f5f5':'#1c1c1c', cardMuted:dark?'#a8a8a8':'#6d6d6d', cardLine:null, titleBg:A, titleInk:'#ffffff', disp:'Cairo', hero:true, ornament:false };
-  const mk = (o2)=> Object.assign({ t, deco:false, topBar:null, frame:false, imgBorder:6, imgRadius:30, priceStyle:'pill', hero:false, ornament:false, disp:'Lalezar', cardLine:null, titleBg:null, pattern:null, patternColor:'rgba(255,255,255,.07)', layout:'stack', mlayout:'grid', accentSoft:null, leader:false, noShadow:false }, o2);
+  const mk = (o2)=> Object.assign({ t, deco:false, topBar:null, frame:false, imgBorder:6, imgRadius:30, priceStyle:'pill', hero:false, ornament:false, disp:'Lalezar', cardLine:null, titleBg:null, pattern:null, patternColor:'rgba(255,255,255,.07)', layout:'stack', mlayout:'grid', accentSoft:null, leader:false, noShadow:false, ribbon:null }, o2);
   if(t === 'royal') return mk({ bg1:'#14213d', bg2:'#0b1327', pattern:'dots', patternColor:'rgba(224,184,76,.10)', ink:'#ffffff', muted:'#c9d1e6', line:A, imgBorder:6, imgRadius:30,
     priceBg:A, priceInk:'#14213d', footerBg:'#0a1124', footerInk:'#ffffff', cardBg:'#1d2d52', cardInk:'#ffffff', cardMuted:'#b8c3df', cardLine:A, titleBg:A, titleInk:'#14213d', disp:'Cairo', ornament:true });
   if(t === 'ramadan') return mk({ bg1:'#0f3d2e', bg2:'#06241b', pattern:'stars', patternColor:'rgba(233,196,106,.10)', frame:true, ink:'#fdf3d8', muted:'#d4c6a0', line:A, imgBorder:4, imgRadius:60,
@@ -13200,6 +13269,14 @@ function posterPalette(o){
     priceBg:A, priceInk:'#ffffff', footerBg:A, footerInk:'#ffffff', cardBg:'#ffffff', cardInk:'#2b1b14', cardMuted:'#7a6552', cardLine:'#e9dcc2', titleBg:A, titleInk:'#ffffff', disp:'Amiri' });
   if(t === 'spotlight') return mk({ mlayout:'feature', topBar:A, bg1:'#F4F6FB', bg2:'#DDE3F3', ink:'#0f172a', muted:'#5b6478', line:A, imgBorder:6, imgRadius:30,
     priceBg:A, priceInk:'#ffffff', footerBg:'#0f172a', footerInk:'#ffffff', cardBg:'#ffffff', cardInk:'#0f172a', cardMuted:'#5b6478', titleBg:A, titleInk:'#ffffff', disp:'Cairo' });
+  if(t === 'eid') return mk({ bg1:'#3b1d6e', bg2:'#1f0f42', pattern:'confetti', ink:'#ffffff', muted:'#dcd0f5', line:A, imgBorder:6, imgRadius:40,
+    priceBg:A, priceInk:'#2a1450', footerBg:'#190c36', footerInk:'#ffffff', cardBg:'#4a2a86', cardInk:'#ffffff', cardMuted:'#d4c6f2', cardLine:A, titleBg:A, titleInk:'#2a1450', disp:'Lalezar', ornament:true });
+  if(t === 'friday') return mk({ layout:'burst', ribbon:'تخفيضات كبرى', bg1:'#161616', bg2:'#050505', pattern:'stripes', patternColor:'rgba(255,214,10,.07)', ink:'#ffffff', muted:'#d6d6d6', line:A, imgBorder:8, imgRadius:30,
+    priceBg:A, priceInk:'#111111', footerBg:'#000000', footerInk:A, cardBg:'#1b1b1b', cardInk:'#ffffff', cardMuted:'#b5b5b5', cardLine:A, titleBg:A, titleInk:'#111111', disp:'Lalezar', topBar:A });
+  if(t === 'school') return mk({ layout:'circle', bg1:'#EAF3FF', bg2:'#CFE3FF', pattern:'grid', patternColor:'rgba(29,78,216,.09)', accentSoft:'rgba(29,78,216,.14)', ink:'#0f2a5c', muted:'#4a6491', line:A, imgBorder:6, imgRadius:30,
+    priceBg:A, priceInk:'#ffffff', footerBg:A, footerInk:'#ffffff', cardBg:'#ffffff', cardInk:'#0f2a5c', cardMuted:'#4a6491', cardLine:'#bcd3f7', titleBg:'#FFC400', titleInk:'#0f2a5c', disp:'Lalezar' });
+  if(t === 'mother') return mk({ bg1:'#FFE9F1', bg2:'#FFC9DD', pattern:'hearts', patternColor:'rgba(214,51,108,.16)', ink:'#5a1630', muted:'#9b4565', line:A, imgBorder:10, imgRadius:80,
+    priceBg:A, priceInk:'#ffffff', footerBg:A, footerInk:'#ffffff', cardBg:'#ffffff', cardInk:'#5a1630', cardMuted:'#9b4565', cardLine:'#ffc2d8', titleBg:A, titleInk:'#ffffff', disp:'Amiri' });
   if(t === 'minimal') return mk({ bg1:dark?'#141414':'#ffffff', bg2:dark?'#141414':'#ffffff', ink:dark?'#f5f5f5':'#111111', muted:dark?'#a0a0a0':'#6b7280', line:dark?'#f5f5f5':A, imgBorder:0, imgRadius:14,
     priceStyle:'text', priceInk:dark?'#f5f5f5':A, footerBg:null, footerInk:dark?'#f5f5f5':'#111111', cardBg:dark?'#1f1f1f':'#f7f7f8', cardInk:dark?'#f5f5f5':'#111111', cardMuted:dark?'#a0a0a0':'#6b7280', cardLine:dark?'#333':'#e5e7eb', titleBg:null, titleInk:dark?'#f5f5f5':A, disp:'Cairo' });
   return { t:'classic', bg1:dark?'#1d1b19':'#fbf7ec', bg2:dark?'#2b2724':'#f1e8d2', deco:false, topBar:A, frame:false, ink:dark?'#f6f1e4':'#201F1D', muted:dark?'#b9b2a0':'#6b655a', line:A, imgBorder:6, imgRadius:36,
@@ -13476,7 +13553,7 @@ async function renderPoster(canvas, list, o){
       for(let k = 0; k < 28; k += 2){ const a1 = k * Math.PI * 2 / 28, a2 = (k + 1) * Math.PI * 2 / 28; ctx.beginPath(); ctx.moveTo(rcx, rcy); ctx.lineTo(rcx + Math.cos(a1) * H * 1.3, rcy + Math.sin(a1) * H * 1.3); ctx.lineTo(rcx + Math.cos(a2) * H * 1.3, rcy + Math.sin(a2) * H * 1.3); ctx.closePath(); ctx.fill(); }
       ctx.restore();
       let y = topStart; if(headerH){ drawHeader(y, false); y += headerH + 6; } else y += 14;
-      const rtxt = 'عرض خاص';
+      const rtxt = pal.ribbon || 'عرض خاص';
       const rfs = o.size === 'story' ? 96 : 72; ctx.font = D(rfs);
       const rbh = Math.round(rfs * 1.45), rw = Math.min(cw, ctx.measureText(rtxt).width + 170);
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 5; ctx.fillStyle = pal.titleBg; posterRRect(ctx, W / 2 - rw / 2, y, rw, rbh, 16); ctx.fill(); ctx.restore();
@@ -13772,7 +13849,7 @@ function openPosterModal(listIn){
   try{ prefs = JSON.parse(localStorage.getItem(prefsKey) || localStorage.getItem(POSTER_PREFS_KEY) || '{}') || {}; }catch(e){}
   const P = Object.assign({ template:'classic', size:'square', theme:'light', font:'auto', digits:'en', currency:'asis',
     showImage:true, showPrice:true, showOld:true, showDesc:false, showLogo:true, showName:true, showAddress:true, showPhone:true, showQr:true,
-    showTitle:true, title:'عروض الأسبوع', accents:{} }, prefs);
+    showTitle:true, title:'عروض الأسبوع', cutout:false, waPhone:'', accents:{} }, prefs);
   if(!POSTER_TEMPLATES[P.template]) P.template = 'classic';
   if(!P.accents || typeof P.accents !== 'object') P.accents = {};
   let tpl = P.template;
@@ -13807,6 +13884,7 @@ function openPosterModal(listIn){
           ${chk('pstAddr', 'العنوان', P.showAddress)}
           ${chk('pstPhone', 'رقم التليفون', P.showPhone)}
           ${chk('pstQr', 'رمز QR للمنيو الإلكتروني', P.showQr)}
+          ${chk('pstCutout', 'إزالة خلفية الصورة (للخلفيات البيضاء / الموحّدة)', P.cutout)}
           ${sel('pstSize', 'المقاس', Object.entries(POSTER_SIZES).map(([k, v])=> [k, v[2]]), P.size)}
           ${sel('pstTheme', 'الخلفية (للقالبين الكلاسيك والعصري)', [['light', 'فاتحة'], ['dark', 'داكنة']], P.theme)}
           ${sel('pstFont', 'الخط', [['auto', 'حسب القالب'], ['Tajawal', 'تجوال'], ['Cairo', 'القاهرة'], ['Almarai', 'المراعي'], ['Amiri', 'أميري'], ['Changa', 'شانجا']], P.font)}
@@ -13815,9 +13893,13 @@ function openPosterModal(listIn){
           <label style="display:flex;gap:8px;align-items:center;margin:8px 0;">لون الهوية <input type="color" id="pstColor" value="${P.accents[tpl] || POSTER_TEMPLATES[tpl].accent}" style="width:44px;height:30px;padding:0;border:none;"></label>
         </div>
       </div>
+      <div style="margin-top:10px; font-size:12.5px;">
+        <input type="text" id="pstWaPhone" inputmode="tel" value="${escapeHtml(P.waPhone || '')}" placeholder="رقم واتساب لإرسال البوستر (اختياري) — مثال: 201012345678" style="width:100%;">
+      </div>
       <div class="modal-actions">
         <button class="btn-confirm" id="pstDownload">⬇️ تحميل الصورة</button>
         <button class="btn-confirm" id="pstShare" style="background:#25D366;">📤 مشاركة</button>
+        <button class="btn-confirm" id="pstWa" style="background:#128C7E;">💬 واتساب</button>
         <button class="btn-cancel" id="pstClose">إغلاق</button>
       </div>
     </div>`;
@@ -13838,8 +13920,8 @@ function openPosterModal(listIn){
   const readOpts = ()=> ({
     template:tpl, size:$('#pstSize').value, theme:$('#pstTheme').value, accent:$('#pstColor').value, font:$('#pstFont').value, digits:$('#pstDigits').value, currency:$('#pstCur').value,
     showImage:$('#pstImage').checked, showPrice:$('#pstPrice').checked, showOld:$('#pstOld').checked, showDesc:$('#pstDesc').checked,
-    showLogo:$('#pstLogo').checked, showName:$('#pstName').checked, showAddress:$('#pstAddr').checked, showPhone:$('#pstPhone').checked, showQr:$('#pstQr').checked,
-    showTitle:$('#pstShowTitle').checked, title:$('#pstTitle').value
+    showLogo:$('#pstLogo').checked, showName:$('#pstName').checked, showAddress:$('#pstAddr').checked, showPhone:$('#pstPhone').checked, showQr:$('#pstQr').checked, cutout:$('#pstCutout').checked,
+    showTitle:$('#pstShowTitle').checked, title:$('#pstTitle').value, waPhone:$('#pstWaPhone').value
   });
   const draw = async ()=>{
     if(drawing){ again = true; return; }
@@ -13850,12 +13932,24 @@ function openPosterModal(listIn){
       try{ localStorage.setItem(prefsKey, JSON.stringify(Object.assign({}, o, { accents:P.accents }))); }catch(e){}
       const pal0 = posterPalette(o), body = o.font === 'auto' ? 'Tajawal' : o.font, disp = o.font === 'auto' ? pal0.disp : o.font;
       try{ await Promise.all([...new Set([body, disp, 'Tajawal'])].map(f=> document.fonts.load(`800 40px "${f}"`))); await document.fonts.ready; }catch(e){}
-      const imgs = await Promise.all(list.map(it=> o.showImage ? getImg(it.image_url) : null));
+      let imgs = await Promise.all(list.map(it=> o.showImage ? getImg(it.image_url) : null));
+      let cutFail = 0;
+      if(o.showImage && o.cutout){
+        imgs = imgs.map((im, i)=>{
+          if(!im) return im;
+          const key = 'cut:' + list[i].image_url;
+          if(!imgCache.has(key)) imgCache.set(key, posterCutout(im));
+          const cut = imgCache.get(key);
+          if(!cut){ cutFail++; return im; }
+          return cut;
+        });
+      }
       const logoImg = (o.showLogo && restaurant.logo_url) ? await getImg(restaurant.logo_url) : null;
       if(o.showQr && restaurant.slug && !qrTried){ qrTried = true; status.textContent = 'جارِ إنشاء رمز QR...'; qrImg = await posterMakeQr(menuLink); }
       await renderPoster(canvas, list, Object.assign({}, o, { imgs, logoImg, qrImg: (o.showQr && restaurant.slug) ? qrImg : null }));
       const notes = [];
       if(o.showImage){ const miss = list.filter((it, i)=> it.image_url && !imgs[i]).length; if(miss) notes.push(multi ? `تعذّر تحميل ${miss} صورة` : 'تعذّر تحميل صورة الصنف'); }
+      if(cutFail) notes.push(multi ? `تعذّرت إزالة الخلفية من ${cutFail} صورة (الخلفية غير موحّدة)` : 'تعذّرت إزالة الخلفية (الخلفية غير موحّدة)');
       if(o.showLogo && restaurant.logo_url && !logoImg) notes.push('تعذّر تحميل اللوجو');
       if(o.showQr && restaurant.slug && !qrImg) notes.push('تعذّر إنشاء رمز QR');
       if(o.showQr && !restaurant.slug) notes.push('لا يوجد رابط للمتجر لإنشاء QR');
@@ -13882,11 +13976,29 @@ function openPosterModal(listIn){
       setTimeout(()=> URL.revokeObjectURL(url), 3000); toast('تم تحميل الصورة');
     }catch(e){ toast('تعذّر إنشاء الصورة (قد تكون صورة محمية من المتصفح)'); }
   });
+  const shareText = ()=>{
+    const head = multi ? `${restaurant.name || ''}${$('#pstShowTitle').checked && $('#pstTitle').value.trim() ? ' — ' + $('#pstTitle').value.trim() : ''}` : `${list[0].name}${restaurant.name ? ' — ' + restaurant.name : ''}`;
+    return head + (restaurant.slug ? `\n🔗 ${menuLink}` : '');
+  };
+  $('#pstWaPhone').addEventListener('change', draw);
+  $('#pstWa').addEventListener('click', async ()=>{
+    try{
+      const blob = await toBlob(); const file = new File([blob], fileName(), { type:'image/png' });
+      const phone = $('#pstWaPhone').value.replace(/[^0-9]/g, '');
+      if(!phone && navigator.canShare && navigator.canShare({ files:[file] })){
+        await navigator.share({ files:[file], title: restaurant.name || 'منيو', text: shareText() }); return;
+      }
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fileName(); a.click();
+      setTimeout(()=> URL.revokeObjectURL(url), 3000);
+      window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(shareText()), '_blank');
+      toast('تم تحميل الصورة — أرفقها في محادثة واتساب بعد فتحها');
+    }catch(e){ if(e && e.name !== 'AbortError') toast('تعذّرت المشاركة'); }
+  });
   $('#pstShare').addEventListener('click', async ()=>{
     try{
       const blob = await toBlob(); const file = new File([blob], fileName(), { type:'image/png' });
       if(navigator.canShare && navigator.canShare({ files:[file] })){
-        await navigator.share({ files:[file], title: multi ? (restaurant.name || 'منيو') : list[0].name });
+        await navigator.share({ files:[file], title: multi ? (restaurant.name || 'منيو') : list[0].name, text: shareText() });
       } else {
         const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fileName(); a.click();
         setTimeout(()=> URL.revokeObjectURL(url), 3000); toast('المشاركة المباشرة غير متاحة هنا — تم تحميل الصورة لتشاركها يدوياً');
