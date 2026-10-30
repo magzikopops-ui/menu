@@ -13047,7 +13047,14 @@ const POSTER_TEMPLATES = {
   candy:   { name:'حلويات', accent:'#E83E8C', bg:'linear-gradient(135deg,#fff0f6,#ffd3e8)', fg:'#E83E8C', fixed:true },
   fastfood:{ name:'فاست فود',accent:'#D92D20', bg:'repeating-linear-gradient(45deg,#FFC72C 0 10px,#FFB300 10px 20px)', fg:'#D92D20', fixed:true },
   noir:    { name:'ستيك',   accent:'#E03131', bg:'linear-gradient(135deg,#1a1a1a,#050505)', fg:'#E03131', fixed:true },
-  minimal: { name:'بسيط',   accent:'#111827', bg:'#ffffff', fg:'#111827' }
+  minimal: { name:'بسيط',   accent:'#111827', bg:'#ffffff', fg:'#111827' },
+  cine:    { name:'سينمائي', accent:'#F5B700', bg:'linear-gradient(160deg,#444,#000)', fg:'#F5B700', fixed:true },
+  orbit:   { name:'دائري',  accent:'#F97316', bg:'radial-gradient(circle at 50% 50%,#F97316 0 38%,#FFE2B8 40%)', fg:'#ffffff', fixed:true },
+  sale:    { name:'عرض خاص', accent:'#E11D48', bg:'repeating-conic-gradient(#E11D48 0 8deg,#c4153c 8deg 16deg)', fg:'#FFD60A', fixed:true },
+  polaroid:{ name:'بولارويد', accent:'#E4572E', bg:'linear-gradient(135deg,#d8c2a0,#c9b08a)', fg:'#2b2118', fixed:true },
+  board:   { name:'سبورة',  accent:'#F2C94C', bg:'linear-gradient(135deg,#23312b,#161f1b)', fg:'#F2C94C', fixed:true },
+  bistro:  { name:'بيسترو', accent:'#7A1F2B', bg:'linear-gradient(135deg,#FBF5EA,#F3E8D2)', fg:'#7A1F2B', fixed:true },
+  spotlight:{ name:'مميّز', accent:'#2563EB', bg:'linear-gradient(135deg,#F4F6FB,#DDE3F3)', fg:'#2563EB', fixed:true }
 };
 function posterPattern(ctx, W, H, type, color){
   ctx.save(); ctx.fillStyle = color; ctx.strokeStyle = color;
@@ -13162,7 +13169,7 @@ function posterPalette(o){
   if(t === 'fresh') return { t, bg1:dark?'#161616':'#ffffff', bg2:dark?'#161616':'#ffffff', deco:false, topBar:null, frame:false, ink:dark?'#f5f5f5':'#1c1c1c', muted:dark?'#a8a8a8':'#6d6d6d', line:A, imgBorder:0, imgRadius:0,
     priceStyle:'pill', priceBg:A, priceInk:'#ffffff', footerBg:dark?'#232323':'#f2f2f2', footerInk:dark?'#f5f5f5':'#1c1c1c',
     cardBg:dark?'#232323':'#f4f4f4', cardInk:dark?'#f5f5f5':'#1c1c1c', cardMuted:dark?'#a8a8a8':'#6d6d6d', cardLine:null, titleBg:A, titleInk:'#ffffff', disp:'Cairo', hero:true, ornament:false };
-  const mk = (o2)=> Object.assign({ t, deco:false, topBar:null, frame:false, imgBorder:6, imgRadius:30, priceStyle:'pill', hero:false, ornament:false, disp:'Lalezar', cardLine:null, titleBg:null, pattern:null, patternColor:'rgba(255,255,255,.07)' }, o2);
+  const mk = (o2)=> Object.assign({ t, deco:false, topBar:null, frame:false, imgBorder:6, imgRadius:30, priceStyle:'pill', hero:false, ornament:false, disp:'Lalezar', cardLine:null, titleBg:null, pattern:null, patternColor:'rgba(255,255,255,.07)', layout:'stack', mlayout:'grid', accentSoft:null, leader:false, noShadow:false }, o2);
   if(t === 'royal') return mk({ bg1:'#14213d', bg2:'#0b1327', pattern:'dots', patternColor:'rgba(224,184,76,.10)', ink:'#ffffff', muted:'#c9d1e6', line:A, imgBorder:6, imgRadius:30,
     priceBg:A, priceInk:'#14213d', footerBg:'#0a1124', footerInk:'#ffffff', cardBg:'#1d2d52', cardInk:'#ffffff', cardMuted:'#b8c3df', cardLine:A, titleBg:A, titleInk:'#14213d', disp:'Cairo', ornament:true });
   if(t === 'ramadan') return mk({ bg1:'#0f3d2e', bg2:'#06241b', pattern:'stars', patternColor:'rgba(233,196,106,.10)', frame:true, ink:'#fdf3d8', muted:'#d4c6a0', line:A, imgBorder:4, imgRadius:60,
@@ -13177,6 +13184,20 @@ function posterPalette(o){
     priceBg:A, priceInk:'#ffffff', footerBg:'#2b1a00', footerInk:'#FFC72C', cardBg:'#ffffff', cardInk:'#2b1a00', cardMuted:'#6b5320', cardLine:A, titleBg:A, titleInk:'#ffffff' });
   if(t === 'noir') return mk({ bg1:'#1a1a1a', bg2:'#050505', topBar:A, ink:'#ffffff', muted:'#b5b5b5', line:A, imgBorder:5, imgRadius:18,
     priceBg:A, priceInk:'#ffffff', footerBg:'#000000', footerInk:'#ffffff', cardBg:'#242424', cardInk:'#ffffff', cardMuted:'#b5b5b5', cardLine:A, titleBg:A, titleInk:'#ffffff', disp:'Changa' });
+  if(t === 'cine') return mk({ layout:'full', bg1:'#0b0b0d', bg2:'#000000', ink:'#ffffff', muted:'#e6e6e6', line:A, imgBorder:5, imgRadius:18,
+    priceBg:A, priceInk:'#111111', footerBg:'rgba(0,0,0,.62)', footerInk:'#ffffff', cardBg:'#1a1a1d', cardInk:'#ffffff', cardMuted:'#b0b0b0', cardLine:A, titleBg:A, titleInk:'#111111', disp:'Changa', topBar:A });
+  if(t === 'orbit') return mk({ layout:'circle', bg1:'#FFF4E0', bg2:'#FFE2B8', accentSoft:'rgba(249,115,22,.18)', ink:'#3b1d0a', muted:'#8a5a35', line:A, imgBorder:6, imgRadius:30,
+    priceBg:A, priceInk:'#ffffff', footerBg:A, footerInk:'#ffffff', cardBg:'#ffffff', cardInk:'#3b1d0a', cardMuted:'#8a5a35', titleBg:A, titleInk:'#ffffff', disp:'Lalezar' });
+  if(t === 'sale') return mk({ layout:'burst', bg1:A, bg2:'#BE123C', ink:'#ffffff', muted:'#ffe4ea', line:'#ffffff', imgBorder:8, imgRadius:30,
+    priceBg:'#FFD60A', priceInk:'#7f0d27', footerBg:'#7f0d27', footerInk:'#ffffff', cardBg:'#ffffff', cardInk:'#3a0a14', cardMuted:'#7a4a55', cardLine:'#FFD60A', titleBg:'#FFD60A', titleInk:'#7f0d27', disp:'Lalezar' });
+  if(t === 'polaroid') return mk({ layout:'polaroid', bg1:'#d8c2a0', bg2:'#c9b08a', pattern:'dots', patternColor:'rgba(60,40,10,.07)', ink:'#2b2118', muted:'#5b4a38', line:A, imgBorder:0, imgRadius:10,
+    priceBg:A, priceInk:'#ffffff', footerBg:'#2b2118', footerInk:'#f6ead6', cardBg:'#fffdf8', cardInk:'#2b2118', cardMuted:'#6b5a46', titleBg:A, titleInk:'#ffffff', disp:'Changa' });
+  if(t === 'board') return mk({ mlayout:'rows', frame:true, leader:true, noShadow:true, bg1:'#23312b', bg2:'#161f1b', ink:'#f4f1e8', muted:'#c9c5b8', line:A, imgBorder:4, imgRadius:14,
+    priceStyle:'text', priceInk:A, footerBg:null, footerInk:'#f4f1e8', cardBg:'rgba(255,255,255,.06)', cardInk:'#f4f1e8', cardMuted:'#b9b5a8', cardLine:'rgba(255,255,255,.22)', titleBg:null, titleInk:A, disp:'Changa', ornament:true });
+  if(t === 'bistro') return mk({ mlayout:'rows', leader:true, topBar:A, bg1:'#FBF5EA', bg2:'#F3E8D2', ink:'#2b1b14', muted:'#7a6552', line:A, imgBorder:5, imgRadius:30,
+    priceBg:A, priceInk:'#ffffff', footerBg:A, footerInk:'#ffffff', cardBg:'#ffffff', cardInk:'#2b1b14', cardMuted:'#7a6552', cardLine:'#e9dcc2', titleBg:A, titleInk:'#ffffff', disp:'Amiri' });
+  if(t === 'spotlight') return mk({ mlayout:'feature', topBar:A, bg1:'#F4F6FB', bg2:'#DDE3F3', ink:'#0f172a', muted:'#5b6478', line:A, imgBorder:6, imgRadius:30,
+    priceBg:A, priceInk:'#ffffff', footerBg:'#0f172a', footerInk:'#ffffff', cardBg:'#ffffff', cardInk:'#0f172a', cardMuted:'#5b6478', titleBg:A, titleInk:'#ffffff', disp:'Cairo' });
   if(t === 'minimal') return mk({ bg1:dark?'#141414':'#ffffff', bg2:dark?'#141414':'#ffffff', ink:dark?'#f5f5f5':'#111111', muted:dark?'#a0a0a0':'#6b7280', line:dark?'#f5f5f5':A, imgBorder:0, imgRadius:14,
     priceStyle:'text', priceInk:dark?'#f5f5f5':A, footerBg:null, footerInk:dark?'#f5f5f5':'#111111', cardBg:dark?'#1f1f1f':'#f7f7f8', cardInk:dark?'#f5f5f5':'#111111', cardMuted:dark?'#a0a0a0':'#6b7280', cardLine:dark?'#333':'#e5e7eb', titleBg:null, titleInk:dark?'#f5f5f5':A, disp:'Cairo' });
   return { t:'classic', bg1:dark?'#1d1b19':'#fbf7ec', bg2:dark?'#2b2724':'#f1e8d2', deco:false, topBar:A, frame:false, ink:dark?'#f6f1e4':'#201F1D', muted:dark?'#b9b2a0':'#6b655a', line:A, imgBorder:6, imgRadius:36,
@@ -13360,7 +13381,91 @@ async function renderPoster(canvas, list, o){
       return y;
     };
 
-    if(hero){
+    const drawPriceDisc = (bx, by, rb, star)=>{
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.28)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 6; ctx.fillStyle = pal.priceBg || pal.line; ctx.beginPath();
+      if(star){ for(let k = 0; k < 36; k++){ const a = k * Math.PI / 18 - Math.PI / 2, r = k % 2 ? rb * 0.86 : rb; k ? ctx.lineTo(bx + Math.cos(a) * r, by + Math.sin(a) * r) : ctx.moveTo(bx + Math.cos(a) * r, by + Math.sin(a) * r); } ctx.closePath(); }
+      else ctx.arc(bx, by, rb, 0, Math.PI * 2);
+      ctx.fill(); ctx.restore();
+      if(!star){ ctx.lineWidth = 6; ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.arc(bx, by, rb - 3, 0, Math.PI * 2); ctx.stroke(); }
+      const fs = posterFit(ctx, P.text, rb * 1.55, Math.round(rb * 0.42), 16, (s2)=> F(800, s2));
+      ctx.direction = dirFor(false); ctx.textAlign = 'center'; ctx.font = F(800, fs); ctx.fillStyle = pal.priceInk;
+      ctx.fillText(P.text, bx, by + fs * (P.oldText ? 0.55 : 0.33));
+      if(P.oldText){
+        const os = Math.round(rb * 0.2), oy = by - fs * 0.4; ctx.font = F(600, os); const w = ctx.measureText(P.oldText).width;
+        ctx.globalAlpha = .85; ctx.fillText(P.oldText, bx, oy); ctx.globalAlpha = 1;
+        ctx.strokeStyle = '#d93025'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(bx - w / 2 - 3, oy - os * 0.3); ctx.lineTo(bx + w / 2 + 3, oy - os * 0.3); ctx.stroke();
+      }
+      ctx.direction = 'rtl';
+    };
+    const L = hasImg ? pal.layout : 'stack';
+    const discMode = hasPrice && !isSizes && P.text.length <= 15;
+    if(L === 'full'){
+      posterDrawCover(ctx, img, 0, 0, W, H);
+      let gr = ctx.createLinearGradient(0, 0, 0, H * 0.26); gr.addColorStop(0, 'rgba(0,0,0,.6)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H * 0.26);
+      gr = ctx.createLinearGradient(0, H * 0.34, 0, H); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(.5, 'rgba(0,0,0,.72)'); gr.addColorStop(1, 'rgba(0,0,0,.94)'); ctx.fillStyle = gr; ctx.fillRect(0, H * 0.34, W, H * 0.66);
+      drawHeader(30, true); drawBadge(pad + 74, 100, 66, P.discount);
+      let yb = H - footerH - bottomMargin - 36;
+      if(hasPrice){ yb -= chipH; drawChip(yb); yb -= 18; if(P.oldText){ drawOld(yb); yb -= 52; } }
+      while(nameSize > 54 && yb - (nameH + 6 + descH) < H * 0.42){ nameSize -= 6; recalcName(); }
+      drawNameDesc(yb - (nameH + 6 + descH) - 6);
+    } else if(L === 'circle'){
+      let y = topStart; if(headerH){ drawHeader(y, false); y += headerH + 6; } else y += 20;
+      const calcD = ()=> Math.min(cw * 0.86, H - y - (nameH + 6 + descH + gap + (!discMode && hasPrice ? chipH + (P.oldText ? 50 : 0) + gap : 0) + footerH + bottomMargin + 56));
+      let Dm = calcD();
+      while(Dm < 380 && (nameSize > 54 || descLines.length)){ if(descLines.length){ descLines = []; descH = 0; } else { nameSize -= 6; recalcName(); } Dm = calcD(); }
+      Dm = Math.max(Dm, 280);
+      const cx = W / 2, cy = y + Dm / 2 + 24;
+      ctx.fillStyle = pal.accentSoft || 'rgba(0,0,0,.06)'; ctx.beginPath(); ctx.arc(cx, cy, Dm / 2 + 46, 0, Math.PI * 2); ctx.fill();
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 12; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx, cy, Dm / 2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, Dm / 2 - 8, 0, Math.PI * 2); ctx.clip(); posterDrawCover(ctx, img, cx - Dm / 2, cy - Dm / 2, Dm, Dm); ctx.restore();
+      ctx.lineWidth = 10; ctx.strokeStyle = pal.line; ctx.beginPath(); ctx.arc(cx, cy, Dm / 2 + 2, 0, Math.PI * 2); ctx.stroke();
+      drawBadge(cx + Dm * 0.36, cy - Dm * 0.36, Math.max(50, Dm * 0.12), P.discount);
+      if(discMode) drawPriceDisc(cx - Dm * 0.36, cy + Dm * 0.36, Math.max(78, Math.min(125, Dm * 0.21)), false);
+      let yy = drawNameDesc(cy + Dm / 2 + 34);
+      if(hasPrice && !discMode){ yy += gap - 6; if(P.oldText){ drawOld(yy + 36); yy += 50; } drawChip(yy); }
+    } else if(L === 'burst'){
+      ctx.save(); ctx.fillStyle = 'rgba(255,255,255,.09)'; const rcx = W / 2, rcy = H * 0.45;
+      for(let k = 0; k < 28; k += 2){ const a1 = k * Math.PI * 2 / 28, a2 = (k + 1) * Math.PI * 2 / 28; ctx.beginPath(); ctx.moveTo(rcx, rcy); ctx.lineTo(rcx + Math.cos(a1) * H * 1.3, rcy + Math.sin(a1) * H * 1.3); ctx.lineTo(rcx + Math.cos(a2) * H * 1.3, rcy + Math.sin(a2) * H * 1.3); ctx.closePath(); ctx.fill(); }
+      ctx.restore();
+      let y = topStart; if(headerH){ drawHeader(y, false); y += headerH + 6; } else y += 14;
+      const rtxt = 'عرض خاص';
+      const rfs = o.size === 'story' ? 96 : 72; ctx.font = D(rfs);
+      const rbh = Math.round(rfs * 1.45), rw = Math.min(cw, ctx.measureText(rtxt).width + 170);
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 5; ctx.fillStyle = pal.titleBg; posterRRect(ctx, W / 2 - rw / 2, y, rw, rbh, 16); ctx.fill(); ctx.restore();
+      ctx.fillStyle = pal.titleInk; ctx.textAlign = 'center'; ctx.fillText(rtxt, W / 2, y + rbh / 2 + rfs * 0.32);
+      y += rbh + 22;
+      const chipOnly = hasPrice && !discMode;
+      const calcI = ()=> H - y - (nameH + 6 + descH + gap + (chipOnly ? chipH + (P.oldText ? 50 : 0) + gap : 0) + footerH + bottomMargin + 34);
+      while(calcI() < 300 && (nameSize > 54 || descLines.length)){ if(descLines.length){ descLines = []; descH = 0; } else { nameSize -= 6; recalcName(); } }
+      const imgH = Math.max(260, calcI());
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 10; ctx.fillStyle = '#fff'; posterRRect(ctx, pad, y, cw, imgH, 36); ctx.fill(); ctx.restore();
+      ctx.save(); posterRRect(ctx, pad + 10, y + 10, cw - 20, imgH - 20, 28); ctx.clip(); posterDrawCover(ctx, img, pad + 10, y + 10, cw - 20, imgH - 20); ctx.restore();
+      if(discMode){ const R = Math.max(105, Math.min(165, cw * 0.19)); drawPriceDisc(pad + R * 0.9, y + imgH - R * 0.9, R, true); }
+      drawBadge(W - pad - 80, y + 80, 62, P.discount);
+      y += imgH + gap; y = drawNameDesc(y);
+      if(chipOnly){ y += gap - 6; if(P.oldText){ drawOld(y + 36); y += 50; } drawChip(y); }
+    } else if(L === 'polaroid'){
+      let y = topStart; if(headerH){ drawHeader(y, false); y += headerH + 6; } else y += 20;
+      const calcF = ()=> H - y - 30 - (footerH + bottomMargin) - (!discMode && hasPrice ? chipH + (P.oldText ? 50 : 0) + gap : 0);
+      const capOf = ()=> nameH + 6 + descH + 40;
+      while(calcF() - 26 - capOf() < 260 && (nameSize > 54 || descLines.length)){ if(descLines.length){ descLines = []; descH = 0; } else { nameSize -= 6; recalcName(); } }
+      const fw = cw * 0.9, fh = Math.max(420, calcF()), imgH = Math.max(200, fh - 26 - capOf());
+      const cx = W / 2, cy = y + fh / 2 + 12;
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(-0.035);
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 28; ctx.shadowOffsetY = 12; ctx.fillStyle = '#fffdf8'; posterRRect(ctx, -fw / 2, -fh / 2, fw, fh, 10); ctx.fill(); ctx.restore();
+      ctx.save(); posterRRect(ctx, -fw / 2 + 26, -fh / 2 + 26, fw - 52, imgH, 4); ctx.clip(); posterDrawCover(ctx, img, -fw / 2 + 26, -fh / 2 + 26, fw - 52, imgH); ctx.restore();
+      ctx.fillStyle = pal.ink; ctx.textAlign = 'center'; ctx.font = D(nameSize);
+      const capTop = -fh / 2 + 26 + imgH + 14;
+      nameLines.forEach((ln, i)=> ctx.fillText(ln, 0, capTop + nameSize * (0.95 + i * 1.2)));
+      if(descLines.length){ ctx.fillStyle = pal.muted; ctx.font = F(500, 34); descLines.forEach((ln, i)=> ctx.fillText(ln, 0, capTop + nameH + 6 + 38 + i * 48)); }
+      ctx.fillStyle = 'rgba(255,236,170,.8)';
+      [[-fw * 0.32, -0.5], [fw * 0.32, 0.5]].forEach(([tx, rot])=>{ ctx.save(); ctx.translate(tx, -fh / 2 + 2); ctx.rotate(rot); ctx.fillRect(-75, -22, 150, 44); ctx.restore(); });
+      if(discMode){ const rb = Math.max(80, Math.min(118, fw * 0.14)); ctx.save(); ctx.translate(-fw / 2 + rb * 0.75, -fh / 2 + 26 + imgH - rb * 0.55); ctx.rotate(0.12); drawPriceDisc(0, 0, rb, false); ctx.restore(); }
+      ctx.restore();
+      drawBadge(cx + fw / 2 - 20, y + 66, 60, P.discount);
+      let yy = cy + fh / 2 + 22;
+      if(hasPrice && !discMode){ if(P.oldText){ drawOld(yy + 36); yy += 50; } drawChip(yy); }
+    } else if(hero){
       const after = (hasPrice ? chipH / 2 + (P.oldText ? 50 : 0) : 0) + gap + nameH + 6 + descH + gap;
       const imgH = Math.max(320, H - after - footerH - bottomMargin - 20);
       ctx.save(); posterRRect(ctx, 0, 0, W, imgH, [0, 0, 70, 70]); ctx.clip(); posterDrawCover(ctx, img, 0, 0, W, imgH); ctx.restore();
@@ -13422,33 +13527,55 @@ async function renderPoster(canvas, list, o){
     y += bh + 18;
   }
   const n = list.length;
-  const cols = o.size === 'story' ? (n <= 2 ? 1 : n <= 6 ? 2 : 3) : (n <= 2 ? n : n === 4 ? 2 : 3);
-  const rows = Math.ceil(n / cols), gGap = 22;
-  const gridBottom = H - bottomMargin - footerH - 30;
-  const gridH = Math.max(200, gridBottom - y);
-  const cellW = (cw - gGap * (cols - 1)) / cols;
-  const cellH = Math.min((gridH - gGap * (rows - 1)) / rows, cellW * 1.5);
-  const usedH = rows * cellH + gGap * (rows - 1);
-  const gy0 = y + (gridH - usedH) / 2;
   const clamp = (v, a, b)=> Math.max(a, Math.min(b, v));
-  list.forEach((item, i)=>{
-    const r = Math.floor(i / cols), c = i % cols;
-    const inRow = r === rows - 1 ? n - r * cols : cols;
-    const rowW = inRow * cellW + gGap * (inRow - 1);
-    const startX = (W - rowW) / 2;
-    const x = W - startX - (c + 1) * cellW - c * gGap, cy0 = gy0 + r * (cellH + gGap);
+  const gGap = 22;
+  const gridBottom = H - bottomMargin - footerH - 30;
+  const lay = pal.mlayout || 'grid';
+  const drawCell = (item, i, x, cy0, cellW, cellH, big)=>{
     const rad = 26;
     // البطاقة
     ctx.save();
-    if(pal.t !== 'elegant' && pal.t !== 'bold'){ ctx.shadowColor = 'rgba(0,0,0,.14)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 6; }
+    if(pal.t !== 'elegant' && pal.t !== 'bold' && !pal.noShadow){ ctx.shadowColor = 'rgba(0,0,0,.14)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 6; }
     ctx.fillStyle = pal.cardBg; posterRRect(ctx, x, cy0, cellW, cellH, rad); ctx.fill();
     ctx.restore();
     if(pal.cardLine){ ctx.lineWidth = 3; ctx.strokeStyle = pal.cardLine; posterRRect(ctx, x, cy0, cellW, cellH, rad); ctx.stroke(); }
     const img = o.imgs[i];
     const showImg = !!o.showImage;
     const P = o.showPrice ? posterPriceInfo(item, T, true, o.showOld) : { text:'', oldText:'', discount:0 };
-    let ns = clamp(cellW / (showImg ? 10.5 : 8.5), 20, showImg ? 44 : 56);
-    let pillH = P.text ? Math.round(clamp(cellW / 6.2, 44, 84)) : 0;
+    if(big){
+      const imgW = showImg ? cellW * 0.44 : 0;
+      if(showImg){
+        ctx.save(); posterRRect(ctx, x + cellW - imgW, cy0, imgW, cellH, [0, rad, rad, 0]); ctx.clip();
+        if(img) posterDrawCover(ctx, img, x + cellW - imgW, cy0, imgW, cellH);
+        else { ctx.fillStyle = 'rgba(128,128,128,.18)'; ctx.fillRect(x + cellW - imgW, cy0, imgW, cellH); ctx.font = F(400, Math.round(cellH * 0.45)); ctx.textAlign = 'center'; ctx.fillStyle = pal.cardMuted; ctx.fillText(biz(restaurant.business_type, 'placeholderIcon'), x + cellW - imgW / 2, cy0 + cellH * 0.62); }
+        ctx.restore();
+        const br = clamp(cellH * 0.18, 28, 56); drawBadge(x + cellW - imgW + br + 14, cy0 + br + 14, br, P.discount);
+      }
+      const tx0 = x + 24, tx1 = x + cellW - imgW - 24, wTxt = tx1 - tx0, cx2 = (tx0 + tx1) / 2;
+      let ns = clamp(wTxt / 9, 26, 62);
+      const pillH = P.text ? Math.round(clamp(cellH * 0.26, 44, 90)) : 0;
+      const oh = P.oldText ? 40 : 0;
+      let lines = [];
+      const refit = ()=>{ ctx.font = D(ns); lines = posterWrap(ctx, item.name || '', wTxt, 2); };
+      refit();
+      while(lines.length * ns * 1.22 + 12 + oh + (pillH ? pillH + 8 : 0) > cellH - 28 && ns > 22){ ns -= 2; refit(); }
+      const total = lines.length * ns * 1.22 + 12 + oh + (pillH ? pillH + 8 : 0);
+      let yy = cy0 + (cellH - total) / 2;
+      ctx.fillStyle = pal.cardInk; ctx.textAlign = 'center'; ctx.font = D(ns);
+      lines.forEach((ln, li)=> ctx.fillText(ln, cx2, yy + ns * (0.92 + li * 1.22)));
+      yy += lines.length * ns * 1.22 + 12;
+      if(P.text){
+        if(P.oldText){ const os = 28; ctx.font = F(600, os); ctx.fillStyle = pal.cardMuted; ctx.direction = dirFor(false); const ow = ctx.measureText(P.oldText).width; ctx.fillText(P.oldText, cx2, yy + 28); ctx.strokeStyle = '#d93025'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx2 - ow / 2 - 4, yy + 18); ctx.lineTo(cx2 + ow / 2 + 4, yy + 18); ctx.stroke(); ctx.direction = 'rtl'; yy += oh; }
+        const fsz = posterFit(ctx, P.text, wTxt - 40, Math.round(pillH * 0.55), 18, (s2)=> F(800, s2));
+        ctx.font = F(800, fsz); const tw = ctx.measureText(P.text).width; ctx.direction = dirFor(item.pricing_type === 'sizes'); ctx.textAlign = 'center';
+        if(pal.priceStyle === 'text'){ ctx.fillStyle = pal.priceInk; ctx.fillText(P.text, cx2, yy + pillH / 2 + fsz * 0.33); }
+        else { const bw = Math.min(wTxt, tw + 48); ctx.fillStyle = pal.cardPriceBg || pal.priceBg; posterRRect(ctx, cx2 - bw / 2, yy, bw, pillH, pillH / 2); ctx.fill(); ctx.fillStyle = pal.cardPriceInk || pal.priceInk; ctx.fillText(P.text, cx2, yy + pillH / 2 + fsz * 0.33); }
+        ctx.direction = 'rtl';
+      }
+      return;
+    }
+    let ns = clamp(cellW / (showImg ? 10.5 : 8.5), 20, big ? (showImg ? 64 : 76) : (showImg ? 44 : 56));
+    let pillH = P.text ? Math.round(clamp(cellW / 6.2, 44, big ? 96 : 84)) : 0;
     let nLines = 2;
     const oldH = ()=> P.oldText ? Math.round(clamp(pillH * 0.5, 16, 28)) + 12 : 0;
     const need = ()=> 12 + nLines * ns * 1.22 + 8 + (pillH ? pillH + 16 : 8) + oldH();
@@ -13495,7 +13622,91 @@ async function renderPoster(canvas, list, o){
         ctx.direction = 'rtl';
       }
     }
-  });
+  };
+  if(lay === 'rows'){
+    const gridH = Math.max(200, gridBottom - y);
+    const gapR = n > 6 ? 10 : (o.size === 'story' ? 20 : 14);
+    const rowH = clamp((gridH - gapR * (n - 1)) / n, 54, o.size === 'story' ? 190 : 150);
+    let ry = y + Math.max(0, (gridH - (n * rowH + gapR * (n - 1))) / 2);
+    list.forEach((item, i)=>{
+      const img = o.imgs[i], showImg = !!o.showImage;
+      const P = o.showPrice ? posterPriceInfo(item, T, true, o.showOld) : { text:'', oldText:'', discount:0 };
+      ctx.save();
+      if(!pal.noShadow){ ctx.shadowColor = 'rgba(0,0,0,.12)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 5; }
+      ctx.fillStyle = pal.cardBg; posterRRect(ctx, pad, ry, cw, rowH, 22); ctx.fill(); ctx.restore();
+      if(pal.cardLine){ ctx.lineWidth = 2.5; ctx.strokeStyle = pal.cardLine; posterRRect(ctx, pad, ry, cw, rowH, 22); ctx.stroke(); }
+      const ip = 10, th = rowH - ip * 2;
+      let right = W - pad - ip - 6;
+      if(showImg){
+        ctx.save(); posterRRect(ctx, right - th, ry + ip, th, th, 16); ctx.clip();
+        if(img) posterDrawCover(ctx, img, right - th, ry + ip, th, th);
+        else { ctx.fillStyle = 'rgba(128,128,128,.2)'; ctx.fillRect(right - th, ry + ip, th, th); ctx.font = F(400, Math.round(th * 0.5)); ctx.textAlign = 'center'; ctx.fillStyle = pal.cardMuted; ctx.fillText(biz(restaurant.business_type, 'placeholderIcon'), right - th / 2, ry + ip + th * 0.64); }
+        ctx.restore();
+        const br = clamp(th * 0.2, 15, 30); drawBadge(right - th + br + 4, ry + ip + br + 4, br, P.discount);
+        right -= th + 18;
+      } else right -= 14;
+      const leftEdge = pad + 26; let priceW = 0, priceBox = 0;
+      const midY = ry + rowH / 2;
+      if(P.text){
+        const fs0 = clamp(rowH * 0.32, 22, 52);
+        const fs = posterFit(ctx, P.text, cw * 0.34, fs0, 16, (s2)=> F(800, s2));
+        ctx.font = F(800, fs); priceW = ctx.measureText(P.text).width;
+        const isPill = pal.priceStyle !== 'text'; priceBox = priceW + (isPill ? 36 : 0);
+        const cxp = leftEdge + priceBox / 2, shift = P.oldText ? fs * 0.28 : 0;
+        ctx.direction = dirFor(item.pricing_type === 'sizes'); ctx.textAlign = 'center';
+        if(isPill){ const ph = fs * 1.7; ctx.fillStyle = pal.cardPriceBg || pal.priceBg; posterRRect(ctx, cxp - priceBox / 2, midY + shift - ph / 2, priceBox, ph, ph / 2); ctx.fill(); ctx.fillStyle = pal.cardPriceInk || pal.priceInk; }
+        else ctx.fillStyle = pal.priceInk;
+        ctx.fillText(P.text, cxp, midY + shift + fs * 0.33);
+        if(P.oldText){
+          const os = Math.round(clamp(fs * 0.5, 14, 26)); ctx.font = F(600, os); ctx.fillStyle = pal.cardMuted; ctx.direction = dirFor(false);
+          const ow = ctx.measureText(P.oldText).width, oy = midY + shift - (isPill ? fs * 0.85 : fs * 0.7) - 6;
+          ctx.fillText(P.oldText, cxp, oy); ctx.strokeStyle = '#d93025'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(cxp - ow / 2 - 3, oy - os * 0.3); ctx.lineTo(cxp + ow / 2 + 3, oy - os * 0.3); ctx.stroke();
+        }
+        ctx.direction = 'rtl';
+      }
+      const avail = right - (leftEdge + priceBox + 36);
+      let ns = clamp(rowH * 0.34, 22, 50); const nl = rowH >= 112 ? 2 : 1;
+      if(nl === 1) ns = posterFit(ctx, item.name || '', avail, ns, 20, D);
+      ctx.font = D(ns); ctx.fillStyle = pal.cardInk; ctx.textAlign = 'right';
+      const lines = posterWrap(ctx, item.name || '', avail, nl);
+      const blockH = lines.length * ns * 1.22, by0 = midY - blockH / 2 + ns * 0.92;
+      lines.forEach((ln, li)=> ctx.fillText(ln, right, by0 + li * ns * 1.22));
+      if(pal.leader && lines.length === 1 && P.text){
+        const nw = ctx.measureText(lines[0]).width, x1 = right - nw - 16, x2 = leftEdge + priceBox + 16;
+        if(x1 - x2 > 30){ ctx.save(); ctx.setLineDash([1, 11]); ctx.lineCap = 'round'; ctx.lineWidth = 3.5; ctx.strokeStyle = pal.cardMuted; ctx.globalAlpha = .7; ctx.beginPath(); ctx.moveTo(x1, by0 - 5); ctx.lineTo(x2, by0 - 5); ctx.stroke(); ctx.restore(); }
+      }
+      ry += rowH + gapR;
+    });
+  } else {
+    const cells = [];
+    const gridH = Math.max(200, gridBottom - y);
+    const mkGrid = (arr, cols, top, hMax)=>{
+      const rows = Math.ceil(arr.length / cols), cellW = (cw - gGap * (cols - 1)) / cols;
+      const cellH = Math.min((hMax - gGap * (rows - 1)) / rows, cellW * 1.5);
+      arr.forEach((idx, k)=>{
+        const r = Math.floor(k / cols), c = k % cols, inRow = r === rows - 1 ? arr.length - r * cols : cols;
+        const rowW = inRow * cellW + gGap * (inRow - 1), startX = (W - rowW) / 2;
+        cells.push({ i: idx, x: W - startX - (c + 1) * cellW - c * gGap, y: top + r * (cellH + gGap), w: cellW, h: cellH, big: false });
+      });
+      return rows * cellH + gGap * (rows - 1);
+    };
+    const idxs = list.map((_, k)=> k);
+    if(lay === 'feature' && n >= 3){
+      const rest = n - 1, cols2 = o.size === 'story' ? (rest <= 4 ? 2 : 3) : (rest <= 2 ? rest : (rest === 4 ? 2 : 3));
+      const bigH = clamp(gridH * (rest <= 3 ? 0.42 : 0.33), 190, cw * 0.55);
+      const rows2 = Math.ceil(rest / cols2);
+      const usedBefore = cells.length;
+      const smallMax = gridH - bigH - gGap;
+      const smallUsed = mkGrid(idxs.slice(1), cols2, 0, smallMax);
+      const total = bigH + gGap + smallUsed, off = y + Math.max(0, (gridH - total) / 2);
+      cells.forEach(c=> c.y += off + bigH + gGap);
+      cells.unshift({ i: 0, x: pad, y: off, w: cw, h: bigH, big: true });
+    } else {
+      const used = mkGrid(idxs, o.size === 'story' ? (n <= 2 ? 1 : n <= 6 ? 2 : 3) : (n <= 2 ? n : n === 4 ? 2 : 3), 0, gridH);
+      const off = y + (gridH - used) / 2; cells.forEach(c=> c.y += off);
+    }
+    cells.forEach(c=> drawCell(list[c.i], c.i, c.x, c.y, c.w, c.h, c.big));
+  }
   drawFooter();
   ctx.textAlign = 'start';
 }
