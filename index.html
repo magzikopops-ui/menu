@@ -13032,7 +13032,9 @@ function renderItems(){
 
 /* ============ بوستر تسويقي (صنف واحد أو عدة أصناف) ============ */
 const POSTER_CUR_AR = { EGP:['ج.م','جنيه'], SAR:['ر.س','ريال'], AED:['د.إ','درهم'], KWD:['د.ك','دينار'], QAR:['ر.ق','ريال'], BHD:['د.ب','دينار'], OMR:['ر.ع','ريال'], JOD:['د.أ','دينار'], USD:['$','دولار'], EUR:['€','يورو'] };
-const POSTER_SIZES = { square:[1080,1080,'مربع (منشور)'], portrait:[1080,1350,'عمودي (إنستجرام)'], story:[1080,1920,'ستوري / ريلز'], tall:[1080,1620,'عمودي طويل 2:3 (بنترست)'], a4:[1240,1754,'ورقة A4 للطباعة'], wide:[1920,1080,'أفقي 16:9 (شاشة / تلفزيون / يوتيوب)'], land43:[1600,1200,'أفقي 4:3 (عرض تقديمي)'] };
+const POSTER_SIZES = { square:[1080,1080,'مربع (منشور)'], portrait:[1080,1350,'عمودي (إنستجرام)'], story:[1080,1920,'ستوري / ريلز'], tall:[1080,1620,'عمودي طويل 2:3 (بنترست)'], a4:[1240,1754,'ورقة A4 للطباعة'], wide:[1920,1080,'أفقي 16:9 (شاشة / تلفزيون / يوتيوب)'], land43:[1600,1200,'أفقي 4:3 (عرض تقديمي)'],
+  link:[1200,630,'منشور فيسبوك / مشاركة رابط 1.91:1'], ultra:[2100,900,'أفقي واسع 21:9 (شاشة عريضة)'],
+  p57:[1500,2100,'بوستر كبير 5:7 (50×70 سم)',1080], sqhd:[2160,2160,'مربع بدقة عالية 2160',1080], a4hd:[2480,3508,'A4 بدقة طباعة عالية (300dpi)',1240] };
 const POSTER_PREFS_KEY = 'posterPrefs_v2';
 const POSTER_MAX_ITEMS = 9;
 const POSTER_TEMPLATES = {
@@ -13224,9 +13226,13 @@ function posterPriceInfo(item, T, multi, showOld){
 
 async function renderPoster(canvas, list, o){
   const multi = list.length > 1;
-  const [W, H] = POSTER_SIZES[o.size] || POSTER_SIZES.square;
-  canvas.width = W; canvas.height = H;
+  const SZ = POSTER_SIZES[o.size] || POSTER_SIZES.square;
+  const SK = SZ[3] ? SZ[0] / SZ[3] : 1;
+  const W = SZ[3] || SZ[0], H = Math.round(SZ[1] / SK);
+  canvas.width = SZ[0]; canvas.height = SZ[1];
   const ctx = canvas.getContext('2d');
+  ctx.scale(SK, SK);
+  const short = H < 800;
   const pal = posterPalette(o);
   const body = o.font === 'auto' ? 'Tajawal' : o.font;
   const disp = o.font === 'auto' ? pal.disp : o.font;
@@ -13240,8 +13246,8 @@ async function renderPoster(canvas, list, o){
   const T = { fmt, cur: curTxt, latin: /[A-Za-z$€]/.test(curTxt) };
   const wide = W > H;
   const pad = pal.frame ? 92 : 64, cw = W - pad * 2;
-  const topStart = pal.frame ? 80 : (pal.topBar ? 38 : 40);
-  const bottomMargin = pal.frame ? 60 : 0;
+  const topStart = short ? (pal.frame ? 58 : 26) : (pal.frame ? 80 : (pal.topBar ? 38 : 40));
+  const bottomMargin = pal.frame ? (short ? 46 : 60) : 0;
 
   // ---------- الخلفية ----------
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, pal.bg1); g.addColorStop(1, pal.bg2);
@@ -13260,11 +13266,12 @@ async function renderPoster(canvas, list, o){
   if(o.showAddress && restaurant.address) infoLines.push('📍 ' + restaurant.address);
   if(o.showPhone && restaurant.phone) infoLines.push('📞 ' + dig(restaurant.phone));
   const qrOn = !!o.qrImg;
-  const qrBox = o.size === 'story' ? 170 : 124;
-  const qrBlockH = qrOn ? qrBox + 36 : 0;
-  ctx.font = F(700, 32);
+  const qrBox = o.size === 'story' ? 170 : (short ? 84 : 124);
+  const qrBlockH = qrOn ? qrBox + (short ? 30 : 36) : 0;
+  const ifs = short ? 25 : 32, ilh = short ? 34 : 46;
+  ctx.font = F(700, ifs);
   const infoWrapped = infoLines.flatMap(t=> posterWrap(ctx, t, (qrOn ? cw - qrBox - 40 : cw) - 40, 2));
-  const infoH = infoWrapped.length * 46;
+  const infoH = infoWrapped.length * ilh;
   const footerH = (infoWrapped.length || qrOn) ? Math.max(infoH + 12, qrBlockH) + 40 : 0;
   const drawFooter = ()=>{
     if(!footerH) return;
@@ -13282,15 +13289,15 @@ async function renderPoster(canvas, list, o){
       textL = pad + qrBox + 40;
     }
     if(infoWrapped.length){
-      ctx.fillStyle = pal.footerInk; ctx.textAlign = 'center'; ctx.font = F(700, 32);
-      const cx = (textL + (W - pad)) / 2, startY = midY - infoH / 2 + 34;
-      infoWrapped.forEach((ln, i)=> ctx.fillText(ln, cx, startY + i * 46));
+      ctx.fillStyle = pal.footerInk; ctx.textAlign = 'center'; ctx.font = F(700, ifs);
+      const cx = (textL + (W - pad)) / 2, startY = midY - infoH / 2 + ilh * 0.74;
+      infoWrapped.forEach((ln, i)=> ctx.fillText(ln, cx, startY + i * ilh));
     }
   };
 
   // ---------- الرأس (لوجو + اسم المحل) ----------
   const hasLogo = !!(o.showLogo && o.logoImg), hasName = !!(o.showName && restaurant.name);
-  const hs = (multi && o.size !== 'story') ? 0.86 : 1;
+  const hs = short ? 0.62 : ((multi && o.size !== 'story') ? 0.86 : 1);
   const headerH = (hasLogo || hasName) ? Math.round(112 * hs) : 0;
   const drawHeader = (hy, onImage)=>{
     if(!headerH) return;
@@ -13410,25 +13417,25 @@ async function renderPoster(canvas, list, o){
       const tx0 = pad + imgW + (hasImg ? 56 : 0), tx1 = W - pad, pw = tx1 - tx0, tcx = (tx0 + tx1) / 2;
       let yy = areaTop; if(headerH){ drawHeader(areaTop, false); yy += headerH + 10; }
       const room = areaBot - yy;
-      let ns = Math.min(Math.round(H * 0.115), 120), lines = [];
-      const refit = ()=>{ ctx.font = D(ns); lines = posterWrap(ctx, item.name || '', pw, 3); };
-      refit(); while(lines.length * ns * 1.2 > room * 0.46 && ns > 48){ ns -= 6; refit(); }
-      let dl = []; if(o.showDesc && item.description){ ctx.font = F(500, 36); dl = posterWrap(ctx, item.description, pw, 3); }
-      const ch = 112;
-      const total = lines.length * ns * 1.2 + 10 + (dl.length ? dl.length * 52 + 10 : 0) + (hasPrice ? 34 + (P.oldText ? 54 : 0) + ch : 0);
+      let ns = Math.min(Math.round(H * (short ? 0.1 : 0.115)), 120), lines = [];
+      const refit = ()=>{ ctx.font = D(ns); lines = posterWrap(ctx, item.name || '', pw, short ? 2 : 3); };
+      refit(); while(lines.length * ns * 1.2 > room * (short ? 0.42 : 0.46) && ns > (short ? 34 : 48)){ ns -= 6; refit(); }
+      let dl = []; if(o.showDesc && item.description && !short){ ctx.font = F(500, 36); dl = posterWrap(ctx, item.description, pw, 3); }
+      const ch = short ? 76 : 112;
+      const total = lines.length * ns * 1.2 + 10 + (dl.length ? dl.length * 52 + 10 : 0) + (hasPrice ? (short ? 18 : 34) + (P.oldText ? (short ? 40 : 54) : 0) + ch : 0);
       let y0 = yy + Math.max(0, (room - total) / 2);
       ctx.fillStyle = pal.ink; ctx.textAlign = 'center'; ctx.font = D(ns);
       lines.forEach((ln, i)=> ctx.fillText(ln, tcx, y0 + ns * (0.95 + i * 1.2)));
       y0 += lines.length * ns * 1.2 + 10;
       if(dl.length){ ctx.fillStyle = pal.muted; ctx.font = F(500, 36); dl.forEach((ln, i)=> ctx.fillText(ln, tcx, y0 + 40 + i * 52)); y0 += dl.length * 52 + 10; }
       if(hasPrice){
-        y0 += 34;
+        y0 += short ? 18 : 34;
         if(P.oldText){
-          ctx.font = F(600, 42); ctx.fillStyle = pal.muted; ctx.direction = dirFor(false);
+          ctx.font = F(600, short ? 32 : 42); ctx.fillStyle = pal.muted; ctx.direction = dirFor(false);
           const ow = ctx.measureText(P.oldText).width; ctx.fillText(P.oldText, tcx, y0 + 12);
-          ctx.strokeStyle = '#d93025'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(tcx - ow / 2 - 6, y0); ctx.lineTo(tcx + ow / 2 + 6, y0); ctx.stroke(); ctx.direction = 'rtl'; y0 += 54;
+          ctx.strokeStyle = '#d93025'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(tcx - ow / 2 - 6, y0); ctx.lineTo(tcx + ow / 2 + 6, y0); ctx.stroke(); ctx.direction = 'rtl'; y0 += short ? 40 : 54;
         }
-        let fs = 74; ctx.font = F(800, fs);
+        let fs = short ? 50 : 74; ctx.font = F(800, fs);
         while(ctx.measureText(P.text).width > pw - 90 && fs > 34){ fs -= 4; ctx.font = F(800, fs); }
         const tw = ctx.measureText(P.text).width; ctx.direction = dirFor(isSizes); ctx.textAlign = 'center';
         if(pal.priceStyle === 'text'){ ctx.fillStyle = pal.priceInk; ctx.fillText(P.text, tcx, y0 + ch / 2 + fs * 0.33); }
@@ -13581,7 +13588,7 @@ async function renderPoster(canvas, list, o){
     ctx.restore();
     if(pal.cardLine){ ctx.lineWidth = 3; ctx.strokeStyle = pal.cardLine; posterRRect(ctx, x, cy0, cellW, cellH, rad); ctx.stroke(); }
     const img = o.imgs[i];
-    const showImg = !!o.showImage;
+    let showImg = !!o.showImage;
     const P = o.showPrice ? posterPriceInfo(item, T, true, o.showOld) : { text:'', oldText:'', discount:0 };
     if(big){
       const imgW = showImg ? cellW * 0.44 : 0;
@@ -13624,6 +13631,8 @@ async function renderPoster(canvas, list, o){
     while(need() > cellH - minImgH && (nLines > 1 || ns > 20 || pillH > 40)){
       if(nLines > 1) nLines = 1; else if(ns > 20) ns -= 2; else pillH -= 4;
     }
+    if(showImg && need() > cellH - minImgH) showImg = false;
+    if(!showImg && P.oldText && need() > cellH - 12) P.oldText = '';
     const imgH = showImg ? Math.min(cellH * 0.62, Math.max(minImgH, cellH - need())) : 0;
     if(showImg){
       ctx.save(); posterRRect(ctx, x, cy0, cellW, imgH, [rad, rad, 0, 0]); ctx.clip();
