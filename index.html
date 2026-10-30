@@ -13768,7 +13768,8 @@ function openPosterModal(listIn){
   if(list.length > POSTER_MAX_ITEMS){ list = list.slice(0, POSTER_MAX_ITEMS); toast(`البوستر يتسع لـ ${POSTER_MAX_ITEMS} أصناف كحد أقصى — تم اختيار أول ${POSTER_MAX_ITEMS}`); }
   const multi = list.length > 1;
   let prefs = {};
-  try{ prefs = JSON.parse(localStorage.getItem(POSTER_PREFS_KEY) || '{}') || {}; }catch(e){}
+  const prefsKey = POSTER_PREFS_KEY + '_' + (restaurant && restaurant.id ? restaurant.id : 'x');
+  try{ prefs = JSON.parse(localStorage.getItem(prefsKey) || localStorage.getItem(POSTER_PREFS_KEY) || '{}') || {}; }catch(e){}
   const P = Object.assign({ template:'classic', size:'square', theme:'light', font:'auto', digits:'en', currency:'asis',
     showImage:true, showPrice:true, showOld:true, showDesc:false, showLogo:true, showName:true, showAddress:true, showPhone:true, showQr:true,
     showTitle:true, title:'عروض الأسبوع', accents:{} }, prefs);
@@ -13787,6 +13788,7 @@ function openPosterModal(listIn){
         <div style="flex:1 1 300px; min-width:0; text-align:center;">
           <canvas id="posterCanvas" style="width:100%; max-width:420px; height:auto; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.25); background:#eee;"></canvas>
           <div id="posterStatus" style="font-size:12px; color:var(--stone); margin-top:6px;">جارِ التجهيز...</div>
+          <div style="font-size:12px; margin-top:4px;"><span style="color:var(--stone);">✓ اختياراتك تُحفظ تلقائياً لهذا الحساب</span> · <button type="button" id="pstReset" style="background:none; border:none; padding:0; font:inherit; font-size:12px; color:var(--ember); text-decoration:underline; cursor:pointer;">↺ استرجاع الافتراضي</button></div>
         </div>
         <div style="flex:1 1 270px; min-width:0;">
           <div style="font-weight:800; margin-bottom:6px;">القالب</div>
@@ -13823,6 +13825,7 @@ function openPosterModal(listIn){
   overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.remove(); });
   const $ = (id)=> overlay.querySelector(id);
   $('#pstClose').addEventListener('click', ()=> overlay.remove());
+  $('#pstReset').addEventListener('click', ()=>{ try{ localStorage.removeItem(prefsKey); localStorage.removeItem(POSTER_PREFS_KEY); }catch(e){} overlay.remove(); openPosterModal(list); toast('↺ رجعت الإعدادات الافتراضية'); });
   const canvas = $('#posterCanvas'), status = $('#posterStatus');
   const imgCache = new Map();
   const getImg = async (url)=>{ if(!url) return null; if(!imgCache.has(url)) imgCache.set(url, await posterLoadImage(url)); return imgCache.get(url); };
@@ -13844,7 +13847,7 @@ function openPosterModal(listIn){
     try{
       const o = readOpts();
       P.accents[tpl] = o.accent;
-      try{ localStorage.setItem(POSTER_PREFS_KEY, JSON.stringify(Object.assign({}, o, { accents:P.accents }))); }catch(e){}
+      try{ localStorage.setItem(prefsKey, JSON.stringify(Object.assign({}, o, { accents:P.accents }))); }catch(e){}
       const pal0 = posterPalette(o), body = o.font === 'auto' ? 'Tajawal' : o.font, disp = o.font === 'auto' ? pal0.disp : o.font;
       try{ await Promise.all([...new Set([body, disp, 'Tajawal'])].map(f=> document.fonts.load(`800 40px "${f}"`))); await document.fonts.ready; }catch(e){}
       const imgs = await Promise.all(list.map(it=> o.showImage ? getImg(it.image_url) : null));
