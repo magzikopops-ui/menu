@@ -13032,7 +13032,7 @@ function renderItems(){
 
 /* ============ بوستر تسويقي (صنف واحد أو عدة أصناف) ============ */
 const POSTER_CUR_AR = { EGP:['ج.م','جنيه'], SAR:['ر.س','ريال'], AED:['د.إ','درهم'], KWD:['د.ك','دينار'], QAR:['ر.ق','ريال'], BHD:['د.ب','دينار'], OMR:['ر.ع','ريال'], JOD:['د.أ','دينار'], USD:['$','دولار'], EUR:['€','يورو'] };
-const POSTER_SIZES = { square:[1080,1080,'مربع (منشور)'], portrait:[1080,1350,'عمودي (إنستجرام)'], story:[1080,1920,'ستوري / ريلز'] };
+const POSTER_SIZES = { square:[1080,1080,'مربع (منشور)'], portrait:[1080,1350,'عمودي (إنستجرام)'], story:[1080,1920,'ستوري / ريلز'], tall:[1080,1620,'عمودي طويل 2:3 (بنترست)'], a4:[1240,1754,'ورقة A4 للطباعة'], wide:[1920,1080,'أفقي 16:9 (شاشة / تلفزيون / يوتيوب)'], land43:[1600,1200,'أفقي 4:3 (عرض تقديمي)'] };
 const POSTER_PREFS_KEY = 'posterPrefs_v2';
 const POSTER_MAX_ITEMS = 9;
 const POSTER_TEMPLATES = {
@@ -13238,6 +13238,7 @@ async function renderPoster(canvas, list, o){
   const dig = (t)=> o.digits === 'ar' ? String(t).replace(/[0-9]/g, d=> '٠١٢٣٤٥٦٧٨٩'[d]) : String(t);
   const fmt = (n)=> { const v = Number(n); return dig(Number.isInteger(v) ? v : v.toFixed(2)); };
   const T = { fmt, cur: curTxt, latin: /[A-Za-z$€]/.test(curTxt) };
+  const wide = W > H;
   const pad = pal.frame ? 92 : 64, cw = W - pad * 2;
   const topStart = pal.frame ? 80 : (pal.topBar ? 38 : 40);
   const bottomMargin = pal.frame ? 60 : 0;
@@ -13397,6 +13398,46 @@ async function renderPoster(canvas, list, o){
       }
       ctx.direction = 'rtl';
     };
+    if(wide){
+      const areaTop = topStart, areaBot = H - bottomMargin - footerH - 30, areaH = areaBot - areaTop;
+      const imgW = hasImg ? Math.round(cw * 0.46) : 0;
+      if(hasImg){
+        const rr = Math.max(pal.imgRadius, 24);
+        ctx.save(); posterRRect(ctx, pad, areaTop, imgW, areaH, rr); ctx.clip(); posterDrawCover(ctx, img, pad, areaTop, imgW, areaH); ctx.restore();
+        if(pal.imgBorder){ ctx.lineWidth = pal.imgBorder; ctx.strokeStyle = pal.line; posterRRect(ctx, pad, areaTop, imgW, areaH, rr); ctx.stroke(); }
+        drawBadge(pad + 84, areaTop + 84, 66, P.discount);
+      }
+      const tx0 = pad + imgW + (hasImg ? 56 : 0), tx1 = W - pad, pw = tx1 - tx0, tcx = (tx0 + tx1) / 2;
+      let yy = areaTop; if(headerH){ drawHeader(areaTop, false); yy += headerH + 10; }
+      const room = areaBot - yy;
+      let ns = Math.min(Math.round(H * 0.115), 120), lines = [];
+      const refit = ()=>{ ctx.font = D(ns); lines = posterWrap(ctx, item.name || '', pw, 3); };
+      refit(); while(lines.length * ns * 1.2 > room * 0.46 && ns > 48){ ns -= 6; refit(); }
+      let dl = []; if(o.showDesc && item.description){ ctx.font = F(500, 36); dl = posterWrap(ctx, item.description, pw, 3); }
+      const ch = 112;
+      const total = lines.length * ns * 1.2 + 10 + (dl.length ? dl.length * 52 + 10 : 0) + (hasPrice ? 34 + (P.oldText ? 54 : 0) + ch : 0);
+      let y0 = yy + Math.max(0, (room - total) / 2);
+      ctx.fillStyle = pal.ink; ctx.textAlign = 'center'; ctx.font = D(ns);
+      lines.forEach((ln, i)=> ctx.fillText(ln, tcx, y0 + ns * (0.95 + i * 1.2)));
+      y0 += lines.length * ns * 1.2 + 10;
+      if(dl.length){ ctx.fillStyle = pal.muted; ctx.font = F(500, 36); dl.forEach((ln, i)=> ctx.fillText(ln, tcx, y0 + 40 + i * 52)); y0 += dl.length * 52 + 10; }
+      if(hasPrice){
+        y0 += 34;
+        if(P.oldText){
+          ctx.font = F(600, 42); ctx.fillStyle = pal.muted; ctx.direction = dirFor(false);
+          const ow = ctx.measureText(P.oldText).width; ctx.fillText(P.oldText, tcx, y0 + 12);
+          ctx.strokeStyle = '#d93025'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(tcx - ow / 2 - 6, y0); ctx.lineTo(tcx + ow / 2 + 6, y0); ctx.stroke(); ctx.direction = 'rtl'; y0 += 54;
+        }
+        let fs = 74; ctx.font = F(800, fs);
+        while(ctx.measureText(P.text).width > pw - 90 && fs > 34){ fs -= 4; ctx.font = F(800, fs); }
+        const tw = ctx.measureText(P.text).width; ctx.direction = dirFor(isSizes); ctx.textAlign = 'center';
+        if(pal.priceStyle === 'text'){ ctx.fillStyle = pal.priceInk; ctx.fillText(P.text, tcx, y0 + ch / 2 + fs * 0.33); }
+        else { const bw = Math.min(pw, tw + 90); ctx.fillStyle = pal.priceBg; posterRRect(ctx, tcx - bw / 2, y0, bw, ch, ch / 2); ctx.fill(); ctx.fillStyle = pal.priceInk; ctx.fillText(P.text, tcx, y0 + ch / 2 + fs * 0.33); }
+        ctx.direction = 'rtl';
+      }
+      drawFooter(); ctx.textAlign = 'start';
+      return;
+    }
     const L = hasImg ? pal.layout : 'stack';
     const discMode = hasPrice && !isSizes && P.text.length <= 15;
     if(L === 'full'){
@@ -13692,7 +13733,7 @@ async function renderPoster(canvas, list, o){
     };
     const idxs = list.map((_, k)=> k);
     if(lay === 'feature' && n >= 3){
-      const rest = n - 1, cols2 = o.size === 'story' ? (rest <= 4 ? 2 : 3) : (rest <= 2 ? rest : (rest === 4 ? 2 : 3));
+      const rest = n - 1, cols2 = o.size === 'story' ? (rest <= 4 ? 2 : 3) : wide ? (rest <= 3 ? rest : rest <= 8 ? 4 : 5) : (rest <= 2 ? rest : (rest === 4 ? 2 : 3));
       const bigH = clamp(gridH * (rest <= 3 ? 0.42 : 0.33), 190, cw * 0.55);
       const rows2 = Math.ceil(rest / cols2);
       const usedBefore = cells.length;
@@ -13702,7 +13743,7 @@ async function renderPoster(canvas, list, o){
       cells.forEach(c=> c.y += off + bigH + gGap);
       cells.unshift({ i: 0, x: pad, y: off, w: cw, h: bigH, big: true });
     } else {
-      const used = mkGrid(idxs, o.size === 'story' ? (n <= 2 ? 1 : n <= 6 ? 2 : 3) : (n <= 2 ? n : n === 4 ? 2 : 3), 0, gridH);
+      const used = mkGrid(idxs, o.size === 'story' ? (n <= 2 ? 1 : n <= 6 ? 2 : 3) : wide ? (n <= 3 ? n : n <= 8 ? 4 : 5) : (n <= 2 ? n : n === 4 ? 2 : 3), 0, gridH);
       const off = y + (gridH - used) / 2; cells.forEach(c=> c.y += off);
     }
     cells.forEach(c=> drawCell(list[c.i], c.i, c.x, c.y, c.w, c.h, c.big));
