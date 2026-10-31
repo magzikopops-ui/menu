@@ -13466,7 +13466,19 @@ function posterPriceInfo(item, T, multi, showOld){
   return { text, oldText, discount };
 }
 
+let __posterBrandLogo;
+function posterBrandLogo(){
+  if(!__posterBrandLogo) __posterBrandLogo = new Promise(res=>{
+    const im = new Image(); im.crossOrigin = 'anonymous';
+    im.onload = ()=> res(im); im.onerror = ()=> res(null);
+    setTimeout(()=> res(null), 4000);
+    im.src = 'favicon.png';
+  });
+  return __posterBrandLogo;
+}
 async function renderPoster(canvas, list, o){
+  const creditOn = o.showCredit !== false;
+  const brandImg = creditOn ? await posterBrandLogo() : null;
   const multi = list.length > 1;
   const SZ = POSTER_SIZES[o.size] || POSTER_SIZES.square;
   const SK = SZ[3] ? SZ[0] / SZ[3] : 1;
@@ -13489,7 +13501,8 @@ async function renderPoster(canvas, list, o){
   const wide = W > H;
   const pad = pal.frame ? 92 : 64, cw = W - pad * 2;
   const topStart = short ? (pal.frame ? 58 : 26) : (pal.frame ? 80 : (pal.topBar ? 38 : 40));
-  const bottomMargin = pal.frame ? (short ? 46 : 60) : 0;
+  const creditH = creditOn ? (short ? 36 : 54) : 0;
+  const bottomMargin = (pal.frame ? (short ? 46 : 60) : 0) + creditH;
 
   // ---------- الخلفية ----------
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, pal.bg1); g.addColorStop(1, pal.bg2);
@@ -13500,7 +13513,7 @@ async function renderPoster(canvas, list, o){
     [[W * .92, H * .10, 300], [W * .04, H * .52, 230], [W * .84, H * .88, 280]].forEach(([cx, cy, r])=>{ ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); });
   }
   if(pal.topBar){ ctx.fillStyle = pal.topBar; ctx.fillRect(0, 0, W, 14); }
-  if(pal.frame){ ctx.strokeStyle = pal.line; ctx.lineWidth = 3; ctx.strokeRect(28, 28, W - 56, H - 56); ctx.lineWidth = 1.5; ctx.strokeRect(42, 42, W - 84, H - 84); }
+  if(pal.frame){ ctx.strokeStyle = pal.line; ctx.lineWidth = 3; ctx.strokeRect(28, 28, W - 56, H - 56 - creditH); ctx.lineWidth = 1.5; ctx.strokeRect(42, 42, W - 84, H - 84 - creditH); }
   ctx.direction = 'rtl'; ctx.textBaseline = 'alphabetic';
 
   // ---------- التذييل (عنوان + هاتف + QR) ----------
@@ -13521,8 +13534,30 @@ async function renderPoster(canvas, list, o){
   if(o.showOffer){ const a = fmtD(o.offerStart), b = fmtD(o.offerEnd); offerText = a && b ? `⏰ العرض من ${a} إلى ${b}` : (b ? `⏰ العرض ساري حتى ${b}` : (a ? `⏰ العرض يبدأ من ${a}` : '')); }
   const offerH = offerText ? (short ? 50 : 76) : 0;
   const footerH = footerH0 + offerH;
+  const drawCredit = ()=>{
+    if(!creditH) return;
+    const fz = short ? 17 : 24, ih = short ? 24 : 34, cy = H - (creditH + (pal.frame ? 28 : 0)) / 2;
+    ctx.save();
+    ctx.font = `700 ${fz}px "${body}", sans-serif`; ctx.direction = 'rtl';
+    const t1 = 'تصميم بواسطة';
+    const w1 = ctx.measureText(t1).width;
+    ctx.font = `800 ${fz + 2}px "${body}", sans-serif`; ctx.direction = 'ltr';
+    const t2 = 'M@g Menu', w2 = ctx.measureText(t2).width;
+    const gap = 10, iw = brandImg ? ih : 0;
+    const tw = w1 + gap + (iw ? iw + gap : 0) + w2, bw = tw + 36, bh = ih + 12;
+    const bx = W / 2 - bw / 2, by = cy - bh / 2;
+    ctx.fillStyle = 'rgba(15,15,15,.62)'; posterRRect(ctx, bx, by, bw, bh, bh / 2); ctx.fill();
+    ctx.textBaseline = 'middle'; ctx.fillStyle = '#ffffff';
+    let x = bx + bw - 18;
+    ctx.font = `700 ${fz}px "${body}", sans-serif`; ctx.direction = 'rtl'; ctx.textAlign = 'right';
+    ctx.fillText(t1, x, cy + 1); x -= w1 + gap;
+    if(iw){ ctx.save(); ctx.beginPath(); ctx.arc(x - iw / 2, cy, iw / 2, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(brandImg, x - iw, cy - iw / 2, iw, iw); ctx.restore(); x -= iw + gap; }
+    ctx.font = `800 ${fz + 2}px "${body}", sans-serif`; ctx.direction = 'ltr'; ctx.textAlign = 'right';
+    ctx.fillStyle = '#ffd9a8'; ctx.fillText(t2, x, cy + 1);
+    ctx.restore();
+  };
   const drawFooter = ()=>{
-    if(!footerH) return;
+    if(!footerH){ drawCredit(); return; }
     const fy = H - bottomMargin - footerH;
     if(pal.footerBg){ ctx.fillStyle = pal.footerBg; ctx.fillRect(0, fy, W, footerH + bottomMargin); }
     else if(footerH0){ ctx.strokeStyle = pal.line; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(pad, fy + offerH); ctx.lineTo(W - pad, fy + offerH); ctx.stroke(); }
@@ -13549,6 +13584,7 @@ async function renderPoster(canvas, list, o){
       const cx = (textL + (W - pad)) / 2, startY = midY - infoH / 2 + ilh * 0.74;
       infoWrapped.forEach((ln, i)=> ctx.fillText(ln, cx, startY + i * ilh));
     }
+    drawCredit();
   };
 
   // ---------- الرأس (لوجو + اسم المحل) ----------
@@ -14303,7 +14339,7 @@ function openPosterModal(listIn){
   const prefsKey = POSTER_PREFS_KEY + '_' + (restaurant && restaurant.id ? restaurant.id : 'x');
   try{ prefs = JSON.parse(localStorage.getItem(prefsKey) || localStorage.getItem(POSTER_PREFS_KEY) || '{}') || {}; }catch(e){}
   const P = Object.assign({ template:'classic', size:'square', theme:'light', font:'auto', digits:'en', currency:'asis',
-    showImage:true, showPrice:true, showOld:true, showDesc:false, showLogo:true, showName:true, showAddress:true, showPhone:true, showQr:true,
+    showImage:true, showPrice:true, showOld:true, showDesc:false, showLogo:true, showName:true, showAddress:true, showPhone:true, showQr:true, showCredit:true,
     showTitle:true, title:'عروض الأسبوع', cutout:false, waPhone:'', group:'', favs:[], accents:{} }, prefs);
   if(!POSTER_TEMPLATES[P.template]) P.template = 'classic';
   if(!P.accents || typeof P.accents !== 'object') P.accents = {};
@@ -14345,6 +14381,7 @@ function openPosterModal(listIn){
           ${chk('pstAddr', 'العنوان', P.showAddress)}
           ${chk('pstPhone', 'رقم التليفون', P.showPhone)}
           ${chk('pstQr', 'رمز QR للمنيو الإلكتروني', P.showQr)}
+          ${chk('pstCredit', 'علامة «تصميم بواسطة M@g Menu»', P.showCredit !== false)}
           ${chk('pstOffer', '⏰ مدة العرض على البوستر', false)}
           <div id="pstOfferWrap" style="display:none; gap:8px; margin:0 0 8px; flex-wrap:wrap; font-size:12.5px;">
             <label style="flex:1 1 120px;">من <input type="date" id="pstOfferStart" style="width:100%;"></label>
@@ -14395,7 +14432,7 @@ function openPosterModal(listIn){
   const readOpts = ()=> ({
     template:tpl, size:$('#pstSize').value, theme:$('#pstTheme').value, accent:$('#pstColor').value, font:$('#pstFont').value, digits:$('#pstDigits').value, currency:$('#pstCur').value,
     showImage:$('#pstImage').checked, showPrice:$('#pstPrice').checked, showOld:$('#pstOld').checked, showDesc:$('#pstDesc').checked,
-    showLogo:$('#pstLogo').checked, showName:$('#pstName').checked, showAddress:$('#pstAddr').checked, showPhone:$('#pstPhone').checked, group:grp, favs, showQr:$('#pstQr').checked, showOffer:$('#pstOffer').checked, offerStart:$('#pstOfferStart').value, offerEnd:$('#pstOfferEnd').value, cutout:$('#pstCutout').checked,
+    showLogo:$('#pstLogo').checked, showName:$('#pstName').checked, showAddress:$('#pstAddr').checked, showPhone:$('#pstPhone').checked, group:grp, favs, showQr:$('#pstQr').checked, showCredit:$('#pstCredit').checked, showOffer:$('#pstOffer').checked, offerStart:$('#pstOfferStart').value, offerEnd:$('#pstOfferEnd').value, cutout:$('#pstCutout').checked,
     showTitle:$('#pstShowTitle').checked, title:$('#pstTitle').value, waPhone:$('#pstWaPhone').value
   });
   const draw = async ()=>{
