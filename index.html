@@ -12821,6 +12821,30 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
     toast(`لا توجد فئات أو ${biz(restaurant.business_type,'itemsIndef')} لتصديرها`);
     return;
   }
+  const activeCount = items.filter(i=> i.is_available !== false).length;
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>📤 تصدير إلى إكسيل</h3>
+      <label style="display:flex;gap:8px;align-items:center;margin:12px 0;cursor:pointer;"><input type="radio" name="xlScope" value="all" checked> جميع ${biz(restaurant.business_type,'itemsDef')} (${items.length})</label>
+      <label style="display:flex;gap:8px;align-items:center;margin:12px 0;cursor:pointer;"><input type="radio" name="xlScope" value="active"> المفعّلة (المتاحة) فقط (${activeCount})</label>
+      <div class="modal-actions">
+        <button class="btn-confirm" id="xlGoBtn">تصدير</button>
+        <button class="btn-cancel" id="xlCancelBtn">إلغاء</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#xlCancelBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#xlGoBtn').addEventListener('click', ()=>{
+    const onlyActive = overlay.querySelector('input[name="xlScope"]:checked').value === 'active';
+    overlay.remove();
+    exportItemsToExcel(onlyActive);
+  });
+});
+
+function exportItemsToExcel(onlyActive){
   const header = [
     'الفئة',
     'الاسم (عربي)',
@@ -12840,7 +12864,7 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   const rows = [header];
   let totalItems = 0;
   categories.forEach(cat=>{
-    const catItems = items.filter(i=>i.category_id === cat.id);
+    const catItems = items.filter(i=>i.category_id === cat.id && (!onlyActive || i.is_available !== false));
     catItems.forEach(item=>{
       totalItems++;
       const isSizesType = item.pricing_type === 'sizes';
@@ -12888,10 +12912,10 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'المنيو');
   const dateTag = new Date().toISOString().slice(0,10);
-  const filename = `${restaurant.slug || 'menu'}-اصناف-${dateTag}.xlsx`;
+  const filename = `${restaurant.slug || 'menu'}-اصناف${onlyActive ? '-مفعلة' : ''}-${dateTag}.xlsx`;
   XLSX.writeFile(wb, filename);
   toast(`تم تصدير ${totalItems} ${biz(restaurant.business_type, totalItems===1?'itemIndef':'itemsIndef')} بنجاح`);
-});
+}
 
 function renderDashboard(){
   setupInstallableDashboard();
