@@ -13477,7 +13477,8 @@ function posterBrandLogo(){
   return __posterBrandLogo;
 }
 async function renderPoster(canvas, list, o){
-  const creditOn = o.showCredit !== false;
+  // إجباري طالما رمز QR أو لوجو المتجر مفعّل؛ يمكن إلغاؤه فقط عند تعطيلهما معًا
+  const creditOn = !!(o.showQr || o.showLogo) || o.showCredit !== false;
   const brandImg = creditOn ? await posterBrandLogo() : null;
   const multi = list.length > 1;
   const SZ = POSTER_SIZES[o.size] || POSTER_SIZES.square;
@@ -14432,9 +14433,19 @@ function openPosterModal(listIn){
   const readOpts = ()=> ({
     template:tpl, size:$('#pstSize').value, theme:$('#pstTheme').value, accent:$('#pstColor').value, font:$('#pstFont').value, digits:$('#pstDigits').value, currency:$('#pstCur').value,
     showImage:$('#pstImage').checked, showPrice:$('#pstPrice').checked, showOld:$('#pstOld').checked, showDesc:$('#pstDesc').checked,
-    showLogo:$('#pstLogo').checked, showName:$('#pstName').checked, showAddress:$('#pstAddr').checked, showPhone:$('#pstPhone').checked, group:grp, favs, showQr:$('#pstQr').checked, showCredit:$('#pstCredit').checked, showOffer:$('#pstOffer').checked, offerStart:$('#pstOfferStart').value, offerEnd:$('#pstOfferEnd').value, cutout:$('#pstCutout').checked,
+    showLogo:$('#pstLogo').checked, showName:$('#pstName').checked, showAddress:$('#pstAddr').checked, showPhone:$('#pstPhone').checked, group:grp, favs, showQr:$('#pstQr').checked, showCredit:userCredit, showOffer:$('#pstOffer').checked, offerStart:$('#pstOfferStart').value, offerEnd:$('#pstOfferEnd').value, cutout:$('#pstCutout').checked,
     showTitle:$('#pstShowTitle').checked, title:$('#pstTitle').value, waPhone:$('#pstWaPhone').value
   });
+  let userCredit = P.showCredit !== false;
+  const syncCredit = ()=>{
+    const cb = $('#pstCredit'); if(!cb) return;
+    const forced = $('#pstQr').checked || $('#pstLogo').checked;
+    cb.disabled = forced; cb.checked = forced ? true : userCredit;
+    cb.parentElement.title = forced ? 'العلامة إجبارية طالما رمز QR أو لوجو المحل مفعّل' : '';
+  };
+  $('#pstCredit').addEventListener('change', ()=>{ if(!$('#pstCredit').disabled) userCredit = $('#pstCredit').checked; });
+  ['#pstQr', '#pstLogo'].forEach(id=> $(id).addEventListener('change', syncCredit));
+  syncCredit();
   const draw = async ()=>{
     if(drawing){ again = true; return; }
     drawing = true;
