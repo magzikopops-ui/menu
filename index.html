@@ -656,6 +656,22 @@ body.dash-dark .overlay button[style*="background:#fff"]{ background:#2A2825 !im
 .pub-filters:empty{ display:none; }
 .pub-filter-chip{ flex:0 0 auto; border:1.5px solid var(--line); background:var(--paper-dim,#fff); color:var(--ink); border-radius:999px; padding:5px 13px; font-family:var(--body); font-weight:700; font-size:12.5px; cursor:pointer; white-space:nowrap; }
 .pub-filter-chip.active{ background:var(--ember); border-color:var(--ember); color:#fff; }
+/* إعلان المنيو (بوستر يظهر للعميل عند الفتح) */
+.promo-overlay .modal.promo-modal{ background:transparent; box-shadow:none; padding:0; width:auto; max-width:none; text-align:center; position:relative; animation:offersIn .5s cubic-bezier(.2,1.3,.4,1) both; }
+.promo-modal img{ display:block; max-width:min(92vw,520px); max-height:72vh; object-fit:contain; border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,.45); margin:0 auto; background:#fff; }
+.promo-close{ position:absolute; top:-12px; inset-inline-end:-6px; width:34px; height:34px; border-radius:50%; border:none; background:#fff; color:#222; font-size:16px; font-weight:800; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,.35); z-index:2; }
+.promo-go{ display:block; margin:14px auto 0; min-width:200px; padding:12px 22px; border:none; border-radius:999px; background:var(--ember,#B8390E); color:#fff; font-family:var(--body); font-weight:800; font-size:15px; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,.35); }
+.promo-later{ display:block; margin:8px auto 0; background:none; border:none; color:#fff; font-family:var(--body); font-size:13px; text-decoration:underline; cursor:pointer; opacity:.9; }
+/* تمييز الأصناف في المنيو العام (شارة + شكل لافت) */
+.pub-item.hl{ position:relative; }
+.hl-badge{ position:absolute; top:0; inset-inline-start:12px; z-index:3; background:var(--ember,#B8390E); color:#fff; font-family:var(--body); font-weight:800; font-size:11px; line-height:1; padding:5px 9px 6px; border-radius:0 0 9px 9px; box-shadow:0 2px 6px rgba(0,0,0,.18); pointer-events:none; }
+.pub-item.hl-glow{ border-color:var(--ember,#B8390E) !important; box-shadow:0 0 0 2px var(--ember,#B8390E), 0 4px 18px rgba(184,57,14,.35) !important; }
+.pub-item.hl-gold{ box-shadow:inset 0 0 0 2px #d4a017, 0 3px 14px rgba(212,160,23,.4) !important; }
+.pub-item.hl-gold .hl-badge{ background:linear-gradient(135deg,#d4a017,#f0c94a); color:#3a2a00; }
+.pub-item.hl-soft{ border-inline-start:5px solid var(--ember,#B8390E) !important; background-image:linear-gradient(rgba(255,193,7,.13),rgba(255,193,7,.13)) !important; }
+.pub-item.hl-pulse{ animation:hlPulse 2.2s ease-out infinite; }
+@keyframes hlPulse{ 0%{ box-shadow:0 0 0 0 rgba(184,57,14,.55); } 70%{ box-shadow:0 0 0 12px rgba(184,57,14,0); } 100%{ box-shadow:0 0 0 0 rgba(184,57,14,0); } }
+@media (prefers-reduced-motion:reduce){ .pub-item.hl-pulse{ animation:none; box-shadow:0 0 0 2px var(--ember,#B8390E); } }
 .new-tag{ display:inline-block; background:var(--basil,#3F6247); color:#fff; font-family:var(--body); font-weight:800; font-size:10px; border-radius:5px; padding:1px 6px; margin-inline-start:4px; vertical-align:middle; }
 body.pub-design-sidebar .pub-filters{ max-width:none; padding:0 0 10px; flex-wrap:wrap; overflow:visible; }
 @media (max-width:560px){ .pub-filters{ padding-inline:14px; } }
@@ -2436,6 +2452,8 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
           <button class="link-btn" id="importExcelBtn">📥 استيراد من إكسيل</button>
           <button class="link-btn" id="exportExcelBtn">📤 تصدير إلى إكسيل</button>
           <button class="link-btn" id="exportPdfBtn">📄 تحميل المنيو PDF</button>
+          <button class="link-btn" id="discountPosterBtn">🏷️ بوستر العروض والخصومات</button>
+          <button class="link-btn" id="promoManagerBtn">📣 إعلان المنيو الحالي</button>
           <div class="dash-menu-divider"></div>
           <button class="link-btn" id="addonGroupsBtn">🧩 الإضافات والمتغيرات</button>
         </div>
@@ -2561,6 +2579,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
       <button type="button" id="bulkHideBtn">🚫 إخفاء</button>
       <button type="button" id="bulkShowBtn">👁 إظهار</button>
       <button type="button" id="bulkPosterBtn">🖼️ بوستر</button>
+      <button type="button" id="bulkHlBtn">✨ تمييز</button>
       <button type="button" id="bulkMoveBtn">📁 نقل لفئة</button>
       <button type="button" id="bulkDeleteBtn" class="danger">🗑 حذف</button>
       <button type="button" id="bulkCancelBtn">إنهاء</button>
@@ -7004,8 +7023,8 @@ async function openOrdersOverlay(){
     attachRowHandlers();
   }
 
-  overlay.querySelector('#ordersStatusFilter').addEventListener('change', (e)=>{ currentStatusFilter = e.target.value; renderList(); });
-  overlay.querySelector('#ordersTypeFilter').addEventListener('change', (e)=>{ currentTypeFilter = e.target.value; renderList(); });
+  overlay.querySelector('#ordersStatusFilter').addEventListener('change', (e)=>{ currentStatusFilter = e.target.value; dashPrefSet('ordStatus', currentStatusFilter); renderList(); });
+  overlay.querySelector('#ordersTypeFilter').addEventListener('change', (e)=>{ currentTypeFilter = e.target.value; dashPrefSet('ordType', currentTypeFilter); renderList(); });
   overlay.querySelector('#ordersLoadMoreBtn').addEventListener('click', async (e)=>{
     const btn = e.currentTarget;
     btn.disabled = true;
@@ -7038,11 +7057,21 @@ async function openOrdersOverlay(){
   overlay.querySelectorAll('.order-filter-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       currentFilter = btn.dataset.filter;
+      dashPrefSet('ordFilter', currentFilter);
       overlay.querySelectorAll('.order-filter-btn').forEach(b=> b.classList.toggle('active', b === btn));
       renderList();
     });
   });
 
+  // استرجاع آخر اختيارات المستخدم في شاشة الطلبات
+  {
+    const sf = dashPrefGet('ordFilter', 'all'), ss = dashPrefGet('ordStatus', 'all'), st = dashPrefGet('ordType', 'all');
+    const fb = [...overlay.querySelectorAll('.order-filter-btn')].find(b=> b.dataset.filter === sf);
+    if(fb){ currentFilter = sf; overlay.querySelectorAll('.order-filter-btn').forEach(b=> b.classList.toggle('active', b === fb)); }
+    const sSel = overlay.querySelector('#ordersStatusFilter'), tSel = overlay.querySelector('#ordersTypeFilter');
+    if([...sSel.options].some(o=> o.value === ss)){ sSel.value = ss; currentStatusFilter = ss; }
+    if([...tSel.options].some(o=> o.value === st)){ tSel.value = st; currentTypeFilter = st; }
+  }
   renderList();
 
   // تحديث لحظي للشاشة المفتوحة (مهم لشاشة المطبخ/الكاشير الكبيرة): طلب جديد يظهر فورًا، وتغيير الحالة من جهاز تاني ينعكس
@@ -10326,8 +10355,12 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
       ${coverage < 100 ? `<div class="orders-empty" style="text-align:right; padding-top:10px; font-size:11.5px;">⚠️ سعر التكلفة مسجَّل حاليًا لِـ ${coverage}% فقط من الكمية المباعة في هذه الفترة؛ الأصناف بلا سعر تكلفة مسجَّل غير محتسَبة ضمن التكلفة أعلاه. أضف سعر التكلفة من شاشة تعديل الصنف لزيادة دقة الحساب.</div>` : ''}
     `;
   }
-  renderProfitSummary(30);
-  overlay.querySelector('#profitPeriod').addEventListener('change', (e)=> renderProfitSummary(parseInt(e.target.value)));
+  {
+    const pSel = overlay.querySelector('#profitPeriod'), sv = String(dashPrefGet('profitPeriod', '30'));
+    if([...pSel.options].some(o=> o.value === sv)) pSel.value = sv;
+    renderProfitSummary(parseInt(pSel.value));
+    pSel.addEventListener('change', (e)=>{ dashPrefSet('profitPeriod', e.target.value); renderProfitSummary(parseInt(e.target.value)); });
+  }
 
   // تقرير المبيعات التفصيلي — فترة تاريخ مخصصة (من — إلى)
   const salesReportWrap = overlay.querySelector('#salesReportWrap');
@@ -12447,25 +12480,29 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
       .filter(Boolean);
   }
 
-  const parsed = [];
+  const parsed = [], skipped = [], seenKeys = new Set(), dupWarn = [];
+  const noteSkip = (rowNo, label, why)=> skipped.push(`صف ${rowNo}${label ? ' — ' + label : ''}: ${why}`);
+  const isBlankRow = (r)=> !r || r.every(v=> String(v ?? '').trim() === '');
 
   if(isDetailedFormat){
     const colIdx = {};
     DETAILED_IMPORT_HEADERS.forEach(h => { colIdx[h] = firstRowNormalized.indexOf(h); });
-    rows.slice(1).forEach(r=>{
+    rows.slice(1).forEach((r, ri)=>{
+      if(isBlankRow(r)) return;
+      const rowNo = ri + 2;
       const catName = String(r[colIdx['الفئة']] ?? '').trim();
       const itemName = String(r[colIdx['الاسم (عربي)']] ?? '').trim();
-      if(!catName || !itemName) return;
+      if(!catName || !itemName){ noteSkip(rowNo, itemName || catName, 'الفئة أو الاسم فارغ'); return; }
       const pricing_type = pricingTypeValueFromLabel(r[colIdx['طريقة التسعير']]);
       const sizes = pricing_type === 'sizes' ? parseSizesText(r[colIdx['الأحجام والأسعار']]) : [];
       const addons = addonsColIdx !== -1 ? parseAddonsText(r[addonsColIdx]) : [];
       const groupIds = groupsColIdx !== -1 ? parseGroupNames(r[groupsColIdx]) : [];
       let price = parseFloat(r[colIdx['السعر']]);
       if(pricing_type === 'sizes'){
-        if(sizes.length === 0) return; // لازم حجم واحد على الأقل بسعره
+        if(sizes.length === 0){ noteSkip(rowNo, itemName, 'نوع «أحجام» بدون أحجام وأسعار صالحة'); return; } // لازم حجم واحد على الأقل بسعره
         price = 0;
       } else {
-        if(isNaN(price) || price < 0) return;
+        if(isNaN(price) || price < 0){ noteSkip(rowNo, itemName, 'السعر غير صالح'); return; }
       }
       let old_price = null;
       if(pricing_type !== 'sizes'){
@@ -12477,6 +12514,7 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
         const rawMin = parseInt(r[colIdx['أقل وزن مسموح (جرام)']], 10);
         if(!isNaN(rawMin) && rawMin > 0) min_weight_grams = rawMin;
       }
+      { const dk = catName.toLowerCase() + '::' + itemName.toLowerCase(); if(seenKeys.has(dk)) dupWarn.push(`${catName} — ${itemName}`); seenKeys.add(dk); }
       parsed.push({
         catName, itemName,
         name_en: String(r[colIdx['الاسم (إنجليزي)']] ?? '').trim() || null,
@@ -12499,11 +12537,15 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
     if(simpleRows.length && isNaN(parseFloat(simpleRows[0][2]))){
       simpleRows = simpleRows.slice(1);
     }
-    simpleRows.forEach(r=>{
+    const simpleOffset = simpleRows === rows ? 1 : 2;
+    simpleRows.forEach((r, ri)=>{
+      if(isBlankRow(r)) return;
+      const rowNo = ri + simpleOffset;
       const catName = String(r[0] ?? '').trim();
       const itemName = String(r[1] ?? '').trim();
       const price = parseFloat(r[2]);
-      if(!catName || !itemName || isNaN(price) || price < 0) return;
+      if(!catName || !itemName || isNaN(price) || price < 0){ noteSkip(rowNo, itemName || catName, 'فئة أو اسم أو سعر غير صالح'); return; }
+      { const dk = catName.toLowerCase() + '::' + itemName.toLowerCase(); if(seenKeys.has(dk)) dupWarn.push(`${catName} — ${itemName}`); seenKeys.add(dk); }
       parsed.push({
         catName, itemName, name_en: null, pricing_type: 'unit', price, old_price: null,
         weight_sale_mode: 'both', min_weight_grams: null, sizes: [], addons: [], groupIds: [], description: '',
@@ -12513,7 +12555,7 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
   }
 
   if(parsed.length === 0){
-    toast(`لم يتم العثور على صفوف صالحة (فئة، ${biz(restaurant.business_type,'itemIndef')}، سعر)`);
+    toast(`لم يتم العثور على صفوف صالحة (فئة، ${biz(restaurant.business_type,'itemIndef')}، سعر)${skipped.length ? ' — ' + skipped[0] : ''}`);
     return;
   }
 
@@ -12526,25 +12568,66 @@ document.getElementById('importExcelInput').addEventListener('change', async (e)
   }
 
   const uniqueCats = [...new Set(parsed.map(p=>p.catName))];
-  openImportPreviewModal(parsed, uniqueCats, isDetailedFormat);
+  openImportPreviewModal(parsed, uniqueCats, isDetailedFormat, skipped, dupWarn);
 });
 
-function openImportPreviewModal(parsed, uniqueCats, isDetailedFormat){
+function openImportPreviewModal(parsedAll, uniqueCatsAll, isDetailedFormat, skipped, dupWarn){
+  skipped = skipped || []; dupWarn = dupWarn || [];
+  const cur = getRestaurantCurrency(restaurant);
+  const catIdByName = {}; categories.forEach(c=> catIdByName[c.name.trim().toLowerCase()] = c.id);
+  const existingMap = {}; items.forEach(it=> existingMap[`${it.category_id}::${String(it.name).trim().toLowerCase()}`] = it);
+  const num = (v)=> (v == null || v === '') ? null : Number(v);
+  const sizesTxt = (arr)=> (arr || []).map(x=> `${x.size_name}:${Number(x.price)}`).join('|');
+  const classify = (p)=>{
+    const cid = catIdByName[p.catName.trim().toLowerCase()];
+    const ex = cid ? existingMap[`${cid}::${p.itemName.trim().toLowerCase()}`] : null;
+    if(!ex) return { kind:'new', changes:[] };
+    const ch = [];
+    if((ex.pricing_type || 'unit') !== p.pricing_type) ch.push('طريقة التسعير');
+    if(p.pricing_type !== 'sizes' && num(ex.price) !== num(p.price)) ch.push(`السعر ${num(ex.price) ?? '—'} ← ${p.price}`);
+    if(p.pricing_type !== 'sizes' && num(ex.old_price) !== num(p.old_price)) ch.push(`السعر قبل الخصم ${num(ex.old_price) ?? '—'} ← ${p.old_price ?? '—'}`);
+    if(p.pricing_type === 'sizes' && sizesTxt(itemSizes[ex.id]) !== sizesTxt(p.sizes)) ch.push('الأحجام');
+    if((ex.is_available !== false) !== (p.is_available !== false)) ch.push(p.is_available !== false ? 'الحالة ← متاح' : 'الحالة ← غير متاح');
+    if((ex.name_en || '') !== (p.name_en || '')) ch.push('الاسم الإنجليزي');
+    if((ex.description || '') !== (p.description || '')) ch.push('الوصف');
+    if(p.pricing_type === 'weight' && (num(ex.min_weight_grams) !== num(p.min_weight_grams) || (ex.weight_sale_mode || 'both') !== p.weight_sale_mode)) ch.push('إعدادات الوزن');
+    if(p.image_url && p.image_url !== ex.image_url) ch.push('الصورة');
+    const oldAddons = (itemAddons[ex.id] || []).map(x=> `${x.name}:${Number(x.price)}`).join('|'), newAddons = (p.addons || []).map(x=> `${x.name}:${Number(x.price)}`).join('|');
+    if(oldAddons !== newAddons) ch.push('الإضافات');
+    return { kind: ch.length ? 'upd' : 'same', changes: ch };
+  };
+  const info = parsedAll.map(p=> Object.assign({ p }, classify(p)));
+  const cnt = { new:0, upd:0, same:0 }; info.forEach(r=> cnt[r.kind]++);
+  const newCats = uniqueCatsAll.filter(n=> !catIdByName[n.trim().toLowerCase()]);
+  const badge = { new:['جديد', '#1b7f3b'], upd:['تحديث', '#b8750e'], same:['بدون تغيير', '#888'] };
+  const rowsHtml = info.slice(0, 300).map(r=> `
+    <div class="zone-row" data-kind="${r.kind}" style="flex-wrap:wrap; gap:4px;">
+      <span class="zone-name" style="flex:1 1 60%;">${escapeHtml(r.p.catName)} — ${escapeHtml(r.p.itemName)}</span>
+      <span style="font-size:11px; font-weight:800; color:#fff; background:${badge[r.kind][1]}; padding:2px 8px; border-radius:999px;">${badge[r.kind][0]}</span>
+      <span class="zone-fee">${r.p.pricing_type === 'sizes' ? 'أحجام' : Number(r.p.price).toFixed(2) + ' ' + escapeHtml(cur)}</span>
+      ${r.changes.length ? `<div style="flex-basis:100%; font-size:11.5px; color:var(--stone);">${r.changes.map(escapeHtml).join(' · ')}</div>` : ''}
+    </div>`).join('');
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
-  const previewRows = parsed.slice(0, 8).map(p=>`
-    <div class="zone-row">
-      <span class="zone-name">${escapeHtml(p.catName)} — ${escapeHtml(p.itemName)}</span>
-      <span class="zone-fee">${p.pricing_type === 'sizes' ? 'أحجام' : p.price.toFixed(2) + ' ' + getRestaurantCurrency(restaurant)}</span>
-    </div>`).join('');
+  const chip = (txt, color)=> `<span style="font-size:12px; font-weight:800; color:#fff; background:${color}; padding:3px 10px; border-radius:999px;">${txt}</span>`;
   overlay.innerHTML = `
     <div class="modal">
-      <h3>استيراد ${biz(restaurant.business_type,'itemsIndef')} من إكسيل</h3>
-      <div class="orders-empty" style="text-align:right; padding:6px 0 14px;">
-        تم العثور على <b>${parsed.length}</b> ${biz(restaurant.business_type,'itemIndef')} ضمن <b>${uniqueCats.length}</b> فئة.
-        سيتم إنشاء أي فئة غير موجودة تلقائيًا. ${isDetailedFormat ? `أي ${biz(restaurant.business_type,'itemIndef')} موجود بنفس الاسم داخل نفس الفئة سيتم تحديث بياناته بالكامل، وسيُضاف أي صنف جديد بكل تفاصيله.` : `سيتم إضافة ${biz(restaurant.business_type,'itemsDef')} كأسعار ثابتة، وتحديث السعر إذا كان الصنف موجودًا بالفعل بالاسم نفسه.`}
+      <h3>معاينة استيراد ${biz(restaurant.business_type,'itemsIndef')} من إكسيل</h3>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin:8px 0;">
+        ${chip(`جديد: ${cnt.new}`, badge.new[1])} ${chip(`تحديث: ${cnt.upd}`, badge.upd[1])} ${chip(`بدون تغيير: ${cnt.same}`, badge.same[1])}
+        ${skipped.length ? chip(`صفوف مُتجاهلة: ${skipped.length}`, '#c0392b') : ''} ${newCats.length ? chip(`فئات جديدة: ${newCats.length}`, '#2a6fb0') : ''}
       </div>
-      <div id="importPreviewWrap">${previewRows}${parsed.length > 8 ? `<div class="orders-empty">و ${parsed.length - 8} ${biz(restaurant.business_type,'itemIndef')} آخر...</div>` : ''}</div>
+      ${newCats.length ? `<div class="orders-empty" style="text-align:right; padding:0 0 8px; font-size:12px;">ستُنشأ الفئات: ${newCats.map(escapeHtml).join('، ')}</div>` : ''}
+      ${dupWarn.length ? `<div style="font-size:12px; color:#b8750e; margin-bottom:8px;">⚠️ أسماء مكرّرة في الملف (آخر صف هو الذي سيبقى): ${dupWarn.slice(0, 5).map(escapeHtml).join('، ')}${dupWarn.length > 5 ? '…' : ''}</div>` : ''}
+      ${isDetailedFormat ? '' : `<div style="font-size:12px; color:#b8750e; margin-bottom:8px;">⚠️ الملف بالصيغة البسيطة (فئة، اسم، سعر): تحديث صنف موجود قد يفرّغ وصفه واسمه الإنجليزي وإضافاته — راجع سطور «تحديث» أدناه.</div>`}
+      <label style="display:block; margin:6px 0; font-size:13px;">المطلوب تنفيذه
+        <select id="importMode" style="width:100%; margin-top:4px;">
+          <option value="all">إضافة الجديد وتحديث الموجود (${cnt.new + cnt.upd})</option>
+          <option value="new">إضافة الجديد فقط (${cnt.new})</option>
+          <option value="upd">تحديث الموجود فقط (${cnt.upd})</option>
+        </select></label>
+      <div id="importPreviewWrap" style="max-height:38vh; overflow:auto; border:1px solid var(--line); border-radius:10px; padding:4px 8px;">${rowsHtml}${info.length > 300 ? `<div class="orders-empty">و ${info.length - 300} آخر...</div>` : ''}</div>
+      ${skipped.length ? `<details style="margin-top:8px; font-size:12px; color:var(--stone);"><summary style="cursor:pointer;">عرض الصفوف المُتجاهلة (${skipped.length})</summary><div style="max-height:18vh; overflow:auto; padding-top:4px;">${skipped.slice(0, 100).map(x=> `<div>${escapeHtml(x)}</div>`).join('')}</div></details>` : ''}
       <div class="modal-actions">
         <button class="btn-cancel" id="importCancelBtn">إلغاء</button>
         <button class="btn-confirm" id="importConfirmBtn">استيراد الآن</button>
@@ -12555,14 +12638,17 @@ function openImportPreviewModal(parsed, uniqueCats, isDetailedFormat){
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
 
   overlay.querySelector('#importConfirmBtn').addEventListener('click', async ()=>{
+    const mode = overlay.querySelector('#importMode').value;
+    const chosen = info.filter(r=> r.kind !== 'same' && (mode === 'all' || (mode === 'new' && r.kind === 'new') || (mode === 'upd' && r.kind === 'upd'))).map(r=> r.p);
+    if(!chosen.length){ toast('لا توجد تغييرات لتنفيذها'); return; }
     const btn = overlay.querySelector('#importConfirmBtn');
     btn.disabled = true;
     btn.textContent = 'جارِ الاستيراد...';
     try{
-      await runImport(parsed, uniqueCats);
+      await runImport(chosen, [...new Set(chosen.map(p=> p.catName))]);
       overlay.remove();
       await refreshData();
-      toast(`تم استيراد ${biz(restaurant.business_type,'itemsDef')} بنجاح`);
+      toast(`تم استيراد ${chosen.length} ${biz(restaurant.business_type, chosen.length === 1 ? 'itemIndef' : 'itemsIndef')} بنجاح`);
     }catch(err){
       toast('حدث خطأ أثناء الاستيراد');
       btn.disabled = false;
@@ -12829,6 +12915,13 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
       <h3>📤 تصدير إلى إكسيل</h3>
       <label style="display:flex;gap:8px;align-items:center;margin:12px 0;cursor:pointer;"><input type="radio" name="xlScope" value="all" checked> جميع ${biz(restaurant.business_type,'itemsDef')} (${items.length})</label>
       <label style="display:flex;gap:8px;align-items:center;margin:12px 0;cursor:pointer;"><input type="radio" name="xlScope" value="active"> المفعّلة (المتاحة) فقط (${activeCount})</label>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px;">
+        <b style="font-size:13px;">الفئات المطلوبة</b>
+        <button type="button" id="xlToggleCats" style="background:none; border:none; padding:0; font:inherit; font-size:12px; color:var(--ember); text-decoration:underline; cursor:pointer;">إلغاء تحديد الكل</button>
+      </div>
+      <div id="xlCatList" style="max-height:30vh; overflow:auto; border:1px solid var(--line); border-radius:10px; padding:4px 10px; margin-top:6px;">
+        ${categories.map(c=> `<label style="display:flex;gap:8px;align-items:center;margin:6px 0;cursor:pointer;"><input type="checkbox" class="xl-cat" value="${c.id}" checked> ${escapeHtml(c.name)} <span style="color:var(--stone); font-size:12px;">(${items.filter(i=> i.category_id === c.id).length})</span></label>`).join('')}
+      </div>
       <div class="modal-actions">
         <button class="btn-confirm" id="xlGoBtn">تصدير</button>
         <button class="btn-cancel" id="xlCancelBtn">إلغاء</button>
@@ -12837,14 +12930,22 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   document.body.appendChild(overlay);
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
   overlay.querySelector('#xlCancelBtn').addEventListener('click', ()=> overlay.remove());
+  const catBoxes = ()=> [...overlay.querySelectorAll('.xl-cat')];
+  overlay.querySelector('#xlToggleCats').addEventListener('click', (e)=>{
+    const allOn = catBoxes().every(b=> b.checked);
+    catBoxes().forEach(b=> b.checked = !allOn);
+    e.target.textContent = allOn ? 'تحديد الكل' : 'إلغاء تحديد الكل';
+  });
   overlay.querySelector('#xlGoBtn').addEventListener('click', ()=>{
     const onlyActive = overlay.querySelector('input[name="xlScope"]:checked').value === 'active';
+    const chosen = catBoxes().filter(b=> b.checked).map(b=> b.value);
+    if(!chosen.length){ toast('اختر فئة واحدة على الأقل'); return; }
     overlay.remove();
-    exportItemsToExcel(onlyActive);
+    exportItemsToExcel(onlyActive, chosen.length === categories.length ? null : chosen);
   });
 });
 
-function exportItemsToExcel(onlyActive){
+function exportItemsToExcel(onlyActive, catIds){
   const header = [
     'الفئة',
     'الاسم (عربي)',
@@ -12864,6 +12965,7 @@ function exportItemsToExcel(onlyActive){
   const rows = [header];
   let totalItems = 0;
   categories.forEach(cat=>{
+    if(catIds && !catIds.includes(String(cat.id))) return;
     const catItems = items.filter(i=>i.category_id === cat.id && (!onlyActive || i.is_available !== false));
     catItems.forEach(item=>{
       totalItems++;
@@ -12912,7 +13014,7 @@ function exportItemsToExcel(onlyActive){
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'المنيو');
   const dateTag = new Date().toISOString().slice(0,10);
-  const filename = `${restaurant.slug || 'menu'}-اصناف${onlyActive ? '-مفعلة' : ''}-${dateTag}.xlsx`;
+  const filename = `${restaurant.slug || 'menu'}-اصناف${onlyActive ? '-مفعلة' : ''}${catIds ? '-فئات-مختارة' : ''}-${dateTag}.xlsx`;
   XLSX.writeFile(wb, filename);
   toast(`تم تصدير ${totalItems} ${biz(restaurant.business_type, totalItems===1?'itemIndef':'itemsIndef')} بنجاح`);
 }
@@ -13502,7 +13604,8 @@ async function renderPoster(canvas, list, o){
   const wide = W > H;
   const pad = pal.frame ? 92 : 64, cw = W - pad * 2;
   const topStart = short ? (pal.frame ? 58 : 26) : (pal.frame ? 80 : (pal.topBar ? 38 : 40));
-  const creditH = creditOn ? (short ? 36 : 54) : 0;
+  const creditPos = o.creditPos || 'bc', creditSide = creditPos === 'sr' || creditPos === 'sl';
+  const creditH = (creditOn && !creditSide) ? (short ? 36 : 54) : 0;
   const bottomMargin = (pal.frame ? (short ? 46 : 60) : 0) + creditH;
 
   // ---------- الخلفية ----------
@@ -13522,13 +13625,15 @@ async function renderPoster(canvas, list, o){
   if(o.showAddress && restaurant.address) infoLines.push('📍 ' + restaurant.address);
   if(o.showPhone && restaurant.phone) infoLines.push('📞 ' + dig(restaurant.phone));
   const qrOn = !!o.qrImg;
-  const qrBox = o.size === 'story' ? 170 : (short ? 84 : 124);
+  const qrMul = { s:0.78, m:1, l:1.35, xl:1.7 }[o.qrSize] || 1;
+  const qrPosK = o.qrPos === 'r' ? 'r' : ((o.qrPos === 'c' && !short) ? 'c' : 'l');
+  const qrBox = Math.min(Math.round((o.size === 'story' ? 170 : (short ? 84 : 124)) * qrMul), Math.round(H * (short ? 0.3 : 0.2)));
   const qrBlockH = qrOn ? qrBox + (short ? 30 : 36) : 0;
   const ifs = short ? 25 : 32, ilh = short ? 34 : 46;
   ctx.font = F(700, ifs);
-  const infoWrapped = infoLines.flatMap(t=> posterWrap(ctx, t, (qrOn ? cw - qrBox - 40 : cw) - 40, 2));
+  const infoWrapped = infoLines.flatMap(t=> posterWrap(ctx, t, ((qrOn && qrPosK !== 'c') ? cw - qrBox - 40 : cw) - 40, 2));
   const infoH = infoWrapped.length * ilh;
-  const footerH0 = (infoWrapped.length || qrOn) ? Math.max(infoH + 12, qrBlockH) + 40 : 0;
+  const footerH0 = (infoWrapped.length || qrOn) ? ((qrOn && qrPosK === 'c') ? qrBlockH + (infoH ? infoH + 8 : 0) : Math.max(infoH + 12, qrBlockH)) + 40 : 0;
   // شريط مدة العرض (يُضاف أعلى التذييل)
   const fmtD = (iso)=>{ const d = new Date(iso + 'T12:00:00'); if(!iso || isNaN(d)) return ''; return d.toLocaleDateString(o.digits === 'ar' ? 'ar-EG' : 'ar-EG-u-nu-latn', d.getFullYear() === new Date().getFullYear() ? { day:'numeric', month:'long' } : { day:'numeric', month:'long', year:'numeric' }); };
   let offerText = '';
@@ -13536,25 +13641,42 @@ async function renderPoster(canvas, list, o){
   const offerH = offerText ? (short ? 50 : 76) : 0;
   const footerH = footerH0 + offerH;
   const drawCredit = ()=>{
-    if(!creditH) return;
-    const fz = short ? 17 : 24, ih = short ? 24 : 34, cy = H - (creditH + (pal.frame ? 28 : 0)) / 2;
+    if(!creditOn) return;
+    const en = o.creditLang === 'en', cst = o.creditStyle || 'dark';
+    const k = creditSide ? 0.8 : 1;
+    const fz = Math.round((short ? 17 : 24) * k), ih = Math.round((short ? 24 : 34) * k), gap = 10;
+    const t1 = en ? 'Designed by' : 'تصميم بواسطة', t2 = en ? 'M@g Menu' : 'منيو m@g';
     ctx.save();
-    ctx.font = `700 ${fz}px "${body}", sans-serif`; ctx.direction = 'rtl';
-    const t1 = 'تصميم بواسطة';
-    const w1 = ctx.measureText(t1).width;
-    ctx.font = `800 ${fz + 2}px "${body}", sans-serif`; ctx.direction = 'ltr';
-    const t2 = 'M@g Menu', w2 = ctx.measureText(t2).width;
-    const gap = 10, iw = brandImg ? ih : 0;
-    const tw = w1 + gap + (iw ? iw + gap : 0) + w2, bw = tw + 36, bh = ih + 12;
-    const bx = W / 2 - bw / 2, by = cy - bh / 2;
-    ctx.fillStyle = 'rgba(15,15,15,.62)'; posterRRect(ctx, bx, by, bw, bh, bh / 2); ctx.fill();
-    ctx.textBaseline = 'middle'; ctx.fillStyle = '#ffffff';
-    let x = bx + bw - 18;
-    ctx.font = `700 ${fz}px "${body}", sans-serif`; ctx.direction = 'rtl'; ctx.textAlign = 'right';
-    ctx.fillText(t1, x, cy + 1); x -= w1 + gap;
-    if(iw){ ctx.save(); ctx.beginPath(); ctx.arc(x - iw / 2, cy, iw / 2, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(brandImg, x - iw, cy - iw / 2, iw, iw); ctx.restore(); x -= iw + gap; }
-    ctx.font = `800 ${fz + 2}px "${body}", sans-serif`; ctx.direction = 'ltr'; ctx.textAlign = 'right';
-    ctx.fillStyle = '#ffd9a8'; ctx.fillText(t2, x, cy + 1);
+    const f1 = `700 ${fz}px "${body}", sans-serif`, f2 = `800 ${fz + 2}px "${body}", sans-serif`;
+    ctx.font = f1; const w1 = ctx.measureText(t1).width;
+    ctx.font = f2; const w2 = ctx.measureText(t2).width;
+    const iw = brandImg ? ih : 0;
+    const tw = w1 + gap + (iw ? iw + gap : 0) + w2, padX = cst === 'plain' ? 6 : 18, bw = tw + padX * 2, bh = ih + 12;
+    const inkC = pal.footerBg ? pal.footerInk : pal.ink;
+    let fill = null, txt = '#ffffff', brand = '#ffd9a8', stroke = null;
+    if(cst === 'dark'){ fill = 'rgba(15,15,15,.62)'; }
+    else if(cst === 'light'){ fill = 'rgba(255,255,255,.93)'; txt = '#333333'; brand = '#b8390e'; }
+    else if(cst === 'accent'){ fill = pal.priceBg || pal.line; txt = pal.priceBg ? pal.priceInk : '#111111'; brand = txt; }
+    else if(cst === 'outline'){ stroke = inkC; txt = inkC; brand = inkC; }
+    else { txt = inkC; brand = inkC; ctx.globalAlpha = 0.85; }
+    // موضع مركز الشريط
+    let cx, cy;
+    const zoneCy = H - (creditH + (pal.frame ? 28 : 0)) / 2;
+    if(creditPos === 'br'){ cx = W - pad - bw / 2; cy = zoneCy; }
+    else if(creditPos === 'bl'){ cx = pad + bw / 2; cy = zoneCy; }
+    else if(creditSide){ cx = creditPos === 'sr' ? W - bh / 2 - 8 : bh / 2 + 8; cy = H / 2; }
+    else { cx = W / 2; cy = zoneCy; }
+    if(creditSide){ ctx.translate(cx, cy); ctx.rotate(creditPos === 'sr' ? -Math.PI / 2 : Math.PI / 2); cx = 0; cy = 0; }
+    const bx = cx - bw / 2, by = cy - bh / 2;
+    if(fill){ ctx.fillStyle = fill; posterRRect(ctx, bx, by, bw, bh, bh / 2); ctx.fill(); }
+    if(stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.globalAlpha = 0.75; posterRRect(ctx, bx, by, bw, bh, bh / 2); ctx.stroke(); ctx.globalAlpha = 1; }
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    const pieces = en ? [['t', t1, w1, f1, 'ltr', txt], ['i'], ['t', t2, w2, f2, 'ltr', brand]] : [['t', t2, w2, f2, 'rtl', brand], ['i'], ['t', t1, w1, f1, 'rtl', txt]];
+    let x = bx + padX;
+    pieces.forEach(pc=>{
+      if(pc[0] === 'i'){ if(iw){ ctx.save(); ctx.beginPath(); ctx.arc(x + iw / 2, cy, iw / 2, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(brandImg, x, cy - iw / 2, iw, iw); ctx.restore(); x += iw + gap; } return; }
+      ctx.font = pc[3]; ctx.direction = pc[4]; ctx.fillStyle = pc[5]; ctx.fillText(pc[1], x, cy + 1); x += pc[2] + gap;
+    });
     ctx.restore();
   };
   const drawFooter = ()=>{
@@ -13571,18 +13693,21 @@ async function renderPoster(canvas, list, o){
       ctx.fillStyle = sink; ctx.textAlign = 'center'; ctx.direction = 'rtl'; ctx.fillText(offerText, W / 2, fy + offerH / 2 + fz * 0.34);
     }
     const midY = fy + offerH + footerH0 / 2;
-    let textL = pad;
+    let textL = pad, textR = W - pad, textMidY = midY;
     if(qrOn){
-      const qx = pad, qy = midY - qrBlockH / 2;
+      const qx = qrPosK === 'r' ? W - pad - qrBox : (qrPosK === 'c' ? W / 2 - qrBox / 2 : pad);
+      const qy = qrPosK === 'c' ? fy + offerH + 20 : midY - qrBlockH / 2;
       ctx.fillStyle = '#ffffff'; posterRRect(ctx, qx, qy, qrBox, qrBox, 16); ctx.fill();
       ctx.drawImage(o.qrImg, qx + 10, qy + 10, qrBox - 20, qrBox - 20);
       ctx.fillStyle = pal.footerBg ? pal.footerInk : pal.muted; ctx.textAlign = 'center'; ctx.font = F(700, 22);
       ctx.fillText('امسح لتصفح المنيو', qx + qrBox / 2, qy + qrBox + 28);
-      textL = pad + qrBox + 40;
+      if(qrPosK === 'l') textL = pad + qrBox + 40;
+      else if(qrPosK === 'r') textR = W - pad - qrBox - 40;
+      else textMidY = qy + qrBlockH + 8 + infoH / 2;
     }
     if(infoWrapped.length){
       ctx.fillStyle = pal.footerInk; ctx.textAlign = 'center'; ctx.font = F(700, ifs);
-      const cx = (textL + (W - pad)) / 2, startY = midY - infoH / 2 + ilh * 0.74;
+      const cx = (textL + textR) / 2, startY = textMidY - infoH / 2 + ilh * 0.74;
       infoWrapped.forEach((ln, i)=> ctx.fillText(ln, cx, startY + i * ilh));
     }
     drawCredit();
@@ -13595,26 +13720,38 @@ async function renderPoster(canvas, list, o){
   const drawHeader = (hy, onImage)=>{
     if(!headerH) return;
     const cy = hy + headerH / 2;
+    const hst = onImage ? 'pill' : (o.hdrStyle || 'row');
+    const hpos = onImage ? (o.hdrPos === 'center' ? 'center' : 'right') : (hst === 'lined' ? 'center' : (o.hdrPos || 'right'));
     let fs = Math.round(46 * hs), nmW = 0;
     if(hasName){
-      fs = posterFit(ctx, restaurant.name, cw - (hasLogo ? 118 : 0) - (onImage ? 70 : 0), Math.round(46 * hs), 26, (s)=> F(800, s));
+      fs = posterFit(ctx, restaurant.name, cw - (hasLogo ? 118 : 0) - (onImage ? 70 : 0) - (hst === 'lined' ? 160 : 0), Math.round(46 * hs), 26, (s)=> F(800, s));
       ctx.font = F(800, fs); nmW = ctx.measureText(restaurant.name).width;
     }
-    const lr = Math.round(46 * hs);
+    const lr = Math.round(46 * hs) * (hst === 'ring' ? 1.0 : 1);
     const logoW = hasLogo ? 2 * lr + (hasName ? 20 : 0) : 0;
-    if(onImage){
-      const pw = logoW + nmW + 56;
-      ctx.fillStyle = 'rgba(255,255,255,.95)'; posterRRect(ctx, W - pad - pw, hy + 4, pw, headerH - 8, (headerH - 8) / 2); ctx.fill();
+    const total = logoW + nmW;
+    const boxed = hst === 'pill';
+    const pw = total + 56;
+    // الحافة اليمنى للمحتوى حسب المكان (يمين / وسط / يسار)
+    let right = hpos === 'center' ? W / 2 + total / 2 : (hpos === 'left' ? pad + total + (boxed ? 28 : 0) : W - pad - (boxed ? 28 : 0));
+    if(boxed){
+      const left0 = right + 28 - pw;
+      ctx.fillStyle = 'rgba(255,255,255,.95)'; posterRRect(ctx, left0, hy + 4, pw, headerH - 8, (headerH - 8) / 2); ctx.fill();
     }
-    let right = W - pad - (onImage ? 28 : 0);
+    if(hst === 'lined'){
+      ctx.strokeStyle = pal.line; ctx.lineWidth = 2.5;
+      const l1 = right - total - 26, r1 = right + 26;
+      ctx.beginPath(); ctx.moveTo(pad, cy); ctx.lineTo(Math.max(pad, l1), cy); ctx.moveTo(Math.min(W - pad, r1), cy); ctx.lineTo(W - pad, cy); ctx.stroke();
+    }
     if(hasLogo){
       const r = lr, cx = right - r;
       ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill(); ctx.clip();
       posterDrawCover(ctx, o.logoImg, cx - r, cy - r, 2 * r, 2 * r); ctx.restore();
-      ctx.lineWidth = 4; ctx.strokeStyle = onImage ? pal.priceBg || pal.line : pal.line; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = hst === 'ring' ? 8 : 4; ctx.strokeStyle = (onImage || hst === 'ring') ? (pal.priceBg || pal.line) : pal.line; ctx.beginPath(); ctx.arc(cx, cy, hst === 'ring' ? r - 2 : r, 0, Math.PI * 2); ctx.stroke();
+      if(hst === 'ring'){ ctx.lineWidth = 2; ctx.strokeStyle = pal.line; ctx.beginPath(); ctx.arc(cx, cy, r + 5, 0, Math.PI * 2); ctx.stroke(); }
       right -= 2 * r + 20;
     }
-    if(hasName){ ctx.fillStyle = onImage ? '#1c1c1c' : pal.ink; ctx.textAlign = 'right'; ctx.font = F(800, fs); ctx.fillText(restaurant.name, right, cy + fs * 0.35); }
+    if(hasName){ ctx.fillStyle = boxed ? '#1c1c1c' : pal.ink; ctx.textAlign = 'right'; ctx.font = F(800, fs); ctx.fillText(restaurant.name, right, cy + fs * 0.35); }
   };
   const drawBadge = (bx, by, r, pct)=>{
     if(!(pct > 0)) return;
@@ -14330,6 +14467,106 @@ async function renderPoster(canvas, list, o){
   ctx.textAlign = 'start';
 }
 
+// إعلان المنيو: نشر بوستر للعملاء عند فتح المنيو
+function promoStoragePath(url){ const m = String(url || '').split('/menu-images/')[1]; return m ? decodeURIComponent(m.split('?')[0]) : null; }
+async function clearMenuPromos(){
+  const { data } = await sb.from('menu_promos').select('id,image_url').eq('restaurant_id', restaurant.id);
+  const rows = data || [];
+  if(!rows.length) return;
+  const { error } = await sb.from('menu_promos').delete().eq('restaurant_id', restaurant.id);
+  if(error) throw error;
+  const paths = rows.map(r=> promoStoragePath(r.image_url)).filter(Boolean);
+  if(paths.length){ try{ await sb.storage.from('menu-images').remove(paths); }catch(e){} }
+}
+async function openPromoManager(){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `<div class="modal"><h3>📣 إعلان المنيو</h3><div id="promoMgrBody" class="orders-empty">جارِ التحميل...</div><div class="modal-actions"><button class="btn-cancel" id="promoMgrClose">إغلاق</button></div></div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#promoMgrClose').addEventListener('click', ()=> overlay.remove());
+  const body = overlay.querySelector('#promoMgrBody');
+  const { data, error } = await sb.from('menu_promos').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending:false });
+  if(error){ body.textContent = 'ميزة إعلان المنيو غير مفعّلة بعد في قاعدة البيانات.'; return; }
+  if(!data.length){ body.innerHTML = 'لا يوجد إعلان منشور حاليًا.<br>صمّم بوستر من «🖼️ بوستر» ثم اضغط «📣 نشر في المنيو».'; return; }
+  const pr = data[0], it = pr.item_id ? items.find(i=> i.id === pr.item_id) : null;
+  const fmt = (d)=> new Date(d).toLocaleDateString('ar-EG', { day:'numeric', month:'long', year:'numeric' });
+  body.className = '';
+  body.innerHTML = `
+    <img src="${escapeHtml(pr.image_url)}" alt="" style="width:100%; max-height:48vh; object-fit:contain; border-radius:12px; background:#eee;">
+    <div style="font-size:12.5px; margin:10px 0; color:var(--stone); line-height:1.8;">
+      ${it ? `🎯 يفتح الصنف: <b>${escapeHtml(it.name)}</b><br>` : '🎯 زر «تصفّح المنيو»<br>'}
+      ${pr.ends_at ? `⏰ ينتهي: ${fmt(pr.ends_at)}` : '⏰ بدون تاريخ انتهاء'}${pr.starts_at ? ` — يبدأ: ${fmt(pr.starts_at)}` : ''}
+    </div>
+    <div style="font-size:12px; color:var(--stone); margin-bottom:10px;">يظهر لكل عميل مرة واحدة في الجلسة عند فتح المنيو.</div>
+    <button type="button" class="btn-cancel" id="promoMgrDel" style="color:var(--danger);">🗑️ إيقاف الإعلان وحذفه</button>`;
+  body.querySelector('#promoMgrDel').addEventListener('click', async (e)=>{
+    if(!confirm('إيقاف إعلان المنيو وحذفه؟')) return;
+    e.target.disabled = true;
+    try{ await clearMenuPromos(); toast('تم إيقاف الإعلان'); overlay.remove(); }catch(err){ toast('تعذّر الحذف'); e.target.disabled = false; }
+  });
+}
+// تمييز الأصناف: شارات وأشكال لافتة للانتباه في المنيو العام
+const HL_BADGES = { new:['جديد', 'New', '🆕'], best:['الأكثر طلبًا', 'Bestseller', '🔥'], offer:['عرض خاص', 'Special offer', '🏷️'], hot:['حار', 'Spicy', '🌶️'], chef:['اختيار الشيف', "Chef's pick", '👨‍🍳'], fav:['مفضّل الزبائن', 'Customer favorite', '❤️'], limited:['كمية محدودة', 'Limited', '⏳'] };
+const HL_STYLES = { glow:'إطار مضيء', gold:'إطار ذهبي', soft:'خلفية مميزة بشريط جانبي', pulse:'نبض لافت للنظر' };
+function hlFieldsHtml(idB, idS, badge, style){
+  return `<div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <label style="flex:1 1 150px;">الشارة <select id="${idB}" style="width:100%;"><option value="">بدون شارة</option>${Object.entries(HL_BADGES).map(([k, v])=> `<option value="${k}" ${badge === k ? 'selected' : ''}>${v[2]} ${v[0]}</option>`).join('')}</select></label>
+    <label style="flex:1 1 150px;">الشكل <select id="${idS}" style="width:100%;"><option value="">عادي</option>${Object.entries(HL_STYLES).map(([k, v])=> `<option value="${k}" ${style === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+  </div>`;
+}
+// حفظ اختيارات شاشات لوحة التحكم (لكل حساب) في المتصفح
+function dashPrefGet(k, fallback){
+  try{ const o = JSON.parse(localStorage.getItem('dashPrefs_v1_' + (restaurant && restaurant.id ? restaurant.id : 'x')) || '{}') || {}; return o[k] !== undefined ? o[k] : fallback; }catch(e){ return fallback; }
+}
+function dashPrefSet(k, v){
+  try{ const key = 'dashPrefs_v1_' + (restaurant && restaurant.id ? restaurant.id : 'x'); const o = JSON.parse(localStorage.getItem(key) || '{}') || {}; o[k] = v; localStorage.setItem(key, JSON.stringify(o)); }catch(e){}
+}
+function posterZip(files){
+  const te = new TextEncoder();
+  const tbl = new Uint32Array(256);
+  for(let n = 0; n < 256; n++){ let c = n; for(let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); tbl[n] = c >>> 0; }
+  const crc = (u8)=>{ let c = 0xFFFFFFFF; for(let i = 0; i < u8.length; i++) c = tbl[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  const d = new Date(), dt = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate(), tm = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const parts = [], central = []; let off = 0;
+  files.forEach(f=>{
+    const name = te.encode(f.name), c = crc(f.data), sz = f.data.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, tm, true); lh.setUint16(12, dt, true); lh.setUint32(14, c, true); lh.setUint32(18, sz, true); lh.setUint32(22, sz, true);
+    lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), name, f.data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+    ch.setUint16(12, tm, true); ch.setUint16(14, dt, true); ch.setUint32(16, c, true); ch.setUint32(20, sz, true); ch.setUint32(24, sz, true);
+    ch.setUint16(28, name.length, true); ch.setUint32(42, off, true);
+    central.push(new Uint8Array(ch.buffer), name);
+    off += 30 + name.length + sz;
+  });
+  const cdSize = central.reduce((a, b)=> a + b.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, cdSize, true); end.setUint32(16, off, true);
+  return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type:'application/zip' });
+}
+function posterDominantColor(img){
+  const c = document.createElement('canvas'); c.width = c.height = 48;
+  const x = c.getContext('2d'); x.drawImage(img, 0, 0, 48, 48);
+  const d = x.getImageData(0, 0, 48, 48).data, buckets = {};
+  for(let i = 0; i < d.length; i += 4){
+    const r = d[i], g = d[i + 1], b = d[i + 2], a = d[i + 3];
+    if(a < 128) continue;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
+    if(sat < 0.28 || mx < 50 || (mx > 245 && sat < 0.4)) continue;
+    const key = (r >> 5) + ',' + (g >> 5) + ',' + (b >> 5);
+    const o = buckets[key] || (buckets[key] = { n:0, r:0, g:0, b:0, w:0 });
+    o.n++; o.r += r; o.g += g; o.b += b; o.w += sat;
+  }
+  let best = null;
+  Object.values(buckets).forEach(o=>{ if(!best || o.w > best.w) best = o; });
+  if(!best) return null;
+  const h = (v)=> Math.round(v / best.n).toString(16).padStart(2, '0');
+  return '#' + h(best.r) + h(best.g) + h(best.b);
+}
 function openItemPosterModal(item){ openPosterModal([item]); }
 function openPosterModal(listIn){
   let list = (listIn || []).filter(Boolean);
@@ -14340,7 +14577,7 @@ function openPosterModal(listIn){
   const prefsKey = POSTER_PREFS_KEY + '_' + (restaurant && restaurant.id ? restaurant.id : 'x');
   try{ prefs = JSON.parse(localStorage.getItem(prefsKey) || localStorage.getItem(POSTER_PREFS_KEY) || '{}') || {}; }catch(e){}
   const P = Object.assign({ template:'classic', size:'square', theme:'light', font:'auto', digits:'en', currency:'asis',
-    showImage:true, showPrice:true, showOld:true, showDesc:false, showLogo:true, showName:true, showAddress:true, showPhone:true, showQr:true, showCredit:true,
+    showImage:true, showPrice:true, showOld:true, showDesc:false, showLogo:true, showName:true, showAddress:true, showPhone:true, showQr:true, showCredit:true, creditLang:'ar', creditStyle:'dark', creditPos:'bc', hdrStyle:'row', hdrPos:'right', qrSize:'m', qrPos:'l',
     showTitle:true, title:'عروض الأسبوع', cutout:false, waPhone:'', group:'', favs:[], accents:{} }, prefs);
   if(!POSTER_TEMPLATES[P.template]) P.template = 'classic';
   if(!P.accents || typeof P.accents !== 'object') P.accents = {};
@@ -14382,7 +14619,14 @@ function openPosterModal(listIn){
           ${chk('pstAddr', 'العنوان', P.showAddress)}
           ${chk('pstPhone', 'رقم التليفون', P.showPhone)}
           ${chk('pstQr', 'رمز QR للمنيو الإلكتروني', P.showQr)}
+          ${sel('pstQrSize', 'حجم رمز QR', [['s','صغير'],['m','متوسط'],['l','كبير'],['xl','كبير جداً']], P.qrSize)}
+          ${sel('pstQrPos', 'مكان رمز QR', [['l','أسفل — يسار'],['r','أسفل — يمين'],['c','أسفل — المنتصف (العنوان تحته)']], P.qrPos)}
           ${chk('pstCredit', 'علامة «تصميم بواسطة M@g Menu»', P.showCredit !== false)}
+          ${sel('pstCrLang', 'لغة العلامة', [['ar','عربي: تصميم بواسطة منيو m@g'],['en','English: Designed by M@g Menu']], P.creditLang)}
+          ${sel('pstCrStyle', 'شكل العلامة', [['dark','داكن شفاف'],['light','أبيض'],['accent','بلون القالب'],['outline','إطار فقط'],['plain','نص فقط']], P.creditStyle)}
+          ${sel('pstCrPos', 'مكان العلامة', [['bc','أسفل — المنتصف'],['br','أسفل — يمين'],['bl','أسفل — يسار'],['sr','جانب أيمن (عمودي)'],['sl','جانب أيسر (عمودي)']], P.creditPos)}
+          ${sel('pstHdrStyle', 'شكل لوجو المحل واسمه', [['row','عادي'],['pill','داخل شريط أبيض'],['ring','لوجو بإطار مزدوج'],['lined','بخطوط جانبية (منتصف)']], P.hdrStyle)}
+          ${sel('pstHdrPos', 'مكان لوجو المحل واسمه', [['right','يمين'],['center','منتصف'],['left','يسار']], P.hdrPos)}
           ${chk('pstOffer', '⏰ مدة العرض على البوستر', false)}
           <div id="pstOfferWrap" style="display:none; gap:8px; margin:0 0 8px; flex-wrap:wrap; font-size:12.5px;">
             <label style="flex:1 1 120px;">من <input type="date" id="pstOfferStart" style="width:100%;"></label>
@@ -14394,14 +14638,21 @@ function openPosterModal(listIn){
           ${sel('pstFont', 'الخط', [['auto', 'حسب القالب'], ['Tajawal', 'تجوال'], ['Cairo', 'القاهرة'], ['Almarai', 'المراعي'], ['Amiri', 'أميري'], ['Changa', 'شانجا']], P.font)}
           ${sel('pstDigits', 'الأرقام', [['en', 'إنجليزي (1 2 3)'], ['ar', 'عربي (١ ٢ ٣)']], P.digits)}
           ${sel('pstCur', 'العملة', [['asis', 'كما في الإعدادات'], ['short', 'عربي مختصر (ج.م)'], ['full', 'عربي كامل (جنيه)']], P.currency)}
-          <label style="display:flex;gap:8px;align-items:center;margin:8px 0;">لون الهوية <input type="color" id="pstColor" value="${P.accents[tpl] || POSTER_TEMPLATES[tpl].accent}" style="width:44px;height:30px;padding:0;border:none;"></label>
+          <label style="display:flex;gap:8px;align-items:center;margin:8px 0;">لون الهوية <input type="color" id="pstColor" value="${P.accents[tpl] || POSTER_TEMPLATES[tpl].accent}" style="width:44px;height:30px;padding:0;border:none;"> <button type="button" id="pstColorLogo" style="background:none; border:none; padding:0; font:inherit; font-size:12px; font-weight:800; color:var(--ember); text-decoration:underline; cursor:pointer;">🎨 من لوجو المحل</button></label>
         </div>
+      </div>
+      <div style="margin-top:10px; font-size:12.5px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+        <select id="pstStyleSel" style="flex:1 1 160px; min-width:0;"></select>
+        <button type="button" class="btn-cancel" id="pstStyleSave" style="padding:6px 10px;">💾 حفظ كستايل</button>
+        <button type="button" class="btn-cancel" id="pstStyleDel" style="padding:6px 10px;">🗑️ حذف</button>
       </div>
       <div style="margin-top:10px; font-size:12.5px;">
         <input type="text" id="pstWaPhone" inputmode="tel" value="${escapeHtml(P.waPhone || '')}" placeholder="رقم واتساب لإرسال البوستر (اختياري) — مثال: 201012345678" style="width:100%;">
       </div>
       <div class="modal-actions">
         <button class="btn-confirm" id="pstDownload">⬇️ تحميل الصورة</button>
+        <button class="btn-confirm" id="pstZip" style="background:#6b4eff;">📦 كل المقاسات (ZIP)</button>
+        <button class="btn-confirm" id="pstPublish" style="background:#d9480f;">📣 نشر في المنيو</button>
         <button class="btn-confirm" id="pstShare" style="background:#25D366;">📤 مشاركة</button>
         <button class="btn-confirm" id="pstWa" style="background:#128C7E;">💬 واتساب</button>
         <button class="btn-cancel" id="pstClose">إغلاق</button>
@@ -14415,7 +14666,7 @@ function openPosterModal(listIn){
   const canvas = $('#posterCanvas'), status = $('#posterStatus');
   const imgCache = new Map();
   const getImg = async (url)=>{ if(!url) return null; if(!imgCache.has(url)) imgCache.set(url, await posterLoadImage(url)); return imgCache.get(url); };
-  let qrTried = false, qrImg = null, drawing = false, again = false;
+  let qrTried = false, qrImg = null, drawing = false, again = false, lastAssets = null;
   const menuLink = `${location.origin}${location.pathname}?r=${encodeURIComponent(restaurant.slug || '')}`;
   const applyGroup = ()=>{
     overlay.querySelectorAll('.pst-grp').forEach(b=>{ const on = b.dataset.g === grp; b.style.background = on ? 'var(--ink)' : 'transparent'; b.style.color = on ? 'var(--paper)' : 'inherit'; });
@@ -14433,7 +14684,7 @@ function openPosterModal(listIn){
   const readOpts = ()=> ({
     template:tpl, size:$('#pstSize').value, theme:$('#pstTheme').value, accent:$('#pstColor').value, font:$('#pstFont').value, digits:$('#pstDigits').value, currency:$('#pstCur').value,
     showImage:$('#pstImage').checked, showPrice:$('#pstPrice').checked, showOld:$('#pstOld').checked, showDesc:$('#pstDesc').checked,
-    showLogo:$('#pstLogo').checked, showName:$('#pstName').checked, showAddress:$('#pstAddr').checked, showPhone:$('#pstPhone').checked, group:grp, favs, showQr:$('#pstQr').checked, showCredit:userCredit, showOffer:$('#pstOffer').checked, offerStart:$('#pstOfferStart').value, offerEnd:$('#pstOfferEnd').value, cutout:$('#pstCutout').checked,
+    showLogo:$('#pstLogo').checked, showName:$('#pstName').checked, showAddress:$('#pstAddr').checked, showPhone:$('#pstPhone').checked, group:grp, favs, showQr:$('#pstQr').checked, showCredit:userCredit, creditLang:$('#pstCrLang').value, creditStyle:$('#pstCrStyle').value, creditPos:$('#pstCrPos').value, hdrStyle:$('#pstHdrStyle').value, hdrPos:$('#pstHdrPos').value, qrSize:$('#pstQrSize').value, qrPos:$('#pstQrPos').value, showOffer:$('#pstOffer').checked, offerStart:$('#pstOfferStart').value, offerEnd:$('#pstOfferEnd').value, cutout:$('#pstCutout').checked,
     showTitle:$('#pstShowTitle').checked, title:$('#pstTitle').value, waPhone:$('#pstWaPhone').value
   });
   let userCredit = P.showCredit !== false;
@@ -14470,7 +14721,8 @@ function openPosterModal(listIn){
       }
       const logoImg = (o.showLogo && restaurant.logo_url) ? await getImg(restaurant.logo_url) : null;
       if(o.showQr && restaurant.slug && !qrTried){ qrTried = true; status.textContent = 'جارِ إنشاء رمز QR...'; qrImg = await posterMakeQr(menuLink); }
-      await renderPoster(canvas, list, Object.assign({}, o, { imgs, logoImg, qrImg: (o.showQr && restaurant.slug) ? qrImg : null }));
+      lastAssets = { imgs, logoImg, qrImg: (o.showQr && restaurant.slug) ? qrImg : null };
+      await renderPoster(canvas, list, Object.assign({}, o, lastAssets));
       const notes = [];
       if(o.showImage){ const miss = list.filter((it, i)=> it.image_url && !imgs[i]).length; if(miss) notes.push(multi ? `تعذّر تحميل ${miss} صورة` : 'تعذّر تحميل صورة الصنف'); }
       if(cutFail) notes.push(multi ? `تعذّرت إزالة الخلفية من ${cutFail} صورة (الخلفية غير موحّدة)` : 'تعذّرت إزالة الخلفية (الخلفية غير موحّدة)');
@@ -14499,6 +14751,97 @@ function openPosterModal(listIn){
     markTpl(); draw();
   }));
   overlay.querySelectorAll('input[type=checkbox], select, input[type=color], input[type=date]').forEach(el=> el.addEventListener('change', draw));
+  // ---- ستايلات محفوظة ----
+  const stylesKey = prefsKey + '_styles';
+  const loadStyles = ()=>{ try{ return JSON.parse(localStorage.getItem(stylesKey) || '{}') || {}; }catch(e){ return {}; } };
+  const saveStyles = (m)=>{ try{ localStorage.setItem(stylesKey, JSON.stringify(m)); }catch(e){} };
+  const fillStyleSel = (selName)=>{
+    const m = loadStyles(), names = Object.keys(m);
+    $('#pstStyleSel').innerHTML = `<option value="">⭐ ستايلاتي المحفوظة (${names.length})</option>` + names.map(n=> `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+    if(selName) $('#pstStyleSel').value = selName;
+    $('#pstStyleDel').style.display = names.length ? '' : 'none';
+  };
+  const STYLE_SELECTS = { size:'pstSize', theme:'pstTheme', font:'pstFont', digits:'pstDigits', currency:'pstCur', creditLang:'pstCrLang', creditStyle:'pstCrStyle', creditPos:'pstCrPos', hdrStyle:'pstHdrStyle', hdrPos:'pstHdrPos', qrSize:'pstQrSize', qrPos:'pstQrPos' };
+  const STYLE_CHECKS = { showImage:'pstImage', showPrice:'pstPrice', showOld:'pstOld', showDesc:'pstDesc', showLogo:'pstLogo', showName:'pstName', showAddress:'pstAddr', showPhone:'pstPhone', showQr:'pstQr', cutout:'pstCutout' };
+  $('#pstStyleSave').addEventListener('click', ()=>{
+    const name = (prompt('اسم الستايل (مثال: ستايل المحل):') || '').trim().slice(0, 30);
+    if(!name) return;
+    const o = readOpts(), st = { template:o.template, accent:o.accent, showCredit:o.showCredit };
+    Object.keys(STYLE_SELECTS).forEach(k=> st[k] = o[k]);
+    Object.keys(STYLE_CHECKS).forEach(k=> st[k] = o[k]);
+    const m = loadStyles();
+    if(!m[name] && Object.keys(m).length >= 12){ toast('الحد الأقصى 12 ستايل — احذف ستايلاً أولاً'); return; }
+    m[name] = st; saveStyles(m); fillStyleSel(name); toast('تم حفظ الستايل');
+  });
+  $('#pstStyleDel').addEventListener('click', ()=>{
+    const n = $('#pstStyleSel').value; if(!n){ toast('اختر ستايلاً لحذفه'); return; }
+    if(!confirm(`حذف الستايل «${n}»؟`)) return;
+    const m = loadStyles(); delete m[n]; saveStyles(m); fillStyleSel(); toast('تم حذف الستايل');
+  });
+  $('#pstStyleSel').addEventListener('change', ()=>{
+    const st = loadStyles()[$('#pstStyleSel').value]; if(!st) return;
+    if(POSTER_TEMPLATES[st.template]) tpl = st.template;
+    P.accents[tpl] = st.accent; $('#pstColor').value = st.accent || POSTER_TEMPLATES[tpl].accent;
+    Object.entries(STYLE_SELECTS).forEach(([k, id])=>{ if(st[k] !== undefined && $('#' + id)) $('#' + id).value = st[k]; });
+    Object.entries(STYLE_CHECKS).forEach(([k, id])=>{ if(st[k] !== undefined && $('#' + id)) $('#' + id).checked = !!st[k]; });
+    userCredit = st.showCredit !== false; syncCredit(); markTpl(); draw();
+    toast('تم تطبيق الستايل');
+  });
+  fillStyleSel();
+  // ---- لون الهوية من لوجو المحل ----
+  $('#pstColorLogo').addEventListener('click', async ()=>{
+    try{
+      if(!restaurant.logo_url){ toast('لا يوجد لوجو للمحل — أضفه من إعدادات المتجر'); return; }
+      const im = (lastAssets && lastAssets.logoImg) || await getImg(restaurant.logo_url);
+      if(!im){ toast('تعذّر تحميل اللوجو'); return; }
+      const col = posterDominantColor(im);
+      if(!col){ toast('لم أجد لوناً مميزاً في اللوجو'); return; }
+      $('#pstColor').value = col; P.accents[tpl] = col; draw(); toast('تم أخذ اللون من اللوجو');
+    }catch(e){ toast('تعذّر قراءة ألوان اللوجو'); }
+  });
+  // ---- نشر البوستر كإعلان يظهر للعملاء عند فتح المنيو ----
+  $('#pstPublish').addEventListener('click', async ()=>{
+    const btn = $('#pstPublish'); if(btn.disabled) return;
+    if(!confirm('نشر هذا البوستر كإعلان يظهر لعملائك عند فتح المنيو؟\nسيحلّ محل أي إعلان منشور حاليًا.')) return;
+    btn.disabled = true; const old = btn.textContent; btn.textContent = 'جارِ النشر...';
+    try{
+      if(!lastAssets) await draw();
+      const o = readOpts();
+      const url = await uploadImageToStorage(canvas.toDataURL('image/jpeg', 0.9), `promos/${restaurant.id}`);
+      const row = { restaurant_id: restaurant.id, image_url: url, item_id: (!multi && list[0].id) ? list[0].id : null, active: true, starts_at: null, ends_at: null };
+      if(o.showOffer && o.offerStart){ row.starts_at = new Date(o.offerStart + 'T00:00:00').toISOString(); }
+      if(o.showOffer && o.offerEnd){ row.ends_at = new Date(o.offerEnd + 'T23:59:59').toISOString(); }
+      const probe = await sb.from('menu_promos').select('id').eq('restaurant_id', restaurant.id).limit(1);
+      if(probe.error){ toast('ميزة إعلان المنيو غير مفعّلة بعد في قاعدة البيانات'); try{ await sb.storage.from('menu-images').remove([promoStoragePath(url)]); }catch(e){} return; }
+      await clearMenuPromos();
+      const { error } = await sb.from('menu_promos').insert(row);
+      if(error) throw error;
+      toast('📣 تم نشر الإعلان — سيظهر لعملائك عند فتح المنيو' + (row.ends_at ? ' حتى نهاية مدة العرض' : ''));
+    }catch(e){ console.warn(e); toast('تعذّر نشر الإعلان'); }
+    finally{ btn.disabled = false; btn.textContent = old; }
+  });
+  // ---- تحميل عدة مقاسات في ملف ZIP ----
+  $('#pstZip').addEventListener('click', async ()=>{
+    const btn = $('#pstZip'); if(btn.disabled) return;
+    btn.disabled = true; const old = btn.textContent;
+    try{
+      if(!lastAssets) await draw();
+      const o = readOpts(), sizes = ['square', 'portrait', 'story', 'a4', 'wide'].filter(k=> POSTER_SIZES[k]);
+      const files = [], base = restaurant.slug || 'menu';
+      for(let i = 0; i < sizes.length; i++){
+        btn.textContent = `جارِ التجهيز ${i + 1}/${sizes.length}...`;
+        const tmp = document.createElement('canvas');
+        await renderPoster(tmp, list, Object.assign({}, o, lastAssets, { size:sizes[i] }));
+        const blob = await new Promise((res, rej)=> tmp.toBlob(b=> b ? res(b) : rej(new Error('empty')), 'image/png'));
+        files.push({ name:`${base}-poster-${sizes[i]}.png`, data:new Uint8Array(await blob.arrayBuffer()) });
+      }
+      const url = URL.createObjectURL(posterZip(files));
+      const a = document.createElement('a'); a.href = url; a.download = `${base}-posters.zip`; a.click();
+      setTimeout(()=> URL.revokeObjectURL(url), 4000);
+      toast('تم تحميل ملف ZIP بجميع المقاسات');
+    }catch(e){ console.warn(e); toast('تعذّر إنشاء ملف ZIP'); }
+    btn.disabled = false; btn.textContent = old;
+  });
   let titleTimer = null;
   $('#pstTitle').addEventListener('input', ()=>{ clearTimeout(titleTimer); titleTimer = setTimeout(draw, 250); });
   const toBlob = ()=> new Promise((res, rej)=> { try{ canvas.toBlob(b=> b ? res(b) : rej(new Error('empty')), 'image/png'); }catch(e){ rej(e); } });
@@ -14559,6 +14902,7 @@ function buildItemCard(item){
         <span class="item-price">${formatItemPriceLabel(item)}</span>
       </div>
       ${item.description ? `<div class="item-desc">${escapeHtml(item.description)}</div>` : ''}
+      ${(item.highlight_badge || item.highlight_style) ? `<div style="font-size:11px; color:var(--ember); margin-top:2px; font-weight:700;">✨ مميّز${item.highlight_badge && HL_BADGES[item.highlight_badge] ? ' — ' + HL_BADGES[item.highlight_badge][0] : ''}${item.highlight_style && HL_STYLES[item.highlight_style] ? ' (' + HL_STYLES[item.highlight_style] + ')' : ''}</div>` : ''}
       ${(itemAddons[item.id] || []).length ? `<div style="font-size:11px; color:var(--basil); margin-top:2px;">🧂 ${(itemAddons[item.id] || []).length} إضافة متاحة</div>` : ''}
       <div class="item-tools">
         <button data-action="edit">تعديل</button>
@@ -15536,7 +15880,8 @@ async function duplicateItem(item){
     price: item.price, description: item.description, image_url: null,
     pricing_type: item.pricing_type, position: nextPos, is_available: item.is_available,
     old_price: item.old_price, weight_sale_mode: item.weight_sale_mode,
-    min_weight_grams: item.min_weight_grams, cost_price: item.cost_price
+    min_weight_grams: item.min_weight_grams, cost_price: item.cost_price,
+    highlight_badge: item.highlight_badge || null, highlight_style: item.highlight_style || null
   };
   const { data: created, error } = await sb.from('items').insert(row).select().single();
   if(error || !created){ toast('تعذر نسخ الصنف'); return; }
@@ -15588,7 +15933,7 @@ function updateBulkBar(){
   bar.classList.toggle('hidden', !itemSelectMode);
   const n = selectedItemIds.size;
   document.getElementById('bulkCount').textContent = `${n} محدد`;
-  ['bulkHideBtn','bulkShowBtn','bulkMoveBtn','bulkDeleteBtn','bulkPosterBtn'].forEach(id=>{ const b = document.getElementById(id); if(b) b.disabled = n === 0; });
+  ['bulkHideBtn','bulkShowBtn','bulkMoveBtn','bulkDeleteBtn','bulkPosterBtn','bulkHlBtn'].forEach(id=>{ const b = document.getElementById(id); if(b) b.disabled = n === 0; });
   const pstB = document.getElementById('bulkPosterBtn');
   if(pstB) pstB.style.display = restaurant && restaurant.restriction_share_disabled ? 'none' : '';
   const del = document.getElementById('bulkDeleteBtn');
@@ -15645,11 +15990,44 @@ function openBulkMoveModal(){
     toast('تم نقل الأصناف');
   });
 }
+document.getElementById('promoManagerBtn').addEventListener('click', openPromoManager);
+document.getElementById('discountPosterBtn').addEventListener('click', ()=>{
+  if(restaurant.restriction_share_disabled){ toast('🔒 هذه الميزة غير متاحة لحسابك'); return; }
+  const list = items.filter(i=> i.is_available !== false && i.old_price != null && Number(i.old_price) > Number(i.price) && Number(i.price) > 0)
+    .sort((a, b)=> (1 - Number(b.price) / Number(b.old_price)) - (1 - Number(a.price) / Number(a.old_price)));
+  if(!list.length){ toast('لا توجد أصناف عليها خصم (حدّد «السعر قبل الخصم» للصنف أولاً)'); return; }
+  openPosterModal(list);
+});
 document.getElementById('selectModeBtn').addEventListener('click', ()=> setItemSelectMode(!itemSelectMode));
 document.getElementById('bulkCancelBtn').addEventListener('click', ()=> setItemSelectMode(false));
 document.getElementById('bulkHideBtn').addEventListener('click', ()=> bulkSetAvailability(false));
 document.getElementById('bulkShowBtn').addEventListener('click', ()=> bulkSetAvailability(true));
 document.getElementById('bulkMoveBtn').addEventListener('click', openBulkMoveModal);
+document.getElementById('bulkHlBtn').addEventListener('click', ()=>{
+  const ids = [...selectedItemIds];
+  if(!ids.length) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>✨ تمييز ${ids.length} في المنيو</h3>
+      <div class="orders-empty" style="text-align:right; padding:0 0 10px; font-size:12.5px;">اختر الشارة والشكل اللذين سيظهران لعملائك على الأصناف المحددة. «بدون شارة / عادي» تُزيل التمييز.</div>
+      ${hlFieldsHtml('bulkHlBadge', 'bulkHlStyle', '', '')}
+      <div class="modal-actions">
+        <button class="btn-confirm" id="bulkHlGo">تطبيق</button>
+        <button class="btn-cancel" id="bulkHlCancel">إلغاء</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#bulkHlCancel').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#bulkHlGo').addEventListener('click', async ()=>{
+    const btn = overlay.querySelector('#bulkHlGo'); btn.disabled = true;
+    const { error } = await sb.from('items').update({ highlight_badge: overlay.querySelector('#bulkHlBadge').value || null, highlight_style: overlay.querySelector('#bulkHlStyle').value || null }).in('id', ids);
+    if(error){ toast('تعذر التحديث'); btn.disabled = false; return; }
+    overlay.remove(); setItemSelectMode(false); await refreshData(); toast('تم تحديث التمييز للأصناف المحددة');
+  });
+});
 document.getElementById('bulkPosterBtn').addEventListener('click', ()=>{
   if(restaurant.restriction_share_disabled){ toast('🔒 هذه الميزة غير متاحة لحسابك'); return; }
   const list = [...selectedItemIds].map(id=> items.find(i=> i.id === id)).filter(Boolean);
@@ -15755,6 +16133,10 @@ function openItemModal(existing){
       <div class="field fw" id="addonGroupsFieldWrap">
         <label>🧩 مجموعات الإضافات والمتغيرات (اختياري) — اختر أي مجموعات جاهزة من "الإضافات والمتغيرات" لربطها بهذا الصنف</label>
         <div id="itemAddonGroupsWrap"></div>
+      </div>
+      <div class="field fw">
+        <label>✨ تمييز الصنف في المنيو (اختياري) — لجذب انتباه العملاء</label>
+        ${hlFieldsHtml('itemHlBadge', 'itemHlStyle', existing && existing.highlight_badge, existing && existing.highlight_style)}
       </div>
       <div class="field fw">
         <label>الوصف (اختياري)</label>
@@ -16009,14 +16391,15 @@ function openItemModal(existing){
     }
     let itemId = existing ? existing.id : null;
     if(existing){
-      const { error } = await sb.from('items').update({ name, name_en, price, old_price, cost_price, description, image_url: finalImageUrl, pricing_type, weight_sale_mode, min_weight_grams }).eq('id', existing.id);
+      const highlight_badge = overlay.querySelector('#itemHlBadge').value || null, highlight_style = overlay.querySelector('#itemHlStyle').value || null;
+      const { error } = await sb.from('items').update({ name, name_en, price, old_price, cost_price, highlight_badge, highlight_style, description, image_url: finalImageUrl, pricing_type, weight_sale_mode, min_weight_grams }).eq('id', existing.id);
       if(error){ toast('تعذر الحفظ'); btn.disabled=false; return; }
       if(originalItemImageUrl && originalItemImageUrl !== finalImageUrl){
         await deleteStorageFileFromUrl(originalItemImageUrl); // امسح الصورة القديمة بعد نجاح الحفظ فقط
       }
     } else {
       const newPos = items.filter(i=>i.category_id===selectedCategoryId).length;
-      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, old_price, cost_price, description, image_url: finalImageUrl, pricing_type, weight_sale_mode, min_weight_grams, position: newPos }).select().single();
+      const { data, error } = await sb.from('items').insert({ category_id: selectedCategoryId, name, name_en, price, old_price, cost_price, highlight_badge: overlay.querySelector('#itemHlBadge').value || null, highlight_style: overlay.querySelector('#itemHlStyle').value || null, description, image_url: finalImageUrl, pricing_type, weight_sale_mode, min_weight_grams, position: newPos }).select().single();
       if(error){ toast('تعذر الإضافة'); btn.disabled=false; return; }
       itemId = data.id;
     }
@@ -17363,8 +17746,12 @@ async function loadPublic(slug){
         controlHtml = `<div class="sold-out-note">${lang==='en' ? 'Currently sold out' : 'نفذت الكمية حاليًا'}</div>`;
         cartLinesHtml = '';
       }
+      const hlOn = !soldOut && (i.highlight_badge || i.highlight_style);
+      const hlB = hlOn && HL_BADGES[i.highlight_badge] ? HL_BADGES[i.highlight_badge] : null;
+      const hlCls = hlOn ? ' hl' + (HL_STYLES[i.highlight_style] ? ' hl-' + i.highlight_style : '') : '';
       return `${headerHtml}
-      <div class="pub-item${soldOut ? ' sold-out' : ''}" data-id="${i.id}">
+      <div class="pub-item${soldOut ? ' sold-out' : ''}${hlCls}" data-id="${i.id}">
+        ${hlB ? `<span class="hl-badge">${hlB[2]} ${lang==='en' ? hlB[1] : hlB[0]}</span>` : ''}
         <div class="pub-item-front">
           ${soldOut ? `<span class="sold-out-tag">${lang==='en' ? 'Sold out' : 'نفذ'}</span>` : ''}
           <span class="chevron" data-action="toggle">${i.description ? '▾' : ''}</span>
@@ -19264,7 +19651,55 @@ async function loadPublic(slug){
       });
     }, 900);
   }
-  showOffersPopupOnce();
+  // إعلان المنيو: بوستر صمّمه صاحب المتجر يظهر للعميل عند فتح المنيو (مرة لكل جلسة) — له أولوية على تنبيه العروض
+  async function showPromoPopupOnce(){
+    try{
+      const force = new URLSearchParams(location.search).get('promo') === '1';
+      const { data, error } = await sb.from('menu_promos').select('*').eq('restaurant_id', rest.id).eq('active', true).order('created_at', { ascending:false }).limit(1);
+      if(error || !data || !data.length) return;
+      const pr = data[0], nowT = Date.now();
+      if(pr.starts_at && new Date(pr.starts_at).getTime() > nowT) return;
+      if(pr.ends_at && new Date(pr.ends_at).getTime() <= nowT) return;
+      const key = `promoSeen_${pr.id}`;
+      try{ if(!force && sessionStorage.getItem(key)) return; }catch(e){}
+      await new Promise((res, rej)=>{ const im = new Image(); im.onload = res; im.onerror = rej; im.src = pr.image_url; }).catch(()=>{ throw new Error('img'); });
+      if(document.querySelector('.overlay')) return;
+      try{ sessionStorage.setItem(key, '1'); }catch(e){}
+      const en = lang === 'en';
+      const it = pr.item_id ? pubItems.find(i=> i.id === pr.item_id && i.is_available !== false) : null;
+      const overlay = document.createElement('div');
+      overlay.className = 'overlay promo-overlay';
+      overlay.innerHTML = `
+        <div class="modal promo-modal" role="dialog" aria-modal="true">
+          <button type="button" class="promo-close" aria-label="${en ? 'Close' : 'إغلاق'}">✕</button>
+          <img src="${escapeHtml(pr.image_url)}" alt="">
+          <button type="button" class="promo-go">${it ? (en ? 'Order now' : 'اطلب الآن') : (en ? 'Browse the menu' : 'تصفّح المنيو')}</button>
+          <button type="button" class="promo-later">${en ? 'Close' : 'إغلاق'}</button>
+        </div>`;
+      document.body.appendChild(overlay);
+      const close = ()=>{ overlay.remove(); document.removeEventListener('keydown', onKey); };
+      const onKey = (e)=>{ if(e.key === 'Escape') close(); };
+      document.addEventListener('keydown', onKey);
+      overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+      overlay.querySelector('.promo-close').addEventListener('click', close);
+      overlay.querySelector('.promo-later').addEventListener('click', close);
+      overlay.querySelector('.promo-go').addEventListener('click', ()=>{
+        close();
+        if(!it) return;
+        if(isTilesFamily()){ activeCat = it.category_id; renderPublicBody(); }
+        requestAnimationFrame(()=>{
+          const row = Array.from(document.querySelectorAll('#pubBody .pub-item')).find(r=> r.dataset.id === it.id);
+          if(!row) return;
+          const grp = row.closest('.pub-cat-group');
+          if(grp){ document.querySelectorAll('#pubBody .pub-cat-group.open').forEach(g=> g.classList.remove('open')); grp.classList.add('open'); }
+          row.scrollIntoView({ behavior:'smooth', block:'center' });
+          row.classList.add('offer-flash');
+          setTimeout(()=> row.classList.remove('offer-flash'), 2600);
+        });
+      });
+    }catch(e){ /* الجدول غير مفعّل أو الصورة غير متاحة: نتجاهل بهدوء */ }
+  }
+  showPromoPopupOnce().then(()=> showOffersPopupOnce(), ()=> showOffersPopupOnce());
 
   // المفتاح العام لتفعيل/إيقاف كل الإعلانات الجانبية (تتحكم فيه من لوحة السوبر أدمن)
   sb.from('app_settings').select('ads_enabled').eq('id', true).maybeSingle().then(({ data: settingsRow })=>{
