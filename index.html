@@ -53,6 +53,24 @@
 body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink); min-height:100vh; overflow-x:hidden;}
 .hidden{display:none !important;}
 
+/* كارت إعلان مصغّر في شاشة الدخول — شاشات كبيرة فقط، قابل للإغلاق ويختفي تلقائيًا */
+#loginAd{ display:none; }
+@media (min-width:1280px) and (min-height:640px){
+  #loginAd{ display:block; position:fixed; left:24px; bottom:24px; z-index:50; width:268px; padding:14px 16px 14px 14px; border-radius:14px; background:rgba(42,40,37,.92); backdrop-filter:blur(6px); border:1px solid #3a3733; border-right:3px solid var(--basil); box-shadow:0 10px 30px rgba(0,0,0,.4); opacity:0; transform:translateY(14px); pointer-events:none; transition:opacity .45s ease, transform .45s ease; }
+  #loginAd.la-show{ opacity:1; transform:none; pointer-events:auto; }
+  #loginAd.la-gone{ display:none; }
+  #loginAd a{ display:flex; gap:11px; align-items:center; text-decoration:none; color:inherit; }
+  #loginAd .la-ico{ width:38px; height:38px; flex-shrink:0; border-radius:10px; background:rgba(63,98,71,.25); display:flex; align-items:center; justify-content:center; font-size:19px; }
+  #loginAd .la-tag{ font-size:10px; color:var(--stone); letter-spacing:.3px; }
+  #loginAd .la-title{ font-size:13.5px; font-weight:800; color:var(--paper); margin-top:1px; }
+  #loginAd .la-desc{ font-size:11.5px; color:#b9b3a3; margin-top:2px; line-height:1.5; }
+  #loginAd .la-cta{ font-size:11.5px; font-weight:800; color:#8fd19e; margin-top:5px; }
+  #loginAd .la-close{ position:absolute; top:6px; left:6px; width:22px; height:22px; border:0; border-radius:50%; background:transparent; color:var(--stone); font-size:12px; cursor:pointer; line-height:1; }
+  #loginAd .la-close:hover{ background:rgba(255,255,255,.1); color:var(--paper); }
+  #loginAd .la-bar{ position:absolute; right:0; bottom:0; height:2px; width:100%; background:var(--basil); transform-origin:right; border-radius:0 0 14px 14px; }
+  #loginAd.la-show .la-bar{ animation:laBar var(--la-dur,14s) linear forwards; }
+}
+@keyframes laBar{ from{ transform:scaleX(1);} to{ transform:scaleX(0);} }
 #authScreen{ min-height:100vh; background:var(--ink); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px 20px; }
 .auth-brand{ font-family:var(--display); color:var(--paper); font-size:32px; display:flex; align-items:center; gap:12px; margin-bottom:26px; }
 .auth-brand .dot{width:10px;height:10px;border-radius:50%;background:var(--ember);}
@@ -2303,6 +2321,20 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
   <div id="loadingText">جارِ التحميل...</div>
 </div>
 
+<div id="loginAd" role="complementary" aria-label="إعلان">
+  <button type="button" class="la-close" id="loginAdClose" aria-label="إغلاق الإعلان">✕</button>
+  <a href="https://magziko.github.io/Pos/index.html" target="_blank" rel="noopener" data-ad="pos-login">
+    <span class="la-ico">🧾</span>
+    <span>
+      <div class="la-tag">إعلان</div>
+      <div class="la-title">نظام نقاط البيع</div>
+      <div class="la-desc">مبيعاتك ومخزونك وفروعك من مكان واحد</div>
+      <div class="la-cta">جرّب الآن ←</div>
+    </span>
+  </a>
+  <span class="la-bar"></span>
+</div>
+
 <div id="authScreen" class="hidden">
   <div class="auth-brand"><img class="auth-brand-logo" src="favicon.png" alt="منيو m@g"> منيو m@g</div>
   <div class="auth-box">
@@ -3341,6 +3373,7 @@ function renderAccountIdentity(){
 function show(id){
   if(id === 'dashboardScreen' || id === 'cashierScreen') renderAccountIdentity();
   if(id === 'authScreen' && typeof setupInstallableDashboard === 'function'){ try{ setupInstallableDashboard(); }catch(e){} }
+  if(typeof window.loginAdSync === 'function'){ try{ window.loginAdSync(id === 'authScreen'); }catch(e){} }
   ['loadingScreen','authScreen','onboardScreen','dashboardScreen','publicScreen','trackingScreen','cashierScreen'].forEach(s=>{
     document.getElementById(s).classList.toggle('hidden', s!==id);
   });
@@ -7807,7 +7840,7 @@ async function openAdminPanel(){
   });
 
   /* ================ تبويب إحصائيات الإعلانات ================ */
-  const AD_LABELS = { pos:'🧾 نظام نقاط البيع', radio:'📻 راديو القرآن', quran:'📖 موقع المصحف', sentence:'🗣️ موقع تعلّم الإنجليزية' };
+  const AD_LABELS = { pos:'🧾 نظام نقاط البيع', radio:'📻 راديو القرآن', quran:'📖 موقع المصحف', sentence:'🗣️ موقع تعلّم الإنجليزية', 'pos-login':'🔐 نقاط البيع — شاشة الدخول' };
   function adLabelFor(key){
     if(AD_LABELS[key]) return AD_LABELS[key];
     if(key.startsWith('custom:')) return '📣 إعلان مخصص — ' + key.slice(7);
@@ -19775,6 +19808,8 @@ boot();
     }catch(e){ console.error('track_ad_event failed:', e); }
   }
 
+  window.__trackAdEvent = trackAdEvent;
+
   function initSideAds(){
     var closeBtns = document.querySelectorAll('[data-side-ad-close]');
     if(closeBtns.length){
@@ -19921,6 +19956,54 @@ boot();
   } else {
     initRailAd();
   }
+})();
+
+// === إعلان مصغّر في شاشة الدخول: شاشات كبيرة فقط، يظهر بعد لحظات، قابل للإغلاق، ويختفي تلقائيًا ===
+(function(){
+  var SHOW_DELAY = 2500, VISIBLE_MS = 14000, KEY = 'magLoginAdClosed';
+  var wideMQ = window.matchMedia('(min-width:1280px) and (min-height:640px)');
+  var tShow = null, tHide = null, adsOn = null, tracked = false;
+  function el(){ return document.getElementById('loginAd'); }
+  function closed(){ try{ return sessionStorage.getItem(KEY) === '1'; }catch(e){ return false; } }
+  function clear(){ clearTimeout(tShow); clearTimeout(tHide); tShow = tHide = null; }
+  function hide(permanent){
+    clear();
+    var a = el(); if(!a) return;
+    a.classList.remove('la-show');
+    if(permanent){ a.classList.add('la-gone'); try{ sessionStorage.setItem(KEY,'1'); }catch(e){} }
+  }
+  function loadFlag(){
+    if(adsOn !== null || typeof sb === 'undefined') return Promise.resolve();
+    return Promise.resolve(sb.from('app_settings').select('ads_enabled').eq('id', true).maybeSingle())
+      .then(function(r){ adsOn = !r.data || r.data.ads_enabled !== false; })
+      .catch(function(){ adsOn = true; });
+  }
+  function start(){
+    var a = el();
+    if(!a || closed() || !wideMQ.matches) return;
+    clear();
+    loadFlag().then(function(){
+      if(adsOn === false) return;
+      tShow = setTimeout(function(){
+        var a2 = el(); if(!a2 || a2.classList.contains('la-gone')) return;
+        a2.style.setProperty('--la-dur', VISIBLE_MS + 'ms');
+        a2.classList.add('la-show');
+        if(!tracked && typeof window.__trackAdEvent === 'function'){ tracked = true; window.__trackAdEvent('pos-login','impression'); }
+        tHide = setTimeout(function(){ hide(false); }, VISIBLE_MS);
+      }, SHOW_DELAY);
+    });
+  }
+  window.loginAdSync = function(onAuth){ if(onAuth) start(); else hide(false); };
+  document.addEventListener('DOMContentLoaded', function(){
+    var a = el(); if(!a) return;
+    var c = document.getElementById('loginAdClose');
+    if(c) c.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); hide(true); });
+    // إيقاف العدّ التنازلي أثناء المرور بالماوس حتى لا يختفي والزائر يقرأ
+    a.addEventListener('mouseenter', function(){ clearTimeout(tHide); var b=a.querySelector('.la-bar'); if(b) b.style.animationPlayState='paused'; });
+    a.addEventListener('mouseleave', function(){ var b=a.querySelector('.la-bar'); if(b) b.style.animationPlayState='running'; clearTimeout(tHide); tHide = setTimeout(function(){ hide(false); }, 4000); });
+    var auth = document.getElementById('authScreen');
+    if(auth && !auth.classList.contains('hidden')) start();
+  });
 })();
 </script>
 </body>
