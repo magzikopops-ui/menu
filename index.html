@@ -506,8 +506,8 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .orders-dark .orders-table-wrap{ background:var(--paper); border-color:var(--line); }
 .orders-dark .orders-table th{ background:#302d29; }
 .orders-dark .orders-table td, .orders-dark .orders-table th{ border-color:var(--line); }
-.orders-dark .orders-table th:nth-child(1), .orders-dark .orders-table td:nth-child(1), .orders-dark .orders-table th:nth-child(2), .orders-dark .orders-table td:nth-child(2){ background:var(--paper); }
-.orders-dark .orders-table th:nth-child(1), .orders-dark .orders-table th:nth-child(2){ background:#302d29; }
+.orders-dark .orders-table td.c-num, .orders-dark .orders-table td.c-name{ background:var(--paper); }
+.orders-dark .orders-table th.c-num, .orders-dark .orders-table th.c-name{ background:#302d29; }
 .orders-dark .orders-table tr.order-row.is-new td{ background:#3a2a22; }
 .orders-dark .o-ic, .orders-dark .btn-cancel{ background:#302d29; border-color:var(--line); color:var(--ink); }
 .orders-dark .orders-summary{ border-color:var(--line); color:var(--stone); } .orders-dark .orders-summary strong{ color:var(--ink); }
@@ -549,9 +549,14 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .orders-table.is-compact .ot-line{ display:inline; }
 .orders-table.is-compact .ot-line + .ot-line::before{ content:'، '; }
 .orders-table-wrap{ -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; max-width:100%; }
-.orders-table th:nth-child(1), .orders-table td:nth-child(1){ position:sticky; right:0; z-index:2; background:var(--paper); min-width:54px; }
-.orders-table th:nth-child(2), .orders-table td:nth-child(2){ position:sticky; right:54px; z-index:2; background:var(--paper); box-shadow:-3px 0 5px -3px rgba(0,0,0,.18); }
-.orders-table th:nth-child(1), .orders-table th:nth-child(2){ background:var(--paper-dim); z-index:3; }
+.orders-table th.c-num, .orders-table td.c-num{ position:sticky; right:0; z-index:2; background:var(--paper); min-width:54px; }
+.orders-table th.c-name, .orders-table td.c-name{ position:sticky; right:54px; z-index:2; background:var(--paper); box-shadow:-3px 0 5px -3px rgba(0,0,0,.18); }
+.orders-table th.c-num, .orders-table th.c-name{ background:var(--paper-dim); z-index:3; }
+.tl-opt{ display:flex; gap:10px; align-items:flex-start; padding:8px 10px; border:1.5px solid var(--line); border-radius:10px; margin-bottom:6px; cursor:pointer; }
+.tl-opt.on{ border-color:var(--ember); background:rgba(184,57,14,.07); }
+.tl-opt b{ display:block; font-size:13.5px; } .tl-opt small{ display:block; color:var(--stone); font-size:11.5px; margin-top:1px; }
+.tl-cols{ display:grid; grid-template-columns:1fr 1fr; gap:6px 12px; }
+.tl-col{ font-size:13px; font-weight:700; cursor:pointer; }
 @media (max-width:700px){
   .orders-table{ font-size:12px; }
   .orders-table td, .orders-table th{ padding:7px 8px; }
@@ -6710,6 +6715,7 @@ async function openOrdersOverlay(){
           </select>
           <button type="button" class="chip-btn" id="ordersDarkBtn" title="الوضع الليلي لشاشة الطلبات"></button>
           <button type="button" class="chip-btn" id="ordersKitchenBtn" title="إجمالي الأصناف المطلوب تحضيرها من الطلبات الجارية">🍳 المطلوب للمطبخ</button>
+          <button type="button" class="chip-btn hidden" id="ordersColsBtn" title="اختيار شكل الجدول والأعمدة">⚙️ شكل الجدول</button>
           <button type="button" class="chip-btn hidden" id="ordersItemsBtn" title="عرض الأصناف والكميات كاملة أو مختصرة في الجدول"></button>
           <button type="button" class="chip-btn" id="ordersViewBtn" title="تبديل طريقة العرض بين الكروت والجدول"></button>
           <button type="button" class="chip-btn" id="alertTonePreviewBtn">🔊 تجربة</button>
@@ -7032,6 +7038,30 @@ async function openOrdersOverlay(){
     const label = min >= 60 ? `${Math.floor(min/60)} س ${min%60} د` : `${min} د`;
     return `<span class="o-wait ${cls}" title="مضى على الطلب">⏳ منذ ${label}</span>`;
   }
+  // ===== أعمدة الجدول: قابلة للاختيار، مع تصميمات جاهزة =====
+  const TABLE_COLS = [
+    { id:'num', label:'رقم الطلب', locked:true }, { id:'name', label:'العميل' }, { id:'phone', label:'الهاتف' },
+    { id:'type', label:'نوع الطلب' }, { id:'addr', label:'العنوان' }, { id:'items', label:'الأصناف والكميات' },
+    { id:'total', label:'الإجمالي' }, { id:'status', label:'الحالة' }, { id:'time', label:'الوقت' }, { id:'actions', label:'الإجراءات (الحالة والطباعة)' }
+  ];
+  const COL_PRESETS = {
+    compact:  { label:'مختصر', hint:'العميل بدون هاتف وعنوان (بياناته في النافذة)', cols:['num','name','type','items','total','status','time','actions'] },
+    detailed: { label:'مفصّل', hint:'الهاتف والعنوان ظاهرين في الجدول', cols:['num','name','phone','type','addr','items','total','status','time','actions'] },
+    kitchen:  { label:'للمطبخ', hint:'الأصناف والحالة فقط بدون أسعار وعناوين', cols:['num','name','type','items','status','time','actions'] },
+    delivery: { label:'للتوصيل', hint:'العنوان والهاتف والحالة للسائق', cols:['num','name','phone','addr','status','time','actions'] }
+  };
+  let tableCols = (()=>{
+    const saved = dashPrefGet('ordCols', null);
+    const valid = Array.isArray(saved) ? saved.filter(id=> TABLE_COLS.some(c=> c.id === id)) : null;
+    const cols = (valid && valid.length) ? valid : COL_PRESETS.compact.cols.slice();
+    if(!cols.includes('num')) cols.unshift('num');
+    return TABLE_COLS.map(c=> c.id).filter(id=> cols.includes(id));
+  })();
+  const TABLE_HEAD = {
+    num: ()=> `<th class="c-num"><input type="checkbox" class="ot-chk" id="otChkAll" title="تحديد كل الطلبات الجارية المعروضة">#</th>`,
+    name: ()=> `<th class="c-name">العميل</th>`, phone: ()=> `<th>الهاتف</th>`, type: ()=> `<th>نوع الطلب</th>`, addr: ()=> `<th>العنوان</th>`,
+    items: ()=> `<th>الأصناف والكميات</th>`, total: ()=> `<th>الإجمالي</th>`, status: ()=> `<th>الحالة</th>`, time: ()=> `<th>الوقت</th>`, actions: ()=> `<th>إجراءات</th>`
+  };
   function orderTableRowHtml(o){
     const status = o.status || 'pending';
     const lines = itemsByOrder[o.id] || [];
@@ -7040,22 +7070,27 @@ async function openOrdersOverlay(){
     const isOnlinePay = o.payment_method === 'wallet' || o.payment_method === 'instapay';
     const final = (status === 'delivered' || status === 'cancelled');
     const cur = getRestaurantCurrency(restaurant);
-    return `<tr class="order-row${isNewOrder(o) ? ' is-new' : ''}${flashIds.has(o.id) ? ' o-flash' : ''}" data-order-id="${o.id}">
-      <td class="ot-num"><input type="checkbox" class="ot-chk" data-oid="${o.id}" ${selectedIds.has(o.id) ? 'checked' : ''} ${(status === 'delivered' || status === 'cancelled') ? 'disabled title="طلب نهائي"' : ''}><a href="#" data-action="openDetails" data-order-id="${o.id}" title="عرض تفاصيل الطلب" style="color:inherit; text-decoration:underline dotted;">${o.order_number != null ? '#' + o.order_number : '—'}</a></td>
-      <td class="ot-name"><a href="#" class="ot-cust" data-action="openDetails" data-order-id="${o.id}" title="عرض بيانات العميل وأزرار الاتصال"><strong>${escapeHtml(o.customer_name)}</strong><small>👤 البيانات</small></a></td>
-      <td style="white-space:nowrap;"><span class="ot-type ${o.order_type === 'dine_in' ? 'dine' : (o.order_type === 'pickup' ? 'pick' : 'deliv')}">${typeLabel}</span></td>
-      
-      <td><div class="ot-items" title="${escapeHtml(itemsTxt)}">${lines.length ? lines.slice(0, itemsFull ? 3 : lines.length).map(l=> `<div class="ot-line"><b>${escapeHtml(String(l.quantity))}×</b><span>${escapeHtml(l.item_name)}</span>${l.item_note ? `<small>(${escapeHtml(l.item_note)})</small>` : ''}</div>`).join('') : '<span style="color:var(--stone);">—</span>'}${(itemsFull && lines.length > 3) ? `<button type="button" class="ot-more" data-action="openDetails" data-order-id="${o.id}">+ ${lines.length - 3} صنف آخر ◂</button>` : ''}</div></td>
-      <td class="ot-total">${o.total != null ? Number(o.total).toFixed(2) + ' ' + escapeHtml(cur) : ''}</td>
-      <td><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${isOnlinePay ? `<div style="font-size:11px; margin-top:3px; color:${o.payment_status==='paid' ? 'var(--basil)' : '#8a5f0d'};">💳 ${o.payment_status==='paid' ? 'مدفوع' : 'بانتظار التأكيد'}</div>` : ''}</td>
-      <td style="white-space:nowrap;">${fmtOrderTime(new Date(o.created_at))}</td>
-      <td><div class="ot-actions">
+    const cells = {
+      num: `<td class="ot-num c-num"><input type="checkbox" class="ot-chk" data-oid="${o.id}" ${selectedIds.has(o.id) ? 'checked' : ''} ${final ? 'disabled title="طلب نهائي"' : ''}><a href="#" data-action="openDetails" data-order-id="${o.id}" title="عرض تفاصيل الطلب" style="color:inherit; text-decoration:underline dotted;">${o.order_number != null ? '#' + o.order_number : '—'}</a></td>`,
+      name: `<td class="ot-name c-name"><a href="#" class="ot-cust" data-action="openDetails" data-order-id="${o.id}" title="عرض بيانات العميل وأزرار الاتصال"><strong>${escapeHtml(o.customer_name)}</strong><small>👤 البيانات</small></a></td>`,
+      phone: `<td style="white-space:nowrap;"><span class="ot-phone">${escapeHtml(o.customer_phone)}</span>${contactIcons(o.customer_phone)}${o.secondary_phone ? `<br><span class="ot-phone">${escapeHtml(o.secondary_phone)}</span>${contactIcons(o.secondary_phone)}` : ''}</td>`,
+      type: `<td style="white-space:nowrap;"><span class="ot-type ${o.order_type === 'dine_in' ? 'dine' : (o.order_type === 'pickup' ? 'pick' : 'deliv')}">${typeLabel}</span></td>`,
+      addr: `<td class="ot-addr">${o.order_type === 'pickup' ? '<span style="color:var(--stone);">استلام من المحل</span>' : (o.order_type === 'dine_in' ? '<span style="color:var(--stone);">داخل الصالة</span>' : `${escapeHtml([o.city, o.area].filter(Boolean).join(' — '))}${o.address ? `<div style="color:var(--stone); margin-top:2px;">${escapeHtml(o.address)}</div>` : ''}${mapLink(o) ? `<div style="margin-top:3px;">${mapLink(o)}</div>` : ''}`)}</td>`,
+      items: `<td><div class="ot-items" title="${escapeHtml(itemsTxt)}">${lines.length ? lines.slice(0, itemsFull ? 3 : lines.length).map(l=> `<div class="ot-line"><b>${escapeHtml(String(l.quantity))}×</b><span>${escapeHtml(l.item_name)}</span>${l.item_note ? `<small>(${escapeHtml(l.item_note)})</small>` : ''}</div>`).join('') : '<span style="color:var(--stone);">—</span>'}${(itemsFull && lines.length > 3) ? `<button type="button" class="ot-more" data-action="openDetails" data-order-id="${o.id}">+ ${lines.length - 3} صنف آخر ◂</button>` : ''}</div></td>`,
+      total: `<td class="ot-total">${o.total != null ? Number(o.total).toFixed(2) + ' ' + escapeHtml(cur) : ''}</td>`,
+      status: `<td><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${isOnlinePay ? `<div style="font-size:11px; margin-top:3px; color:${o.payment_status==='paid' ? 'var(--basil)' : '#8a5f0d'};">💳 ${o.payment_status==='paid' ? 'مدفوع' : 'بانتظار التأكيد'}</div>` : ''}</td>`,
+      time: `<td style="white-space:nowrap;">${fmtOrderTime(new Date(o.created_at))}</td>`,
+      actions: `<td><div class="ot-actions">
         <select class="status-select" data-action="statusSelect" ${final ? 'disabled title="لا يمكن تغيير حالة الطلب بعد أن أصبح نهائيًا"' : ''}>
           ${Object.entries(STATUS_LABELS).map(([k,v])=> `<option value="${k}" ${status===k ? 'selected' : ''}>${v}</option>`).join('')}
         </select>
         ${restaurant.restriction_print_disabled ? '' : `<button type="button" class="o-print-btn" data-action="printReceipt" data-order-id="${o.id}" title="طباعة الطلب">🖨️</button>`}
-      </div></td>
-    </tr>`;
+      </div></td>`
+    };
+    // لو عمود الحالة (select) غير ظاهر، نحافظ على وجود عنصر مخفي حتى لا يتعطل منطق تغيير الحالة والـ badge
+    const hiddenHelpers = (tableCols.includes('actions') ? '' : `<td style="display:none;"><select class="status-select" data-action="statusSelect" disabled><option value="${status}" selected></option></select></td>`)
+      + (tableCols.includes('status') ? '' : `<td style="display:none;"><span class="status-badge ${status}"></span></td>`);
+    return `<tr class="order-row${isNewOrder(o) ? ' is-new' : ''}${flashIds.has(o.id) ? ' o-flash' : ''}" data-order-id="${o.id}">${tableCols.map(id=> cells[id]).join('')}${hiddenHelpers}</tr>`;
   }
   function ordersTableHtml(list){
     return `<div class="ot-bulk${selectedIds.size ? '' : ' hidden'}" id="otBulkBar">
@@ -7063,9 +7098,37 @@ async function openOrdersOverlay(){
       <select class="status-select" id="otBulkStatus">${Object.entries(STATUS_LABELS).map(([k,v])=> `<option value="${k}">${v}</option>`).join('')}</select>
       <button type="button" id="otBulkApply">تطبيق على المحدد</button>
       <button type="button" id="otBulkClear" style="background:transparent; color:#fff; border:1px solid rgba(255,255,255,.6);">إلغاء التحديد</button>
-    </div><div class="orders-table-wrap"><table class="orders-table${itemsFull ? '' : ' is-compact'}"><thead><tr>
-      <th><input type="checkbox" class="ot-chk" id="otChkAll" title="تحديد كل الطلبات الجارية المعروضة">#</th><th>العميل</th><th>نوع الطلب</th><th>الأصناف والكميات</th><th>الإجمالي</th><th>الحالة</th><th>الوقت</th><th>إجراءات</th>
-    </tr></thead><tbody>${list.map(orderTableRowHtml).join('')}</tbody></table></div>`;
+    </div><div class="orders-table-wrap"><table class="orders-table${itemsFull ? '' : ' is-compact'}"><thead><tr>${tableCols.map(id=> TABLE_HEAD[id]()).join('')}</tr></thead><tbody>${list.map(orderTableRowHtml).join('')}</tbody></table></div>`;
+  }
+  function openTableLayout(){
+    const sameAs = (arr)=> arr.length === tableCols.length && arr.every(x=> tableCols.includes(x));
+    const dv = document.createElement('div');
+    dv.className = 'overlay'; dv.style.zIndex = '10050';
+    const draw = ()=>{
+      const cur = Object.keys(COL_PRESETS).find(k=> sameAs(COL_PRESETS[k].cols));
+      dv.innerHTML = `<div class="modal od-modal${darkMode ? ' orders-dark' : ''}">
+        <h3 style="margin:0 0 4px;">⚙️ شكل جدول الطلبات</h3>
+        <div style="color:var(--stone); font-size:12.5px; margin-bottom:10px;">اختر تصميمًا جاهزًا، أو حدّد الأعمدة التي تريدها بنفسك. التغيير يظهر فورًا ويُحفظ على هذا الجهاز.</div>
+        <div style="font-weight:800; margin-bottom:6px;">تصميمات جاهزة</div>
+        ${Object.entries(COL_PRESETS).map(([k,pr])=> `<label class="tl-opt${cur === k ? ' on' : ''}"><input type="radio" name="tlPreset" value="${k}" ${cur === k ? 'checked' : ''}><span><b>${pr.label}</b><small>${pr.hint}</small></span></label>`).join('')}
+        <label class="tl-opt${cur ? '' : ' on'}"><input type="radio" name="tlPreset" value="custom" ${cur ? '' : 'checked'} disabled><span><b>مخصص</b><small>${cur ? 'يُفعَّل عند تعديل الأعمدة بالأسفل' : 'الأعمدة المحددة بالأسفل'}</small></span></label>
+        <div style="font-weight:800; margin:12px 0 6px;">الأعمدة الظاهرة</div>
+        <div class="tl-cols">${TABLE_COLS.map(c=> `<label class="tl-col"><input type="checkbox" data-col="${c.id}" ${tableCols.includes(c.id) ? 'checked' : ''} ${c.locked ? 'disabled' : ''}> ${c.label}</label>`).join('')}</div>
+        <div style="display:flex; margin-top:14px;"><button type="button" id="tlClose" style="margin-inline-start:auto; border:0; background:var(--paper-dim); color:var(--ink); font-family:var(--body); font-weight:800; padding:9px 22px; border-radius:10px; cursor:pointer;">تم</button></div>
+      </div>`;
+      dv.querySelectorAll('input[name="tlPreset"]:not(:disabled)').forEach(r=> r.addEventListener('change', ()=>{ setCols(COL_PRESETS[r.value].cols); }));
+      dv.querySelectorAll('input[data-col]').forEach(cb=> cb.addEventListener('change', ()=>{
+        const picked = [...dv.querySelectorAll('input[data-col]')].filter(x=> x.checked || x.disabled).map(x=> x.dataset.col);
+        setCols(picked);
+      }));
+      dv.querySelector('#tlClose').addEventListener('click', ()=> dv.remove());
+    };
+    const setCols = (cols)=>{
+      const set = TABLE_COLS.map(c=> c.id).filter(id=> id === 'num' || cols.includes(id));
+      tableCols = set; dashPrefSet('ordCols', set); draw(); renderList();
+    };
+    dv.addEventListener('click', (e)=>{ if(e.target === dv) dv.remove(); });
+    document.body.appendChild(dv); draw();
   }
 
   // أزرار اتصال وواتساب مباشرة على رقم العميل، ورابط الخريطة للعنوان
@@ -7447,8 +7510,10 @@ async function openOrdersOverlay(){
   const refreshViewBtn = ()=>{
     viewBtn.textContent = viewMode === 'table' ? '▦ عرض الكروت' : '☰ عرض جدول';
     itemsBtn.classList.toggle('hidden', viewMode !== 'table');
+    overlay.querySelector('#ordersColsBtn').classList.toggle('hidden', viewMode !== 'table');
     itemsBtn.textContent = itemsFull ? '📋 الأصناف: كاملة' : '📋 الأصناف: مختصرة';
   };
+  overlay.querySelector('#ordersColsBtn').addEventListener('click', openTableLayout);
   itemsBtn.addEventListener('click', ()=>{ itemsFull = !itemsFull; dashPrefSet('ordItemsFull', itemsFull); refreshViewBtn(); renderList(); });
 
   refreshViewBtn();
