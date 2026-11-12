@@ -1079,6 +1079,45 @@ body.pub-mobile-ad-open .pub-order-btn{ bottom:calc(22px + 58px); }
 .report-doc th{ text-align:right; font-size:11px; color:#555; padding:4px 6px; border-bottom:1px solid #ccc; }
 .report-doc td{ padding:5px 6px; border-bottom:1px solid #eee; }
 .report-doc td.num{ direction:ltr; text-align:left; white-space:nowrap; }
+/* تقارير جدولية */
+.rtx-modal .rtx-range{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.rtx-presets{ display:flex; gap:6px; flex-wrap:wrap; }
+.rtx-dates{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:12px; color:var(--stone); }
+.rtx-dates input{ font-size:12px; padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--paper-dim); color:var(--ink); }
+.rtx-tabs{ display:flex; gap:4px; border-bottom:2px solid var(--line); margin-bottom:12px; overflow-x:auto; }
+.rtx-tabs button{ border:0; background:transparent; font-family:var(--body); font-weight:800; font-size:13.5px; color:var(--stone); padding:10px 16px; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap; width:auto; }
+.rtx-tabs button.on{ color:var(--ember); border-bottom-color:var(--ember); }
+.rtx-title{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+.rtx-title h4{ margin:0; font-size:16px; } .rtx-title p{ margin:3px 0 0; font-size:12px; color:var(--stone); }
+.rtx-h{ margin:18px 0 8px; font-size:14px; }
+.rtx-kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:12px; }
+.rtx-kpi{ background:var(--paper-dim); border:1px solid var(--line); border-top:3px solid var(--c,var(--ember)); border-radius:12px; padding:10px 12px; }
+.rtx-kpi .l{ font-size:11.5px; color:var(--stone); font-weight:700; } .rtx-kpi .v{ font-size:17px; font-weight:800; margin-top:3px; font-family:var(--mono); color:var(--ink); }
+.rtx-filters{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:8px; font-size:12.5px; color:var(--stone); }
+.rtx-filters select, .rtx-bar select, .rtx-bar input{ font-size:12px; padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--paper-dim); color:var(--ink); }
+.rtx-bar{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; font-size:12.5px; color:var(--stone); }
+.rtx-bar .rtx-search{ min-width:220px; flex:1; max-width:340px; }
+.rtx-wrap{ overflow:auto; max-height:56vh; border:1px solid var(--line); border-radius:12px; background:var(--paper); }
+.rtx-table{ width:100%; border-collapse:collapse; font-size:12.5px; min-width:720px; }
+.rtx-table th{ position:sticky; top:0; z-index:1; background:var(--paper-dim); text-align:right; padding:9px 10px; font-size:11.5px; font-weight:800; color:var(--stone); border-bottom:2px solid var(--line); white-space:nowrap; cursor:pointer; user-select:none; }
+.rtx-table.static th{ cursor:default; }
+.rtx-table th i{ font-style:normal; font-size:9px; margin-inline-start:5px; opacity:.45; } .rtx-table th.sorted{ color:var(--ember); } .rtx-table th.sorted i{ opacity:1; }
+.rtx-table td{ padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:middle; }
+.rtx-table tbody tr:not(.rtx-detail):hover td{ background:rgba(184,57,14,.05); }
+.rtx-table td.n{ font-family:var(--mono); } .rtx-table td.nw{ white-space:nowrap; } .rtx-table .sub{ font-size:11px; color:var(--stone); font-family:var(--body); }
+.rtx-table .ltr{ direction:ltr; display:inline-block; font-family:var(--mono); }
+.rtx-table tr.tot td{ background:var(--paper-dim); font-weight:800; border-top:2px solid var(--line); }
+.rtx-table .rtx-x{ width:38px; padding-inline:6px; text-align:center; cursor:default; }
+.rtx-plus{ width:24px; height:24px; border-radius:50%; border:0; background:var(--basil); color:#fff; font-weight:800; font-size:15px; line-height:1; cursor:pointer; padding:0; }
+.rtx-plus.on{ background:var(--ember); }
+.rtx-detail > td{ background:var(--paper-dim); padding:10px 14px !important; }
+.rtx-items{ width:100%; border-collapse:collapse; font-size:12px; background:var(--paper); border-radius:8px; overflow:hidden; }
+.rtx-items th, .rtx-items td{ padding:6px 9px; border-bottom:1px solid var(--line); text-align:right; position:static; cursor:default; background:transparent; } .rtx-items td.n{ font-family:var(--mono); }
+.rtx-pager{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px; font-size:12px; color:var(--stone); }
+.rtx-pg{ display:flex; gap:8px; align-items:center; } .rtx-pg b{ color:var(--ink); font-family:var(--mono); }
+.rtx-pg button{ border:1px solid var(--line); background:var(--paper-dim); color:var(--ink); border-radius:8px; padding:6px 14px; font-family:var(--body); font-weight:700; font-size:12px; cursor:pointer; width:auto; }
+.rtx-pg button:disabled{ opacity:.4; cursor:default; }
+@media (max-width:700px){ .rtx-bar .rtx-search{ max-width:none; } .rtx-tabs button{ padding:9px 12px; font-size:13px; } }
 .report-kpi-row{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
 .report-kpi{ flex:1; min-width:120px; border:1px solid #ddd; border-radius:8px; padding:8px 10px; }
 .report-kpi .kpi-label{ font-size:10.5px; color:#666; }
@@ -10656,7 +10695,10 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
     <div class="modal modal-screen ms-xl">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px;">
         <h3 style="margin:0;">التقارير والتحليلات</h3>
-        <button type="button" class="btn-export-sm" id="statsExportPdfBtn">📄 تصدير تقرير شهري</button>
+        <span style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button type="button" class="btn-export-sm" id="tblReportsBtn" style="background:var(--ember);">📋 تقارير جدولية</button>
+          <button type="button" class="btn-export-sm" id="statsExportPdfBtn">📄 تصدير تقرير شهري</button>
+        </span>
       </div>
       <div id="statsSummaryWrap"><div class="orders-empty">جارِ التحميل...</div></div>
       <div class="modal-actions">
@@ -10667,6 +10709,7 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
   overlay.querySelector('#statsCloseBtn').addEventListener('click', ()=> overlay.remove());
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
 
+  overlay.querySelector('#tblReportsBtn').addEventListener('click', ()=> openTableReportsModal());
   const wrap = overlay.querySelector('#statsSummaryWrap');
   const { data: rows, error } = await sb.from('order_stats_daily').select('*').eq('restaurant_id', restaurant.id).order('day', { ascending:false });
   const { data: visitRows } = await sb.from('menu_visits_daily').select('*').eq('restaurant_id', restaurant.id).order('day', { ascending:false });
@@ -11358,6 +11401,314 @@ function exportOrdersToExcel(orderList, itemsByOrderMap, filenameLabel){
   const filename = `${restaurant.slug || 'orders'}-${filenameLabel || 'طلبات'}-${dateTag}.xlsx`;
   XLSX.writeFile(wb, filename);
   toast(`تم تصدير ${orderList.length} طلب بنجاح`);
+}
+
+// ===== تقارير جدولية: الطلبات / إجمالي المبيعات / تفاصيل المبيعات =====
+async function openTableReportsModal(initialTab){
+  const cur = getRestaurantCurrency(restaurant);
+  const money = (v)=> (Number(v) || 0).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  const cairoDay = (iso)=> new Date(iso).toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });
+  const addDays = (day, n)=>{ const d = new Date(day + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); };
+  const fmtDT = (iso)=> new Date(iso).toLocaleString('en-GB', { timeZone:'Africa/Cairo', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true }).replace(',', '').replace(/am/i, 'ص').replace(/pm/i, 'م');
+  const STATUS = ORDER_STATUS_LABELS_EXPORT;
+  const typeKey = (o)=> o.order_type === 'dine_in' ? 'dine_in' : (o.order_type === 'pickup' ? 'pickup' : 'delivery');
+  const TYPE_LABEL = { delivery:'🛵 توصيل', pickup:'📦 استلام', dine_in:'🍽️ داخل المطعم' };
+  const sub = (o)=> o.subtotal != null ? Number(o.subtotal) : (Number(o.total || 0) - Number(o.delivery_fee || 0) + Number(o.discount_amount || 0));
+  const payKey = (o)=> o.payment_method === 'wallet' ? 'wallet' : (o.payment_method === 'instapay' ? 'instapay' : 'cash');
+  const PAY_LABEL = { cash:'نقدًا', wallet:'محفظة إلكترونية', instapay:'إنستاباي' };
+  const payText = (o)=>{
+    const k = payKey(o); if(k === 'cash') return 'نقدًا';
+    return `${PAY_LABEL[k]} — ${o.payment_status === 'paid' ? 'مدفوع' : 'بانتظار التأكيد'}`;
+  };
+
+  const today = cairoDay(new Date().toISOString());
+  const PRESETS = [
+    ['اليوم', ()=> [today, today]], ['أمس', ()=> [addDays(today,-1), addDays(today,-1)]],
+    ['آخر 7 أيام', ()=> [addDays(today,-6), today]], ['آخر 30 يومًا', ()=> [addDays(today,-29), today]],
+    ['هذا الشهر', ()=> [today.slice(0,8) + '01', today]],
+    ['الشهر الماضي', ()=>{ const first = today.slice(0,8) + '01'; const lastPrev = addDays(first, -1); return [lastPrev.slice(0,8) + '01', lastPrev]; }]
+  ];
+  const state = { tab: initialTab || 'orders', from: addDays(today,-6), to: today, orders: [], status: 'all', itemsCache: {} };
+
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal modal-screen ms-xl rtx-modal${dashPrefGet('ordDark', false) === true ? ' orders-dark' : ''}">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;">
+        <h3 style="margin:0;">📋 التقارير الجدولية</h3>
+        <button type="button" id="rtClose" style="width:auto; border:0; background:var(--paper-dim); color:var(--ink); font-family:var(--body); font-weight:800; font-size:13px; padding:8px 20px; border-radius:10px; cursor:pointer;">إغلاق</button>
+      </div>
+      <div class="rtx-range">
+        <div class="rtx-presets">${PRESETS.map((p,i)=> `<button type="button" class="chip-btn" data-preset="${i}">${p[0]}</button>`).join('')}</div>
+        <div class="rtx-dates">
+          <label>من <input type="date" id="rtFrom"></label>
+          <label>إلى <input type="date" id="rtTo"></label>
+          <button type="button" class="chip-btn active" id="rtGo" style="padding:7px 16px;">عرض</button>
+        </div>
+      </div>
+      <div class="rtx-tabs">
+        <button type="button" data-tab="orders">تقرير الطلبات</button>
+        <button type="button" data-tab="summary">إجمالي المبيعات</button>
+        <button type="button" data-tab="details">تفاصيل المبيعات</button>
+      </div>
+      <div id="rtBody" class="rtx-body"><div class="orders-empty">جارِ التحميل...</div></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const body = overlay.querySelector('#rtBody');
+  const fromEl = overlay.querySelector('#rtFrom'), toEl = overlay.querySelector('#rtTo');
+  overlay.querySelector('#rtClose').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.remove(); });
+
+  // ---------- جلب البيانات ----------
+  async function loadRange(){
+    const lo = new Date(state.from + 'T00:00:00Z'); lo.setUTCDate(lo.getUTCDate() - 1);
+    const hi = new Date(state.to + 'T00:00:00Z'); hi.setUTCDate(hi.getUTCDate() + 2);
+    const all = [];
+    for(let off = 0; ; off += 1000){
+      const { data, error } = await sb.from('orders')
+        .select('id,order_number,created_at,status,customer_name,customer_phone,order_type,table_number,city,area,subtotal,delivery_fee,discount_amount,total,coupon_code,payment_method,payment_detail,payment_status')
+        .eq('restaurant_id', restaurant.id)
+        .gte('created_at', lo.toISOString()).lt('created_at', hi.toISOString())
+        .order('created_at', { ascending:false }).range(off, off + 999);
+      if(error) throw error;
+      all.push(...(data || []));
+      if(!data || data.length < 1000) break;
+    }
+    state.orders = all.filter(o=> { const d = cairoDay(o.created_at); return d >= state.from && d <= state.to; });
+  }
+  async function fetchItems(ids){
+    const need = ids.filter(id=> !state.itemsCache[id]);
+    for(let i = 0; i < need.length; i += 300){
+      const chunk = need.slice(i, i + 300);
+      const { data } = await sb.from('order_items').select('order_id,item_name,quantity,price,item_note,addons_label').in('order_id', chunk);
+      chunk.forEach(id=> state.itemsCache[id] = []);
+      (data || []).forEach(l=>{ (state.itemsCache[l.order_id] = state.itemsCache[l.order_id] || []).push(l); });
+    }
+  }
+  const itemsDetailHtml = (lines)=> !lines.length ? '<div class="orders-empty">لا توجد أصناف</div>' : `
+    <table class="rtx-items"><thead><tr><th>الصنف</th><th>الإضافات / الملاحظة</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th></tr></thead><tbody>
+    ${lines.map(l=> `<tr><td>${escapeHtml(l.item_name)}</td><td>${escapeHtml([l.addons_label, l.item_note].filter(Boolean).join(' • ')) || '—'}</td><td class="n">${escapeHtml(String(l.quantity))}</td><td class="n">${money(l.price)}</td><td class="n">${money(Number(l.price || 0) * Number(l.quantity || 0))}</td></tr>`).join('')}
+    </tbody></table>`;
+
+  // ---------- جدول عام: ترتيب + بحث + ترقيم + صف تفاصيل قابل للفتح ----------
+  function dataTable(host, cfg){
+    const st = { q:'', key:cfg.sort.key, dir:cfg.sort.dir, page:1, size:Number(dashPrefGet('rtSize', 25)) || 25 };
+    host.innerHTML = `
+      <div class="rtx-bar">
+        <label>عرض <select class="rtx-size">${[10,25,50,100].map(n=> `<option value="${n}" ${n === st.size ? 'selected' : ''}>${n}</option>`).join('')}</select> سجل</label>
+        <input type="search" class="rtx-search" placeholder="${cfg.placeholder || 'بحث...'}">
+      </div>
+      <div class="rtx-wrap"><table class="rtx-table"><thead></thead><tbody></tbody></table></div>
+      <div class="rtx-pager"></div>`;
+    const thead = host.querySelector('thead'), tbody = host.querySelector('tbody'), pager = host.querySelector('.rtx-pager');
+    const view = ()=>{
+      let list = cfg.rows;
+      const q = st.q.trim().toLowerCase();
+      if(q) list = list.filter(r=> cfg.searchOf(r).toLowerCase().includes(q));
+      const col = cfg.cols.find(c=> c.key === st.key);
+      if(col){
+        list = list.slice().sort((a,b)=>{
+          const x = col.val(a), y = col.val(b);
+          const r = (typeof x === 'number' && typeof y === 'number') ? x - y : String(x).localeCompare(String(y), 'ar');
+          return st.dir === 'asc' ? r : -r;
+        });
+      }
+      return list;
+    };
+    const draw = ()=>{
+      const list = view();
+      const pages = Math.max(1, Math.ceil(list.length / st.size));
+      if(st.page > pages) st.page = pages;
+      const slice = list.slice((st.page - 1) * st.size, st.page * st.size);
+      const span = cfg.cols.length + (cfg.expand ? 1 : 0);
+      thead.innerHTML = `<tr>${cfg.expand ? '<th class="rtx-x"></th>' : ''}${cfg.cols.map(c=> `<th class="${c.key === st.key ? 'sorted' : ''}" data-key="${c.key}">${c.label}<i>${c.key === st.key ? (st.dir === 'asc' ? '▲' : '▼') : '⇅'}</i></th>`).join('')}</tr>`;
+      tbody.innerHTML = slice.length ? slice.map(r=> `<tr data-id="${r.id}">${cfg.expand ? `<td class="rtx-x"><button type="button" class="rtx-plus" data-open="${r.id}" aria-label="تفاصيل">+</button></td>` : ''}${cfg.cols.map(c=> `<td class="${c.cls || ''}">${c.html(r)}</td>`).join('')}</tr><tr class="rtx-detail" data-detail="${r.id}" hidden><td colspan="${span}"></td></tr>`).join('')
+        : `<tr><td colspan="${span}" class="orders-empty">${cfg.empty || 'لا توجد بيانات'}</td></tr>`;
+      const from = list.length ? (st.page - 1) * st.size + 1 : 0, to = Math.min(list.length, st.page * st.size);
+      pager.innerHTML = `<span>عرض ${from} إلى ${to} من ${list.length} سجل</span>
+        <span class="rtx-pg"><button type="button" data-pg="prev" ${st.page <= 1 ? 'disabled' : ''}>السابق</button><b>${st.page} / ${pages}</b><button type="button" data-pg="next" ${st.page >= pages ? 'disabled' : ''}>التالي</button></span>`;
+    };
+    host.addEventListener('click', async (e)=>{
+      const th = e.target.closest('th[data-key]');
+      if(th){ const k = th.dataset.key; if(st.key === k) st.dir = st.dir === 'asc' ? 'desc' : 'asc'; else { st.key = k; st.dir = 'desc'; } st.page = 1; draw(); return; }
+      const pg = e.target.closest('[data-pg]');
+      if(pg){ st.page += pg.dataset.pg === 'next' ? 1 : -1; draw(); return; }
+      const op = e.target.closest('[data-open]');
+      if(op){
+        const id = op.dataset.open, row = host.querySelector(`tr[data-detail="${id}"]`);
+        const opening = row.hidden;
+        row.hidden = !opening; op.textContent = opening ? '–' : '+'; op.classList.toggle('on', opening);
+        if(opening && !row.dataset.loaded){
+          row.firstElementChild.innerHTML = '<div class="orders-empty">جارِ التحميل...</div>';
+          await fetchItems([id]);
+          row.firstElementChild.innerHTML = itemsDetailHtml(state.itemsCache[id] || []);
+          row.dataset.loaded = '1';
+        }
+      }
+    });
+    host.querySelector('.rtx-size').addEventListener('change', (e)=>{ st.size = Number(e.target.value); dashPrefSet('rtSize', st.size); st.page = 1; draw(); });
+    host.querySelector('.rtx-search').addEventListener('input', (e)=>{ st.q = e.target.value; st.page = 1; draw(); });
+    draw();
+    return { rows: view };
+  }
+
+  const kpi = (label, value, color)=> `<div class="rtx-kpi" style="--c:${color};"><div class="l">${label}</div><div class="v">${value}</div></div>`;
+  const toolbar = (title, hint)=> `<div class="rtx-title"><div><h4>${title}</h4><p>${hint}</p></div><button type="button" class="btn-export-sm" id="rtExport">⬇️ تصدير Excel</button></div>`;
+  const stamp = ()=> `${state.from}_${state.to}`;
+  const saveXlsx = (aoa, widths, sheet, label)=>{
+    const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = widths.map(w=> ({ wch:w }));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, sheet);
+    XLSX.writeFile(wb, `${restaurant.slug || 'restaurant'}-${label}-${stamp()}.xlsx`);
+    toast('تم تصدير التقرير بنجاح');
+  };
+  const itemsText = (id)=> (state.itemsCache[id] || []).map(l=> `${l.item_name} ×${l.quantity}${l.item_note ? ` (${l.item_note})` : ''}`).join('، ');
+
+  // ---------- تقرير الطلبات ----------
+  function renderOrders(){
+    const rows = state.status === 'all' ? state.orders : state.orders.filter(o=> (o.status || 'pending') === state.status);
+    body.innerHTML = toolbar('تقرير الطلبات', 'كل الطلبات في الفترة المحددة بجميع حالاتها — اضغط + لعرض أصناف الطلب')
+      + `<div class="rtx-filters"><label>الحالة <select id="rtStatus"><option value="all">كل الحالات</option>${Object.entries(STATUS).map(([k,v])=> `<option value="${k}" ${state.status === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+         <span class="rtx-count">عدد الطلبات: <b>${rows.length}</b></span></div><div id="rtTable"></div>`;
+    const t = dataTable(body.querySelector('#rtTable'), {
+      rows, sort:{ key:'date', dir:'desc' }, expand:true, placeholder:'بحث برقم الطلب، اسم العميل، أو الهاتف...',
+      searchOf: (o)=> `${o.order_number ?? ''} ${o.customer_name || ''} ${o.customer_phone || ''} ${o.area || ''}`,
+      empty:'لا توجد طلبات في هذه الفترة',
+      cols:[
+        { key:'num', label:'رقم الطلب', val:o=> Number(o.order_number) || 0, html:o=> `#${o.order_number ?? '—'}`, cls:'n' },
+        { key:'date', label:'التاريخ', val:o=> new Date(o.created_at).getTime(), html:o=> fmtDT(o.created_at), cls:'nw' },
+        { key:'type', label:'نوع الطلب', val:o=> typeKey(o), html:o=> `${o.order_type === 'dine_in' ? orderTypeLabel(o) : TYPE_LABEL[typeKey(o)]}${o.area && typeKey(o) === 'delivery' ? `<div class="sub">${escapeHtml(o.area)}</div>` : ''}`, cls:'nw' },
+        { key:'status', label:'الحالة', val:o=> o.status || 'pending', html:o=> `<span class="status-badge ${o.status || 'pending'}">${STATUS[o.status || 'pending'] || o.status}</span>`, cls:'nw' },
+        { key:'name', label:'العميل', val:o=> o.customer_name || '', html:o=> escapeHtml(o.customer_name || '—') },
+        { key:'phone', label:'الهاتف', val:o=> o.customer_phone || '', html:o=> `<span class="ltr">${escapeHtml(o.customer_phone || '')}</span>`, cls:'nw' },
+        { key:'total', label:'الإجمالي', val:o=> Number(o.total) || 0, html:o=> `${money(o.total)} ${escapeHtml(cur)}`, cls:'n nw' },
+        { key:'pay', label:'الدفع', val:o=> payText(o), html:o=> escapeHtml(payText(o)), cls:'nw' }
+      ]
+    });
+    body.querySelector('#rtStatus').addEventListener('change', (e)=>{ state.status = e.target.value; renderOrders(); });
+    body.querySelector('#rtExport').addEventListener('click', async ()=>{
+      const list = t.rows(); if(!list.length){ toast('لا توجد بيانات لتصديرها'); return; }
+      await fetchItems(list.map(o=> o.id));
+      const aoa = [['رقم الطلب','التاريخ والوقت','نوع الطلب','المنطقة','الحالة','العميل','الهاتف','الأصناف',`الإجمالي (${cur})`,'طريقة الدفع']];
+      list.forEach(o=> aoa.push([o.order_number ?? '', fmtDT(o.created_at), orderTypeLabel(o), o.area || '', STATUS[o.status || 'pending'] || o.status, o.customer_name || '', o.customer_phone || '', itemsText(o.id), Number(o.total || 0), payText(o)]));
+      saveXlsx(aoa, [10,20,14,14,12,20,14,50,14,22], 'تقرير الطلبات', 'تقرير-الطلبات');
+    });
+  }
+
+  // ---------- تقرير إجمالي المبيعات ----------
+  function renderSummary(){
+    const valid = state.orders.filter(o=> (o.status || 'pending') !== 'cancelled');
+    const cancelled = state.orders.filter(o=> (o.status || 'pending') === 'cancelled');
+    const agg = (list)=> list.reduce((a,o)=>{ a.n++; a.sub += sub(o); a.disc += Number(o.discount_amount || 0); a.fee += Number(o.delivery_fee || 0); a.total += Number(o.total || 0); return a; }, { n:0, sub:0, disc:0, fee:0, total:0 });
+    const all = agg(valid);
+    const byType = ['delivery','pickup','dine_in'].map(k=> [k, agg(valid.filter(o=> typeKey(o) === k))]);
+    const byPay = ['cash','wallet','instapay'].map(k=> [k, agg(valid.filter(o=> payKey(o) === k)), valid.filter(o=> payKey(o) === k && o.payment_status !== 'paid' && k !== 'cash').length]);
+    const byStatus = Object.keys(STATUS).map(k=> [k, agg(state.orders.filter(o=> (o.status || 'pending') === k))]);
+    const lost = agg(cancelled);
+    const pct = (v)=> all.total ? (v / all.total * 100).toFixed(1) + '%' : '—';
+    const avg = (a)=> a.n ? money(a.total / a.n) : '—';
+    const row = (label, a, extra)=> `<tr><td><b>${label}</b></td><td class="n">${a.n}</td><td class="n">${money(a.sub)}</td><td class="n">${money(a.disc)}</td><td class="n">${money(a.fee)}</td><td class="n"><b>${money(a.total)}</b></td><td class="n">${avg(a)}</td><td class="n">${extra}</td></tr>`;
+    const head = (first, last)=> `<thead><tr><th>${first}</th><th>الطلبات</th><th>قيمة الأصناف</th><th>الخصومات</th><th>رسوم التوصيل</th><th>الإجمالي</th><th>متوسط الطلب</th><th>${last}</th></tr></thead>`;
+    body.innerHTML = toolbar('تقرير إجمالي المبيعات', 'ملخص المبيعات في الفترة المحددة (الطلبات الملغية غير محسوبة في المبيعات)')
+      + `<div class="rtx-kpis">
+          ${kpi('إجمالي المبيعات', `${money(all.total)} ${escapeHtml(cur)}`, 'var(--basil)')}
+          ${kpi('عدد الطلبات', all.n, 'var(--confirm-strong)')}
+          ${kpi('متوسط قيمة الطلب', all.n ? `${money(all.total / all.n)} ${escapeHtml(cur)}` : '—', 'var(--ember)')}
+          ${kpi('إجمالي الخصومات', `${money(all.disc)} ${escapeHtml(cur)}`, '#b8872f')}
+          ${kpi('رسوم التوصيل', `${money(all.fee)} ${escapeHtml(cur)}`, '#6a5acd')}
+          ${kpi('الطلبات الملغية', `${lost.n} • ${money(lost.total)} ${escapeHtml(cur)}`, 'var(--danger)')}
+        </div>
+        <h4 class="rtx-h">حسب نوع الطلب</h4>
+        <div class="rtx-wrap"><table class="rtx-table static">${head('نوع الطلب','النسبة من المبيعات')}<tbody>
+          ${byType.map(([k,a])=> row(TYPE_LABEL[k], a, pct(a.total))).join('')}
+          <tr class="tot"><td><b>الإجمالي</b></td><td class="n">${all.n}</td><td class="n">${money(all.sub)}</td><td class="n">${money(all.disc)}</td><td class="n">${money(all.fee)}</td><td class="n">${money(all.total)}</td><td class="n">${avg(all)}</td><td class="n">100%</td></tr>
+        </tbody></table></div>
+        <h4 class="rtx-h">حسب طريقة الدفع</h4>
+        <div class="rtx-wrap"><table class="rtx-table static">${head('طريقة الدفع','بانتظار تأكيد الدفع')}<tbody>
+          ${byPay.map(([k,a,un])=> row(PAY_LABEL[k], a, k === 'cash' ? '—' : un)).join('')}
+        </tbody></table></div>
+        <h4 class="rtx-h">حسب حالة الطلب</h4>
+        <div class="rtx-wrap"><table class="rtx-table static">${head('الحالة','النسبة من الطلبات')}<tbody>
+          ${byStatus.map(([k,a])=> row(`<span class="status-badge ${k}">${STATUS[k]}</span>`, a, state.orders.length ? (a.n / state.orders.length * 100).toFixed(1) + '%' : '—')).join('')}
+        </tbody></table></div>`;
+    body.querySelector('#rtExport').addEventListener('click', ()=>{
+      const aoa = [[`تقرير إجمالي المبيعات (${state.from} إلى ${state.to})`], [],
+        ['حسب نوع الطلب','الطلبات','قيمة الأصناف','الخصومات','رسوم التوصيل','الإجمالي','متوسط الطلب'],
+        ...byType.map(([k,a])=> [TYPE_LABEL[k].replace(/^\S+\s/, ''), a.n, a.sub, a.disc, a.fee, a.total, a.n ? a.total / a.n : 0]),
+        ['الإجمالي', all.n, all.sub, all.disc, all.fee, all.total, all.n ? all.total / all.n : 0], [],
+        ['حسب طريقة الدفع','الطلبات','قيمة الأصناف','الخصومات','رسوم التوصيل','الإجمالي','متوسط الطلب','بانتظار التأكيد'],
+        ...byPay.map(([k,a,un])=> [PAY_LABEL[k], a.n, a.sub, a.disc, a.fee, a.total, a.n ? a.total / a.n : 0, un]), [],
+        ['حسب الحالة','الطلبات','قيمة الأصناف','الخصومات','رسوم التوصيل','الإجمالي'],
+        ...byStatus.map(([k,a])=> [STATUS[k], a.n, a.sub, a.disc, a.fee, a.total])];
+      saveXlsx(aoa, [26,12,14,12,14,14,14,16], 'إجمالي المبيعات', 'إجمالي-المبيعات');
+    });
+  }
+
+  // ---------- تقرير تفاصيل المبيعات ----------
+  function renderDetails(){
+    const rows = state.orders.filter(o=> (o.status || 'pending') !== 'cancelled');
+    const totalSales = rows.reduce((s,o)=> s + Number(o.total || 0), 0);
+    const totalSub = rows.reduce((s,o)=> s + sub(o), 0);
+    const totalDisc = rows.reduce((s,o)=> s + Number(o.discount_amount || 0), 0);
+    const totalFee = rows.reduce((s,o)=> s + Number(o.delivery_fee || 0), 0);
+    const online = rows.filter(o=> payKey(o) !== 'cash' && o.payment_status === 'paid').reduce((s,o)=> s + Number(o.total || 0), 0);
+    body.innerHTML = toolbar('تقرير تفاصيل المبيعات', 'كل طلب مبيع على حدة مع الخصم والتوصيل — اضغط + لعرض الأصناف وأسعارها')
+      + `<div class="rtx-kpis">
+          ${kpi('إجمالي المبيعات', `${money(totalSales)} ${escapeHtml(cur)}`, 'var(--basil)')}
+          ${kpi('قيمة الأصناف', `${money(totalSub)} ${escapeHtml(cur)}`, 'var(--confirm-strong)')}
+          ${kpi('الخصومات', `${money(totalDisc)} ${escapeHtml(cur)}`, '#b8872f')}
+          ${kpi('رسوم التوصيل', `${money(totalFee)} ${escapeHtml(cur)}`, '#6a5acd')}
+          ${kpi('مدفوع إلكترونيًا', `${money(online)} ${escapeHtml(cur)}`, 'var(--ember)')}
+          ${kpi('عدد الطلبات', rows.length, 'var(--stone)')}
+        </div><div id="rtTable"></div>`;
+    const t = dataTable(body.querySelector('#rtTable'), {
+      rows, sort:{ key:'date', dir:'desc' }, expand:true, placeholder:'بحث برقم الطلب أو اسم العميل...',
+      searchOf: (o)=> `${o.order_number ?? ''} ${o.customer_name || ''} ${o.customer_phone || ''}`,
+      empty:'لا توجد مبيعات في هذه الفترة',
+      cols:[
+        { key:'date', label:'التاريخ', val:o=> new Date(o.created_at).getTime(), html:o=> fmtDT(o.created_at), cls:'nw' },
+        { key:'num', label:'رقم الطلب', val:o=> Number(o.order_number) || 0, html:o=> `#${o.order_number ?? '—'}`, cls:'n' },
+        { key:'type', label:'النوع', val:o=> typeKey(o), html:o=> o.order_type === 'dine_in' ? orderTypeLabel(o) : TYPE_LABEL[typeKey(o)], cls:'nw' },
+        { key:'name', label:'العميل', val:o=> o.customer_name || '', html:o=> escapeHtml(o.customer_name || '—') },
+        { key:'sub', label:'قيمة الأصناف', val:o=> sub(o), html:o=> money(sub(o)), cls:'n' },
+        { key:'disc', label:'الخصم', val:o=> Number(o.discount_amount) || 0, html:o=> `${money(o.discount_amount)}${o.coupon_code ? `<div class="sub">${escapeHtml(o.coupon_code)}</div>` : ''}`, cls:'n' },
+        { key:'fee', label:'التوصيل', val:o=> Number(o.delivery_fee) || 0, html:o=> money(o.delivery_fee), cls:'n' },
+        { key:'total', label:'الإجمالي', val:o=> Number(o.total) || 0, html:o=> `<b>${money(o.total)}</b>`, cls:'n' },
+        { key:'pay', label:'الدفع', val:o=> payText(o), html:o=> escapeHtml(payText(o)), cls:'nw' }
+      ]
+    });
+    body.querySelector('#rtExport').addEventListener('click', async ()=>{
+      const list = t.rows(); if(!list.length){ toast('لا توجد بيانات لتصديرها'); return; }
+      await fetchItems(list.map(o=> o.id));
+      const aoa = [['التاريخ والوقت','رقم الطلب','النوع','العميل','الأصناف','قيمة الأصناف','الخصم','كوبون','رسوم التوصيل',`الإجمالي (${cur})`,'طريقة الدفع']];
+      list.forEach(o=> aoa.push([fmtDT(o.created_at), o.order_number ?? '', orderTypeLabel(o), o.customer_name || '', itemsText(o.id), sub(o), Number(o.discount_amount || 0), o.coupon_code || '', Number(o.delivery_fee || 0), Number(o.total || 0), payText(o)]));
+      aoa.push(['الإجمالي','','','','', totalSub, totalDisc, '', totalFee, totalSales, '']);
+      saveXlsx(aoa, [20,10,14,20,50,14,10,12,14,14,22], 'تفاصيل المبيعات', 'تفاصيل-المبيعات');
+    });
+  }
+
+  // ---------- التحكم ----------
+  const draw = ()=>{
+    overlay.querySelectorAll('.rtx-tabs button').forEach(b=> b.classList.toggle('on', b.dataset.tab === state.tab));
+    ({ orders:renderOrders, summary:renderSummary, details:renderDetails })[state.tab]();
+  };
+  async function run(){
+    if(!fromEl.value || !toEl.value || fromEl.value > toEl.value){ toast('اختر فترة صحيحة (من تاريخ إلى تاريخ)'); return; }
+    state.from = fromEl.value; state.to = toEl.value;
+    body.innerHTML = '<div class="orders-empty">جارِ التحميل...</div>';
+    try{ await loadRange(); }catch(e){ body.innerHTML = '<div class="orders-empty">تعذر تحميل التقرير</div>'; return; }
+    draw();
+  }
+  overlay.querySelectorAll('.rtx-tabs button').forEach(b=> b.addEventListener('click', ()=>{ state.tab = b.dataset.tab; draw(); }));
+  overlay.querySelectorAll('[data-preset]').forEach(b=> b.addEventListener('click', ()=>{
+    const [f, t] = PRESETS[Number(b.dataset.preset)][1]();
+    fromEl.value = f; toEl.value = t;
+    overlay.querySelectorAll('[data-preset]').forEach(x=> x.classList.toggle('active', x === b));
+    run();
+  }));
+  overlay.querySelector('#rtGo').addEventListener('click', ()=>{ overlay.querySelectorAll('[data-preset]').forEach(x=> x.classList.remove('active')); run(); });
+  fromEl.value = state.from; toEl.value = state.to;
+  overlay.querySelector('[data-preset="2"]').classList.add('active');
+  run();
 }
 
 async function openStaffModal(){
