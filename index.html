@@ -11553,7 +11553,7 @@ async function openTableReportsModal(initialTab){
   }
 
   const kpi = (label, value, color)=> `<div class="rtx-kpi" style="--c:${color};"><div class="l">${label}</div><div class="v">${value}</div></div>`;
-  const toolbar = (title, hint)=> `<div class="rtx-title"><div><h4>${title}</h4><p>${hint}</p></div><button type="button" class="btn-export-sm" id="rtExport">⬇️ تصدير Excel</button></div>`;
+  const toolbar = (title, hint)=> `<div class="rtx-title"><div><h4>${title}</h4><p>${hint}</p></div><span style="display:flex; gap:6px; flex-wrap:wrap;"><button type="button" class="btn-export-sm" id="rtPrint" style="background:var(--confirm-strong);">🖨️ طباعة / PDF</button><button type="button" class="btn-export-sm" id="rtExport">⬇️ تصدير Excel</button></span></div>`;
   const stamp = ()=> `${state.from}_${state.to}`;
   const saveXlsx = (aoa, widths, sheet, label)=>{
     const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = widths.map(w=> ({ wch:w }));
@@ -11561,6 +11561,23 @@ async function openTableReportsModal(initialTab){
     XLSX.writeFile(wb, `${restaurant.slug || 'restaurant'}-${label}-${stamp()}.xlsx`);
     toast('تم تصدير التقرير بنجاح');
   };
+  // الطباعة / PDF: نفس آلية التقرير الشهري (منطقة طباعة مخفية + window.print)؛ في نافذة الطباعة اختر «حفظ كـ PDF»
+  const printReport = (title, innerHtml)=>{
+    const html = `<div class="report-doc"><h1>${escapeHtml(restaurant.name || '')} — ${title}</h1><div class="report-sub">الفترة: ${state.from} إلى ${state.to} · أُنشئ بتاريخ ${fmtDT(new Date().toISOString())}</div>${innerHtml}</div>`;
+    let area = document.getElementById('reportPrintArea');
+    if(!area){ area = document.createElement('div'); area.id = 'reportPrintArea'; document.body.appendChild(area); }
+    area.innerHTML = html;
+    let ps = document.getElementById('receiptPageStyle');
+    if(!ps){ ps = document.createElement('style'); ps.id = 'receiptPageStyle'; document.head.appendChild(ps); }
+    ps.textContent = '@page{ size:A4; margin:12mm; } .report-doc tr{ page-break-inside:avoid; } .report-doc tr.tot td{ font-weight:800; border-top:1.5px solid #111; } .report-doc .sm{ font-size:10px; color:#555; }';
+    const prev = document.title;
+    document.title = `${title} ${state.from} إلى ${state.to}`;
+    const restore = ()=>{ document.title = prev; window.removeEventListener('afterprint', restore); };
+    window.addEventListener('afterprint', restore);
+    window.print();
+  };
+  const pTable = (heads, bodyRows)=> `<table><thead><tr>${heads.map(h=> `<th>${h}</th>`).join('')}</tr></thead><tbody>${bodyRows.join('')}</tbody></table>`;
+  const pKpis = (arr)=> `<div class="report-kpi-row" style="margin-bottom:10px;">${arr.map(([l,v])=> `<div class="report-kpi"><div class="kpi-label">${l}</div><div class="kpi-value" style="font-size:14px;">${v}</div></div>`).join('')}</div>`;
   const itemsText = (id)=> (state.itemsCache[id] || []).map(l=> `${l.item_name} ×${l.quantity}${l.item_note ? ` (${l.item_note})` : ''}`).join('، ');
 
   // ---------- تقرير الطلبات ----------
@@ -11591,6 +11608,14 @@ async function openTableReportsModal(initialTab){
       const aoa = [['رقم الطلب','التاريخ والوقت','نوع الطلب','المنطقة','الحالة','العميل','الهاتف','الأصناف',`الإجمالي (${cur})`,'طريقة الدفع']];
       list.forEach(o=> aoa.push([o.order_number ?? '', fmtDT(o.created_at), orderTypeLabel(o), o.area || '', STATUS[o.status || 'pending'] || o.status, o.customer_name || '', o.customer_phone || '', itemsText(o.id), Number(o.total || 0), payText(o)]));
       saveXlsx(aoa, [10,20,14,14,12,20,14,50,14,22], 'تقرير الطلبات', 'تقرير-الطلبات');
+    });
+    body.querySelector('#rtPrint').addEventListener('click', ()=>{
+      const list = t.rows(); if(!list.length){ toast('لا توجد بيانات للطباعة'); return; }
+      const sales = list.filter(o=> (o.status || 'pending') !== 'cancelled').reduce((s,o)=> s + Number(o.total || 0), 0);
+      const statusLabel = state.status === 'all' ? 'كل الحالات' : STATUS[state.status];
+      printReport('تقرير الطلبات', pKpis([['عدد الطلبات', list.length], [`إجمالي القيمة (بدون الملغي) ${escapeHtml(cur)}`, money(sales)], ['الحالة', statusLabel]])
+        + pTable(['#','التاريخ','النوع','الحالة','العميل','الهاتف',`الإجمالي (${escapeHtml(cur)})`,'الدفع'],
+          list.map(o=> `<tr><td class="num">${o.order_number ?? '—'}</td><td class="num">${fmtDT(o.created_at)}</td><td>${escapeHtml(orderTypeLabel(o).replace(/^\S+\s/, ''))}${o.area && typeKey(o) === 'delivery' ? `<div class="sm">${escapeHtml(o.area)}</div>` : ''}</td><td>${STATUS[o.status || 'pending'] || ''}</td><td>${escapeHtml(o.customer_name || '—')}</td><td class="num">${escapeHtml(o.customer_phone || '')}</td><td class="num">${money(o.total)}</td><td>${escapeHtml(payText(o))}</td></tr>`)));
     });
   }
 
@@ -11641,6 +11666,14 @@ async function openTableReportsModal(initialTab){
         ...byStatus.map(([k,a])=> [STATUS[k], a.n, a.sub, a.disc, a.fee, a.total])];
       saveXlsx(aoa, [26,12,14,12,14,14,14,16], 'إجمالي المبيعات', 'إجمالي-المبيعات');
     });
+    body.querySelector('#rtPrint').addEventListener('click', ()=>{
+      const pr = (label, a, extra)=> `<tr><td>${label}</td><td class="num">${a.n}</td><td class="num">${money(a.sub)}</td><td class="num">${money(a.disc)}</td><td class="num">${money(a.fee)}</td><td class="num"><b>${money(a.total)}</b></td><td class="num">${avg(a)}</td><td class="num">${extra}</td></tr>`;
+      const heads = (f, l)=> [f,'الطلبات','قيمة الأصناف','الخصومات','رسوم التوصيل','الإجمالي','متوسط الطلب', l];
+      printReport('تقرير إجمالي المبيعات', pKpis([['إجمالي المبيعات', `${money(all.total)} ${escapeHtml(cur)}`], ['عدد الطلبات', all.n], ['متوسط الطلب', all.n ? money(all.total / all.n) : '—'], ['الخصومات', money(all.disc)], ['رسوم التوصيل', money(all.fee)], ['الملغي', `${lost.n} • ${money(lost.total)}`]])
+        + '<h2>حسب نوع الطلب</h2>' + pTable(heads('نوع الطلب','النسبة'), byType.map(([k,a])=> pr(TYPE_LABEL[k].replace(/^\S+\s/, ''), a, pct(a.total))).concat([`<tr class="tot"><td>الإجمالي</td><td class="num">${all.n}</td><td class="num">${money(all.sub)}</td><td class="num">${money(all.disc)}</td><td class="num">${money(all.fee)}</td><td class="num">${money(all.total)}</td><td class="num">${avg(all)}</td><td class="num">100%</td></tr>`]))
+        + '<h2>حسب طريقة الدفع</h2>' + pTable(heads('طريقة الدفع','بانتظار التأكيد'), byPay.map(([k,a,un])=> pr(PAY_LABEL[k], a, k === 'cash' ? '—' : un)))
+        + '<h2>حسب حالة الطلب</h2>' + pTable(heads('الحالة','النسبة'), byStatus.map(([k,a])=> pr(STATUS[k], a, state.orders.length ? (a.n / state.orders.length * 100).toFixed(1) + '%' : '—'))));
+    });
   }
 
   // ---------- تقرير تفاصيل المبيعات ----------
@@ -11683,6 +11716,15 @@ async function openTableReportsModal(initialTab){
       list.forEach(o=> aoa.push([fmtDT(o.created_at), o.order_number ?? '', orderTypeLabel(o), o.customer_name || '', itemsText(o.id), sub(o), Number(o.discount_amount || 0), o.coupon_code || '', Number(o.delivery_fee || 0), Number(o.total || 0), payText(o)]));
       aoa.push(['الإجمالي','','','','', totalSub, totalDisc, '', totalFee, totalSales, '']);
       saveXlsx(aoa, [20,10,14,20,50,14,10,12,14,14,22], 'تفاصيل المبيعات', 'تفاصيل-المبيعات');
+    });
+    body.querySelector('#rtPrint').addEventListener('click', async ()=>{
+      const list = t.rows(); if(!list.length){ toast('لا توجد بيانات للطباعة'); return; }
+      await fetchItems(list.map(o=> o.id));
+      const tot = list.reduce((a,o)=>{ a.sub += sub(o); a.disc += Number(o.discount_amount || 0); a.fee += Number(o.delivery_fee || 0); a.total += Number(o.total || 0); return a; }, { sub:0, disc:0, fee:0, total:0 });
+      printReport('تفاصيل المبيعات', pKpis([['إجمالي المبيعات', `${money(tot.total)} ${escapeHtml(cur)}`], ['قيمة الأصناف', money(tot.sub)], ['الخصومات', money(tot.disc)], ['رسوم التوصيل', money(tot.fee)], ['عدد الطلبات', list.length]])
+        + pTable(['التاريخ','#','النوع','العميل','الأصناف','قيمة الأصناف','الخصم','التوصيل','الإجمالي','الدفع'],
+          list.map(o=> `<tr><td class="num">${fmtDT(o.created_at)}</td><td class="num">${o.order_number ?? '—'}</td><td>${escapeHtml(orderTypeLabel(o).replace(/^\S+\s/, ''))}</td><td>${escapeHtml(o.customer_name || '—')}</td><td class="sm">${escapeHtml(itemsText(o.id)) || '—'}</td><td class="num">${money(sub(o))}</td><td class="num">${money(o.discount_amount)}</td><td class="num">${money(o.delivery_fee)}</td><td class="num"><b>${money(o.total)}</b></td><td>${escapeHtml(payText(o))}</td></tr>`)
+            .concat([`<tr class="tot"><td colspan="5">الإجمالي</td><td class="num">${money(tot.sub)}</td><td class="num">${money(tot.disc)}</td><td class="num">${money(tot.fee)}</td><td class="num">${money(tot.total)}</td><td></td></tr>`])));
     });
   }
 
