@@ -6868,6 +6868,8 @@ async function openOrdersOverlay(){
   }
 
   let itemsByOrder = {};
+  const itemRetryStarted = new Set(); // طلبات بدأنا إعادة تحميل أصنافها (الأصناف تُسجَّل بعد الطلب بلحظات وقد تتأخر)
+  const isFreshOrder = (o)=> (Date.now() - new Date(o.created_at).getTime()) < 5 * 60000;
   // أصناف الطلبات على دفعات صغيرة (عشان طول الرابط وحد 1000 صف)
   async function loadItemsForOrders(list){
     const ids = list.map(o=> o.id);
@@ -6980,7 +6982,7 @@ async function openOrdersOverlay(){
               ${l.item_note ? `<span class="o-item-note">${escapeHtml(l.item_note)}</span>` : ''}
             </li>`).join('')}
         </ul>
-      </div>` : '';
+      </div>` : (isFreshOrder(o) ? `<div class="o-items"><div class="o-items-head">🧾 الأصناف <span class="o-items-count">⏳ جارِ التحميل...</span></div></div>` : '');
     const totalsHtml = o.total != null ? `<div class="o-total">الإجمالي <span>${Number(o.total).toFixed(2)} ${getRestaurantCurrency(restaurant)}</span></div>` : '';
     const status = o.status || 'pending';
     const today = isToday(o);
@@ -7115,7 +7117,7 @@ async function openOrdersOverlay(){
       phone: `<td style="white-space:nowrap;"><span class="ot-phone">${escapeHtml(o.customer_phone)}</span>${contactIcons(o.customer_phone)}${o.secondary_phone ? `<br><span class="ot-phone">${escapeHtml(o.secondary_phone)}</span>${contactIcons(o.secondary_phone)}` : ''}</td>`,
       type: `<td style="white-space:nowrap;"><span class="ot-type ${o.order_type === 'dine_in' ? 'dine' : (o.order_type === 'pickup' ? 'pick' : 'deliv')}">${typeLabel}</span></td>`,
       addr: `<td class="ot-addr">${o.order_type === 'pickup' ? '<span style="color:var(--stone);">استلام من المحل</span>' : (o.order_type === 'dine_in' ? '<span style="color:var(--stone);">داخل الصالة</span>' : `${escapeHtml([o.city, o.area].filter(Boolean).join(' — '))}${o.address ? `<div style="color:var(--stone); margin-top:2px;">${escapeHtml(o.address)}</div>` : ''}${mapLink(o) ? `<div style="margin-top:3px;">${mapLink(o)}</div>` : ''}`)}</td>`,
-      items: `<td><div class="ot-items" title="${escapeHtml(itemsTxt)}">${lines.length ? lines.slice(0, itemsFull ? 3 : lines.length).map(l=> `<div class="ot-line"><b>${escapeHtml(String(l.quantity))}×</b><span>${escapeHtml(l.item_name)}</span>${l.item_note ? `<small>(${escapeHtml(l.item_note)})</small>` : ''}</div>`).join('') : '<span style="color:var(--stone);">—</span>'}${(itemsFull && lines.length > 3) ? `<button type="button" class="ot-more" data-action="openDetails" data-order-id="${o.id}">+ ${lines.length - 3} صنف آخر ◂</button>` : ''}</div></td>`,
+      items: `<td><div class="ot-items" title="${escapeHtml(itemsTxt)}">${lines.length ? lines.slice(0, itemsFull ? 3 : lines.length).map(l=> `<div class="ot-line"><b>${escapeHtml(String(l.quantity))}×</b><span>${escapeHtml(l.item_name)}</span>${l.item_note ? `<small>(${escapeHtml(l.item_note)})</small>` : ''}</div>`).join('') : (isFreshOrder(o) ? '<span style="color:var(--stone);">⏳ جارِ تحميل الأصناف...</span>' : '<span style="color:var(--stone);">—</span>')}${(itemsFull && lines.length > 3) ? `<button type="button" class="ot-more" data-action="openDetails" data-order-id="${o.id}">+ ${lines.length - 3} صنف آخر ◂</button>` : ''}</div></td>`,
       total: `<td class="ot-total">${o.total != null ? Number(o.total).toFixed(2) + ' ' + escapeHtml(cur) : ''}</td>`,
       status: `<td><span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>${isOnlinePay ? `<div style="font-size:11px; margin-top:3px; color:${o.payment_status==='paid' ? 'var(--basil)' : '#8a5f0d'};">💳 ${o.payment_status==='paid' ? 'مدفوع' : 'بانتظار التأكيد'}</div>` : ''}</td>`,
       time: `<td style="white-space:nowrap;">${fmtOrderTime(new Date(o.created_at))}</td>`,
@@ -7265,7 +7267,7 @@ async function openOrdersOverlay(){
       </dl>
       <div style="font-weight:800; margin-top:6px;">🧾 الأصناف <span class="o-items-count">${itemsCount} قطعة</span></div>
       <table class="od-items"><thead><tr><th>الكمية</th><th>الصنف</th><th>السعر</th></tr></thead><tbody>
-        ${lines.map(l=> `<tr><td class="q">${escapeHtml(String(l.quantity))}×</td><td>${escapeHtml(l.item_name)}${l.addons_label ? `<div style="color:var(--stone); font-size:12px;">➕ ${escapeHtml(l.addons_label)}</div>` : ''}${l.item_note ? `<div style="color:var(--stone); font-size:12px;">📝 ${escapeHtml(l.item_note)}</div>` : ''}</td><td style="white-space:nowrap;">${l.price != null ? money(l.price) : ''}</td></tr>`).join('') || '<tr><td colspan="3" style="color:var(--stone);">لا توجد أصناف</td></tr>'}
+        ${lines.map(l=> `<tr><td class="q">${escapeHtml(String(l.quantity))}×</td><td>${escapeHtml(l.item_name)}${l.addons_label ? `<div style="color:var(--stone); font-size:12px;">➕ ${escapeHtml(l.addons_label)}</div>` : ''}${l.item_note ? `<div style="color:var(--stone); font-size:12px;">📝 ${escapeHtml(l.item_note)}</div>` : ''}</td><td style="white-space:nowrap;">${l.price != null ? money(l.price) : ''}</td></tr>`).join('') || `<tr><td colspan="3" style="color:var(--stone);">${isFreshOrder(o) ? '⏳ جارِ تحميل الأصناف... أعد فتح النافذة بعد لحظات' : 'لا توجد أصناف'}</td></tr>`}
       </tbody></table>
       <div class="o-total">الإجمالي <span>${money(o.total)} ${escapeHtml(cur)}</span></div>
       <div style="display:flex; gap:8px; align-items:center; margin-top:12px; flex-wrap:wrap;">
@@ -7523,6 +7525,7 @@ async function openOrdersOverlay(){
     const filtered = orders.filter(o=> passesFilters(o));
     renderSummary(filtered);
     updateKitchenBtn();
+    orders.forEach(o=>{ if(isFreshOrder(o) && !(itemsByOrder[o.id] || []).length) ensureItems(o); }); // طلب حديث بلا أصناف: أعد المحاولة
     const moreBtn = overlay.querySelector('#ordersLoadMoreBtn');
     moreBtn.classList.toggle('hidden', !hasMoreOrders);
     if(filtered.length === 0){
@@ -7628,6 +7631,18 @@ async function openOrdersOverlay(){
       renderList();
     }, 400);
   }
+  // يعيد محاولة جلب أصناف الطلب الجديد بفواصل متزايدة حتى تظهر (بدل محاولة واحدة بعد 0.8 ثانية)
+  async function ensureItems(row){
+    if(!row || itemRetryStarted.has(row.id)) return;
+    itemRetryStarted.add(row.id);
+    for(const wait of [1500, 3000, 6000, 12000, 20000]){
+      if((itemsByOrder[row.id] || []).length) return;
+      await new Promise(r=> setTimeout(r, wait));
+      if(!document.body.contains(overlay)) return;
+      try{ delete itemsByOrder[row.id]; await loadItemsForOrders([row]); }catch(e){}
+      if((itemsByOrder[row.id] || []).length){ softRender(); return; }
+    }
+  }
   window.__ordersModalApi = {
     overlay,
     async onInsert(row){
@@ -7640,6 +7655,7 @@ async function openOrdersOverlay(){
       flashIds.add(row.id);
       setTimeout(()=>{ flashIds.delete(row.id); document.querySelectorAll(`[data-order-id="${row.id}"].o-flash`).forEach(el=> el.classList.remove('o-flash')); }, 7000);
       showNewOrderBanner(row);
+      if(!(itemsByOrder[row.id] || []).length) ensureItems(row);
       sb.from('orders').update({ seen_at: new Date().toISOString() }).eq('id', row.id).then(()=>{}, ()=>{});
       softRender();
     },
@@ -7691,6 +7707,19 @@ async function openKitchenScreen(){
   let filter = 'all';
   const busy = new Set();
 
+  const itemRetryStarted = new Set();
+  // إعادة محاولة جلب أصناف الطلب الجديد حتى تظهر (الأصناف تُسجَّل بعد الطلب وقد تتأخر عن 0.8 ثانية)
+  async function ensureItems(row){
+    if(!row || itemRetryStarted.has(row.id)) return;
+    itemRetryStarted.add(row.id);
+    for(const wait of [1500, 3000, 6000, 12000, 20000]){
+      if((itemsByOrder[row.id] || []).length) return;
+      await new Promise(r=> setTimeout(r, wait));
+      if(!document.body.contains(overlay)) return;
+      try{ delete itemsByOrder[row.id]; await loadItems([row]); }catch(e){}
+      if((itemsByOrder[row.id] || []).length){ render(); return; }
+    }
+  }
   async function loadItems(list){
     const ids = list.map(o=> o.id).filter(id=> !itemsByOrder[id]);
     for(let k = 0; k < ids.length; k += 40){
@@ -7848,6 +7877,7 @@ async function openKitchenScreen(){
       orders.push(row);
       try{ await loadItems([row]); }catch(e){}
       render();
+      if(!(itemsByOrder[row.id] || []).length) ensureItems(row);
     },
     onUpdate(row){
       if(!row) return;
