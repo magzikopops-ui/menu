@@ -4146,6 +4146,7 @@ async function openCashierDashboard(staffRow){
   document.getElementById('cashierOrdersBtnBig').onclick = openOrdersOverlay;
   document.getElementById('cashierKitchenBtn').onclick = openKitchenScreen;
   maybeAutoOpenKitchen();
+  maybeAutoOpenOrders();
   document.getElementById('cashierSignOutBtn').onclick = signOutApp;
 }
 
@@ -4172,6 +4173,7 @@ async function openDashboard(){
   await checkSubscriptionExpiry();
   if(restaurant.account_suspended){ showAccountSuspendedBlock(); return; }
   maybeAutoOpenKitchen();
+  maybeAutoOpenOrders();
   await checkDemoExpiry();
   if(restaurant.restriction_banner_enabled) showTrialExpiredBanner();
   maybeShowRenewSoonBanner();
@@ -6759,6 +6761,7 @@ async function openOrdersOverlay(){
           <button type="button" class="chip-btn" id="ordersViewBtn" title="تبديل طريقة العرض بين الكروت والجدول"></button>
           <button type="button" class="chip-btn" id="alertTonePreviewBtn">🔊 تجربة</button>
           <button type="button" class="chip-btn" id="autoPrintToggleBtn"></button>
+          <button type="button" class="chip-btn" id="autoOpenOrdersBtn" title="فتح شاشة الطلبات تلقائيًا عند الدخول للوحة التحكم على هذا الجهاز"></button>
           <button type="button" class="btn-export-sm" id="ordersExportBtn">📥 تصدير Excel</button>
         </span>
       </div>
@@ -6841,6 +6844,18 @@ async function openOrdersOverlay(){
     autoPrintNote.innerHTML = `تفعيل الطباعة التلقائية هنا خاص بهذا الجهاز/المتصفح فقط (مثلًا شاشة المطبخ). سيفتح المتصفح نافذة الطباعة تلقائيًا مع كل طلب جديد، وستحتاج إلى الضغط على "طباعة" فيها، إلا إذا ضبطت المتصفح على وضع "kiosk printing" الذي يطبع مباشرة من دون نافذة — استشر الدعم الفني إذا احتجت إلى ضبط الجهاز بهذه الطريقة.`;
   };
   refreshAutoPrintUI();
+  const autoOpenBtn = overlay.querySelector('#autoOpenOrdersBtn');
+  const refreshAutoOpenUI = ()=>{
+    const on = isAutoOpenOrdersEnabled();
+    autoOpenBtn.textContent = on ? '🚀 فتح تلقائي عند الدخول: مفعّل' : '🚀 فتح تلقائي عند الدخول: متوقف';
+    autoOpenBtn.classList.toggle('active', on);
+  };
+  refreshAutoOpenUI();
+  autoOpenBtn.addEventListener('click', ()=>{
+    dashPrefSet('autoOpenOrders', !isAutoOpenOrdersEnabled());
+    refreshAutoOpenUI();
+    toast(isAutoOpenOrdersEnabled() ? 'ستُفتح شاشة الطلبات تلقائيًا عند الدخول على هذا الجهاز' : 'تم إيقاف الفتح التلقائي لشاشة الطلبات على هذا الجهاز');
+  });
   autoPrintBtn.addEventListener('click', ()=>{
     setAutoPrintEnabled(!isAutoPrintEnabled());
     refreshAutoPrintUI();
@@ -7671,6 +7686,18 @@ async function openOrdersOverlay(){
 // ===== شاشة المطبخ الحية: أعمدة (جديد / قيد التجهيز / سُلّم مؤخرًا) مع مؤقتات وتحديث لحظي =====
 // رابط شاشة المطبخ المباشر (?kitchen=1): بعد تسجيل الدخول تُفتح الشاشة تلقائيًا — مناسب لتابلت المطبخ بحساب كاشير
 function kitchenScreenLink(){ return location.origin + location.pathname + '?kitchen=1'; }
+// فتح شاشة الطلبات تلقائيًا بعد الدخول للوحة التحكم (مفعّل افتراضيًا، ويوقفه صاحب المحل من داخل الشاشة). الإعداد خاص بكل جهاز.
+function isAutoOpenOrdersEnabled(){ return dashPrefGet('autoOpenOrders', true) !== false; }
+function maybeAutoOpenOrders(){
+  try{
+    if(!isAutoOpenOrdersEnabled()) return;
+    if(typeof isSuperAdmin !== 'undefined' && isSuperAdmin) return; // الأدمن العام لا تُفتح له شاشة محل تلقائيًا
+    if(new URLSearchParams(location.search).get('kitchen') === '1') return; // رابط المطبخ له شاشته
+    if(restaurant && restaurant.account_suspended) return;
+    if(document.querySelector('.orders-overlay') || window.__kdsApi) return;
+    openOrdersOverlay();
+  }catch(e){}
+}
 function maybeAutoOpenKitchen(){
   try{ if(new URLSearchParams(location.search).get('kitchen') === '1') openKitchenScreen(); }catch(e){}
 }
