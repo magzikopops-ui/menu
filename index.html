@@ -212,7 +212,7 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .dash-menu-trigger .caret{ font-size:9px; opacity:.65; transition:transform .15s ease; }
 .dash-menu-group.open .dash-menu-trigger{ background:#3a3733; border-color:var(--stone); }
 .dash-menu-group.open .dash-menu-trigger .caret{ transform:rotate(180deg); }
-.dash-menu-dropdown{ position:absolute; top:calc(100% + 8px); inset-inline-start:0; background:#2A2825; border:1px solid #454138; border-radius:10px; padding:6px; min-width:235px; z-index:80; box-shadow:0 12px 32px rgba(0,0,0,.4); display:none; flex-direction:column; gap:3px; }
+.dash-menu-dropdown{ position:absolute; top:calc(100% + 8px); inset-inline-start:0; max-width:calc(100vw - 16px); background:#2A2825; border:1px solid #454138; border-radius:10px; padding:6px; min-width:235px; z-index:80; box-shadow:0 12px 32px rgba(0,0,0,.4); display:none; flex-direction:column; gap:3px; }
 .dash-menu-group.open .dash-menu-dropdown{ display:flex; }
 .dash-menu-dropdown .link-btn{ width:100%; text-align:right; border-radius:7px; background:transparent; border-color:transparent; padding:9px 12px; }
 .dash-menu-dropdown .link-btn:hover{ background:#3a3733; border-color:#454138; }
@@ -20767,6 +20767,16 @@ document.querySelectorAll('.dash-menu-group').forEach(group=>{
     const willOpen = !group.classList.contains('open');
     document.querySelectorAll('.dash-menu-group.open').forEach(g=>{ if(g!==group) g.classList.remove('open'); });
     group.classList.toggle('open', willOpen);
+    if(willOpen){
+      // لو القائمة طالعة برّه حدود الشاشة (زي قائمة الإعدادات في أقصى الشمال) نقلب اتجاه فتحها
+      const dd = group.querySelector('.dash-menu-dropdown');
+      if(dd){
+        dd.style.left = dd.style.right = '';
+        const r = dd.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+        if(r.left < 8){ dd.style.right = 'auto'; dd.style.left = '0'; }
+        else if(r.right > vw - 8){ dd.style.left = 'auto'; dd.style.right = '0'; }
+      }
+    }
   });
   group.querySelectorAll('.dash-menu-dropdown button').forEach(btn=>{
     btn.addEventListener('click', ()=> group.classList.remove('open'));
