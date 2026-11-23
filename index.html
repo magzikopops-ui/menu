@@ -97,6 +97,20 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .as-card:hover .as-cta{ background:#d24a18; }
 .as-arrow{ display:inline-block; transition:transform .2s ease; }
 .as-card:hover .as-arrow{ transform:translateX(-4px); }
+.as-video{ display:flex; align-items:center; gap:14px; width:100%; margin-top:14px; padding:10px; text-align:right; cursor:pointer; font-family:var(--body); color:var(--paper); background:linear-gradient(160deg,#322F2B 0%,#262420 100%); border:1px solid #454138; border-radius:16px; transition:transform .2s ease, border-color .2s ease; }
+.as-video:hover{ transform:translateY(-2px); border-color:var(--ember); }
+.as-video-thumb{ position:relative; flex:0 0 132px; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:#1c1a17; }
+.as-video-thumb img{ width:100%; height:100%; object-fit:cover; display:block; opacity:.85; }
+.as-play{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:38px; height:38px; border-radius:50%; background:var(--ember); color:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; box-shadow:0 4px 14px rgba(0,0,0,.5); }
+.as-video-txt{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+.as-video-txt strong{ font-family:var(--display); font-size:15.5px; }
+.as-video-txt small{ color:var(--stone); font-size:12px; line-height:1.5; }
+.guide-video-modal{ width:min(860px,96vw) !important; padding:12px !important; }
+.guide-video-frame{ position:relative; width:100%; aspect-ratio:16/9; background:#000; border-radius:10px; overflow:hidden; }
+.guide-video-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+.guide-video-bar{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:10px; }
+.guide-video-bar a{ font-size:12px; color:var(--stone); }
+
 @media (max-width:560px){
   .as-grid{ grid-template-columns:1fr; gap:10px; }
   .as-card{ flex-direction:row; flex-wrap:wrap; align-items:center; padding:14px; gap:4px 12px; text-align:start; }
@@ -2540,6 +2554,10 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
       <span class="as-cta">تصفح المنيو <span class="as-arrow">←</span></span>
     </a>
     </div>
+    <button type="button" class="as-video" id="authGuideVideoBtn" aria-label="شاهد فيديو شرح الموقع والتطبيق">
+      <span class="as-video-thumb"><img src="https://i.ytimg.com/vi/DGyDW51fqUk/hqdefault.jpg" alt="" loading="lazy"><span class="as-play">▶</span></span>
+      <span class="as-video-txt"><strong>شاهد فيديو الشرح</strong><small>جولة سريعة في لوحة التحكم وفي المنيو اللي بيشوفه عميلك</small></span>
+    </button>
   </div>
 </div>
 
@@ -2677,6 +2695,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
           <button class="link-btn" id="installDashBtn">💻 تثبيت لوحة التحكم كتطبيق</button>
           <button class="link-btn" id="dashStartupBtn">🚀 تشغيل اللوحة عند فتح الجهاز</button>
           <button class="link-btn" id="dashShortcutsBtn">⌨️ اختصارات لوحة المفاتيح</button>
+          <button class="link-btn" id="guideVideoBtn">🎬 فيديو شرح الاستخدام</button>
         </div>
       </div>
 
@@ -3360,6 +3379,36 @@ function toast(msg){
   el.classList.add('show');
   setTimeout(()=> el.classList.remove('show'), 2200);
 }
+/* فيديو شرح الموقع والتطبيق — الـ iframe ما بيتحمّلش إلا لما العميل يضغط (عشان ما نبطّأش الصفحة) */
+var GUIDE_VIDEO_ID = 'DGyDW51fqUk';
+function openGuideVideo(en){
+  if(document.getElementById('guideVideoOverlay')) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.id = 'guideVideoOverlay';
+  overlay.innerHTML = `
+    <div class="modal guide-video-modal" role="dialog" aria-modal="true">
+      <div class="guide-video-frame">
+        <iframe src="https://www.youtube-nocookie.com/embed/${GUIDE_VIDEO_ID}?autoplay=1&rel=0&modestbranding=1" title="${en ? 'Walkthrough video' : 'فيديو الشرح'}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      </div>
+      <div class="guide-video-bar">
+        <a href="https://youtu.be/${GUIDE_VIDEO_ID}" target="_blank" rel="noopener">${en ? 'Open on YouTube' : 'افتح على يوتيوب'}</a>
+        <button class="btn-cancel" id="guideVideoCloseBtn" type="button">${en ? 'Close' : 'إغلاق'}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#guideVideoCloseBtn').addEventListener('click', ()=> overlay.remove());
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.remove(); });
+}
+(function bindGuideVideoButtons(){
+  [['authGuideVideoBtn'], ['guideVideoBtn', true]].forEach(([id, track])=>{
+    const b = document.getElementById(id);
+    if(b) b.addEventListener('click', ()=>{
+      openGuideVideo(false);
+      if(track && typeof restaurant !== 'undefined' && restaurant){ setupSet('videoWatched', '1'); renderSetupChecklist(); }
+    });
+  });
+})();
 
 function toEgyptWaDigits(phone){
   // أرقام العملاء مخزّنة بصيغة محلية 01xxxxxxxxx، ويجب تحويلها إلى صيغة دولية 20xxxxxxxxxx حتى يعمل رابط واتساب بشكل صحيح
@@ -10221,6 +10270,7 @@ function setupStepList(){
   const itemsWithImg = items.filter(i=> i.image_url).length;
   const btnVisible = (id)=>{ const el = document.getElementById(id); return !!el && !el.classList.contains('hidden'); };
   const steps = [
+    { key:'video', text:'شاهد فيديو شرح الاستخدام', done: setupGet('videoWatched') === '1', optional:true, act: ()=>{ setupSet('videoWatched', '1'); openGuideVideo(false); renderSetupChecklist(); }, label:'▶ شاهد الفيديو', show:true },
     { key:'logo', text:'أضف شعار متجرك', done: !!restaurant.logo_url, act: ()=> openSettingsAndFocus('restNameInput'), label:'افتح الإعدادات', show: btnVisible('restaurantSettingsBtn') },
     { key:'category', text:'أضف أول فئة', done: categories.length > 0, act: ()=> document.getElementById('addCategoryBtn').click(), label:'إضافة فئة', show:true },
     { key:'items', text:`أضف 5 من ${word} على الأقل (${Math.min(items.length, 5)}/5)`, done: items.length >= 5, act: ()=> document.getElementById(categories.length ? 'addItemBtn' : 'addCategoryBtn').click(), label: categories.length ? 'إضافة' : 'إضافة فئة', show:true },
@@ -18404,11 +18454,13 @@ async function loadPublic(slug){
         <div class="modal-actions">
           <button class="btn-cancel" id="aboutCloseBtn">${lang==='en' ? 'Close' : 'إغلاق'}</button>
           <button class="btn-confirm" id="aboutSignupBtn" type="button">${lang==='en' ? 'Create your account now' : 'أنشئ حسابك الآن'}</button>
+          <button class="btn-cancel" id="aboutVideoBtn" type="button">▶ ${lang==='en' ? 'Watch the walkthrough' : 'شاهد الشرح'}</button>
           <a class="btn-confirm" style="display:flex; align-items:center; justify-content:center; text-decoration:none;" href="${waLink}" target="_blank" rel="noopener">${lang==='en' ? 'Ask us on WhatsApp' : 'اسألنا عبر واتساب'}</a>
         </div>
       </div>`;
     document.body.appendChild(overlay);
     overlay.querySelector('#aboutCloseBtn').addEventListener('click', ()=> overlay.remove());
+    overlay.querySelector('#aboutVideoBtn').addEventListener('click', ()=> openGuideVideo(lang==='en'));
     overlay.querySelector('#aboutSignupBtn').addEventListener('click', ()=>{
       location.href = `${location.origin}${location.pathname}?signup=1`;
     });
