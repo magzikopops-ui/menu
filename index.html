@@ -10,7 +10,7 @@
 <meta name="keywords" id="metaKeywords" content="منيو إلكتروني, منيو اونلاين, منيو رقمي, QR منيو, منيو QR, نظام طلبات مطاعم, طلب اونلاين, توصيل, مطعم, متجر, كاشير, magziko, M@G Menu, منيو m@g, منيو ماج">
 <meta name="robots" id="metaRobots" content="index, follow, max-image-preview:large">
 <link rel="canonical" id="canonicalLink" href="https://magziko.github.io/menu/">
-<meta property="og:url" id="ogUrl" content="https://magziko.github.io/menua/">
+<meta property="og:url" id="ogUrl" content="https://magziko.github.io/menu/">
 <meta property="og:locale" content="ar_EG">
 <meta property="og:site_name" content="منيو m@g">
 <meta name="author" content="منيو m@g">
@@ -42,9 +42,6 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800&family=Amiri:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 :root{
   --ink:#201F1D; --paper:#F6F1E4; --paper-dim:#EDE6D2;
@@ -3843,6 +3840,9 @@ document.getElementById('forgotPasswordLink').addEventListener('click', async ()
 async function signOutApp(){
   stopOrderAlertLoop();
   stopOverdueCheckLoop();
+  if(abandonedBadgeTimer){ clearInterval(abandonedBadgeTimer); abandonedBadgeTimer = null; }
+  if(reservationsBadgeTimer){ clearInterval(reservationsBadgeTimer); reservationsBadgeTimer = null; }
+  if(dashHomeTimer){ clearInterval(dashHomeTimer); dashHomeTimer = null; }
   await sb.auth.signOut();
   currentUser = null; restaurant = null; account = null; branches = [];
   document.getElementById('authEmail').value='';
@@ -3884,6 +3884,7 @@ async function afterLogin(){
 async function switchBranch(branchId){
   const b = branches.find(x=> x.id === branchId);
   if(!b || (restaurant && b.id === restaurant.id)) return;
+  stopOrderAlertLoop(); // صوت تنبيه فرع قديم لا يكمل بعد التحويل
   restaurant = b;
   localStorage.setItem('activeBranchId_' + account.id, b.id);
   await openDashboard();
@@ -6607,6 +6608,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
   overlay.querySelector('#customersSearchInput').addEventListener('input', renderCustomers);
 
   overlay.querySelector('#customersExportBtn').addEventListener('click', async ()=>{
+    await ensureXLSX();
     const q = overlay.querySelector('#customersSearchInput').value.trim().toLowerCase();
     const list = q ? allCustomers.filter(c=> (c.name||'').toLowerCase().includes(q) || (c.phone||'').includes(q)) : allCustomers;
     if(!list.length){ toast('لا يوجد عملاء لتصديرهم'); return; }
@@ -6696,6 +6698,7 @@ document.getElementById('customersBtn').addEventListener('click', async ()=>{
   });
 
   overlay.querySelector('#customersExcelInput').addEventListener('change', async (e)=>{
+    await ensureXLSX();
     const file = e.target.files[0];
     e.target.value = '';
     if(!file) return;
@@ -9264,7 +9267,8 @@ async function openAdminPanel(){
   searchInput.addEventListener('input', renderTable);
   sortSelect.addEventListener('change', renderTable);
 
-  overlay.querySelector('#adminExportExcelBtn').addEventListener('click', ()=>{
+  overlay.querySelector('#adminExportExcelBtn').addEventListener('click', async ()=>{
+    await ensureXLSX();
     const list = getFilteredSorted();
     const rows = [[ 'الاسم', 'النوع', 'الرابط', 'الإيميل', 'الباقة', 'تاريخ الانضمام', 'مدة Demo (أيام)', 'تاريخ انتهاء الاشتراك', 'الحساب معلّق؟' ]];
     list.forEach(r=>{
@@ -11132,7 +11136,8 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
   runSalesReport();
   overlay.querySelector('#salesReportGoBtn').addEventListener('click', runSalesReport);
 
-  overlay.querySelector('#salesReportExportBtn').addEventListener('click', ()=>{
+  overlay.querySelector('#salesReportExportBtn').addEventListener('click', async ()=>{
+    await ensureXLSX();
     if(!lastReportRange){ toast('اضغط "عرض" الأول'); return; }
     const filtered = rows.filter(r=> r.day >= lastReportRange.from && r.day <= lastReportRange.to).sort((a,b)=> a.day < b.day ? -1 : 1);
     if(filtered.length === 0){ toast('لا توجد بيانات لتصديرها'); return; }
@@ -11372,7 +11377,8 @@ document.getElementById('reportsBtn').addEventListener('click', async ()=>{
   runCancelledReport();
   overlay.querySelector('#cancelledReportGoBtn').addEventListener('click', runCancelledReport);
 
-  overlay.querySelector('#cancelledReportExportBtn').addEventListener('click', ()=>{
+  overlay.querySelector('#cancelledReportExportBtn').addEventListener('click', async ()=>{
+    await ensureXLSX();
     if(!lastCancelledFiltered || lastCancelledFiltered.length === 0){ toast('لا توجد بيانات لتصديرها'); return; }
     const header = ['التاريخ','رقم الطلب','العميل','رقم الهاتف','النوع','المنطقة',`القيمة (${getRestaurantCurrency(restaurant)})`];
     const aoa = [header];
@@ -11519,7 +11525,8 @@ function buildMonthlyReportHtml({ restaurant, dailyRows, itemStatsRows, custRows
 }
 
 const ORDER_STATUS_LABELS_EXPORT = { pending:'قيد الانتظار', preparing:'قيد التجهيز', ready:'جاهز', delivered:'تم التسليم', cancelled:'ملغي' };
-function exportOrdersToExcel(orderList, itemsByOrderMap, filenameLabel){
+async function exportOrdersToExcel(orderList, itemsByOrderMap, filenameLabel){
+  await ensureXLSX();
   if(!orderList || orderList.length === 0){ toast('لا توجد طلبات لتصديرها'); return; }
   const header = ['رقم الطلب','التاريخ والوقت','اسم العميل','رقم الهاتف','رقم هاتف إضافي','نوع الطلب','الحالة','المدينة','المنطقة','العنوان','الأصناف','عدد القطع','الإجمالي الفرعي','رسوم التوصيل','الإجمالي','ملاحظات'];
   const rows = [header];
@@ -11714,7 +11721,8 @@ async function openTableReportsModal(initialTab){
   const kpi = (label, value, color)=> `<div class="rtx-kpi" style="--c:${color};"><div class="l">${label}</div><div class="v">${value}</div></div>`;
   const toolbar = (title, hint)=> `<div class="rtx-title"><div><h4>${title}</h4><p>${hint}</p></div><span style="display:flex; gap:6px; flex-wrap:wrap;"><button type="button" class="btn-export-sm" id="rtPrint" style="background:var(--confirm-strong);">🖨️ طباعة / PDF</button><button type="button" class="btn-export-sm" id="rtExport">⬇️ تصدير Excel</button></span></div>`;
   const stamp = ()=> `${state.from}_${state.to}`;
-  const saveXlsx = (aoa, widths, sheet, label)=>{
+  const saveXlsx = async (aoa, widths, sheet, label)=>{
+    await ensureXLSX();
     const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = widths.map(w=> ({ wch:w }));
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, sheet);
     XLSX.writeFile(wb, `${restaurant.slug || 'restaurant'}-${label}-${stamp()}.xlsx`);
@@ -13325,6 +13333,33 @@ function canvasWrapText(ctx, text, x, y, maxWidth, lineHeight){
   return lines.length;
 }
 
+/* مكتبات ثقيلة تتحمل عند أول استخدام فقط (كانت تتحمل مع كل زيارة حتى لعميل المنيو) */
+const LAZY_LIBS = {
+  xlsx: { src:'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js', ready:()=> !!window.XLSX },
+  sortable: { src:'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js', ready:()=> !!window.Sortable },
+  qr: { src:'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js', ready:()=> !!window.QRCode }
+};
+const _lazyLibP = {};
+function loadLazyLib(key){
+  const d = LAZY_LIBS[key];
+  if(d.ready()) return Promise.resolve(true);
+  if(_lazyLibP[key]) return _lazyLibP[key];
+  _lazyLibP[key] = new Promise(res=>{
+    const sc = document.createElement('script');
+    sc.src = d.src; sc.async = true; sc.crossOrigin = 'anonymous';
+    sc.onload = ()=> res(d.ready());
+    sc.onerror = ()=>{ _lazyLibP[key] = null; sc.remove(); res(false); };
+    document.head.appendChild(sc);
+  });
+  return _lazyLibP[key];
+}
+async function ensureXLSX(){
+  const ok = await loadLazyLib('xlsx');
+  if(!ok){ toast(typeof lang !== 'undefined' && lang === 'en' ? 'Could not load the Excel library. Check your connection and try again.' : 'تعذر تحميل مكتبة الإكسل، تأكد من الاتصال وحاول مرة أخرى'); throw new Error('xlsx load failed'); }
+}
+const ensureSortable = ()=> loadLazyLib('sortable');
+const ensureQR = ()=> loadLazyLib('qr');
+
 /* خطوط المصمم/الـ PDF فقط (كانت تتحمل مع كل صفحة): تتحمل أول ما تتفتح هذه الأدوات */
 const POSTER_FONTS_URL = 'https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Cairo:wght@400;700&family=Changa:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&display=swap';
 let _posterFontsP = null;
@@ -13515,6 +13550,7 @@ document.getElementById('importExcelBtn').addEventListener('click', ()=>{
 });
 
 document.getElementById('importExcelInput').addEventListener('change', async (e)=>{
+  await ensureXLSX();
   const file = e.target.files[0];
   e.target.value = '';
   if(!file) return;
@@ -14022,7 +14058,8 @@ document.getElementById('exportExcelBtn').addEventListener('click', ()=>{
   });
 });
 
-function exportItemsToExcel(onlyActive, catIds){
+async function exportItemsToExcel(onlyActive, catIds){
+  await ensureXLSX();
   const header = [
     'الفئة',
     'الاسم (عربي)',
@@ -14097,6 +14134,8 @@ function exportItemsToExcel(onlyActive, catIds){
 }
 
 function renderDashboard(){
+  /* صاحب المطعم: حمّل المكتبات في وقت الفراغ عشان التصدير والسحب يبقوا فوريين */
+  (window.requestIdleCallback || ((fn)=> setTimeout(fn, 2500)))(()=>{ loadLazyLib('sortable'); loadLazyLib('xlsx'); });
   setupInstallableDashboard();
   renderCategories();
   renderItems();
@@ -14141,6 +14180,7 @@ let categorySortable = null;
 function initCategorySortable(){
   const wrap = document.getElementById('categoryList');
   if(categorySortable) return;
+  if(!window.Sortable){ ensureSortable().then(ok=>{ if(ok) initCategorySortable(); }); return; }
   categorySortable = Sortable.create(wrap, {
     handle: '.drag-handle',
     animation: 150,
@@ -14395,7 +14435,7 @@ async function posterMakeQr(link){
     await new Promise((res, rej)=> QRCode.toCanvas(cv, link, { width:420, margin:1, errorCorrectionLevel:'M' }, (err)=> err ? rej(err) : res()));
     return cv;
   };
-  try{ if(window.QRCode && QRCode.toCanvas) return await viaLib(); }catch(e){}
+  try{ await ensureQR(); if(window.QRCode && QRCode.toCanvas) return await viaLib(); }catch(e){}
   try{
     const res = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=420x420&margin=1&data=${encodeURIComponent(link)}`, { mode:'cors' });
     if(res.ok) return await createImageBitmap(await res.blob());
@@ -16315,6 +16355,7 @@ let itemSortable = null;
 function initItemSortable(){
   const wrap = document.getElementById('itemList');
   if(itemSortable) return;
+  if(!window.Sortable){ ensureSortable().then(ok=>{ if(ok) initItemSortable(); }); return; }
   itemSortable = Sortable.create(wrap, {
     handle: '.drag-handle',
     animation: 150,
@@ -20048,9 +20089,9 @@ async function loadPublic(slug){
         }
         payOnlineWrap.innerHTML = tabsHtml + detailHtml;
         const qrCanvas = payOnlineWrap.querySelector('#ordPayQr');
-        if(qrCanvas && window.QRCode){
+        if(qrCanvas){
           const linkVal = getCurrentPayLinkValue();
-          if(linkVal) QRCode.toCanvas(qrCanvas, linkVal, { width: 140, margin: 1 }, ()=>{});
+          if(linkVal) ensureQR().then(()=>{ if(window.QRCode && qrCanvas.isConnected) QRCode.toCanvas(qrCanvas, linkVal, { width: 140, margin: 1 }, ()=>{}); });
         }
         payOnlineWrap.querySelectorAll('[data-pay-tab]').forEach(btn=>{
           btn.addEventListener('click', ()=>{
