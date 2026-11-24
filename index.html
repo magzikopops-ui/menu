@@ -97,6 +97,8 @@ body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink);
 .as-card:hover .as-cta{ background:#d24a18; }
 .as-arrow{ display:inline-block; transition:transform .2s ease; }
 .as-card:hover .as-arrow{ transform:translateX(-4px); }
+.lang-fab{ position:fixed; top:12px; inset-inline-end:14px; z-index:40; padding:7px 13px; font-family:var(--body); font-size:13px; font-weight:700; cursor:pointer; color:var(--paper); background:#2A2825; border:1px solid #454138; border-radius:10px; }
+.lang-fab:hover{ border-color:var(--ember); }
 .as-video{ display:flex; align-items:center; gap:14px; width:100%; margin-top:14px; padding:10px; text-align:right; cursor:pointer; font-family:var(--body); color:var(--paper); background:linear-gradient(160deg,#322F2B 0%,#262420 100%); border:1px solid #454138; border-radius:16px; transition:transform .2s ease, border-color .2s ease; }
 .as-video:hover{ transform:translateY(-2px); border-color:var(--ember); }
 .as-video-thumb{ position:relative; flex:0 0 132px; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:#1c1a17; }
@@ -2505,6 +2507,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
 </div>
 
 <div id="authScreen" class="hidden">
+  <button type="button" class="js-lang-btn lang-fab" data-no-tr title="Switch to English">🌐 EN</button>
   <div class="auth-brand"><img class="auth-brand-logo" src="favicon.png" alt="منيو m@g"> منيو m@g</div>
   <div class="auth-box">
     <div class="auth-tabs">
@@ -2578,6 +2581,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
       <button class="link-btn" id="cashierOrdersBtn">📋 الطلبات الواردة</button>
       <button class="link-btn" id="cashierKitchenBtn">👨‍🍳 شاشة المطبخ</button>
       <button class="link-btn" id="cashierNotifPermBtn">🔔 تفعيل تنبيه الطلبات</button>
+      <button class="link-btn js-lang-btn" data-no-tr title="Switch to English">🌐 EN</button>
       <button class="link-btn" id="cashierSignOutBtn">تسجيل الخروج</button>
     </div>
   </div>
@@ -2588,6 +2592,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
 </div>
 
 <div id="onboardScreen" class="hidden">
+  <button type="button" class="js-lang-btn lang-fab" data-no-tr title="Switch to English">🌐 EN</button>
   <div class="onboard-box">
     <h3 id="obHeading">أنشئ حسابك</h3>
     <p id="obIntro">لم يُربط بهذا الحساب أي نشاط بعد. اختر نوع نشاطك أولًا، ثم اسمه والرابط العام الذي سيظهر لعملائك.</p>
@@ -2627,7 +2632,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
       <span class="switch-link" id="signOutLink">تسجيل الخروج</span>
     </div>
     <div class="topbar-actions">
-      <button class="link-btn" id="dashLangBtn" type="button" data-no-tr title="Switch to English">🌐 EN</button>
+      <button class="link-btn js-lang-btn" id="dashLangBtn" type="button" data-no-tr title="Switch to English">🌐 EN</button>
       <button class="link-btn" id="dashThemeBtn" type="button" aria-pressed="false" title="الوضع الداكن">🌙</button>
       <button class="link-btn" id="viewOrdersBtn">📦 الطلبات <span id="newOrdersBadge" class="new-orders-badge hidden">0</span></button>
 
@@ -3390,9 +3395,13 @@ function toast(msg){
   setTimeout(()=> el.classList.remove('show'), 2200);
 }
 /* فيديو شرح الموقع والتطبيق — الـ iframe ما بيتحمّلش إلا لما العميل يضغط (عشان ما نبطّأش الصفحة) */
-var GUIDE_VIDEO_ID = 'DGyDW51fqUk';
+var GUIDE_VIDEO_IDS = { ar:'DGyDW51fqUk', en:'' }; // حط هنا ID فيديو الشرح الإنجليزي لما يجهز (لو فاضي بيستخدم الفيديو العربي)
+var GUIDE_VIDEO_ID = GUIDE_VIDEO_IDS.ar;
+function guideVideoIdFor(en){ return (en && GUIDE_VIDEO_IDS.en) ? GUIDE_VIDEO_IDS.en : GUIDE_VIDEO_IDS.ar; }
 function openGuideVideo(en){
   if(document.getElementById('guideVideoOverlay')) return;
+  en = (en === true) || (DASH_LANG === 'en' && dashLangActive());
+  const GUIDE_VIDEO_ID = guideVideoIdFor(en);
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.id = 'guideVideoOverlay';
@@ -20782,7 +20791,7 @@ var DASH_EN = {
   'الفئات':'Categories', 'إضافة فئة جديدة':'Add new category', 'نظام نقاط البيع':'Point-of-sale system', 'جرّب نظام POS من نفس الفريق':'Try the POS system from the same team',
   // البانر + قائمة الإعداد
   'أول مرة هنا؟':'First time here?', 'شاهد فيديو الشرح عشان تعرف تستخدم لوحة التحكم وتجهّز منيو متجرك بسرعة':'Watch the walkthrough video to learn the dashboard and set up your menu fast',
-  'شاهد الشرح':'Watch the tutorial', 'فيديو الشرح':'Walkthrough video', 'افتح على يوتيوب':'Open on YouTube', 'إغلاق':'Close', 'إخفاء':'Hide', 'تخطي':'Skip',
+  'شاهد الشرح':'Watch the tutorial', 'شاهد فيديو الشرح':'Watch the walkthrough video', 'فيديو الشرح':'Walkthrough video', 'افتح على يوتيوب':'Open on YouTube', 'إغلاق':'Close', 'إخفاء':'Hide', 'تخطي':'Skip',
   'جهّز متجرك للإطلاق':'Get your store ready to launch', 'قائمة الإعداد':'Setup checklist', 'تم إخفاء قائمة الإعداد':'Setup checklist hidden',
   'شاهد فيديو شرح الاستخدام':'Watch the how-to video', 'شاهد الفيديو':'Watch video', 'أضف شعار متجرك':'Add your store logo', 'افتح الإعدادات':'Open settings',
   'أضف أول فئة':'Add your first category', 'إضافة فئة':'Add category', 'إضافة':'Add', 'أضف صورة':'Add image',
@@ -21106,6 +21115,62 @@ DASH_EN_RX.push(
   [/^تعذر إنشاء الكود: (.+)$/, (m,a)=> `Couldn't create the code: ${a}`]
 );
 
+/* ---- المرحلة 6: شاشة الدخول وإنشاء الحساب، إنشاء النشاط (onboarding)، شاشة الكاشير، إعلان الدخول، نافذة البوستر ---- */
+Object.assign(DASH_EN, {
+  // إعلان الدخول + نماذج حية
+  'إعلان':'Ad', 'مبيعاتك ومخزونك وفروعك من مكان واحد':'Your sales, inventory and branches in one place', 'جرّب الآن ←':'Try it now →', 'إغلاق الإعلان':'Close ad',
+  'نماذج حية':'Live demos', 'شاهد منيوهات حقيقية لعملائنا':'See real menus from our customers', 'جرّب المنيو كما يراه العميل، ثم أنشئ منيو متجرك في دقائق':'Try the menu as your customer sees it, then create your own store menu in minutes',
+  'تصفح المنيو':'Browse menu', 'شاهد فيديو شرح الموقع والتطبيق':'Watch the website and app walkthrough video', 'جولة سريعة في لوحة التحكم وفي المنيو اللي بيشوفه عميلك':"A quick tour of the dashboard and the menu your customer sees",
+  // تسجيل الدخول / حساب جديد
+  'تسجيل الدخول':'Sign in', 'حساب جديد':'New account', 'دخول بحساب كاشير؟':'Sign in with a cashier account?', 'نسيت كلمة المرور؟':'Forgot your password?',
+  'رمز التسجيل الخاص':'Private registration code', 'يمكنك الحصول عليه من فريقنا':'You can get it from our team', 'ألا تملك رمزًا؟':"Don't have a code?", 'تواصل معنا عبر واتساب':'Contact us on WhatsApp',
+  'دخول':'Sign in', 'إنشاء حساب':'Create account', 'اسم المستخدم (الكاشير)':'Username (cashier)', 'اسم المستخدم الذي زوّدك به صاحب المتجر':'The username your store owner gave you',
+  'رجوع لتسجيل الدخول بالبريد الإلكتروني':'Back to email sign-in', 'يرجى إدخال البريد الإلكتروني وكلمة المرور':'Please enter your email and password', 'يرجى إدخال رمز التسجيل الخاص':'Please enter the private registration code',
+  'رمز التسجيل غير صحيح':'The registration code is incorrect', 'تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتأكيد الحساب ثم سجّل الدخول':'Account created. Check your email to confirm the account, then sign in.',
+  'حدث خطأ، حاول مرة أخرى':'Something went wrong, please try again', 'يرجى إدخال بريدك الإلكتروني أولًا في الحقل بالأعلى':'Please enter your email in the field above first', 'جارِ الإرسال':'Sending',
+  'تعذر إرسال رابط إعادة التعيين':"Couldn't send the reset link", 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني':'A password reset link was sent to your email',
+  'تثبيت لوحة التحكم كتطبيق':'Install dashboard as an app',
+  // إنشاء النشاط
+  'أنشئ حسابك':'Create your account', 'لم يُربط بهذا الحساب أي نشاط بعد. اختر نوع نشاطك أولًا، ثم اسمه والرابط العام الذي سيظهر لعملائك':'No business is linked to this account yet. Choose your business type first, then its name and the public link your customers will see',
+  'رابط القائمة (بالإنجليزية، بدون مسافات)':'Menu link (English, no spaces)', 'مثال: متجر الأناقة':'Example: Elegance Store', 'يرجى إدخال رابط صالح بالإنجليزية':'Please enter a valid link in English',
+  'هذا الرابط مستخدم بالفعل، يرجى تجربة رابط آخر':'This link is already in use, please try another one', 'حدث خطأ':'An error occurred', 'حدث خطأ أثناء إنشاء الحساب':'An error occurred while creating the account',
+  'إنشاء المطعم':'Create restaurant', 'إنشاء المتجر':'Create store',
+  // شاشة الكاشير
+  'حساب كاشير':'Cashier account', 'الطلبات الواردة':'Incoming orders', 'تفعيل تنبيه الطلبات':'Enable order alerts', 'أهلًا بك 👋 ستجد هنا جميع الطلبات الجديدة والواردة':'Welcome 👋 you will find all new and incoming orders here', 'فتح الطلبات الواردة':'Open incoming orders',
+  // نافذة البوستر
+  'بوستر تسويقي':'Marketing poster', 'جارِ التجهيز':'Preparing', 'اختياراتك تُحفظ تلقائياً لهذا الحساب':'Your choices are saved automatically for this account', 'استرجاع الافتراضي':'Restore defaults', 'القالب':'Template', 'عشوائي':'Random',
+  'اختيار قالب مختلف بشكل عشوائي':'Pick a different template at random', 'مثال: عروض الأسبوع':"Example: This week's offers", 'عروض الأسبوع':"This week's offers", 'البيانات المضافة':'Added data', 'لون الهوية':'Brand color', 'من لوجو المحل':'From store logo',
+  'حفظ كستايل':'Save as style', 'رقم واتساب لإرسال البوستر (اختياري) — مثال: 201012345678':'WhatsApp number to send the poster to (optional) — example: 201012345678', 'تحميل الصورة':'Download image', 'كل المقاسات (ZIP)':'All sizes (ZIP)',
+  'نشر في المنيو':'Publish in menu', 'مشاركة':'Share', 'ستايلاتي المحفوظة':'My saved styles', 'إزالة هذا القالب من المفضلة':'Remove this template from favorites', 'أضف هذا القالب للمفضلة':'Add this template to favorites',
+  'العلامة إجبارية طالما رمز QR أو لوجو المحل مفعّل':'The mark is required while the QR code or store logo is enabled', 'جارِ إنشاء رمز QR':'Generating QR code', 'تعذّر إنشاء رمز QR':"Couldn't create the QR code",
+  'لا يوجد رابط للمتجر لإنشاء QR':'The store has no link to create a QR code', 'المعاينة جاهزة':'Preview ready', 'حدث خطأ أثناء التجهيز':'An error occurred while preparing', 'تعذّر تحميل صورة الصنف':"Couldn't load the item image",
+  'تعذّرت إزالة الخلفية (الخلفية غير موحّدة)':"Couldn't remove the background (it is not uniform)", 'جارِ النشر':'Publishing', 'حتى نهاية مدة العرض':'Until the end of the offer period',
+  'مربع (منشور)':'Square (post)', 'عمودي (إنستجرام)':'Portrait (Instagram)', 'ستوري / ريلز':'Story / Reels', 'عمودي طويل 2:3 (بنترست)':'Tall portrait 2:3 (Pinterest)', 'ورقة A4 للطباعة':'A4 sheet for printing',
+  'أفقي 16:9 (شاشة / تلفزيون / يوتيوب)':'Landscape 16:9 (screen / TV / YouTube)', 'أفقي 4:3 (عرض تقديمي)':'Landscape 4:3 (presentation)', 'منشور فيسبوك / مشاركة رابط 1.91:1':'Facebook post / link share 1.91:1', 'أفقي واسع 21:9 (شاشة عريضة)':'Ultra-wide 21:9 (wide screen)',
+  'بوستر كبير 5:7 (50×70 سم)':'Large poster 5:7 (50×70 cm)', 'مربع بدقة عالية 2160':'High-resolution square 2160', 'A4 بدقة طباعة عالية (300dpi)':'A4 high print resolution (300dpi)', 'عمودي 3:4 (شبكة إنستجرام الجديدة)':'Portrait 3:4 (new Instagram grid)',
+  'ستوري بدقة 4K':'Story in 4K', 'شاشة 4K أفقي':'4K landscape screen', 'بانر عريض 3:1 (موقع / غلاف)':'Wide banner 3:1 (website / cover)',
+  'كلاسيك':'Classic', 'جريء':'Bold', 'أنيق':'Elegant', 'عصري':'Modern', 'ملكي':'Royal', 'رمضان':'Ramadan', 'غروب':'Sunset', 'محيط':'Ocean', 'حلويات':'Desserts', 'فاست فود':'Fast food', 'ستيك':'Steak', 'بسيط':'Simple', 'سينمائي':'Cinematic', 'دائري':'Circular',
+  'عرض خاص':'Special offer', 'بولارويد':'Polaroid', 'سبورة':'Chalkboard', 'بيسترو':'Bistro', 'مميّز':'Featured', 'العيد':'Eid', 'تخفيضات':'Sale', 'المدارس':'Back to school', 'يوم الأم':"Mother's Day", 'قوس':'Arch', 'مجلة':'Magazine', 'شريط':'Ribbon',
+  'بوب':'Pop', 'كولاج':'Collage', 'ليلكي':'Lilac', 'مشويات':'Grills', 'بيتزا':'Pizza', 'آسيوي':'Asian', 'كوفي':'Coffee', 'عصائر':'Juices', 'سوبرماركت':'Supermarket', 'أزياء':'Fashion', 'تقنية':'Tech', 'أطفال':'Kids', 'صحة':'Health',
+  'جزارة':'Butcher', 'طازج':'Fresh', 'خضار وفاكهة':'Fruits & vegetables', 'مجمدات':'Frozen', 'كوبون':'Coupon', 'معرض':'Gallery', 'لافتة':'Signboard', 'قائمة':'Menu list', 'لقطة':'Snapshot', 'فسيفساء':'Mosaic', 'نيون':'Neon', 'ريترو':'Retro', 'رخام':'Marble'
+});
+Object.assign(DASH_EN_TERMS, {});
+DASH_EN_RX.push(
+  [/^(\d+) (صنف|أصناف|منتج|منتجات)$/, (m,a,w)=> { const t = DASH_EN_TERMS[w] || w; return `${a} ${a === '1' || t.endsWith('s') ? t : t + 's'}`; }],
+  [/^أنشئ (مطعم|متجر)ك$/, (m,w)=> `Create your ${DASH_EN_TERMS[w]}`],
+  [/^لم يُربط بهذا الحساب أي (مطعم|متجر) بعد\. يرجى اختيار اسم (مطعم|متجر) والرابط العام الذي سيظهر لعملائك$/, (m,w)=> `No ${DASH_EN_TERMS[w]} is linked to this account yet. Please choose the ${DASH_EN_TERMS[w]} name and the public link your customers will see`],
+  [/^يرجى إدخال اسم (المطعم|المتجر)$/, (m,w)=> `Please enter the ${DASH_EN_TERMS[w]} name`],
+  [/^إنشاء (المطعم|المتجر)$/, (m,w)=> `Create ${DASH_EN_TERMS[w]}`],
+  [/^سيكون رابطك على الشكل التالي:\s*(.+)$/, (m,a)=> `Your link will look like: ${a}`],
+  [/^ستايلاتي المحفوظة \((.+)\)$/, (m,a)=> `My saved styles (${a})`],
+  [/^(\d+) أصناف$/, (m,a)=> `${a} items`],
+  [/^بوستر تسويقي — (.+)$/, (m,a)=> `Marketing poster — ${a}`],
+  [/^حذف الستايل «(.+)»؟$/, (m,a)=> `Delete the style "${a}"?`],
+  [/^تعذّر تحميل (\d+) صورة$/, (m,a)=> `Couldn't load ${a} images`],
+  [/^جارِ التجهيز (\d+)\/(\d+)$/, (m,a,b)=> `Preparing ${a}/${b}`],
+  [/^البوستر يتسع لـ ?(\d+) أصناف كحد أقصى — تم اختيار أول (\d+)$/, (m,a,b)=> `The poster fits at most ${a} items — the first ${b} were selected`]
+);
+
 var DASH_LANG = 'ar';
 try{ DASH_LANG = localStorage.getItem('dash_lang') === 'en' ? 'en' : 'ar'; }catch(e){}
 var _dashTr = { map:new Map(), obs:null, busy:false };
@@ -21127,7 +21192,7 @@ function dashTrString(str){
 function dashTrSkip(el){
   return !!(el && el.closest && el.closest('[data-no-tr], script, style, textarea, #publicScreen, #trackingScreen'));
 }
-var DASH_USER_TEXT_SEL = '.item-name, .item-desc, .cat-item .name, .dash-top-chip';
+var DASH_USER_TEXT_SEL = '.item-name, .item-desc, .cat-item .name, .dash-top-chip, .as-name';
 function dashTrOne(node){
   if(node.nodeType === 3){
     const rec = _dashTr.map.get(node);
@@ -21168,9 +21233,9 @@ function dashTrRevert(){
   });
   _dashTr.busy = false;
 }
+var DASH_LANG_SCREENS = ['dashboardScreen','authScreen','onboardScreen','cashierScreen'];
 function dashLangActive(){
-  const d = document.getElementById('dashboardScreen');
-  return !!d && !d.classList.contains('hidden');
+  return DASH_LANG_SCREENS.some(id=>{ const d = document.getElementById(id); return !!d && !d.classList.contains('hidden'); });
 }
 function dashLangSync(){
   const en = DASH_LANG === 'en' && dashLangActive();
@@ -21178,8 +21243,7 @@ function dashLangSync(){
   root.dir = en ? 'ltr' : 'rtl';
   root.lang = en ? 'en' : 'ar';
   root.classList.toggle('dash-en', en);
-  const btn = document.getElementById('dashLangBtn');
-  if(btn){ btn.textContent = DASH_LANG === 'en' ? '🌐 عربي' : '🌐 EN'; btn.title = DASH_LANG === 'en' ? 'التبديل للعربية' : 'Switch to English'; }
+  document.querySelectorAll('.js-lang-btn').forEach(btn=>{ btn.textContent = DASH_LANG === 'en' ? '🌐 عربي' : '🌐 EN'; btn.title = DASH_LANG === 'en' ? 'التبديل للعربية' : 'Switch to English'; });
   if(_dashTr.map.size > 4000) _dashTr.map.forEach((r, n)=>{ if(!n.isConnected) _dashTr.map.delete(n); });
   _dashTr.busy = true;
   if(en) dashTrNode(document.body); else dashTrRevert();
@@ -21192,8 +21256,7 @@ function dashSetLang(l){
   if(typeof refreshDashHome === 'function' && typeof restaurant !== 'undefined' && restaurant){ try{ refreshDashHome(); }catch(e){} }
 }
 (function initDashLang(){
-  const btn = document.getElementById('dashLangBtn');
-  if(btn) btn.addEventListener('click', ()=> dashSetLang(DASH_LANG === 'en' ? 'ar' : 'en'));
+  document.querySelectorAll('.js-lang-btn').forEach(btn=> btn.addEventListener('click', ()=> dashSetLang(DASH_LANG === 'en' ? 'ar' : 'en')));
   _dashTr.obs = new MutationObserver(muts=>{
     if(_dashTr.busy || DASH_LANG !== 'en' || !dashLangActive()) return;
     _dashTr.busy = true;
@@ -21207,8 +21270,10 @@ function dashSetLang(l){
   });
   _dashTr.obs.observe(document.body, { childList:true, subtree:true, characterData:true, attributes:true, attributeFilter:['placeholder','title','aria-label'] });
   // الداش بورد بيظهر/يختفي بإضافة/إزالة كلاس hidden → نزامن اللغة والاتجاه
-  const d = document.getElementById('dashboardScreen');
-  if(d) new MutationObserver(()=> dashLangSync()).observe(d, { attributes:true, attributeFilter:['class'] });
+  DASH_LANG_SCREENS.forEach(id=>{
+    const d = document.getElementById(id);
+    if(d) new MutationObserver(()=> dashLangSync()).observe(d, { attributes:true, attributeFilter:['class'] });
+  });
   dashLangSync();
 })();
 
