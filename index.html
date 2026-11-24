@@ -2627,6 +2627,7 @@ body.pub-design-filmstrip .pub-item .item-control .min-weight-note{ flex:0 0 aut
       <span class="switch-link" id="signOutLink">تسجيل الخروج</span>
     </div>
     <div class="topbar-actions">
+      <button class="link-btn" id="dashLangBtn" type="button" data-no-tr title="Switch to English">🌐 EN</button>
       <button class="link-btn" id="dashThemeBtn" type="button" aria-pressed="false" title="الوضع الداكن">🌙</button>
       <button class="link-btn" id="viewOrdersBtn">📦 الطلبات <span id="newOrdersBadge" class="new-orders-badge hidden">0</span></button>
 
@@ -7453,7 +7454,7 @@ async function openOrdersOverlay(){
           toast('تم تأكيد استلام الدفع');
           markPaidBtn.remove();
           const payBadge = row.querySelector('.o-badges .status-badge[style*="4d3a1f"]');
-          if(payBadge){ payBadge.style.background = '#1f4d2e'; payBadge.style.color = '#c8f0d6'; payBadge.textContent = payBadge.textContent.replace('في انتظار التأكيد', 'تم الدفع'); }
+          if(payBadge){ payBadge.style.background = '#1f4d2e'; payBadge.style.color = '#c8f0d6'; payBadge.textContent = payBadge.textContent.replace('في انتظار التأكيد', 'تم الدفع').replace('Awaiting confirmation', 'Paid'); }
         });
       }
       const select = row.querySelector('[data-action="statusSelect"]');
@@ -10423,7 +10424,7 @@ async function refreshDashHome(){
   if(!body || !restaurant) return;
   const today = cairoDay(0), yesterday = cairoDay(-1);
   const dateEl = document.getElementById('dashHomeDate');
-  if(dateEl) dateEl.textContent = new Date().toLocaleDateString('ar-EG', { timeZone:'Africa/Cairo', weekday:'long', day:'numeric', month:'long' });
+  if(dateEl) dateEl.textContent = new Date().toLocaleDateString(DASH_LANG === 'en' ? 'en-GB' : 'ar-EG', { timeZone:'Africa/Cairo', weekday:'long', day:'numeric', month:'long' });
   const nowIso = new Date().toISOString();
   const safe = (p)=> p.then(r=> r, e=> ({ data:null, count:null, error:e }));
   const [ordersRes, visitsRes, topRes, overdueRes, resRes] = await Promise.all([
@@ -20757,6 +20758,459 @@ async function loadPublic(slug){
 
   show('publicScreen');
 }
+
+/* ================= لغة لوحة التحكم (عربي / English) =================
+   طبقة ترجمة تعمل على الواجهة: قاموس + قواعد للنصوص الديناميكية. أي نص مش موجود في القاموس بيفضل بالعربي.
+   لإضافة ترجمة جديدة: ضيف سطر في DASH_EN بالشكل  'النص العربي بدون إيموجي': 'English text' */
+var DASH_EN = {
+  // الشريط العلوي
+  'فرع':'Branch', 'إضافة فرع جديد':'Add new branch', 'اضغط لنسخ البريد':'Click to copy email',
+  'تغيير كلمة المرور':'Change password', 'تسجيل الخروج':'Sign out', 'الوضع الداكن':'Dark mode', 'الوضع الفاتح':'Light mode',
+  'الطلبات':'Orders', 'التشغيل اليومي':'Daily operations', 'شاشة المطبخ':'Kitchen screen', 'الحجوزات':'Reservations', 'السلات المتروكة':'Abandoned carts',
+  'القائمة والمشاركة':'Menu & sharing', 'نسخ رابط القائمة العام':'Copy public menu link', 'QR الطاولات':'Table QR codes', 'مشاركة القائمة':'Share menu',
+  'استيراد من إكسيل':'Import from Excel', 'تصدير إلى إكسيل':'Export to Excel', 'تحميل المنيو PDF':'Download menu PDF',
+  'بوستر العروض والخصومات':'Offers & discounts poster', 'إعلان المنيو الحالي':'Current menu announcement', 'الإضافات والمتغيرات':'Add-ons & variants',
+  'التقارير والإحصائيات':'Reports & statistics', 'الإحصائيات':'Statistics', 'التقارير':'Reports', 'تقفيل اليوم':'Close the day', 'مقارنة الفروع':'Compare branches',
+  'العملاء والتوصيل':'Customers & delivery', 'العملاء':'Customers', 'التقييمات':'Reviews', 'مناطق التوصيل':'Delivery zones', 'السائقين':'Drivers',
+  'أكواد الخصم':'Discount codes', 'العملاء غير النشطين':'Inactive customers',
+  'الإعدادات':'Settings', 'إعدادات المطعم':'Restaurant settings', 'إعدادات المتجر':'Store settings', 'شكل المنيو':'Menu design', 'النسخ الاحتياطي':'Backup',
+  'حسابات الكاشير':'Cashier accounts', 'الاشتراك':'Subscription', 'تفعيل تنبيهات المتصفح':'Enable browser notifications',
+  'تثبيت لوحة التحكم كتطبيق':'Install dashboard as an app', 'تشغيل اللوحة عند فتح الجهاز':'Launch dashboard at startup',
+  'اختصارات لوحة المفاتيح':'Keyboard shortcuts', 'فيديو شرح الاستخدام':'How-to video', 'لوحة تحكم m@g':'m@g admin panel',
+  'تجديد الآن':'Renew now', 'تواصل معنا':'Contact us',
+  // الجانب
+  'الفئات':'Categories', 'إضافة فئة جديدة':'Add new category', 'نظام نقاط البيع':'Point-of-sale system', 'جرّب نظام POS من نفس الفريق':'Try the POS system from the same team',
+  // البانر + قائمة الإعداد
+  'أول مرة هنا؟':'First time here?', 'شاهد فيديو الشرح عشان تعرف تستخدم لوحة التحكم وتجهّز منيو متجرك بسرعة':'Watch the walkthrough video to learn the dashboard and set up your menu fast',
+  'شاهد الشرح':'Watch the tutorial', 'فيديو الشرح':'Walkthrough video', 'افتح على يوتيوب':'Open on YouTube', 'إغلاق':'Close', 'إخفاء':'Hide', 'تخطي':'Skip',
+  'جهّز متجرك للإطلاق':'Get your store ready to launch', 'قائمة الإعداد':'Setup checklist', 'تم إخفاء قائمة الإعداد':'Setup checklist hidden',
+  'شاهد فيديو شرح الاستخدام':'Watch the how-to video', 'شاهد الفيديو':'Watch video', 'أضف شعار متجرك':'Add your store logo', 'افتح الإعدادات':'Open settings',
+  'أضف أول فئة':'Add your first category', 'إضافة فئة':'Add category', 'إضافة':'Add', 'أضف صورة':'Add image',
+  'اكتب رقم التواصل / واتساب':'Enter your contact / WhatsApp number', 'اكتب الرقم':'Enter number', 'أضف مناطق التوصيل ورسومها':'Add delivery zones and fees',
+  'حدد أوقات العمل':'Set working hours', 'حدد الأوقات':'Set hours', 'انسخ رابط المنيو وشاركه مع عملائك':'Copy the menu link and share it with your customers', 'نسخ الرابط':'Copy link',
+  'اختياري)':'optional)', 'غير متوفر)':'unavailable)', 'تم التخطي)':'skipped)',
+  // نظرة سريعة
+  'نظرة سريعة':'Quick overview', 'اضغط للفتح / الإغلاق':'Click to expand / collapse', 'يحتاج انتباهك':'Needs your attention',
+  'طلبات جديدة بانتظار التأكيد':'New orders awaiting confirmation', 'فتح الطلبات':'Open orders', 'طلبات تأخّرت عن الموعد المتوقع':'Orders running late',
+  'حجوزات بانتظار التأكيد':'Reservations awaiting confirmation', 'فتح الحجوزات':'Open reservations', 'سلات متروكة':'Abandoned carts', 'عرض السلات':'View carts',
+  'لا يوجد ما يستدعي انتباهك الآن':'Nothing needs your attention right now',
+  'طلبات اليوم':"Today's orders", 'مبيعات اليوم':"Today's sales", 'متوسط الطلب':'Average order', 'زيارات المنيو':'Menu visits',
+  'أمس':'Yesterday', 'نسبة الطلب':'Order rate', 'متأخر':'late', 'الأكثر طلبًا اليوم':'Top ordered today', 'لا توجد طلبات بعد':'No orders yet',
+  'صنف جديد':'New item', 'نسخ رابط المنيو':'Copy menu link',
+  // الأصناف
+  'إضافة صنف جديد':'Add new item', 'إضافة منتج جديد':'Add new product', 'تحديث الأسعار بالجملة (نسبة / مبلغ / فئة)':'Bulk price update (percent / amount / category)',
+  'تحديد عدة أصناف (إخفاء / نقل / حذف)':'Select multiple items (hide / move / delete)', 'تحديد الكل':'Select all', 'إظهار':'Show', 'بوستر':'Poster',
+  'تمييز':'Feature', 'نقل لفئة':'Move to category', 'حذف':'Delete', 'إنهاء':'Done',
+  'ابحث عن صنف بالاسم أو الوصف (في كل الفئات)':'Search items by name or description (all categories)',
+  'معاينة المنيو للعميل':'Preview customer menu', 'إخفاء المعاينة':'Hide preview', 'معاينة القائمة للعميل':'Customer menu preview', 'اسم المطعم':'Restaurant name',
+  'فتح المنيو مباشرة':'Open menu directly', 'اسحب لإعادة الترتيب':'Drag to reorder', 'تعديل الاسم':'Rename', 'تعذر حفظ الترتيب':'Could not save the order',
+  'لا توجد نتائج':'No results', 'جرّب كلمة بحث مختلفة':'Try a different search term', 'اضغط للانتقال إلى هذه الفئة':'Click to go to this category',
+  'يرجى إضافة فئة أولاً':'Please add a category first', 'ابدأ بإضافة فئة من القائمة على اليمين':'Start by adding a category from the list on the side',
+  'لم تُضَف أحجام بعد':'No sizes added yet',
+  // رسائل شائعة
+  'تم النسخ':'Copied', 'تم الحفظ':'Saved', 'تم الحذف':'Deleted'
+};
+var DASH_EN_TERMS = { 'الأصناف':'items', 'المنتجات':'products', 'صنف':'item', 'منتج':'product', 'أصناف':'items', 'منتجات':'products', 'المطعم':'restaurant', 'المتجر':'store' };
+var DASH_EN_RX = [
+  [/^(\d+) من (\d+)$/, (m,a,b)=> `${a} of ${b}`],
+  [/^(\d+) محدد$/, (m,a)=> `${a} selected`],
+  [/^(\d+) متأخر$/, (m,a)=> `${a} late`],
+  [/^(\d+) (صنف|منتج) في هذه الفئة$/, (m,a,w)=> `${a} ${DASH_EN_TERMS[w]}${a==='1'?'':'s'} in this category`],
+  [/^(\d+) نتيجة في كل الفئات$/, (m,a)=> `${a} results across all categories`],
+  [/^نتائج البحث عن (.*)$/, (m,a)=> `Search results for ${a}`],
+  [/^اشتراكك:? ?متبقي (\d+) يوم$/, (m,a)=> `Subscription: ${a} days left`],
+  [/^أضف 5 من (الأصناف|المنتجات) على الأقل \((\d+)\/5\)$/, (m,w,n)=> `Add at least 5 ${DASH_EN_TERMS[w]} (${n}/5)`],
+  [/^أضف صورًا لـ ?(الأصناف|المنتجات) \((\d+)\/(\d+)\)$/, (m,w,a,b)=> `Add images for ${DASH_EN_TERMS[w]} (${a}/${b})`],
+  [/^(الأصناف|المنتجات) مخفية عن العميل حاليًا$/, (m,w)=> `${DASH_EN_TERMS[w][0].toUpperCase()+DASH_EN_TERMS[w].slice(1)} hidden from customers`],
+  [/^(الأصناف|المنتجات) بدون صورة$/, (m,w)=> `${DASH_EN_TERMS[w][0].toUpperCase()+DASH_EN_TERMS[w].slice(1)} without an image`],
+  [/^لا توجد (الأصناف|المنتجات|أصناف|منتجات) بعد$/, (m,w)=> `No ${DASH_EN_TERMS[w]} yet`],
+  [/^يرجى إضافة أول (صنف|منتج) في "(.*)"$/, (m,w,c)=> `Please add the first ${DASH_EN_TERMS[w]} in "${c}"`],
+  [/^إعدادات (المطعم|المتجر)$/, (m,w)=> `${DASH_EN_TERMS[w][0].toUpperCase()+DASH_EN_TERMS[w].slice(1)} settings`]
+];
+/* ---- المرحلة 2: نافذة الصنف، نافذة الفئة، شاشة الطلبات، إعدادات المطعم ---- */
+Object.assign(DASH_EN, {
+  // عام
+  'إلغاء':'Cancel', 'حفظ':'Save', 'تعديل':'Edit', 'تم':'Done', 'إرسال':'Send', 'اختبار':'Test', 'تجربة':'Try', 'جارِ التحميل':'Loading', 'جاري الإرسال':'Sending',
+  'تعذر الحفظ':"Couldn't save", 'تعذر الإضافة':"Couldn't add", 'تم الحفظ':'Saved', 'حذف الصورة':'Remove image', 'انقر لتغيير الصورة':'Click to change image', 'انقر لرفع صورة':'Click to upload an image',
+  'تعذر ضغط الصورة، برجاء تجربة صورة أخرى':"Couldn't compress the image, please try another one", 'تعذر رفع الصورة، حاول مرة أخرى':"Couldn't upload the image, please try again",
+  'تغيير الصور غير متاح في نسختك الحالية':'Changing images is not available in your current plan', 'تغيير صور الأصناف غير متاح في نسختك الحالية':'Changing item images is not available in your current plan',
+  'يرجى إضافة فئة أولاً':'Please add a category first',
+  // نافذة الفئة
+  'تعديل الفئة':'Edit category', 'صورة الفئة (اختياري) — تظهر كمربع في شكل "مربعات الأقسام" بالمنيو':'Category image (optional) — shown as a tile in the "Section tiles" menu style',
+  'اسم الفئة (بالعربية)':'Category name (in Arabic)', 'مثال: حلويات':'Example: Desserts', 'الاسم بالإنجليزية (اختياري)':'Name in English (optional)',
+  // نافذة الصنف
+  'طريقة التسعير':'Pricing method', 'بالعدد (سعر ثابت لكل قطعة)':'By piece (fixed price per piece)', 'بالوزن (سعر لكل كيلوجرام)':'By weight (price per kilogram)',
+  'أحجام/خيارات مختلفة، كل واحد بسعره':'Different sizes/options, each with its own price', 'طريقة الطلب لهذا الصنف':'Ordering method for this item',
+  'بالوزن فقط':'By weight only', 'بالمبلغ فقط':'By amount only', 'بالوزن أو بالمبلغ (الاثنان معًا)':'By weight or by amount (both)',
+  'أقل وزن مسموح بطلبه (جرام) — اختياري':'Minimum orderable weight (grams) — optional',
+  'السعر قبل الخصم (اختياري) — اتركه فارغًا إذا لا يوجد خصم':'Price before discount (optional) — leave empty if there is no discount',
+  'سعر التكلفة (اختياري وخاص) — لحساب هامش الربح الفعلي في التقارير، ولا يظهر للعميل مطلقًا':'Cost price (optional, private) — used to calculate real profit margin in reports; never shown to customers',
+  'الأحجام والأسعار':'Sizes & prices', 'إضافة حجم':'Add size', 'إضافة محفظة':'Add wallet',
+  'إضافات خاصة بهذا الصنف فقط (اختياري) — في حال الرغبة بإضافة غير مدرجة ضمن أي مجموعة عامة':'Add-ons for this item only (optional) — for extras not part of any shared group',
+  'مجموعات الإضافات والمتغيرات (اختياري) — اختر أي مجموعات جاهزة من "الإضافات والمتغيرات" لربطها بهذا الصنف':'Add-on & variant groups (optional) — pick any ready groups from "Add-ons & variants" to link to this item',
+  'تمييز الصنف في المنيو (اختياري) — لجذب انتباه العملاء':'Highlight the item in the menu (optional) — to catch customers\' attention',
+  'الوصف (اختياري)':'Description (optional)', 'اسم الإضافة (مثال: جبنة إضافية)':'Add-on name (e.g. Extra cheese)', 'السعر':'Price', 'اسم الحجم (مثال: وسط)':'Size name (e.g. Medium)', 'السعر لكل كيلوجرام':'Price per kilogram',
+  'لا توجد مجموعات إضافات بعد — يمكنك إنشاؤها من "الإضافات والمتغيرات" في القائمة العلوية':'No add-on groups yet — you can create them from "Add-ons & variants" in the top menu',
+  'يرجى إضافة حجم واحد على الأقل بسعره':'Please add at least one size with its price', 'السعر قبل الخصم يجب أن يكون أعلى من السعر الحالي':'The price before discount must be higher than the current price',
+  'يجب أن يكون أقل وزن مسموح رقمًا صحيحًا أكبر من صفر':'The minimum weight must be a whole number greater than zero',
+  // شاشة الطلبات
+  'الطلبات الواردة':'Incoming orders', 'الوضع الليلي لشاشة الطلبات':'Night mode for the orders screen', 'المطلوب للمطبخ':'Kitchen prep list', 'إجمالي الأصناف المطلوب تحضيرها من الطلبات الجارية':'Total items to prepare from current orders',
+  'شكل الجدول':'Table layout', 'اختيار شكل الجدول والأعمدة':'Choose table layout and columns', 'عرض الأصناف والكميات كاملة أو مختصرة في الجدول':'Show items and quantities in full or short form in the table',
+  'تبديل طريقة العرض بين الكروت والجدول':'Switch view between cards and table', 'فتح شاشة الطلبات تلقائيًا عند الدخول للوحة التحكم على هذا الجهاز':'Open the orders screen automatically when entering the dashboard on this device',
+  'تصدير Excel':'Export Excel', 'الكل':'All', 'جديدة':'New', 'آخر 7 أيام':'Last 7 days', 'أيام سابقة':'Earlier days', 'حالة الطلب':'Order status', 'كل الحالات':'All statuses',
+  'قيد التنفيذ (انتظار + تجهيز + جاهز)':'In progress (waiting + preparing + ready)', 'قيد الانتظار':'Waiting', 'قيد التجهيز':'Preparing', 'جاهز':'Ready', 'تم التسليم':'Delivered', 'ملغي':'Cancelled',
+  'نوع الطلب':'Order type', 'كل الأنواع':'All types', 'توصيل':'Delivery', 'استلام':'Pickup', 'طاولات':'Tables', 'كل الطلبات (توصيل / استلام / طاولات)':'All orders (delivery / pickup / tables)', 'كل طلبات الطاولات':'All table orders',
+  'بحث برقم الطلب، اسم العميل، رقم الهاتف، أو اسم صنف':'Search by order number, customer name, phone number, or item name', 'تحميل طلبات أقدم':'Load older orders', 'تعذر تحميل الطلبات':"Couldn't load orders",
+  'تم حفظ النغمة على هذا الجهاز':'Tone saved on this device', 'الطباعة التلقائية: مفعّلة':'Auto-print: on', 'الطباعة التلقائية: متوقفة':'Auto-print: off',
+  'فتح تلقائي عند الدخول: مفعّل':'Auto-open on login: on', 'فتح تلقائي عند الدخول: متوقف':'Auto-open on login: off',
+  'ستُفتح شاشة الطلبات تلقائيًا عند الدخول على هذا الجهاز':'The orders screen will open automatically on login on this device', 'تم إيقاف الفتح التلقائي لشاشة الطلبات على هذا الجهاز':'Auto-open of the orders screen is turned off on this device',
+  'تم تفعيل الطباعة التلقائية على هذا الجهاز':'Auto-print is turned on for this device', 'تم إيقاف الطباعة التلقائية على هذا الجهاز':'Auto-print is turned off for this device',
+  'نهاري':'Day', 'ليلي':'Night', 'قطعة':'pcs', 'الإجمالي':'Total', 'جديد':'New', 'اليوم':'Today', 'لم يُفتح بعد':'Not opened yet', 'تمت الطباعة':'Printed', 'محفظة':'Wallet', 'إنستاباي':'InstaPay',
+  'تم الدفع':'Paid', 'مدفوع':'Paid', 'في انتظار التأكيد':'Awaiting confirmation', 'بانتظار التأكيد':'Awaiting confirmation', 'تأكيد استلام الدفع':'Confirm payment received',
+  'إرسال رابط المنيو للعميل عبر واتساب':'Send the menu link to the customer via WhatsApp', 'إرسال المنيو':'Send menu', 'طباعة الطلب':'Print order', 'رسوم التوصيل':'Delivery fee', 'كوبون':'Coupon',
+  'لا يمكن تغيير حالة الطلب بعد أن أصبح نهائيًا':'The order status cannot be changed once it is final', 'إشعار واتساب (PRO)':'WhatsApp notification (PRO)',
+  'بدون سائق معيّن':'No driver assigned', 'إرسال تفاصيل الطلب للسائق عبر واتساب':'Send order details to the driver via WhatsApp', 'إرسال للسائق':'Send to driver', 'المزيد':'More',
+  'رقم الطلب':'Order #', 'العميل':'Customer', 'الهاتف':'Phone', 'العنوان':'Address', 'الأصناف والكميات':'Items & quantities', 'الحالة':'Status', 'الوقت':'Time', 'الإجراءات (الحالة والطباعة)':'Actions (status & print)',
+  'مختصر':'Compact', 'مفصّل':'Detailed', 'للمطبخ':'For kitchen', 'للتوصيل':'For delivery', 'إجراءات':'Actions', 'طلب نهائي':'Final order', 'عرض تفاصيل الطلب':'View order details',
+  'استلام من المحل':'Pickup from store', 'داخل الصالة':'Dine-in', 'طاولة':'Table', 'تطبيق على المحدد':'Apply to selected', 'إلغاء التحديد':'Clear selection',
+  'شكل جدول الطلبات':'Orders table layout', 'تصميمات جاهزة':'Ready-made layouts', 'مخصص':'Custom', 'الأعمدة الظاهرة':'Visible columns', 'اتصال':'Call', 'واتساب':'WhatsApp', 'الخريطة':'Map', 'فتح العنوان على الخريطة':'Open address on map',
+  'طلب جديد':'New order', 'اضغط للعرض':'Click to view', 'متأخر':'Late', 'جاهز الساعة':'Ready at', 'البيانات':'Details',
+  // إعدادات المطعم/المتجر
+  'إعدادات':'Settings', 'ابحث في الإعدادات':'Search settings', 'بحث في الإعدادات':'Search settings', 'فتح كل الأقسام':'Expand all sections', 'طي كل الأقسام':'Collapse all sections', 'أقسام الإعدادات':'Settings sections',
+  'بيانات النشاط':'Business details', 'نوع النشاط':'Business type', 'مطعم':'Restaurant', 'متجر عام':'General store', 'حذف الشعار':'Remove logo', 'انقر لتغيير الشعار':'Click to change logo', 'انقر لرفع الشعار':'Click to upload logo',
+  'مثال: مطعم الأصايل':'Example: Al-Asayel Restaurant', 'مثال: شارع الجمهورية، أمام محطة المترو':'Example: Al-Gomhoria St., in front of the metro station',
+  'رمز العملة (يظهر بجانب كل الأسعار في المنيو ولوحة التحكم)':'Currency symbol (shown next to all prices in the menu and dashboard)', 'يفتح الساعة':'Opens at', 'يقفل الساعة':'Closes at',
+  'التواصل وإشعارات الطلبات':'Contact & order notifications', 'إشعار واتساب بالطلبات الجديدة (اختياري)':'WhatsApp notification for new orders (optional)',
+  'الطلب والتوصيل':'Ordering & delivery', 'متوسط وقت تجهيز الطلب (بالدقايق)':'Average order preparation time (minutes)',
+  'حد أدنى لقيمة الطلب في التوصيل (اختياري — اتركه فاضيًا لعدم وجود حد أدنى)':'Minimum order value for delivery (optional — leave empty for no minimum)',
+  'حد أدنى مختلف في حال الدفع أونلاين (اختياري — اترك الحقل فارغًا لاستخدام نفس الحد المذكور أعلاه)':'Different minimum for online payment (optional — leave empty to use the same minimum as above)',
+  'توصيل مجاني للطلبات فوق مبلغ معين (اختياري — اتركه فاضيًا لإلغاء الميزة)':'Free delivery for orders above a certain amount (optional — leave empty to disable)',
+  'بدون رسوم تقديرية (تتحدد لاحقًا بعد التواصل)':'No estimated fee (set later after contacting the customer)', 'رقم ثابت أحدده يدويًا':'A fixed amount I set manually',
+  'أعلى سعر توصيل بين كل مناطقي (تلقائي)':'Highest delivery price among all my zones (automatic)', 'متوسط أسعار كل مناطقي (تلقائي)':'Average price of all my zones (automatic)',
+  'استخدام رسوم منطقة معينة من قائمتي':'Use the fee of a specific zone from my list', 'اختر منطقة':'Choose a zone',
+  'عرض المنيو':'Menu display', 'الدفع أونلاين':'Online payment', 'قبول الدفع أونلاين':'Accept online payment', 'المحافظ الإلكترونية':'E-wallets',
+  'حساب إنستاباي (اختياري — لمصر فقط)':'InstaPay account (optional — Egypt only)', 'اختبار الرابط':'Test link', 'الصيانة':'Maintenance', 'أدوات صيانة دورية، لا حاجة لاستخدامها كثيرًا':'Periodic maintenance tools, rarely needed',
+  'حذف الطلبات':'Delete orders', 'تنظيف وتحسين الصور':'Clean up & optimize images', 'لا توجد إعدادات مطابقة للبحث':'No matching settings',
+  'توجد تعديلات لم تُحفظ بعد. هل تريد الإغلاق بدون حفظ؟':'You have unsaved changes. Close without saving?', 'فودافون كاش':'Vodafone Cash', 'اسم المحفظة':'Wallet name', 'مثال: فودافون كاش':'Example: Vodafone Cash',
+  'رقم المحفظة':'Wallet number', 'حذف المحفظة':'Remove wallet', 'كود الاتصال السريع (USSD) — اختياري':'Quick dial code (USSD) — optional', 'اختبار كود الاتصال':'Test dial code',
+  'تم حفظ شكل المنيو':'Menu design saved', 'إعدادات المطعم غير متاحة في نسختك الحالية':'Restaurant settings are not available in your current plan'
+});
+Object.assign(DASH_EN_TERMS, { 'الصنف':'item', 'المنتج':'product', 'مطعم':'restaurant', 'متجر':'store' });
+(function buildDashTemplates(){
+  const esc = (s)=> s.replace(/[.*+?^$|\\[\]]/g, '\\$&').replace(/[()]/g, '\\$&');
+  const X = '(الأصناف|المنتجات|الصنف|المنتج|أصناف|منتجات|صنف|منتج|المطعم|المتجر|مطعم|متجر)';
+  const cap = (w)=> w ? w[0].toUpperCase() + w.slice(1) : w;
+  const T = [
+    ['تعديل {x}', 'Edit $1t'], ['إضافة {x} جديد', 'Add new $1t'],
+    ['صورة {x} (اختياري)', '$1T image (optional)'], ['اسم {x} (بالعربية)', '$1T name (in Arabic)'], ['اسم {x}', '$1T name'],
+    ['السعر ({v})', 'Price ($1)'], ['افتراضي: {v}', 'Default: $1'], ['{v} خيار)', '$1 options)'],
+    ['بلغت الحد الأقصى ({v}) لعدد {x} في نسختك الحالية', 'You reached the maximum ($1) number of $2t in your current plan'],
+    ['شعار {x} (اختياري)', '$1T logo (optional)'], ['اسم {x} بالإنجليزية (اختياري)', '$1T name in English (optional)'], ['عنوان {x} (اختياري)', '$1T address (optional)'],
+    ['دولة {x} (تحدد توقيت مواعيد الفتح/القفل، وتحدد إظهار فودافون كاش/USSD)', 'Country of the $1t (sets the opening/closing time zone and whether Vodafone Cash/USSD is shown)'],
+    ['أوقات العمل (اختياري — اتركهما فاضيين ليكون {x} مفتوحًا طوال الوقت)', 'Working hours (optional — leave both empty so the $1t stays open all the time)'],
+    ['رقم هاتف {x} (يظهر للعميل - اتصال)', '$1T phone number (shown to customers — call)'],
+    ['يوزر {x} على ماسنجر (اختياري — لإرسال الطلب عبر ماسنجر)', '$1T Messenger username (optional — to receive orders via Messenger)'],
+    ['يوزر {x} على تليجرام (اختياري — لإرسال الطلب عبر تليجرام)', '$1T Telegram username (optional — to receive orders via Telegram)'],
+    ['تم حفظ {x} لكن تعذر حفظ الأحجام', '$1T saved, but the sizes could not be saved'], ['تم حفظ {x} لكن تعذر حفظ الإضافات', '$1T saved, but the add-ons could not be saved'],
+    ['تم حفظ {x} لكن تعذر ربط مجموعات الإضافات', '$1T saved, but the add-on groups could not be linked'], ['تم حفظ {x} لكن تعذر حفظ تخصيصات الأسعار', '$1T saved, but the price overrides could not be saved'],
+    ['إخفاء {x}', 'Hide $1t'], ['{v} طلب', '$1 orders'], ['منذ {v}', '$1 ago']
+  ];
+  T.forEach(([ar, en])=>{
+    const rx = new RegExp('^' + esc(ar).replace(/\{x\}/g, X).replace(/\{v\}/g, '(.+?)') + '$');
+    DASH_EN_RX.push([rx, (...m)=> en.replace(/\$(\d)([tT]?)/g, (a, i, mod)=>{
+      const v = m[+i]; if(v === undefined) return a;
+      if(!mod) return v;
+      const w = DASH_EN_TERMS[v] || v; return mod === 'T' ? cap(w) : w;
+    })]);
+  });
+})();
+
+/* ---- المرحلة 3: الإحصائيات، التقارير، مقارنة الفروع، الحجوزات، التقييمات، العملاء، التوصيل، السائقين، الإضافات، أكواد الخصم، الاشتراك ---- */
+Object.assign(DASH_EN, {
+  // رسائل الباقات
+  '🔒 تقرير تقفيل اليوم متاح في باقة PRO فقط':'🔒 The daily close report is available on the PRO plan only',
+  'تقرير تقفيل اليوم متاح في باقة PRO فقط':'The daily close report is available on the PRO plan only',
+  'لا يوجد رقم واتساب مسجل للمتجر لإرسال التقرير عليه':'No WhatsApp number is registered for the store to send the report to', 'تعذر تجهيز تقرير اليوم، حاول مرة أخرى':"Couldn't prepare today's report, please try again",
+  'التقارير متاحة في باقة PRO فقط':'Reports are available on the PRO plan only', 'شاشة السائقين متاحة في باقة PRO فقط':'The drivers screen is available on the PRO plan only',
+  'أكواد الخصم للعملاء متاحة في باقة PRO فقط':'Customer discount codes are available on the PRO plan only', 'شاشة العملاء غير النشطين متاحة في باقة PRO فقط':'The inactive customers screen is available on the PRO plan only',
+  'تتوفر مقارنة الفروع عند وجود فرعين أو أكثر':'Branch comparison is available when you have two or more branches',
+  // إحصائيات
+  'إحصائيات الطلبات':'Order statistics', 'عرض':'View', 'كل الفروع مجمّعة':'All branches combined', 'تعذر تحميل الإحصائيات':"Couldn't load statistics", 'لا توجد إحصائيات بعد':'No statistics yet',
+  'عدد زيارات المنيو':'Menu visits', 'زيارات المنيو يوميًا (آخر 30 يوم)':'Daily menu visits (last 30 days)', 'آخر 7 أيام':'Last 7 days',
+  // مقارنة الفروع
+  'مقارنة الفروع':'Branch comparison', 'آخر ٧ أيام':'Last 7 days', 'آخر ٣٠ يومًا':'Last 30 days', 'آخر ٩٠ يومًا':'Last 90 days', 'الفترة':'Period', 'إجمالي المبيعات':'Total sales', 'إجمالي الطلبات':'Total orders',
+  'يُحسب وقت التجهيز من لحظة وصول الطلب حتى تسليمه، وتُستبعد الطلبات الملغاة من المبيعات والمتوسطات':'Preparation time is counted from the moment the order arrives until it is delivered; cancelled orders are excluded from sales and averages',
+  'تعذر تحميل بيانات الفروع':"Couldn't load branch data",
+  // الحجوزات
+  'حجوزات الطاولات':'Table reservations', 'استقبال الحجوزات من المنيو':'Accept reservations from the menu', 'أقصى عدد أفراد في الحجز الواحد':'Maximum guests per reservation',
+  'تنبيه صوتي عند وصول حجز جديد':'Sound alert when a new reservation arrives', 'حفظ الإعدادات':'Save settings', 'القادمة المؤكدة':'Confirmed upcoming', 'السابقة':'Past',
+  'تعذر حفظ الإعدادات':"Couldn't save settings", 'تم حفظ إعدادات الحجز':'Reservation settings saved', 'تعذر تحميل الحجوزات':"Couldn't load reservations", 'تعذر تحديث الحجز':"Couldn't update the reservation",
+  'رقم الهاتف غير صالح':'Invalid phone number', 'إلغاء هذا الحجز؟':'Cancel this reservation?', 'حذف هذا الحجز نهائيًا؟':'Delete this reservation permanently?', 'تعذر الحذف':"Couldn't delete",
+  // التقييمات
+  'تقييمات العملاء':'Customer reviews', 'تقييم الطلبات':'Order ratings', 'تعذر تحميل التقييمات':"Couldn't load reviews", 'كل الأصناف المقيّمة':'All rated items',
+  'لا توجد تقييمات للطلبات بعد':'No order ratings yet', 'آخر التعليقات':'Latest comments', 'لا توجد تعليقات مكتوبة':'No written comments',
+  'لا توجد تقييمات للأصناف بعد. تظهر بعد أن يقيّم العميل أصناف طلبه من شاشة التتبع':'No item ratings yet. They appear after customers rate their order items from the tracking screen',
+  // التقارير
+  'التقارير والتحليلات':'Reports & analytics', 'تقارير جدولية':'Tabular reports', 'تصدير تقرير شهري':'Export monthly report', 'تعذر تحميل التقارير':"Couldn't load reports", 'لا توجد بيانات كافية بعد':'Not enough data yet',
+  'اتجاه المبيعات':'Sales trend', 'المبيعات':'Sales', 'عدد الطلبات':'Number of orders', 'هامش الربح':'Profit margin', 'آخر 30 يومًا':'Last 30 days', 'آخر 90 يومًا':'Last 90 days', 'كل الوقت':'All time',
+  'تقرير المبيعات التفصيلي':'Detailed sales report', 'من تاريخ':'From date', 'إلى تاريخ':'To date', 'اختر فترة واضغط "عرض"':'Choose a period and press "View"',
+  'آخر 30 يوم':'Last 30 days', 'آخر 90 يوم':'Last 90 days', 'الأكثر طلبًا':'Most ordered', 'الأعلى إيرادًا':'Highest revenue',
+  'لم تُطلب منذ 30 يومًا':'Not ordered for 30 days', 'لم تُطلب منذ 60 يومًا':'Not ordered for 60 days', 'لم تُطلب منذ 90 يومًا':'Not ordered for 90 days',
+  'أوقات الذروة':'Peak times', 'الطلبات حسب ساعة اليوم':'Orders by hour of day', 'الطلبات حسب يوم الأسبوع':'Orders by day of week', 'تقرير العملاء':'Customer report',
+  'الأعلى إنفاقًا':'Top spenders', 'أكثر العملاء طلبًا':'Most frequent customers', 'تقرير المناطق والتوصيل':'Zones & delivery report', 'أكثر المناطق طلبًا':'Most ordered zones',
+  'تقرير الطلبات الملغية':'Cancelled orders report', 'تعذر تحميل التقرير':"Couldn't load the report", 'لا توجد بيانات كافية في هذه الفترة':'Not enough data in this period',
+  'الإيراد':'Revenue', 'التكلفة':'Cost', 'صافي الربح':'Net profit', 'اختر فترة صحيحة (من تاريخ إلى تاريخ)':'Choose a valid period (from date to date)', 'لا توجد مبيعات في هذه الفترة':'No sales in this period',
+  'متوسط المبيعات اليومية':'Average daily sales', 'متوسط قيمة الطلب':'Average order value', 'التاريخ':'Date', 'اضغط "عرض" الأول':'Press "View" first', 'لا توجد بيانات لتصديرها':'No data to export',
+  'تم تصدير التقرير بنجاح':'Report exported successfully', 'لا توجد بيانات في هذه الفترة':'No data in this period', 'أكثر ساعة ازدحامًا':'Busiest hour', 'أكثر يوم ازدحامًا في الأسبوع':'Busiest day of the week',
+  'أعلى يوم سجّل مبيعات':'Highest sales day', 'إجمالي عدد العملاء':'Total customers', 'عملاء طلبوا أكثر من مرة':'Customers who ordered more than once',
+  'آخر 30 يوم — جدد مقابل متكررين':'Last 30 days — new vs returning', 'متوسط قيمة الطلب (كل العملاء)':'Average order value (all customers)', 'لا توجد طلبات ملغية في هذه الفترة 🎉':'No cancelled orders in this period 🎉',
+  'عدد الطلبات الملغية':'Number of cancelled orders', 'إجمالي القيمة المفقودة':'Total lost value', 'النوع':'Type', 'القيمة':'Value', 'بيانات غير كافية للمقارنة':'Not enough data to compare',
+  'إجمالي المبيعات (من بداية الشهر)':'Total sales (month to date)', 'الصنف':'Item', 'الكمية':'Quantity', 'لا توجد بيانات كافية':'Not enough data', 'أكثر العملاء طلبًا (طوال الوقت)':'Most frequent customers (all time)',
+  'إجمالي الإنفاق':'Total spent', 'توصيل مقابل استلام من المحل (كل الوقت)':'Delivery vs store pickup (all time)', 'أكثر المناطق طلبًا (طوال الوقت)':'Most ordered zones (all time)', 'المنطقة':'Zone',
+  'لا توجد طلبات لتصديرها':'No orders to export', 'التقارير الجدولية':'Tabular reports', 'من':'From', 'إلى':'To', 'تقرير الطلبات':'Orders report', 'تفاصيل المبيعات':'Sales details', 'لا توجد أصناف':'No items',
+  'الإضافات / الملاحظة':'Add-ons / note', 'سعر الوحدة':'Unit price', 'سجل':'records', 'السابق':'Previous', 'التالي':'Next', 'طباعة / PDF':'Print / PDF', 'عدد الطلبات':'Number of orders',
+  'لا توجد بيانات للطباعة':'No data to print', 'الطلبات':'Orders', 'قيمة الأصناف':'Items value', 'الخصومات':'Discounts', 'حسب نوع الطلب':'By order type', 'حسب طريقة الدفع':'By payment method', 'حسب حالة الطلب':'By order status',
+  'الخصم':'Discount', 'التوصيل':'Delivery', 'الدفع':'Payment', 'التفاصيل':'Details', 'تفاصيل':'Details',
+  // مناطق التوصيل
+  'مناطق التوصيل ورسومها':'Delivery zones & fees', 'اسم المنطقة (مثال: مدينة نصر)':'Zone name (e.g. Nasr City)', 'الرسوم':'Fee', 'إضافة منطقة':'Add zone', 'تعذر تحميل المناطق':"Couldn't load zones",
+  'لا توجد مناطق مضافة بعد':'No zones added yet', 'حذف هذه المنطقة؟':'Delete this zone?', 'تعذر حفظ التعديل':"Couldn't save the change", 'تم تحديث المنطقة':'Zone updated', 'تعذر إضافة المنطقة':"Couldn't add the zone",
+  // السائقين
+  'السائقين':'Drivers', 'اسم السائق':'Driver name', 'إضافة سائق':'Add driver', 'لم تتم إضافة أي سائقين بعد':'No drivers added yet', 'تعذر التحديث':"Couldn't update",
+  'هل تريد حذف هذا السائق؟ ستبقى الطلبات التي كانت معيّنة له مسجّلة، لكن من دون سائق':'Delete this driver? Orders assigned to them will remain recorded, but without a driver',
+  'تأكد من الاسم ورقم الهاتف':'Check the name and phone number', 'تم تحديث بيانات السائق':'Driver details updated', 'أدخل رقم هاتف صحيح':'Enter a valid phone number', 'تمت إضافة السائق':'Driver added',
+  // الإضافات والمتغيرات
+  'الإضافات والمتغيرات':'Add-ons & variants', 'إضافة (اختيار متعدد اختياري)':'Add-on (optional multiple choice)', 'متغيّر (اختيار واحد إجباري، زي الحجم)':'Variant (required single choice, like size)',
+  'مجموعة جديدة':'New group', 'لا توجد مجموعات إضافات بعد — أضف أول مجموعة أعلاه':'No add-on groups yet — add your first group above', 'حذف المجموعة':'Delete group', 'اسم المجموعة (مثال: الإضافات الإضافية)':'Group name (e.g. Extras)',
+  'اسم الخيار (مثال: جبنة إضافية)':'Option name (e.g. Extra cheese)', 'إضافة خيار':'Add option', 'سيؤدي حذف المجموعة إلى إزالتها من جميع الأصناف المرتبطة بها. هل أنت متأكد؟':'Deleting the group will remove it from all linked items. Are you sure?',
+  'أدخل سعر صحيح':'Enter a valid price', 'تعذر إضافة المجموعة':"Couldn't add the group", 'تمت إضافة المجموعة':'Group added',
+  // أكواد الخصم
+  'أكواد الخصم للعملاء':'Customer discount codes', 'أنشئ كودًا يقدر العميل يكتبه في شاشة الطلب ليحصل على خصم مباشر على قيمة طلبه':'Create a code the customer can enter on the order screen to get a direct discount on their order',
+  'الكود (مثال: SAVE10)':'Code (e.g. SAVE10)', 'نسبة %':'Percentage %', 'مبلغ ثابت':'Fixed amount', 'القيمة':'Value', 'أقل قيمة طلب (اختياري)':'Minimum order value (optional)', 'حد الاستخدام (اختياري)':'Usage limit (optional)',
+  'إضافة كود':'Add code', 'تعذر تحميل أكواد الخصم':"Couldn't load discount codes", 'لم تُضف أي أكواد خصم بعد':'No discount codes added yet', '(منتهي)':'(expired)', 'هل تريد حذف كود الخصم هذا؟':'Delete this discount code?',
+  'أدخل قيمة خصم صحيحة':'Enter a valid discount value', 'نسبة الخصم لا يمكن أن تتجاوز 100%':'The discount percentage cannot exceed 100%', 'تمت إضافة كود الخصم':'Discount code added',
+  // العملاء غير النشطين
+  'العملاء غير النشطين':'Inactive customers', 'عملاء سبق أن طلبوا من متجرك، لكن لم يطلبوا خلال المدة التي تحددها':"Customers who ordered from your store before but haven't ordered within the period you set",
+  'اعتبر العميل غير نشط بعد':'Consider a customer inactive after', 'يوم بدون طلب':'days without an order', 'بدون كود خصم في الرسالة':'No discount code in the message', 'أدخل عدد أيام صحيح':'Enter a valid number of days',
+  'تعذر تحميل بيانات العملاء':"Couldn't load customer data", 'لا يوجد عملاء غير نشطين حاليًا 🎉 جميع عملائك يطلبون بانتظام':'No inactive customers right now 🎉 all your customers order regularly', 'استرجاع':'Win back',
+  // العملاء
+  'دمج عملاء':'Merge customers', 'ثم':'then', 'عملاء جدد من الطلبات (في انتظار المراجعة)':'New customers from orders (pending review)', 'إضافة الكل':'Add all', 'اسم العميل':'Customer name', 'العنوان (اختياري)':'Address (optional)',
+  'إضافة عميل':'Add customer', 'بحث بالاسم أو رقم الهاتف':'Search by name or phone number', 'الرئيسي':'Primary', 'التسمية (مثال: المنزل، الشغل)':'Label (e.g. Home, Work)', 'العنوان بالتفصيل':'Full address',
+  'إضافة عنوان':'Add address', 'تعذر تحميل العناوين':"Couldn't load addresses", 'لا توجد عناوين مسجلة لهذا العميل بعد':'No addresses saved for this customer yet', '(افتراضي)':'(default)',
+  'حذف هذا العنوان؟':'Delete this address?', 'تعذر حذف العنوان':"Couldn't delete the address", 'تعذر إضافة العنوان':"Couldn't add the address", 'تمت إضافة العنوان':'Address added',
+  'التسمية (مثال: واتساب، الشغل)':'Label (e.g. WhatsApp, Work)', 'إضافة رقم':'Add number', 'تعذر تحميل الأرقام':"Couldn't load numbers", 'لا توجد أرقام مسجلة لهذا العميل بعد':'No numbers saved for this customer yet',
+  // السلات المتروكة + الاشتراك
+  'السلات المتروكة':'Abandoned carts', 'تعذر تحميل السلات المتروكة':"Couldn't load abandoned carts", 'لا توجد سلات متروكة حاليًا 👌':'No abandoned carts right now 👌', 'حذف هذه السلة من القائمة؟':'Remove this cart from the list?',
+  'الحالة الحالية':'Current status', 'تجديد الاشتراك':'Renew subscription', 'سجل المدفوعات':'Payment history', 'تعذر تحميل سجل المدفوعات':"Couldn't load payment history", 'لا توجد عمليات دفع سابقة':'No previous payments'
+});
+(function buildDashTemplates3(){
+  const esc = (s)=> s.replace(/[.*+?^$|\\[\]()]/g, '\\$&');
+  const X = '(الأصناف|المنتجات|الصنف|المنتج|أصناف|منتجات|صنف|منتج|المطعم|المتجر|مطعم|متجر)';
+  const cap = (w)=> w ? w[0].toUpperCase() + w.slice(1) : w;
+  const T = [
+    ['عرض {v} إلى {v} من {v} سجل', 'Showing $1 to $2 of $3 records'],
+    ['آخر {v} يومًا', 'Last $1 days'], ['{v} زيارة', '$1 visits'], ['{v} عميل', '$1 customers'], ['{v} عميل غير نشط', '$1 inactive customers'],
+    ['{v} تقييم', '$1 ratings'], ['{v} جديد / {v} متكرر', '$1 new / $2 returning'], ['{v} قطعة', '$1 pcs'], ['{v} سجل', '$1 records'],
+    ['{x} الأكثر طلبًا', 'Most ordered $1t'], ['{x} الراكدة', 'Stagnant $1t'], ['{x} الأكثر مبيعًا هذا الشهر', 'Best-selling $1t this month'],
+    ['جميع أصنافك طُلبت خلال آخر {v} يومًا 👌', 'All your items were ordered in the last $1 days 👌'],
+    ['هذا الفرع فقط ({v})', 'This branch only ($1)'], ['تقرير المبيعات الشهري — {v}', 'Monthly sales report — $1'],
+    ['أكثر ساعة ازدحامًا: {v}', 'Busiest hour: $1'], ['عدد الطلبات: {v}', 'Number of orders: $1'], ['إجمالي المبيعات: {v}', 'Total sales: $1'], ['إجمالي الطلبات: {v}', 'Total orders: $1'],
+    ['عناوين {v}', 'Addresses of $1'], ['أرقام هاتف {v}', 'Phone numbers of $1'], ['عملاء {v}', 'Customers of $1']
+  ];
+  T.forEach(([ar, en])=>{
+    const rx = new RegExp('^' + esc(ar).replace(/\{x\}/g, X).replace(/\{v\}/g, '(.+?)') + '$');
+    DASH_EN_RX.push([rx, (...m)=> en.replace(/\$(\d)([tT]?)/g, (a, i, mod)=>{
+      const v = m[+i]; if(v === undefined) return a;
+      if(!mod) return v;
+      const w = DASH_EN_TERMS[v] || v; return mod === 'T' ? cap(w) : w;
+    })]);
+  });
+})();
+
+/* ---- المرحلة 4: الكاشير، شكل المنيو، النسخ الاحتياطي، QR الطاولات، شاشة المطبخ، الاختصارات، إعلان المنيو + نوافذ confirm/alert ---- */
+Object.assign(DASH_EN, {
+  // الاختصارات
+  'اختصارات لوحة المفاتيح':'Keyboard shortcuts', 'إضافة صنف جديد':'Add new item', 'فتح الطلبات':'Open orders', 'البحث في الأصناف':'Search items', 'إغلاق النافذة المفتوحة':'Close the open window',
+  'عرض هذه القائمة':'Show this list', 'تمام':'OK', 'حسنًا':'OK',
+  'تشغيل اللوحة تلقائياً عند فتح الجهاز':'Launch the dashboard automatically when the device starts',
+  'يُفعَّل مرة واحدة من إعدادات المتصفح بعد تثبيت اللوحة (Chrome أو Edge على ويندوز / ماك / لينكس)':'Enabled once from browser settings after installing the dashboard (Chrome or Edge on Windows / Mac / Linux)',
+  'نسخ العنوان':'Copy address', 'تم نسخ العنوان — الصقه في تبويب جديد':'Address copied — paste it in a new tab',
+  // حسابات الكاشير
+  'حسابات الكاشير':'Cashier accounts', 'حسابات فرعية بصلاحيات محدودة — يمكنها الاطلاع على الطلبات الواردة وتغيير حالتها فقط، دون أي صلاحية للوصول إلى باقي لوحة التحكم (الأصناف، الإعدادات، التقارير، الاشتراك)':'Sub-accounts with limited permissions — they can only view incoming orders and change their status, with no access to the rest of the dashboard (items, settings, reports, subscription)',
+  'الحسابات الحالية':'Current accounts', 'جاري التحميل':'Loading', 'إضافة كاشير جديد':'Add new cashier', 'اسم المستخدم (حروف إنجليزية وأرقام فقط)':'Username (English letters and numbers only)', 'كلمة المرور (6 أحرف على الأقل)':'Password (at least 6 characters)',
+  'تقوم بتزويده باسم المستخدم وكلمة المرور بنفسك ليتمكن من تسجيل الدخول بهما — لا حاجة إلى بريد إلكتروني':'You give them the username and password yourself so they can sign in — no email needed',
+  'إضافة الحساب':'Add account', 'حذف':'Delete', 'هل أنت متأكد من رغبتك في إلغاء وصول حساب الكاشير هذا؟ (لن يمكن استخدام اسم المستخدم هذا لإنشاء حساب جديد لاحقًا)':'Are you sure you want to revoke this cashier account\'s access? (This username cannot be reused to create a new account later)',
+  'تعذر حذف الحساب':"Couldn't delete the account", 'تم إلغاء وصول الحساب':'Account access revoked', 'تمت إضافة حساب الكاشير بنجاح':'Cashier account added successfully',
+  // النسخ الاحتياطي والصيانة
+  'النسخ الاحتياطي والاستعادة':'Backup & restore', 'حفظ نسخة احتياطية':'Save a backup', 'تنزيل نسخة احتياطية الآن':'Download a backup now', 'الاستعادة من نسخة احتياطية':'Restore from a backup', 'استعادة من نسخة احتياطية':'Restore from a backup',
+  'تمت الاستعادة بنجاح، جاري إعادة تحميل البيانات':'Restored successfully, reloading data', 'نطاق الحذف':'Deletion scope', 'الطلبات الأقدم من مدة محددة':'Orders older than a set period', 'كل طلبات اليوم':"All of today's orders", 'طلب واحد برقمه':'A single order by number',
+  'احذف الطلبات الأقدم من':'Delete orders older than', 'يوم واحد':'One day', 'أسبوع':'One week', 'شهر':'One month', '3 أشهر':'3 months', 'فترة مخصصة (أيام)':'Custom period (days)', 'عدد الأيام':'Number of days', 'مثال: 45':'Example: 45', 'مثال: 128':'Example: 128',
+  'تصدير الطلبات إلى Excel قبل الحذف':'Export orders to Excel before deleting', 'البريد الإلكتروني':'Email', 'بريدك الإلكتروني':'Your email', 'كلمة المرور':'Password', 'حذف الآن':'Delete now',
+  'لا توجد طلبات أقدم من المدة المحددة — لم يتم حذف أي طلب':'No orders older than the selected period — nothing was deleted', 'لا توجد طلبات اليوم — لم يتم حذف أي طلب':'No orders today — nothing was deleted',
+  'ابدأ التنظيف':'Start cleanup', 'جارِ البدء':'Starting', 'تم الانتهاء ✅':'Finished ✅', 'صور ضُغطت وحُسّنت':'Images compressed & optimized', 'كلمة المرور الجديدة':'New password', '6 أحرف على الأقل':'At least 6 characters',
+  'تأكيد كلمة المرور الجديدة':'Confirm new password', 'أعد كتابة كلمة المرور':'Re-enter the password', 'تم تغيير كلمة المرور بنجاح':'Password changed successfully',
+  // شكل المنيو
+  'شكل المنيو':'Menu design', 'اختر الشكل الذي سيظهر لكل زوار المنيو، ويمكنك تغييره في أي وقت من هنا':'Choose the look shown to all menu visitors; you can change it anytime from here',
+  'كلاسيكي':'Classic', 'شبكة عصرية':'Modern grid', 'داكن أنيق':'Elegant dark', 'أنيق فاخر':'Luxury elegant', 'بسيط مرتب':'Simple & tidy', 'أقسام عرض':'Showcase sections', 'أقسام جانبية':'Side sections',
+  'أورورا نابض (ألوان مختلفة تمامًا)':'Vibrant aurora (completely different colors)', 'أخضر طازج (تصميم مختلف كليًا)':'Fresh green (completely different design)', 'معرض الصور (صور كبيرة)':'Photo gallery (large images)',
+  'لوحة المنتجات (الاسم فوق الصورة)':'Product board (name over the image)', 'القائمة المرقّمة (أنيقة بخط منقّط)':'Numbered list (elegant with dotted line)', 'الكتالوج الحديث (بدون صور، نصي وسريع)':'Modern catalog (no images, text-only and fast)',
+  'فاتورة السوق (شكل إيصال الكاشير)':'Market receipt (cashier receipt look)', 'معاينة مكبّرة (الصورة تكبر عند تمرير الماوس)':'Zoom preview (image enlarges on hover)', 'شارة الصنف الدائرية (تصميم إبداعي)':'Round item badge (creative design)',
+  'بولارويد اللوحة الفلينية (تصميم إبداعي)':'Corkboard polaroid (creative design)', 'قصاصة الجريدة (تصميم إبداعي)':'Newspaper clipping (creative design)', 'تذكرة السفر (تصميم إبداعي)':'Travel ticket (creative design)',
+  'شريط السينما (تصميم إبداعي)':'Film strip (creative design)', 'لفافة الحلوى (تصميم إبداعي)':'Candy wrapper (creative design)',
+  'مربعات الأقسام (يختار العميل القسم بصورته ثم يدخل للأصناف)':'Section tiles (customer picks a section by its image, then enters its items)',
+  'مربعات الأقسام والأصناف (الأقسام والأصناف كمربعات صور كبيرة)':'Section & item tiles (sections and items as large image tiles)',
+  'شرائط الأقسام (كل قسم شريط عريض بصورة ومعاينة أصنافه)':'Section banners (each section is a wide banner with an image and item preview)',
+  'دوائر الأقسام (دوائر بالصور فوق، والأصناف مربعات تحتها)':'Section circles (image circles on top, item tiles below)', 'شبكة بنتو (مربعات بأحجام مختلفة، والأول أكبر)':'Bento grid (tiles of different sizes, the first is larger)',
+  'بطاقات سينمائية (صنف كبير في الصف مع زر + سريع)':'Cinematic cards (a large item per row with a quick + button)', 'سبج فاخر (خلفية داكنة وبطاقات طولية)':'Luxury obsidian (dark background with tall cards)',
+  // QR الطاولات
+  'QR الطاولات':'Table QR codes', 'اطبع كودًا لكل طاولة — عندما يمسحه العميل، تُحدَّد طاولته تلقائيًا مع الطلب':'Print a code for each table — when the customer scans it, their table is automatically set on the order',
+  'عدد الطاولات':'Number of tables', 'توليد الأكواد':'Generate codes', 'طباعة كل الأكواد':'Print all codes',
+  // شاشة المطبخ
+  'شاشة المطبخ':'Kitchen screen', 'نسخ رابط الشاشة':'Copy screen link', 'إيقاف التنبيه':'Mute alert', 'ملء الشاشة':'Full screen', 'إغلاق':'Close', 'جديد':'New', 'قيد التجهيز':'Preparing', 'جاهز':'Ready',
+  'سُلّم مؤخرًا (آخر ساعة)':'Recently delivered (last hour)', 'تعذر تحميل طلبات المطبخ':"Couldn't load kitchen orders", 'بدء التجهيز':'Start preparing', 'الطلب جاهز':'Order ready', 'تم التسليم':'Delivered',
+  'لا توجد طلبات':'No orders', 'تعذر تحديث حالة الطلب':"Couldn't update the order status", 'تم إيقاف التنبيه':'Alert muted',
+  'تم نسخ رابط شاشة المطبخ — افتحه على تابلت المطبخ وسجّل الدخول بحساب كاشير':'Kitchen screen link copied — open it on the kitchen tablet and sign in with a cashier account',
+  // إعلان المنيو
+  'إعلان المنيو':'Menu announcement', 'يظهر لكل عميل مرة واحدة في الجلسة عند فتح المنيو':'Shown to each customer once per session when the menu opens', 'إيقاف الإعلان وحذفه':'Stop and delete the announcement',
+  'إيقاف إعلان المنيو وحذفه؟':'Stop and delete the menu announcement?', 'تم إيقاف الإعلان':'Announcement stopped', 'تعذّر الحذف':"Couldn't delete", 'الشارة':'Badge', 'بدون شارة':'No badge', 'الشكل':'Style', 'عادي':'Normal'
+});
+Object.assign(DASH_EN_TERMS, {});
+DASH_EN_RX.push(
+  [/^لا توجد حسابات كاشير مضافة \(0 من (.+)\)$/, (m,a)=> `No cashier accounts added (0 of ${a})`],
+  [/^(.+) من (.+) حسابات متاحة في باقتك$/, (m,a,b)=> `${a} of ${b} accounts available in your plan`],
+  [/^تم حذف (.+) طلب بنجاح$/, (m,a)=> `${a} orders deleted successfully`],
+  [/^تم حذف الطلب #(.+) بنجاح$/, (m,a)=> `Order #${a} deleted successfully`],
+  [/^طاولة (.+)$/, (m,a)=> `Table ${a}`],
+  [/^QR الطاولات — (.+)$/, (m,a)=> `Table QR codes — ${a}`],
+  [/^جاهز الساعة (.+)$/, (m,a)=> `Ready at ${a}`],
+  [/^ينتهي (.+)$/, (m,a)=> `Expires ${a}`], [/^نشط حتى (.+)$/, (m,a)=> `Active until ${a}`], [/^منتهي منذ (.+)$/, (m,a)=> `Expired ${a} ago`]
+);
+DASH_EN_RX.unshift([/^منذ (.+) د$/, (m,a)=> `${a} min ago`]);
+// نوافذ confirm / alert / prompt الخاصة بالمتصفح
+(function patchNativeDialogs(){
+  ['confirm','alert','prompt'].forEach(fn=>{
+    const orig = window[fn]; if(typeof orig !== 'function') return;
+    window[fn] = function(msg, ...rest){
+      if(DASH_LANG === 'en' && dashLangActive() && typeof msg === 'string'){
+        const en = dashTrString(msg); if(en !== null) msg = en;
+      }
+      return orig.call(window, msg, ...rest);
+    };
+  });
+})();
+
+/* ---- المرحلة 5: رسائل التنبيه (toast) ونوافذ التأكيد المتبقية ---- */
+Object.assign(DASH_EN, {"أدخل اسم المستخدم أولًا": "Enter the username first", "أدخل حساب إنستاباي أولًا": "Enter the InstaPay account first", "أدخل رقم المحفظة أو الرابط أولًا": "Enter the wallet number or link first", "أدخل قيمة رسوم التوصيل الافتراضية": "Enter the default delivery fee", "أدخل كود الاتصال أولًا": "Enter the dial code first", "أُضيف العميل لكن تعذر دمجه تلقائيًا — يمكنك دمجه يدويًا من \"🔀 دمج عملاء\"": "The customer was added but could not be merged automatically — you can merge manually from \"🔀 Merge customers\"", "اختر ستايلاً لحذفه": "Choose a style to delete", "اختر عميلين مختلفين": "Choose two different customers", "اختر فئة واحدة على الأقل": "Choose at least one category", "اختر منطقة لاستخدام رسومها كافتراضي": "Choose a zone to use its fee as the default", "اسم الستايل (مثال: ستايل المحل)": "Style name (e.g. Store style)", "اسمح بالنوافذ المنبثقة للطباعة": "Allow pop-ups to print", "التصدير يشمل الطلبات المحمّلة فقط — حمّل الأقدم أولًا إن أردت تصدير جميعها": "The export includes loaded orders only — load older orders first if you want to export all of them", "الحد الأقصى 12 ستايل — احذف ستايلاً أولاً": "Maximum of 12 styles — delete a style first", "المشاركة المباشرة غير متاحة هنا — تم تحميل الصورة لتشاركها يدوياً": "Direct sharing is not available here — the image was downloaded so you can share it manually", "الملف فارغ": "The file is empty", "النسبة يجب ألا تتجاوز 100%": "The percentage must not exceed 100%", "انسخ رابط شاشة المطبخ": "Copy the kitchen screen link", "باقتك الحالية (STARTER) تسمح بفرع واحد فقط — يرجى الترقية إلى باقة PRO لإضافة أكثر من فرع": "Your current plan (STARTER) allows only one branch — please upgrade to PRO to add more branches", "تاريخ منتهي بالفعل — تم تعليق الحساب تلقائيًا": "The date has already passed — the account was suspended automatically", "تعدد المحافظ متاح في باقة PRO فقط": "Multiple wallets are available on the PRO plan only", "تعديل الأسعار غير متاح في نسختك الحالية": "Editing prices is not available in your current plan", "تعذر إرسال التقييم، يرجى المحاولة مرة أخرى": "Couldn't submit the rating, please try again", "تعذر إرسال الرابط": "Couldn't send the link", "تعذر إضافة الرقم — تأكد أنه غير مكرر لنفس العميل": "Couldn't add the number — make sure it isn't a duplicate for the same customer", "تعذر إضافة السائق — تأكد أن الرقم غير مسجل من قبل": "Couldn't add the driver — make sure the number isn't already registered", "تعذر إضافة العملاء": "Couldn't add the customers", "تعذر إضافة العميل": "Couldn't add the customer", "تعذر التجاهل": "Couldn't dismiss", "تعذر التراجع عن التحديث": "Couldn't undo the update", "تعذر التراجع عن الحذف": "Couldn't undo the deletion", "تعذر الحفظ — تأكد أن الرقم غير مستخدم لسائق آخر": "Couldn't save — make sure the number isn't used by another driver", "تعذر تأكيد الدفع": "Couldn't confirm the payment", "تعذر تجديد الاشتراك": "Couldn't renew the subscription", "تعذر تحديث الطلب": "Couldn't update the order", "تعذر تحديث الطلبات": "Couldn't update the orders", "تعذر تحديث وقت الجاهزية": "Couldn't update the ready time", "تعذر تحديد الحساب المرتبط بهذا الطلب": "Couldn't identify the account linked to this order", "تعذر تحميل الطلبات الأقدم": "Couldn't load older orders", "تعذر تحميل الفئات": "Couldn't load categories", "تعذر تحميل بيانات المتجر": "Couldn't load store data", "تعذر تصدير بيانات العملاء، يرجى المحاولة مرة أخرى": "Couldn't export customer data, please try again", "تعذر تعيين الرقم كافتراضي — تأكد أنه غير مستخدم لعميل آخر": "Couldn't set the number as default — make sure it isn't used by another customer", "تعذر تعيين السائق": "Couldn't assign the driver", "تعذر تفعيل الاشتراك": "Couldn't activate the subscription", "تعذر تنفيذ الدمج": "Couldn't perform the merge", "تعذر جلب بيانات الحساب": "Couldn't fetch account data", "تعذر حذف الرقم": "Couldn't delete the number", "تعذر حفظ التعديل — تأكد أن رقم الهاتف غير مستخدم لعميل آخر": "Couldn't save the change — make sure the phone number isn't used by another customer", "تعذر رفع الشعار، حاول مرة أخرى": "Couldn't upload the logo, please try again", "تعذر نسخ الصنف": "Couldn't duplicate the item", "تعذر نقل بعض الأصناف": "Couldn't move some items", "تعذرت قراءة الملف، تأكد أنه ملف إكسيل صالح": "Couldn't read the file, make sure it is a valid Excel file", "تعذّر إنشاء الصورة (قد تكون صورة محمية من المتصفح)": "Couldn't create the image (it may be protected by the browser)", "تعذّر إنشاء ملف ZIP": "Couldn't create the ZIP file", "تعذّر تحميل اللوجو": "Couldn't load the logo", "تعذّر قراءة ألوان اللوجو": "Couldn't read the logo colors", "تعذّر نشر الإعلان": "Couldn't publish the announcement", "تعذّرت المشاركة": "Couldn't share", "تم أخذ اللون من اللوجو": "Color taken from the logo", "تم إرسال رابط تغيير كلمة المرور إلى بريد العميل": "A password-change link was sent to the customer's email", "تم إنشاء الفرع بنجاح": "Branch created successfully", "تم إنشاء الكود": "Code created", "تم استيراد العملاء، لكن تعذر حفظ بعض الأرقام أو العناوين الإضافية": "Customers imported, but some extra numbers or addresses couldn't be saved", "تم التراجع عن آخر تحديث للأسعار": "The last price update was undone", "تم التراجع عن الحذف": "Deletion undone", "تم الحفظ ونسخ الرابط": "Saved and link copied", "تم الدمج مع العميل الموجود بنجاح": "Merged with the existing customer successfully", "تم تأكيد استلام الدفع": "Payment receipt confirmed", "تم تحديث التمييز للأصناف المحددة": "Highlight updated for the selected items", "تم تحديث الدور": "Role updated", "تم تحديث بيانات العميل": "Customer details updated", "تم تحديث حالة الطلب": "Order status updated", "تم تحميل الصورة": "Image downloaded", "تم تحميل الصورة — أرفقها في محادثة واتساب بعد فتحها": "Image downloaded — attach it in a WhatsApp chat after opening it", "تم تحميل ملف ZIP بجميع المقاسات": "ZIP file with all sizes downloaded", "تم تطبيق الستايل": "Style applied", "تم حذف الستايل": "Style deleted", "تم حفظ الإعلان المخصص": "Custom announcement saved", "تم حفظ الستايل": "Style saved", "تم حفظ سعر الباقة": "Plan price saved", "تم دمج العملاء بنجاح": "Customers merged successfully", "تم رفض الإذن — يمكنك تفعيله لاحقًا من إعدادات المتصفح": "Permission denied — you can enable it later from browser settings", "تم رفض الطلب": "Order rejected", "تم فتح الصورة في نافذة جديدة، اضغط عليها بزر الفأرة الأيمن ثم احفظها": "The image opened in a new window — right-click it and save", "تم نسخ الرابط": "Link copied", "تم نسخ الصنف — عدّل اسمه وبياناته": "Item duplicated — edit its name and details", "تم نسخ الكود": "Code copied", "تم نقل الأصناف": "Items moved", "تمت إضافة الرقم": "Number added", "تمت إضافة العميل بنجاح": "Customer added successfully", "جاري تجهيز الصور": "Preparing images", "حدث خطأ أثناء الاستيراد": "An error occurred during import", "حدث خطأ أثناء تحديث الأسعار": "An error occurred while updating prices", "حدث خطأ في تحميل البيانات": "An error occurred while loading data", "حدث خطأ في تحميل الفروع": "An error occurred while loading branches", "حدّد صنفاً واحداً على الأقل": "Select at least one item", "حذف الأصناف غير متاح في نسختك الحالية": "Deleting items is not available in your current plan", "حذف الفئات غير متاح في نسختك الحالية": "Deleting categories is not available in your current plan", "حذف هذا الرقم؟": "Delete this number?", "حذف هذا العميل؟": "Delete this customer?", "سيتم إرجاع جميع الأسعار التي تغيّرت في هذا التحديث إلى قيمتها السابقة. هل أنت متأكد؟": "All prices changed in this update will be restored to their previous values. Are you sure?", "سيتم إيقاف المنيو العام ولوحة التحكم بالكامل لكل فروع هذا العميل فورًا. هل أنت متأكد؟": "The public menu and the dashboard will be fully suspended for all of this customer's branches immediately. Are you sure?", "سيتم حفظ السعر كصفر — بمعنى أن أي عميل سيتمكن من طلب هذا الصنف مجانًا. هل أنت متأكد من ذلك؟": "The price will be saved as zero — meaning any customer will be able to order this item for free. Are you sure?", "سيتم حفظ هذا الحجم/هذه الأحجام بسعر صفر": "This size/these sizes will be saved at zero price", "شكرًا لتقييمك! 🙏": "Thanks for your rating! 🙏", "طباعة الطلبات غير متاحة في نسختك الحالية": "Printing orders is not available in your current plan", "لا توجد أصناف عليها خصم (حدّد «السعر قبل الخصم» للصنف أولاً)": "No items have a discount (set \"Price before discount\" on the item first)", "لا توجد أصناف قابلة للتحديث بهذه الطريقة في هذا النطاق": "No items can be updated this way in this scope", "لا توجد تغييرات لتنفيذها": "No changes to apply", "لا توجد طلبات قابلة للتغيير في التحديد": "No orders in the selection can be changed", "لا توجد عناصر للتحميل": "No items to download", "لا يمكن حذف الرقم الافتراضي — عيّن رقمًا آخر افتراضيًا أولًا": "The default number cannot be deleted — set another number as default first", "لا يوجد رقم هاتف صالح لهذا السائق": "This driver has no valid phone number", "لا يوجد رقم هاتف صالح لهذا العميل": "This customer has no valid phone number", "لا يوجد رقم هاتف مسجل لهذا المتجر — أضِفه من إعدادات المتجر أولًا": "No phone number is registered for this store — add it from store settings first", "لا يوجد عملاء لتصديرهم": "No customers to export", "لا يوجد لوجو للمحل — أضفه من إعدادات المتجر": "The store has no logo — add it from store settings", "لم أجد لوناً مميزاً في اللوجو": "Couldn't find a distinctive color in the logo", "لم يتم العثور على صفوف صالحة (اسم، رقم هاتف)": "No valid rows found (name, phone number)", "من فضلك أدخل أسعارًا صحيحة": "Please enter valid prices", "ميزة إعلان المنيو غير مفعّلة بعد في قاعدة البيانات": "The menu announcement feature is not enabled yet in the database", "نشر هذا البوستر كإعلان يظهر لعملائك عند فتح المنيو؟\nسيحلّ محل أي إعلان منشور حاليًا.": "Publish this poster as an announcement shown to your customers when they open the menu?\nIt will replace any currently published announcement.", "هذا اسم مستخدم وليس رابطًا — لن يُفتح شيء، وسيظهر للعميل كنص فقط": "This is a username, not a link — nothing will open, and it will appear to the customer as text only", "هذا الرقم مسجل بالفعل كرقم أساسي لعميل آخر": "This number is already registered as the primary number of another customer", "هذا الرقم مسجل بالفعل لعميل آخر": "This number is already registered to another customer", "هذا رقم عادي وليس رابطًا — لن يُفتح شيء، وسيظهر للعميل كرقم للتحويل إليه فقط": "This is a plain number, not a link — nothing will open, and it will appear to the customer only as a number to transfer to", "هل تريد حذف كود الخصم هذا نهائيًا؟": "Delete this discount code permanently?", "يجب أن يبدأ رابط الإعلان بـ https:// أو http://": "The announcement link must start with https:// or http://", "يجب إضافة محفظة إلكترونية واحدة على الأقل أو حساب إنستاباي لتفعيل الدفع أونلاين": "You must add at least one e-wallet or an InstaPay account to enable online payment", "يرجى إدخال البريد الإلكتروني": "Please enter the email", "يرجى إدخال الكود": "Please enter the code", "يرجى إدخال قيمة خصم صحيحة": "Please enter a valid discount value", "يلزم وجود عميلين على الأقل لإجراء الدمج": "At least two customers are required to merge", "رجعت الإعدادات الافتراضية": "Default settings restored", "تم تنزيل النسخة الاحتياطية": "Backup downloaded", "حدث خطأ أثناء تجهيز النسخة الاحتياطية": "An error occurred while preparing the backup", "هذا الملف ليس نسخة احتياطية صحيحة": "This file is not a valid backup", "تقرير تقفيل اليوم جاهز — من \"التقارير والإحصائيات\"": "The daily close report is ready — from \"Reports & statistics\"", "تم نشر الإعلان — سيظهر لعملائك عند فتح المنيو": "Announcement published — it will appear to your customers when they open the menu", "تم تنزيل نسخة احتياطية تلقائية لليوم": "Today's automatic backup was downloaded", "استيراد Excel متاح في باقة PRO فقط": "Excel import is available on the PRO plan only", "تصدير Excel متاح في باقة PRO فقط": "Excel export is available on the PRO plan only", "هذه الميزة غير متاحة لحسابك": "This feature is not available for your account", "بدون مشاركة": "No sharing"});
+DASH_EN_RX.push(
+  [/^تم تجديد الاشتراك حتى (.+)$/, (m,a)=> `Subscription renewed until ${a}`],
+  [/^تم تفعيل الاشتراك حتى (.+)$/, (m,a)=> `Subscription activated until ${a}`],
+  [/^تعذر إنشاء الكود: (.+)$/, (m,a)=> `Couldn't create the code: ${a}`]
+);
+
+var DASH_LANG = 'ar';
+try{ DASH_LANG = localStorage.getItem('dash_lang') === 'en' ? 'en' : 'ar'; }catch(e){}
+var _dashTr = { map:new Map(), obs:null, busy:false };
+function dashTrString(str){
+  if(!/[؀-ۿ]/.test(str)) return null;
+  const lead = (str.match(/^[^؀-ۿA-Za-z0-9]*/) || [''])[0];
+  const body = str.slice(lead.length);
+  const tail = (body.match(/[\s:：·.…،]*$/) || [''])[0];
+  const core = body.slice(0, body.length - tail.length);
+  if(!core) return null;
+  let en = DASH_EN[core];
+  if(en === undefined){
+    for(const [rx, fn] of DASH_EN_RX){ const m = core.match(rx); if(m){ en = fn(...m); break; } }
+  }
+  if(en === undefined) return null;
+  const tailEn = tail.replace(/،/g, ',').replace(/…/g, '…');
+  return lead + en + tailEn;
+}
+function dashTrSkip(el){
+  return !!(el && el.closest && el.closest('[data-no-tr], script, style, textarea, #publicScreen, #trackingScreen'));
+}
+var DASH_USER_TEXT_SEL = '.item-name, .item-desc, .cat-item .name, .dash-top-chip';
+function dashTrOne(node){
+  if(node.nodeType === 3){
+    const rec = _dashTr.map.get(node);
+    if(rec && node.nodeValue === rec.applied) return;
+    if(dashTrSkip(node.parentElement)) return;
+    if(node.parentElement && node.parentElement.matches(DASH_USER_TEXT_SEL)) return; // نصوص كتبها العميل (أسماء/أوصاف) ما بتتترجمش
+    const orig = node.nodeValue, en = dashTrString(orig);
+    if(en !== null && en !== orig){ _dashTr.map.set(node, { orig, applied:en }); node.nodeValue = en; }
+    else if(rec) _dashTr.map.delete(node);
+  } else if(node.nodeType === 1){
+    if(dashTrSkip(node)) return;
+    ['placeholder','title','aria-label'].forEach(a=>{
+      const v = node.getAttribute(a); if(!v) return;
+      if(node.hasAttribute('data-ar-' + a) && node.getAttribute('data-en-' + a) === v) return;
+      const en = dashTrString(v);
+      if(en !== null && en !== v){ node.setAttribute('data-ar-' + a, v); node.setAttribute('data-en-' + a, en); node.setAttribute(a, en); }
+    });
+  }
+}
+function dashTrNode(root){
+  if(root.nodeType !== 1 && root.nodeType !== 3) return;
+  if(root.nodeType === 3){ dashTrOne(root); return; }
+  if(dashTrSkip(root)) return;
+  dashTrOne(root);
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+  let n = w.nextNode();
+  while(n){ dashTrOne(n); n = w.nextNode(); }
+}
+function dashTrRevert(){
+  _dashTr.busy = true;
+  _dashTr.map.forEach((rec, node)=>{ if(node.isConnected && node.nodeValue === rec.applied) node.nodeValue = rec.orig; });
+  _dashTr.map.clear();
+  document.querySelectorAll('[data-ar-placeholder],[data-ar-title],[data-ar-aria-label]').forEach(el=>{
+    ['placeholder','title','aria-label'].forEach(a=>{
+      const k = 'data-ar-' + a;
+      if(el.hasAttribute(k)){ el.setAttribute(a, el.getAttribute(k)); el.removeAttribute(k); el.removeAttribute('data-en-' + a); }
+    });
+  });
+  _dashTr.busy = false;
+}
+function dashLangActive(){
+  const d = document.getElementById('dashboardScreen');
+  return !!d && !d.classList.contains('hidden');
+}
+function dashLangSync(){
+  const en = DASH_LANG === 'en' && dashLangActive();
+  const root = document.documentElement;
+  root.dir = en ? 'ltr' : 'rtl';
+  root.lang = en ? 'en' : 'ar';
+  root.classList.toggle('dash-en', en);
+  const btn = document.getElementById('dashLangBtn');
+  if(btn){ btn.textContent = DASH_LANG === 'en' ? '🌐 عربي' : '🌐 EN'; btn.title = DASH_LANG === 'en' ? 'التبديل للعربية' : 'Switch to English'; }
+  if(_dashTr.map.size > 4000) _dashTr.map.forEach((r, n)=>{ if(!n.isConnected) _dashTr.map.delete(n); });
+  _dashTr.busy = true;
+  if(en) dashTrNode(document.body); else dashTrRevert();
+  _dashTr.busy = false;
+}
+function dashSetLang(l){
+  DASH_LANG = l === 'en' ? 'en' : 'ar';
+  try{ localStorage.setItem('dash_lang', DASH_LANG); }catch(e){}
+  dashLangSync();
+  if(typeof refreshDashHome === 'function' && typeof restaurant !== 'undefined' && restaurant){ try{ refreshDashHome(); }catch(e){} }
+}
+(function initDashLang(){
+  const btn = document.getElementById('dashLangBtn');
+  if(btn) btn.addEventListener('click', ()=> dashSetLang(DASH_LANG === 'en' ? 'ar' : 'en'));
+  _dashTr.obs = new MutationObserver(muts=>{
+    if(_dashTr.busy || DASH_LANG !== 'en' || !dashLangActive()) return;
+    _dashTr.busy = true;
+    try{
+      for(const m of muts){
+        if(m.type === 'childList') m.addedNodes.forEach(n=> dashTrNode(n));
+        else if(m.type === 'characterData') dashTrNode(m.target);
+        else if(m.type === 'attributes') dashTrNode(m.target);
+      }
+    } finally { _dashTr.busy = false; }
+  });
+  _dashTr.obs.observe(document.body, { childList:true, subtree:true, characterData:true, attributes:true, attributeFilter:['placeholder','title','aria-label'] });
+  // الداش بورد بيظهر/يختفي بإضافة/إزالة كلاس hidden → نزامن اللغة والاتجاه
+  const d = document.getElementById('dashboardScreen');
+  if(d) new MutationObserver(()=> dashLangSync()).observe(d, { attributes:true, attributeFilter:['class'] });
+  dashLangSync();
+})();
 
 // تفعيل القوائم المنسدلة الجديدة في الشريط العلوي (تجميع الأزرار داخل قوائم بدلًا من عرضها جميعًا في صف واحد)
 document.querySelectorAll('.dash-menu-group').forEach(group=>{
