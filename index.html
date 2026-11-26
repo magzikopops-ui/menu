@@ -3433,17 +3433,20 @@ function toast(msg){
 /* فيديو شرح الموقع والتطبيق — الـ iframe ما بيتحمّلش إلا لما العميل يضغط (عشان ما نبطّأش الصفحة) */
 var GUIDE_VIDEO_IDS = { ar:'iSQvcFPuE1M', en:'DGyDW51fqUk' }; // حط هنا ID فيديو الشرح الإنجليزي لما يجهز (لو فاضي بيستخدم الفيديو العربي)
 var GUIDE_VIDEO_ID = GUIDE_VIDEO_IDS.ar;
+var GUIDE_VIDEO_SHORT_IDS = { ar:'', en:'' }; // فيديو الشرح العمودي (شورت) للموبايل: حط الـ ID هنا لما يترفع، وفاضي = الفيديو الأفقي زي ما هو
+function guideShortIdFor(en){ var m = window.matchMedia && window.matchMedia('(max-width:700px)').matches; var id = (en && GUIDE_VIDEO_SHORT_IDS.en) ? GUIDE_VIDEO_SHORT_IDS.en : GUIDE_VIDEO_SHORT_IDS.ar; return m ? id : ''; }
 function guideVideoIdFor(en){ return (en && GUIDE_VIDEO_IDS.en) ? GUIDE_VIDEO_IDS.en : GUIDE_VIDEO_IDS.ar; }
 function openGuideVideo(en){
   if(document.getElementById('guideVideoOverlay')) return;
   en = (en === true) || (DASH_LANG === 'en' && dashLangActive());
-  const GUIDE_VIDEO_ID = guideVideoIdFor(en);
+  const GUIDE_SHORT_ID = guideShortIdFor(en);
+  const GUIDE_VIDEO_ID = GUIDE_SHORT_ID || guideVideoIdFor(en);
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   overlay.id = 'guideVideoOverlay';
   overlay.innerHTML = `
     <div class="modal guide-video-modal" role="dialog" aria-modal="true">
-      <div class="guide-video-frame">
+      <div class="guide-video-frame"${GUIDE_SHORT_ID ? ' style="aspect-ratio:9/16;max-height:78vh;width:auto;margin:0 auto;"' : ''}>
         <iframe src="https://www.youtube-nocookie.com/embed/${GUIDE_VIDEO_ID}?autoplay=1&rel=0&modestbranding=1" title="${en ? 'Walkthrough video' : 'فيديو الشرح'}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
       </div>
       <div class="guide-video-bar">
@@ -18567,6 +18570,32 @@ async function loadPublic(slug){
       reserveBtn.classList.toggle('hidden', !rest.accept_reservations);
       if(!reserveBtn.dataset.bound){ reserveBtn.dataset.bound = '1'; reserveBtn.addEventListener('click', openReservationModal); }
     }
+    /* فيديو تعريفي يظهر فقط في منيو الرفاعي (al-refaey) */
+    (function(){
+      if(!rest || rest.slug !== 'al-refaey' || !reserveBtn || !reserveBtn.parentNode) return;
+      var vb = document.getElementById('pubPromoVideoBtn');
+      if(!vb){
+        vb = document.createElement('button');
+        vb.type = 'button'; vb.id = 'pubPromoVideoBtn'; vb.className = 'reserve-btn';
+        vb.addEventListener('click', function(){
+          if(document.getElementById('promoVideoOverlay')) return;
+          var en = lang === 'en';
+          var ov = document.createElement('div');
+          ov.className = 'overlay'; ov.id = 'promoVideoOverlay';
+          ov.innerHTML = '<div class="modal" role="dialog" aria-modal="true" style="width:min(360px,94vw);padding:12px;">'
+            + '<div style="position:relative;width:100%;aspect-ratio:9/16;background:#000;border-radius:10px;overflow:hidden;">'
+            + '<iframe src="https://www.youtube-nocookie.com/embed/gMJdOJSBkMg?autoplay=1&rel=0&modestbranding=1" title="" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></div>'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;">'
+            + '<a href="https://youtube.com/shorts/gMJdOJSBkMg" target="_blank" rel="noopener" style="font-size:12px;">' + (en ? 'Open on YouTube' : 'افتح على يوتيوب') + '</a>'
+            + '<button class="btn-cancel" id="promoVideoCloseBtn" type="button">' + (en ? 'Close' : 'إغلاق') + '</button></div></div>';
+          document.body.appendChild(ov);
+          ov.querySelector('#promoVideoCloseBtn').addEventListener('click', function(){ ov.remove(); });
+          ov.addEventListener('click', function(e){ if(e.target === ov) ov.remove(); });
+        });
+        reserveBtn.parentNode.appendChild(vb);
+      }
+      vb.textContent = lang === 'en' ? '▶ Watch the video' : '▶ شاهد الفيديو';
+    })();
     document.getElementById('pubInfoBtn').title = lang==='en' ? `${biz(rest.business_type,'entityEn')} info` : `معلومات ${biz(rest.business_type,'entityDef')}`;
     const openStatus = getRestaurantOpenStatus(rest);
     isRestaurantOpenNow = openStatus.isOpen;
