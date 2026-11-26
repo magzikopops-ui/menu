@@ -18596,10 +18596,10 @@ async function loadPublic(slug){
       }
       vb.textContent = lang === 'en' ? '▶ Watch the video' : '▶ شاهد الفيديو';
     })();
-    /* فيديو شرح الطلب للعميل: عنصر في قائمة "..." لمنيو أي متجر (غير الرفاعي) على الموبايل فقط */
+    /* فيديو شرح الطلب للعميل: عنصر في قائمة "..." لمنيو أي متجر على الموبايل فقط */
     (function(){
       var moreMenu = document.getElementById('pubMoreMenu'), aboutItem = document.getElementById('pubAboutBtn');
-      if(!rest || rest.slug === 'al-refaey' || !moreMenu || !aboutItem) return;
+      if(!rest || !moreMenu || !aboutItem) return;
       if(!document.getElementById('orderGuideStyle')){
         var st = document.createElement('style'); st.id = 'orderGuideStyle';
         st.textContent = '#pubOrderGuideBtn{display:none}@media (max-width:700px){#pubOrderGuideBtn{display:flex}}';
