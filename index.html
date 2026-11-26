@@ -18596,13 +18596,13 @@ async function loadPublic(slug){
       }
       vb.textContent = lang === 'en' ? '▶ Watch the video' : '▶ شاهد الفيديو';
     })();
-    /* فيديو شرح الطلب للعميل: عنصر في قائمة "..." لمنيو أي متجر على الموبايل فقط */
+    /* فيديو شرح الطلب للعميل: عنصر في قائمة "..." لمنيو أي متجر (موبايل: فيديو عمودي، كمبيوتر: فيديو أفقي) */
     (function(){
       var moreMenu = document.getElementById('pubMoreMenu'), aboutItem = document.getElementById('pubAboutBtn');
       if(!rest || !moreMenu || !aboutItem) return;
       if(!document.getElementById('orderGuideStyle')){
         var st = document.createElement('style'); st.id = 'orderGuideStyle';
-        st.textContent = '#pubOrderGuideBtn{display:none}@media (max-width:700px){#pubOrderGuideBtn{display:flex}}';
+        st.textContent = '#pubOrderGuideBtn{display:flex}';
         document.head.appendChild(st);
       }
       var gb = document.getElementById('pubOrderGuideBtn');
@@ -18614,13 +18614,15 @@ async function loadPublic(slug){
           if(typeof closeMoreMenu === 'function') closeMoreMenu();
           if(document.getElementById('orderGuideOverlay')) return;
           var en = lang === 'en';
+          var mob = window.matchMedia && window.matchMedia('(max-width:700px)').matches;
+          var vid = mob ? 'fEWkInW3ajo' : 'tikCiFHH93U';
           var ov = document.createElement('div');
           ov.className = 'overlay'; ov.id = 'orderGuideOverlay';
-          ov.innerHTML = '<div class="modal" role="dialog" aria-modal="true" style="width:min(360px,94vw);padding:12px;">'
-            + '<div style="position:relative;width:100%;aspect-ratio:9/16;background:#000;border-radius:10px;overflow:hidden;">'
-            + '<iframe src="https://www.youtube-nocookie.com/embed/fEWkInW3ajo?autoplay=1&rel=0&modestbranding=1" title="" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></div>'
+          ov.innerHTML = '<div class="modal" role="dialog" aria-modal="true" style="width:' + (mob ? 'min(360px,94vw)' : 'min(900px,94vw)') + ';padding:12px;">'
+            + '<div style="position:relative;width:100%;aspect-ratio:' + (mob ? '9/16' : '16/9') + ';background:#000;border-radius:10px;overflow:hidden;">'
+            + '<iframe src="https://www.youtube-nocookie.com/embed/' + vid + '?autoplay=1&rel=0&modestbranding=1" title="" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></div>'
             + '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;">'
-            + '<a href="https://youtube.com/shorts/fEWkInW3ajo" target="_blank" rel="noopener" style="font-size:12px;">' + (en ? 'Open on YouTube' : 'افتح على يوتيوب') + '</a>'
+            + '<a href="' + (mob ? 'https://youtube.com/shorts/' : 'https://youtu.be/') + vid + '" target="_blank" rel="noopener" style="font-size:12px;">' + (en ? 'Open on YouTube' : 'افتح على يوتيوب') + '</a>'
             + '<button class="btn-cancel" id="orderGuideCloseBtn" type="button">' + (en ? 'Close' : 'إغلاق') + '</button></div></div>';
           document.body.appendChild(ov);
           ov.querySelector('#orderGuideCloseBtn').addEventListener('click', function(){ ov.remove(); });
