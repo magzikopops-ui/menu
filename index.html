@@ -3433,8 +3433,8 @@ function toast(msg){
 /* فيديو شرح الموقع والتطبيق — الـ iframe ما بيتحمّلش إلا لما العميل يضغط (عشان ما نبطّأش الصفحة) */
 var GUIDE_VIDEO_IDS = { ar:'iSQvcFPuE1M', en:'DGyDW51fqUk' }; // حط هنا ID فيديو الشرح الإنجليزي لما يجهز (لو فاضي بيستخدم الفيديو العربي)
 var GUIDE_VIDEO_ID = GUIDE_VIDEO_IDS.ar;
-var GUIDE_VIDEO_SHORT_IDS = { ar:'', en:'' }; // فيديو الشرح العمودي (شورت) للموبايل: حط الـ ID هنا لما يترفع، وفاضي = الفيديو الأفقي زي ما هو
-function guideShortIdFor(en){ var m = window.matchMedia && window.matchMedia('(max-width:700px)').matches; var id = (en && GUIDE_VIDEO_SHORT_IDS.en) ? GUIDE_VIDEO_SHORT_IDS.en : GUIDE_VIDEO_SHORT_IDS.ar; return m ? id : ''; }
+var GUIDE_VIDEO_SHORT_IDS = { ar:'cCWR1F4_73w', en:'' }; // فيديو الشرح العمودي (شورت) للموبايل: حط الـ ID هنا لما يترفع، وفاضي = الفيديو الأفقي زي ما هو
+function guideShortIdFor(en){ var m = window.matchMedia && window.matchMedia('(max-width:700px)').matches; var id = en ? GUIDE_VIDEO_SHORT_IDS.en : GUIDE_VIDEO_SHORT_IDS.ar; return m ? id : ''; }
 function guideVideoIdFor(en){ return (en && GUIDE_VIDEO_IDS.en) ? GUIDE_VIDEO_IDS.en : GUIDE_VIDEO_IDS.ar; }
 function openGuideVideo(en){
   if(document.getElementById('guideVideoOverlay')) return;
