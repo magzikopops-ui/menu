@@ -18596,6 +18596,40 @@ async function loadPublic(slug){
       }
       vb.textContent = lang === 'en' ? '▶ Watch the video' : '▶ شاهد الفيديو';
     })();
+    /* فيديو شرح الطلب للعميل: عنصر في قائمة "..." لمنيو أي متجر (غير الرفاعي) على الموبايل فقط */
+    (function(){
+      var moreMenu = document.getElementById('pubMoreMenu'), aboutItem = document.getElementById('pubAboutBtn');
+      if(!rest || rest.slug === 'al-refaey' || !moreMenu || !aboutItem) return;
+      if(!document.getElementById('orderGuideStyle')){
+        var st = document.createElement('style'); st.id = 'orderGuideStyle';
+        st.textContent = '#pubOrderGuideBtn{display:none}@media (max-width:700px){#pubOrderGuideBtn{display:flex}}';
+        document.head.appendChild(st);
+      }
+      var gb = document.getElementById('pubOrderGuideBtn');
+      if(!gb){
+        gb = document.createElement('div');
+        gb.id = 'pubOrderGuideBtn'; gb.className = 'pub-more-item';
+        gb.innerHTML = '<span class="pub-more-item-icon"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg></span><span class="pub-more-item-label"></span>';
+        gb.addEventListener('click', function(){
+          if(typeof closeMoreMenu === 'function') closeMoreMenu();
+          if(document.getElementById('orderGuideOverlay')) return;
+          var en = lang === 'en';
+          var ov = document.createElement('div');
+          ov.className = 'overlay'; ov.id = 'orderGuideOverlay';
+          ov.innerHTML = '<div class="modal" role="dialog" aria-modal="true" style="width:min(360px,94vw);padding:12px;">'
+            + '<div style="position:relative;width:100%;aspect-ratio:9/16;background:#000;border-radius:10px;overflow:hidden;">'
+            + '<iframe src="https://www.youtube-nocookie.com/embed/fEWkInW3ajo?autoplay=1&rel=0&modestbranding=1" title="" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe></div>'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;">'
+            + '<a href="https://youtube.com/shorts/fEWkInW3ajo" target="_blank" rel="noopener" style="font-size:12px;">' + (en ? 'Open on YouTube' : 'افتح على يوتيوب') + '</a>'
+            + '<button class="btn-cancel" id="orderGuideCloseBtn" type="button">' + (en ? 'Close' : 'إغلاق') + '</button></div></div>';
+          document.body.appendChild(ov);
+          ov.querySelector('#orderGuideCloseBtn').addEventListener('click', function(){ ov.remove(); });
+          ov.addEventListener('click', function(e){ if(e.target === ov) ov.remove(); });
+        });
+        moreMenu.insertBefore(gb, aboutItem);
+      }
+      gb.querySelector('.pub-more-item-label').textContent = lang === 'en' ? 'How to order' : 'طريقة الطلب';
+    })();
     document.getElementById('pubInfoBtn').title = lang==='en' ? `${biz(rest.business_type,'entityEn')} info` : `معلومات ${biz(rest.business_type,'entityDef')}`;
     const openStatus = getRestaurantOpenStatus(rest);
     isRestaurantOpenNow = openStatus.isOpen;
